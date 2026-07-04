@@ -1,0 +1,178 @@
+package com.example.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.data.Goal
+import com.example.data.Transaction
+import com.example.ui.theme.NavyDark
+import com.example.ui.theme.PinkPrimary
+import com.example.ui.theme.PurplePrimary
+import com.example.ui.theme.GreenAccent
+import com.example.ui.theme.TextLight
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MyGoalsScreen(
+    viewModel: PiggyLedgerViewModel,
+    onNavigateToGoal: (String) -> Unit,
+    onBack: () -> Unit
+) {
+    val goals by viewModel.goals.collectAsState()
+
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 24.dp)
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = NavyDark
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            Text("My Goals", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(goals) { goal ->
+                GoalCard(goal = goal, viewModel = viewModel, onClick = { onNavigateToGoal(goal.id) })
+            }
+        }
+    }
+}
+
+@Composable
+fun GoalCard(goal: Goal, viewModel: PiggyLedgerViewModel, onClick: () -> Unit) {
+    val transactions by viewModel.getTransactionsForGoal(goal.id).collectAsState()
+    val savedAmount = transactions.sumOf { it.amount }
+    val progress = if (goal.targetAmount > 0) (savedAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f) else 0f
+    val isCompleted = savedAmount >= goal.targetAmount
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(2.dp, androidx.compose.ui.graphics.Color(0xFFCBD5E1))
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = goal.name, 
+                        fontSize = 18.sp, 
+                        fontWeight = FontWeight.Bold, 
+                        color = NavyDark
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Target: $${String.format("%.0f", goal.targetAmount)}",
+                        fontSize = 12.sp,
+                        color = TextLight
+                    )
+                }
+                
+                if (isCompleted) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle, 
+                        contentDescription = "Completed",
+                        tint = GreenAccent,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = if (isCompleted) GreenAccent else NavyDark,
+                trackColor = androidx.compose.ui.graphics.Color(0xFFF1F5F9)
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                val remaining = goal.targetAmount - savedAmount
+                val savedText = if (remaining < 0) {
+                    "$${String.format("%.2f", savedAmount)} total ($${String.format("%.2f", -remaining)} extra)"
+                } else {
+                    "$${String.format("%.2f", savedAmount)} saved"
+                }
+                Text(
+                    text = savedText,
+                    color = if (remaining < 0) GreenAccent else TextLight,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 13.sp
+                )
+                
+                if (remaining > 0) {
+                    Text(
+                        text = "$${String.format("%.2f", remaining)} left",
+                        color = NavyDark,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+    }
+}

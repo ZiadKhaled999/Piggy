@@ -16,11 +16,37 @@ import kotlinx.coroutines.delay
 import android.content.Context
 import java.util.UUID
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import com.example.data.BackupData
+
 class PiggyLedgerViewModel(
     private val repository: PiggyLedgerRepository,
     private val userPreferences: UserPreferences,
     private val context: Context
 ) : ViewModel() {
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    fun exportData(onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val backup = repository.getFullBackup()
+            val jsonString = json.encodeToString(backup)
+            onResult(jsonString)
+        }
+    }
+
+    fun importData(jsonString: String, onComplete: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val data = json.decodeFromString<BackupData>(jsonString)
+                repository.restoreBackup(data)
+                onComplete()
+            } catch (e: Exception) {
+                onError(e.message ?: "Unknown error during import")
+            }
+        }
+    }
 
     init {
         viewModelScope.launch {
@@ -41,11 +67,11 @@ class PiggyLedgerViewModel(
     )
 
     val goals: StateFlow<List<Goal>> = repository.allGoals.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
+        viewModelScope, SharingStarted.Eagerly, emptyList()
     )
     
     val loans: StateFlow<List<Loan>> = repository.allLoans.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
+        viewModelScope, SharingStarted.Eagerly, emptyList()
     )
 
     fun getTransactionsForGoal(goalId: String): StateFlow<List<Transaction>> {

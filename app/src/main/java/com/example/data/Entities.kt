@@ -2,7 +2,9 @@ package com.example.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(tableName = "goals")
 data class Goal(
     @PrimaryKey val id: String,
@@ -11,6 +13,7 @@ data class Goal(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+@Serializable
 @Entity(tableName = "transactions")
 data class Transaction(
     @PrimaryKey val id: String,
@@ -21,6 +24,7 @@ data class Transaction(
     val deadline: Long? = null
 )
 
+@Serializable
 @Entity(tableName = "loans")
 data class Loan(
     @PrimaryKey val id: String,
@@ -35,6 +39,14 @@ data class Loan(
     val deadline: Long? = null
 )
 
+@Serializable
 enum class LoanType {
     LENT, BORROWED
 }
+
+@Serializable
+data class BackupData(
+    val goals: List<Goal>,
+    val transactions: List<Transaction>,
+    val loans: List<Loan>
+)

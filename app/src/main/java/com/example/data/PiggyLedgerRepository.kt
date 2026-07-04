@@ -20,4 +20,21 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao) {
         }
     }
     suspend fun deleteLoan(id: String) = dao.deleteLoanById(id)
+
+    suspend fun getFullBackup(): BackupData {
+        return BackupData(
+            goals = dao.getAllGoalsSync(),
+            transactions = dao.getAllTransactions(),
+            loans = dao.getAllLoansSync()
+        )
+    }
+
+    suspend fun restoreBackup(data: BackupData) {
+        dao.clearGoals()
+        dao.clearTransactions()
+        dao.clearLoans()
+        dao.insertGoals(data.goals)
+        dao.insertTransactions(data.transactions)
+        dao.insertLoans(data.loans)
+    }
 }

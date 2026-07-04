@@ -101,7 +101,7 @@ fun LoansScreen(
             modifier = Modifier.fillMaxWidth(),
             color = Color(0xFFF8FAFC),
             shape = RoundedCornerShape(28.dp),
-            border = BorderStroke(1.dp, Color(0xFFF1F5F9))
+            border = BorderStroke(3.dp, Color(0xFFCBD5E1))
         ) {
             Row(
                 modifier = Modifier
@@ -114,7 +114,7 @@ fun LoansScreen(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(24.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    border = BorderStroke(3.dp, Color(0xFFCBD5E1))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -132,7 +132,7 @@ fun LoansScreen(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(24.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    border = BorderStroke(3.dp, Color(0xFFCBD5E1))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -150,7 +150,7 @@ fun LoansScreen(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(24.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    border = BorderStroke(3.dp, Color(0xFFCBD5E1))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("NET LEDGER", fontSize = 9.sp, fontWeight = FontWeight.Black, color = TextLight)
@@ -159,7 +159,7 @@ fun LoansScreen(
                             text = if (netLedger >= 0) "+$${String.format("%.0f", netLedger)}" else "-$${String.format("%.0f", -netLedger)}", 
                             fontSize = 22.sp, 
                             fontWeight = FontWeight.Bold, 
-                            color = NavyDark
+                            color = if (netLedger >= 0) GreenAccent else OrangeAccent
                         )
                     }
                 }
@@ -451,7 +451,7 @@ fun LoansScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (isLent) Color.White else Color.Transparent)
                             .border(
-                                if (isLent) BorderStroke(1.dp, Color(0xFFE2E8F0)) else BorderStroke(0.dp, Color.Transparent),
+                                if (isLent) BorderStroke(2.dp, Color(0xFF2563EB)) else BorderStroke(0.dp, Color.Transparent),
                                 RoundedCornerShape(12.dp)
                             )
                             .clickable { isLent = true },
@@ -460,7 +460,7 @@ fun LoansScreen(
                         Text(
                             "I Lent Money", 
                             fontWeight = if (isLent) FontWeight.Bold else FontWeight.Medium, 
-                            color = if (isLent) NavyDark else TextLight,
+                            color = if (isLent) Color(0xFF2563EB) else TextLight,
                             fontSize = 14.sp
                         )
                     }
@@ -471,7 +471,7 @@ fun LoansScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (!isLent) Color.White else Color.Transparent)
                             .border(
-                                if (!isLent) BorderStroke(1.dp, Color(0xFFE2E8F0)) else BorderStroke(0.dp, Color.Transparent),
+                                if (!isLent) BorderStroke(2.dp, Color(0xFF2563EB)) else BorderStroke(0.dp, Color.Transparent),
                                 RoundedCornerShape(12.dp)
                             )
                             .clickable { isLent = false },
@@ -480,7 +480,7 @@ fun LoansScreen(
                         Text(
                             "I Borrowed Money", 
                             fontWeight = if (!isLent) FontWeight.Bold else FontWeight.Medium, 
-                            color = if (!isLent) NavyDark else TextLight,
+                            color = if (!isLent) Color(0xFF2563EB) else TextLight,
                             fontSize = 14.sp
                         )
                     }
@@ -499,8 +499,8 @@ fun LoansScreen(
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = NavyDark.copy(alpha = 0.05f),
-                        contentColor = NavyDark
+                        containerColor = Color(0xFF2563EB),
+                        contentColor = Color.White
                     )
                 ) {
                     Icon(Icons.Default.Person, contentDescription = null)

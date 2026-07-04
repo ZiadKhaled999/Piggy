@@ -33,7 +33,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         Triple(R.drawable.img_piggy_hello, "Hello welcome to Piggy Ledger", "Your modern way to save and track resources."),
         Triple(R.drawable.img_piggy_pool, "Track Your Savings", "Create goals and track your progress. Whether it's for a trip, a gift, or a group project."),
         Triple(R.drawable.img_piggy_track, "Track Progress", "Updates on contributions and goal completion. Stay motivated as you see the progress bar fill up."),
-        Triple(R.drawable.img_piggy_hello, "Ready to Start?", "Let's set up your first goal and begin your journey towards smarter savings.") // Reusing hello image for last screen as we didn't generate 4
+        Triple(R.drawable.img_app_logo, "Ready to Start?", "Let's set up your first goal and begin your journey towards smarter savings.")
     )
     
     Column(

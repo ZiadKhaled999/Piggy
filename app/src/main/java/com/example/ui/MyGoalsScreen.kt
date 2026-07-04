@@ -1,5 +1,6 @@
 package com.example.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,10 +19,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.Goal
 import com.example.data.Transaction
 import com.example.ui.theme.NavyDark
@@ -67,11 +72,39 @@ fun MyGoalsScreen(
         
         Spacer(modifier = Modifier.height(24.dp))
         
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(goals) { goal ->
-                GoalCard(goal = goal, viewModel = viewModel, onClick = { onNavigateToGoal(goal.id) })
+        if (goals.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Image(
+                        painter = painterResource(id = R.drawable.img_app_logo),
+                        contentDescription = null,
+                        modifier = Modifier.size(160.dp).alpha(0.6f).clip(RoundedCornerShape(24.dp)),
+                        contentScale = ContentScale.Fit
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "No goals yet",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        "Start your first goal today!",
+                        fontSize = 14.sp,
+                        color = TextLight
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(goals) { goal ->
+                    GoalCard(goal = goal, viewModel = viewModel, onClick = { onNavigateToGoal(goal.id) })
+                }
             }
         }
     }
@@ -81,8 +114,9 @@ fun MyGoalsScreen(
 fun GoalCard(goal: Goal, viewModel: PiggyLedgerViewModel, onClick: () -> Unit) {
     val transactions by viewModel.getTransactionsForGoal(goal.id).collectAsState()
     val savedAmount = transactions.sumOf { it.amount }
+    val isOpenSavings = goal.targetAmount <= 0.0
     val progress = if (goal.targetAmount > 0) (savedAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f) else 0f
-    val isCompleted = savedAmount >= goal.targetAmount
+    val isCompleted = !isOpenSavings && savedAmount >= goal.targetAmount
     
     Card(
         modifier = Modifier
@@ -110,7 +144,7 @@ fun GoalCard(goal: Goal, viewModel: PiggyLedgerViewModel, onClick: () -> Unit) {
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Target: $${String.format("%.0f", goal.targetAmount)}",
+                        text = if (isOpenSavings) "Open Savings (General)" else "Target: $${String.format("%.0f", goal.targetAmount)}",
                         fontSize = 12.sp,
                         color = TextLight
                     )
@@ -123,6 +157,19 @@ fun GoalCard(goal: Goal, viewModel: PiggyLedgerViewModel, onClick: () -> Unit) {
                         tint = GreenAccent,
                         modifier = Modifier.size(24.dp)
                     )
+                } else if (isOpenSavings) {
+                    Surface(
+                        color = androidx.compose.ui.graphics.Color(0xFFEFF6FF),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "OPEN",
+                            color = androidx.compose.ui.graphics.Color(0xFF1D4ED8),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
                 } else {
                     Text(
                         text = "${(progress * 100).toInt()}%",
@@ -133,17 +180,19 @@ fun GoalCard(goal: Goal, viewModel: PiggyLedgerViewModel, onClick: () -> Unit) {
                 }
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = if (isCompleted) GreenAccent else NavyDark,
-                trackColor = androidx.compose.ui.graphics.Color(0xFFF1F5F9)
-            )
+            if (!isOpenSavings) {
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = if (isCompleted) GreenAccent else NavyDark,
+                    trackColor = androidx.compose.ui.graphics.Color(0xFFCBD5E1)
+                )
+            }
             
             Spacer(modifier = Modifier.height(12.dp))
             
@@ -152,19 +201,21 @@ fun GoalCard(goal: Goal, viewModel: PiggyLedgerViewModel, onClick: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 val remaining = goal.targetAmount - savedAmount
-                val savedText = if (remaining < 0) {
+                val savedText = if (isOpenSavings) {
+                    "$${String.format("%.2f", savedAmount)} saved"
+                } else if (remaining < 0) {
                     "$${String.format("%.2f", savedAmount)} total ($${String.format("%.2f", -remaining)} extra)"
                 } else {
                     "$${String.format("%.2f", savedAmount)} saved"
                 }
                 Text(
                     text = savedText,
-                    color = if (remaining < 0) GreenAccent else TextLight,
+                    color = if (remaining < 0 && !isOpenSavings) GreenAccent else TextLight,
                     fontWeight = FontWeight.Medium,
                     fontSize = 13.sp
                 )
                 
-                if (remaining > 0) {
+                if (remaining > 0 && !isOpenSavings) {
                     Text(
                         text = "$${String.format("%.2f", remaining)} left",
                         color = NavyDark,

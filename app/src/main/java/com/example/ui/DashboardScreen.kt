@@ -2,12 +2,19 @@ package com.example.ui
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Email
@@ -31,9 +38,11 @@ import com.example.ui.theme.NavyDark
 import com.example.ui.theme.PinkPrimary
 import com.example.ui.theme.TextLight
 import com.example.ui.theme.PurplePrimary
+import com.example.ui.theme.GreenAccent
+import com.example.ui.theme.AccentBlue
 
 enum class SettingsMode {
-    MAIN, FEEDBACK, RATING
+    MAIN, FEEDBACK, RATING, BACKUP, RESTORE
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,6 +57,47 @@ fun DashboardScreen(
     var settingsMode by remember { mutableStateOf(SettingsMode.MAIN) }
     val context = LocalContext.current
 
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            viewModel.exportData { jsonString ->
+                try {
+                    context.contentResolver.openOutputStream(it)?.use { stream ->
+                        stream.write(jsonString.toByteArray())
+                    }
+                    Toast.makeText(context, "Data exported successfully", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    val openDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            try {
+                context.contentResolver.openInputStream(it)?.use { stream ->
+                    val jsonString = stream.bufferedReader().use { it.readText() }
+                    viewModel.importData(
+                        jsonString = jsonString,
+                        onComplete = {
+                            Toast.makeText(context, "Data restored successfully", Toast.LENGTH_SHORT).show()
+                            showSettings = false
+                        },
+                        onError = { error ->
+                            Toast.makeText(context, "Restore failed: $error", Toast.LENGTH_LONG).show()
+                        }
+                    )
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Failed to read file: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -59,9 +109,9 @@ fun DashboardScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             Image(
-                painter = painterResource(id = R.drawable.img_piggy_hello),
-                contentDescription = null,
-                modifier = Modifier.size(200.dp),
+                painter = painterResource(id = R.drawable.img_app_logo),
+                contentDescription = "Piggy Ledger Logo",
+                modifier = Modifier.size(200.dp).clip(RoundedCornerShape(32.dp)),
                 contentScale = ContentScale.Fit
             )
             
@@ -144,7 +194,7 @@ fun DashboardScreen(
                             color = NavyDark
                         )
                         
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
                         
                         Card(
                             modifier = Modifier.fillMaxWidth().clickable {
@@ -157,17 +207,24 @@ fun DashboardScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Email, contentDescription = null, tint = PurplePrimary)
+                                Image(
+                                    painter = painterResource(id = R.drawable.img_settings_feedback),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Text("Give Feedback", fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextLight)
                             }
                         }
                         
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         
                         Card(
                             modifier = Modifier.fillMaxWidth().clickable { 
@@ -180,104 +237,328 @@ fun DashboardScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Star, contentDescription = null, tint = PinkPrimary)
+                                Image(
+                                    painter = painterResource(id = R.drawable.img_settings_rate),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Text("Rate the App", fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextLight)
                             }
                         }
                         
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Card(
+                            modifier = Modifier.fillMaxWidth().clickable { 
+                                settingsMode = SettingsMode.BACKUP
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.img_settings_backup),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text("Backup Data", fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextLight)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Card(
+                            modifier = Modifier.fillMaxWidth().clickable { 
+                                settingsMode = SettingsMode.RESTORE
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.img_settings_restore),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text("Restore Data", fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextLight)
+                            }
+                        }
+
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                     SettingsMode.FEEDBACK -> {
-                        var username by remember { mutableStateOf("") }
-                        var email by remember { mutableStateOf("") }
                         var message by remember { mutableStateOf("") }
                         
-                        Text(
-                            "Give Feedback",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = NavyDark
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            IconButton(onClick = { settingsMode = SettingsMode.MAIN }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = NavyDark
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Give Feedback",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = NavyDark
+                            )
+                        }
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        OutlinedTextField(
-                            value = username,
-                            onValueChange = { username = it },
-                            label = { Text("Username") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(110.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.img_settings_feedback),
+                                contentDescription = "Feedback Illustration",
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(16.dp)),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
                         
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = { email = it },
-                            label = { Text("Email") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                        Text(
+                            text = "Help us improve Piggy Ledger! Write your suggestions, bugs, or feature ideas below.",
+                            fontSize = 14.sp,
+                            color = TextLight,
+                            lineHeight = 20.sp
                         )
                         
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                         
                         OutlinedTextField(
                             value = message,
                             onValueChange = { message = it },
-                            label = { Text("Message") },
-                            modifier = Modifier.fillMaxWidth().height(100.dp),
-                            shape = RoundedCornerShape(12.dp)
+                            placeholder = { Text("Write your thoughts here...", color = TextLight, fontSize = 14.sp) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PinkPrimary,
+                                unfocusedBorderColor = Color(0xFFE2E8F0),
+                                cursorColor = PinkPrimary,
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                            shape = RoundedCornerShape(16.dp)
                         )
                         
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
                         
                         Button(
                             onClick = {
                                 val intent = Intent(Intent.ACTION_SENDTO).apply {
                                     data = Uri.parse("mailto:albhyrytwamrwhy@gmail.com")
-                                    putExtra(Intent.EXTRA_SUBJECT, "Feedback from $username")
-                                    putExtra(Intent.EXTRA_TEXT, "Username: $username\nEmail: $email\n\nMessage:\n$message")
+                                    putExtra(Intent.EXTRA_SUBJECT, "Piggy Ledger Feedback")
+                                    putExtra(Intent.EXTRA_TEXT, message)
                                 }
                                 context.startActivity(Intent.createChooser(intent, "Send Feedback"))
                                 showSettings = false
                             },
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = NavyDark)
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PinkPrimary,
+                                contentColor = Color.White
+                            ),
+                            enabled = message.isNotBlank()
                         ) {
-                            Text("Send via Email", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text("Send Feedback", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                     SettingsMode.RATING -> {
                         var rating by remember { mutableIntStateOf(0) }
                         
-                        Text(
-                            "Rate the App",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = NavyDark
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            IconButton(onClick = { settingsMode = SettingsMode.MAIN }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = NavyDark
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Rate the App",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = NavyDark
+                            )
+                        }
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(110.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.img_settings_rate),
+                                contentDescription = "Rate Illustration",
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(16.dp)),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Text(
+                            text = "Enjoying Piggy Ledger? Tap the stars to rate your experience. Your support keeps us going!",
+                            fontSize = 14.sp,
+                            color = TextLight,
+                            lineHeight = 20.sp
+                        )
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             for (i in 1..5) {
-                                IconButton(onClick = { rating = i }) {
+                                IconButton(
+                                    onClick = { rating = i },
+                                    modifier = Modifier.size(56.dp)
+                                ) {
                                     Icon(
                                         imageVector = if (i <= rating) Icons.Default.Star else Icons.Outlined.Star,
                                         contentDescription = "Star $i",
-                                        tint = if (i <= rating) PinkPrimary else TextLight,
+                                        tint = if (i <= rating) PinkPrimary else Color(0xFFCBD5E1),
                                         modifier = Modifier.size(40.dp)
                                     )
                                 }
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(32.dp))
+                        
+                        Button(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                    data = Uri.parse("mailto:albhyrytwamrwhy@gmail.com")
+                                    putExtra(Intent.EXTRA_SUBJECT, "Piggy Ledger Rating")
+                                    putExtra(Intent.EXTRA_TEXT, "I rated Piggy Ledger $rating/5 stars!")
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Send Rating"))
+                                showSettings = false
+                            },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PinkPrimary,
+                                contentColor = Color.White
+                            ),
+                            enabled = rating > 0
+                        ) {
+                            Text("Send Rating", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    SettingsMode.BACKUP -> {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            IconButton(onClick = { settingsMode = SettingsMode.MAIN }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = NavyDark
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Backup Data",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = NavyDark
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(110.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.img_settings_backup),
+                                contentDescription = "Backup Illustration",
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(16.dp)),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(PinkPrimary.copy(alpha = 0.06f), RoundedCornerShape(16.dp))
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "Secure Local Export",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = NavyDark
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "Save your goals, logs, and ledger stats to a backup JSON file.",
+                                    fontSize = 13.sp,
+                                    color = TextLight,
+                                    lineHeight = 18.sp
+                                )
                             }
                         }
                         
@@ -285,26 +566,101 @@ fun DashboardScreen(
                         
                         Button(
                             onClick = {
-                                val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                    data = Uri.parse("mailto:albhyrytwamrwhy@gmail.com")
-                                    putExtra(Intent.EXTRA_SUBJECT, "Piggy Ledger Rating")
-                                    putExtra(Intent.EXTRA_TEXT, "I rated the app: $rating out of 5 stars!")
-                                }
-                                context.startActivity(Intent.createChooser(intent, "Send Rating"))
-                                showSettings = false
+                                createDocumentLauncher.launch("piggy_ledger_backup.json")
                             },
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = NavyDark),
-                            enabled = rating > 0
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PinkPrimary,
+                                contentColor = Color.White
+                            )
                         ) {
-                            Text("Send Rating via Email", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text("Create Backup File", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
                     }
-                }
+                    SettingsMode.RESTORE -> {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            IconButton(onClick = { settingsMode = SettingsMode.MAIN }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = NavyDark
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Restore Data",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = NavyDark
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(110.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.img_settings_restore),
+                                contentDescription = "Restore Illustration",
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(16.dp)),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(AccentBlue.copy(alpha = 0.06f), RoundedCornerShape(16.dp))
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "Import JSON Backup",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = NavyDark
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "Restoring data will replace your current local goals and logs.",
+                                    fontSize = 13.sp,
+                                    color = TextLight,
+                                    lineHeight = 18.sp
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        Button(
+                            onClick = {
+                                openDocumentLauncher.launch(arrayOf("application/json"))
+                            },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PinkPrimary,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("Select Backup File", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
             }
         }
     }
+}
 }
 
 @Composable

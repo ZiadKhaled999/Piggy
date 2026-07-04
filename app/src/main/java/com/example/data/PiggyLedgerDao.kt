@@ -38,4 +38,31 @@ interface PiggyLedgerDao {
 
     @Query("DELETE FROM loans WHERE id = :id")
     suspend fun deleteLoanById(id: String)
+
+    @Query("SELECT * FROM transactions")
+    suspend fun getAllTransactions(): List<Transaction>
+
+    @Query("SELECT * FROM goals")
+    suspend fun getAllGoalsSync(): List<Goal>
+
+    @Query("SELECT * FROM loans")
+    suspend fun getAllLoansSync(): List<Loan>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertGoals(goals: List<Goal>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTransactions(transactions: List<Transaction>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLoans(loans: List<Loan>)
+
+    @Query("DELETE FROM goals")
+    suspend fun clearGoals()
+
+    @Query("DELETE FROM transactions")
+    suspend fun clearTransactions()
+
+    @Query("DELETE FROM loans")
+    suspend fun clearLoans()
 }

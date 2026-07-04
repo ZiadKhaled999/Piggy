@@ -40,6 +40,7 @@ import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
 import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
 import com.patrykandpatrick.vico.compose.chart.Chart
 import com.patrykandpatrick.vico.compose.chart.column.columnChart
+import com.patrykandpatrick.vico.compose.chart.scroll.rememberChartScrollSpec
 import com.patrykandpatrick.vico.compose.component.lineComponent
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -140,13 +141,23 @@ fun GoalDetailScreen(
                 fontWeight = FontWeight.Bold,
                 color = NavyDark
             )
-            Text(
-                text = " / $${String.format("%.2f", goal.targetAmount)}",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextLight,
-                modifier = Modifier.padding(bottom = 6.dp)
-            )
+            if (goal.targetAmount > 0.0) {
+                Text(
+                    text = " / $${String.format("%.2f", goal.targetAmount)}",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextLight,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+            } else {
+                Text(
+                    text = " (Open Savings)",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextLight,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+            }
         }
         
         Spacer(modifier = Modifier.height(32.dp))
@@ -166,13 +177,14 @@ fun GoalDetailScreen(
                 ) {
                     Text("YOUR BUDGET", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                     
+                    val isCompleted = goal.targetAmount > 0.0 && savedAmount >= goal.targetAmount
                     Surface(
-                        color = androidx.compose.ui.graphics.Color(0xFFE0E7FF),
+                        color = if (isCompleted) androidx.compose.ui.graphics.Color(0xFFDCFCE7) else if (goal.targetAmount <= 0.0) androidx.compose.ui.graphics.Color(0xFFEFF6FF) else androidx.compose.ui.graphics.Color(0xFFE0E7FF),
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Text(
-                            "IN PROGRESS",
-                            color = androidx.compose.ui.graphics.Color(0xFF4338CA),
+                            text = if (isCompleted) "COMPLETED" else if (goal.targetAmount <= 0.0) "OPEN SAVINGS" else "IN PROGRESS",
+                            color = if (isCompleted) androidx.compose.ui.graphics.Color(0xFF15803D) else if (goal.targetAmount <= 0.0) androidx.compose.ui.graphics.Color(0xFF1D4ED8) else androidx.compose.ui.graphics.Color(0xFF4338CA),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -201,41 +213,47 @@ fun GoalDetailScreen(
                             Spacer(modifier = Modifier.width(16.dp))
                             Column {
                                 Text(goal.name, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                                Text("$${String.format("%.2f", savedAmount)} / $${String.format("%.2f", goal.targetAmount)}", color = TextLight, fontSize = 14.sp)
+                                if (goal.targetAmount > 0.0) {
+                                    Text("$${String.format("%.2f", savedAmount)} / $${String.format("%.2f", goal.targetAmount)}", color = TextLight, fontSize = 14.sp)
+                                } else {
+                                    Text("$${String.format("%.2f", savedAmount)} saved (Open Savings)", color = TextLight, fontSize = 14.sp)
+                                }
                             }
                         }
                         
-                        Spacer(modifier = Modifier.height(24.dp))
-                        
-                        LinearProgressIndicator(
-                            progress = { progress },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(8.dp)
-                                .clip(RoundedCornerShape(4.dp)),
-                            color = NavyDark,
-                            trackColor = TextLight.copy(alpha = 0.2f)
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("${(progress * 100).toInt()}%", color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            val remaining = goal.targetAmount - savedAmount
-                            val remainingText = if (remaining < 0) {
-                                "$${String.format("%.2f", -remaining)} extra"
-                            } else if (remaining == 0.0) {
-                                "Goal reached"
-                            } else {
-                                "$${String.format("%.2f", remaining)} left"
+                        if (goal.targetAmount > 0.0) {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                color = NavyDark,
+                                trackColor = Color(0xFFCBD5E1)
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("${(progress * 100).toInt()}%", color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                val remaining = goal.targetAmount - savedAmount
+                                val remainingText = if (remaining < 0) {
+                                    "$${String.format("%.2f", -remaining)} extra"
+                                } else if (remaining == 0.0) {
+                                    "Goal reached"
+                                } else {
+                                    "$${String.format("%.2f", remaining)} left"
+                                }
+                                Text(remainingText, color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
-                            Text(remainingText, color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                         
-                        if (savedAmount < goal.targetAmount) {
+                        if (goal.targetAmount <= 0.0 || savedAmount < goal.targetAmount) {
                             Spacer(modifier = Modifier.height(24.dp))
                             
                             Button(
@@ -330,7 +348,7 @@ fun GoalDetailScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.img_piggy_hello),
+                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.img_piggy_pool),
                     contentDescription = null,
                     modifier = Modifier.size(100.dp),
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit
@@ -586,10 +604,11 @@ fun ProgressContent(transactions: List<Transaction>, goal: com.example.data.Goal
                             columns = chartColors.map { color ->
                                 lineComponent(
                                     color = color,
-                                    thickness = 12.dp,
+                                    thickness = 28.dp,
                                     shape = Shapes.roundedCornerShape(allPercent = 40)
                                 )
-                            }
+                            },
+                            spacing = 16.dp
                         ),
                         chartModelProducer = barChartEntryModelProducer,
                         startAxis = null,
@@ -604,7 +623,9 @@ fun ProgressContent(transactions: List<Transaction>, goal: com.example.data.Goal
                                 days[value.toInt() % days.size]
                             },
                             guideline = null
-                        )
+                        ),
+                        isZoomEnabled = false,
+                        chartScrollSpec = rememberChartScrollSpec(isScrollEnabled = false)
                     )
                 } else {
                     PolarAreaChart(
@@ -791,6 +812,10 @@ fun TabButton(
             .fillMaxHeight()
             .clip(RoundedCornerShape(20.dp))
             .background(if (isSelected) MaterialTheme.colorScheme.surface else androidx.compose.ui.graphics.Color.Transparent)
+            .then(
+                if (isSelected) Modifier.border(2.dp, Color(0xFFCBD5E1), RoundedCornerShape(20.dp))
+                else Modifier
+            )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {

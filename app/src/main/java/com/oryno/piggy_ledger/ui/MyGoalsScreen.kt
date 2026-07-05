@@ -32,7 +32,7 @@ import com.oryno.piggy_ledger.data.Transaction
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.PurplePrimary
-import com.oryno.piggy_ledger.ui.theme.GreenAccent
+import com.oryno.piggy_ledger.ui.theme.PinkAccent
 import com.oryno.piggy_ledger.ui.theme.TextLight
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -157,7 +157,7 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit) {
                     Icon(
                         imageVector = Icons.Default.CheckCircle, 
                         contentDescription = "Completed",
-                        tint = GreenAccent,
+                        tint = PinkAccent,
                         modifier = Modifier.size(24.dp)
                     )
                 } else if (isOpenSavings) {
@@ -192,7 +192,7 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit) {
                         .fillMaxWidth()
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp)),
-                    color = if (isCompleted) GreenAccent else PinkPrimary,
+                    color = PinkAccent,
                     trackColor = PinkPrimary.copy(alpha = 0.1f)
                 )
             }
@@ -213,7 +213,7 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit) {
                 }
                 Text(
                     text = savedText,
-                    color = if (remaining < 0 && !isOpenSavings) GreenAccent else TextLight,
+                    color = if (remaining < 0 && !isOpenSavings) PinkAccent else TextLight,
                     fontWeight = FontWeight.Medium,
                     fontSize = 13.sp
                 )

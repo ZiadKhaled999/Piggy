@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
@@ -36,14 +37,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.oryno.piggy_ledger.data.Loan
 import com.oryno.piggy_ledger.data.LoanType
-import com.oryno.piggy_ledger.ui.theme.GreenAccent
+import com.oryno.piggy_ledger.ui.theme.PinkAccent
 import com.oryno.piggy_ledger.ui.theme.NavyDark
-import com.oryno.piggy_ledger.ui.theme.OrangeAccent
+import com.oryno.piggy_ledger.ui.theme.BlackAccent
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
 import java.util.UUID
@@ -97,70 +100,152 @@ fun LoansScreen(
         
         Spacer(modifier = Modifier.height(12.dp))
         
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFFF1F5F9),
-            shape = RoundedCornerShape(28.dp),
-            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Card(
-                    modifier = Modifier.weight(1f),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(24.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+            val isNarrow = maxWidth < 340.dp
+            
+            if (isNarrow) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = GreenAccent, modifier = Modifier.size(12.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("OWED TO ME", fontSize = 9.sp, fontWeight = FontWeight.Black, color = GreenAccent)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            shape = RoundedCornerShape(16.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = PinkAccent, modifier = Modifier.size(10.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text("OWED TO ME", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("$${String.format("%.0f", owedToMe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("$${String.format("%.0f", owedToMe)}", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                        
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            shape = RoundedCornerShape(16.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.AutoMirrored.Filled.TrendingDown, contentDescription = null, tint = BlackAccent, modifier = Modifier.size(10.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text("I OWE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("$${String.format("%.0f", iOwe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                    }
+                    
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("NET LEDGER", fontSize = 9.sp, fontWeight = FontWeight.Black, color = TextLight)
+                            Text(
+                                text = if (netLedger >= 0) "+$${String.format("%.0f", netLedger)}" else "-$${String.format("%.0f", -netLedger)}", 
+                                fontSize = 15.sp, 
+                                fontWeight = FontWeight.Bold, 
+                                color = if (netLedger >= 0) PinkAccent else BlackAccent,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
-                
-                Card(
-                    modifier = Modifier.weight(1f),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(24.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            } else {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color(0xFFF1F5F9),
+                    shape = RoundedCornerShape(28.dp),
                     border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.AutoMirrored.Filled.TrendingDown, contentDescription = null, tint = OrangeAccent, modifier = Modifier.size(12.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("I OWE", fontSize = 9.sp, fontWeight = FontWeight.Black, color = OrangeAccent)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            shape = RoundedCornerShape(24.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = PinkAccent, modifier = Modifier.size(10.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text("OWED TO ME", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("$${String.format("%.0f", owedToMe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("$${String.format("%.0f", iOwe)}", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                    }
-                }
-                
-                Card(
-                    modifier = Modifier.weight(1f),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(24.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("NET LEDGER", fontSize = 9.sp, fontWeight = FontWeight.Black, color = TextLight)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = if (netLedger >= 0) "+$${String.format("%.0f", netLedger)}" else "-$${String.format("%.0f", -netLedger)}", 
-                            fontSize = 22.sp, 
-                            fontWeight = FontWeight.Bold, 
-                            color = if (netLedger >= 0) GreenAccent else OrangeAccent
-                        )
+                        
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            shape = RoundedCornerShape(24.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.AutoMirrored.Filled.TrendingDown, contentDescription = null, tint = BlackAccent, modifier = Modifier.size(10.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text("I OWE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("$${String.format("%.0f", iOwe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                        
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            shape = RoundedCornerShape(24.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
+                                Text("NET LEDGER", fontSize = 8.sp, fontWeight = FontWeight.Black, color = TextLight, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = if (netLedger >= 0) "+$${String.format("%.0f", netLedger)}" else "-$${String.format("%.0f", -netLedger)}", 
+                                    fontSize = 16.sp, 
+                                    fontWeight = FontWeight.Bold, 
+                                    color = if (netLedger >= 0) PinkAccent else BlackAccent,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -270,62 +355,112 @@ fun LoansScreen(
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
                 items(filteredLoans) { loan ->
+                    val isPaidOff = loan.isPaidOff
+                    val containerColor = if (isPaidOff) Color(0xFFF1F5F9) else PinkPrimary.copy(alpha = 0.03f)
+                    val borderColor = if (isPaidOff) Color(0xFFCBD5E1) else PinkPrimary.copy(alpha = 0.15f)
+                    
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { selectedLoan = loan },
-                        colors = CardDefaults.cardColors(containerColor = PinkPrimary.copy(alpha = 0.03f)),
+                        colors = CardDefaults.cardColors(containerColor = containerColor),
                         shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.5.dp, PinkPrimary.copy(alpha = 0.15f))
+                        border = BorderStroke(1.5.dp, borderColor)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                                .padding(horizontal = 12.dp, vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            val iconTint = if (loan.type == LoanType.LENT) GreenAccent else OrangeAccent
-                            val bgTint = if (loan.type == LoanType.LENT) GreenAccent.copy(alpha = 0.1f) else OrangeAccent.copy(alpha = 0.1f)
+                            val iconTint = if (isPaidOff) Color(0xFF94A3B8) else (if (loan.type == LoanType.LENT) PinkAccent else BlackAccent)
+                            val bgTint = if (isPaidOff) Color(0xFFE2E8F0) else (if (loan.type == LoanType.LENT) PinkAccent.copy(alpha = 0.1f) else BlackAccent.copy(alpha = 0.1f))
                             val icon = if (loan.type == LoanType.LENT) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown
                             val prefix = if (loan.type == LoanType.LENT) "+" else "-"
                             val text = if (loan.type == LoanType.LENT) "OWED TO ME" else "I OWE"
-                            val textColor = if (loan.type == LoanType.LENT) GreenAccent else OrangeAccent
+                            val textColor = if (isPaidOff) Color(0xFF94A3B8) else (if (loan.type == LoanType.LENT) PinkAccent else BlackAccent)
                             
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Left side section (occupies flexible space)
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(40.dp)
+                                        .size(36.dp)
                                         .background(bgTint, RoundedCornerShape(8.dp)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(icon, contentDescription = null, tint = iconTint)
+                                    Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(18.dp))
                                 }
-                                Spacer(modifier = Modifier.width(16.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Column {
-                                    Text(loan.contactName, fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp)
+                                    Text(
+                                        text = loan.contactName, 
+                                        fontWeight = FontWeight.Bold, 
+                                        color = if (isPaidOff) Color(0xFF64748B) else NavyDark, 
+                                        fontSize = 15.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textDecoration = if (isPaidOff) TextDecoration.LineThrough else null
+                                    )
                                     val dateText = if (loan.deadline != null) {
                                         val sdf = java.text.SimpleDateFormat("MMM dd", java.util.Locale.getDefault())
                                         "Due ${sdf.format(java.util.Date(loan.deadline))}"
                                     } else {
                                         "Open-Ended"
                                     }
-                                    Text(dateText, color = TextLight, fontSize = 12.sp)
+                                    Text(
+                                        text = dateText, 
+                                        color = TextLight, 
+                                        fontSize = 11.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
                             }
                             
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            
+                            // Right side section (Amount & Details badge, fits compactly)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.End
+                            ) {
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("$prefix$$${String.format("%.2f", loan.amount)}", color = textColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                                    Text(text, color = textColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = "$prefix$$${String.format("%.2f", loan.amount)}", 
+                                        color = if (isPaidOff) Color(0xFF64748B) else textColor, 
+                                        fontWeight = FontWeight.Bold, 
+                                        fontSize = 15.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Clip,
+                                        textDecoration = if (isPaidOff) TextDecoration.LineThrough else null
+                                    )
+                                    Text(
+                                        text = text, 
+                                        color = textColor, 
+                                        fontSize = 9.sp, 
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Clip
+                                    )
                                 }
-                                Spacer(modifier = Modifier.width(16.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Surface(
                                     color = Color.White,
-                                    shape = RoundedCornerShape(16.dp),
-                                    border = BorderStroke(1.5.dp, PinkPrimary.copy(alpha = 0.15f))
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, if (isPaidOff) Color(0xFFCBD5E1) else PinkPrimary.copy(alpha = 0.15f))
                                 ) {
-                                    Text("DETAILS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = PinkPrimary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+                                    Text(
+                                        text = "DETAILS", 
+                                        fontSize = 9.sp, 
+                                        fontWeight = FontWeight.Black, 
+                                        color = if (isPaidOff) Color(0xFF94A3B8) else PinkPrimary, 
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Clip,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
                                 }
                             }
                         }
@@ -410,36 +545,118 @@ fun LoansScreen(
         
         ModalBottomSheet(
             onDismissRequest = { showAddDialog = false },
-            containerColor = MaterialTheme.colorScheme.background,
-            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+            containerColor = Color.White,
+            dragHandle = {
+                Box(
+                    modifier = Modifier
+                        .padding(vertical = 12.dp)
+                        .width(36.dp)
+                        .height(4.dp)
+                        .background(Color(0xFFE2E8F0), RoundedCornerShape(2.dp))
+                )
+            },
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 32.dp)
-                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Box(modifier = Modifier.width(32.dp).height(4.dp).background(Color(0xFFE5E7EB), RoundedCornerShape(2.dp)))
+                // Header Title Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "NEW LEDGER ENTRY",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Black,
+                        color = NavyDark,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = "Fill all details",
+                        fontSize = 11.sp,
+                        color = TextLight,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+
+                // Dynamic Hero Amount Box
+                val themeColor = if (isLent) PinkAccent else BlackAccent
+                val themeBg = if (isLent) PinkAccent.copy(alpha = 0.05f) else BlackAccent.copy(alpha = 0.05f)
                 
-                Text(
-                    "NEW LEDGER ENTRY",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = NavyDark,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = themeBg),
+                    shape = RoundedCornerShape(20.dp),
+                    border = BorderStroke(1.5.dp, themeColor.copy(alpha = 0.3f))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "TRANSACTION AMOUNT",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Black,
+                            color = themeColor,
+                            letterSpacing = 0.5.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "$",
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = themeColor,
+                                modifier = Modifier.padding(end = 6.dp)
+                            )
+                            BasicTextField(
+                                value = amountStr,
+                                onValueChange = { amountStr = it },
+                                textStyle = LocalTextStyle.current.copy(
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = NavyDark,
+                                    textAlign = TextAlign.Center
+                                ),
+                                singleLine = true,
+                                modifier = Modifier.widthIn(min = 120.dp),
+                                decorationBox = { innerTextField ->
+                                    Box(contentAlignment = Alignment.Center) {
+                                        if (amountStr.isEmpty()) {
+                                            Text(
+                                                text = "0.00",
+                                                fontSize = 32.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = Color(0xFFCBD5E1),
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                        innerTextField()
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Sleek Custom Toggle (Lent vs Borrowed)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
-                        .background(Color(0xFFF1F5F9), RoundedCornerShape(16.dp))
+                        .height(48.dp)
+                        .background(Color(0xFFF1F5F9), RoundedCornerShape(12.dp))
                         .padding(4.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -448,223 +665,250 @@ fun LoansScreen(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(10.dp))
                             .background(if (isLent) Color.White else Color.Transparent)
                             .border(
-                                if (isLent) BorderStroke(2.dp, PinkPrimary) else BorderStroke(0.dp, Color.Transparent),
-                                RoundedCornerShape(12.dp)
+                                if (isLent) BorderStroke(1.5.dp, PinkAccent) else BorderStroke(0.dp, Color.Transparent),
+                                RoundedCornerShape(10.dp)
                             )
                             .clickable { isLent = true },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            "I Lent Money", 
-                            fontWeight = if (isLent) FontWeight.Bold else FontWeight.Medium, 
-                            color = if (isLent) PinkPrimary else TextLight,
-                            fontSize = 14.sp
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                                contentDescription = null,
+                                tint = if (isLent) PinkAccent else TextLight,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "I Lent", 
+                                fontWeight = if (isLent) FontWeight.Bold else FontWeight.Medium, 
+                                color = if (isLent) PinkAccent else TextLight,
+                                fontSize = 13.sp
+                            )
+                        }
                     }
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(10.dp))
                             .background(if (!isLent) Color.White else Color.Transparent)
                             .border(
-                                if (!isLent) BorderStroke(2.dp, PinkPrimary) else BorderStroke(0.dp, Color.Transparent),
-                                RoundedCornerShape(12.dp)
+                                if (!isLent) BorderStroke(1.5.dp, BlackAccent) else BorderStroke(0.dp, Color.Transparent),
+                                RoundedCornerShape(10.dp)
                             )
                             .clickable { isLent = false },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            "I Borrowed Money", 
-                            fontWeight = if (!isLent) FontWeight.Bold else FontWeight.Medium, 
-                            color = if (!isLent) PinkPrimary else TextLight,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Button(
-                    onClick = {
-                        if (hasPermission) {
-                            contactPickerLauncher.launch(null)
-                        } else {
-                            permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PinkPrimary,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Icon(Icons.Default.Person, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Import from Contacts", fontWeight = FontWeight.Bold)
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("AMOUNT ($)", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextLight)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = amountStr,
-                            onValueChange = { amountStr = it },
-                            placeholder = { Text("$ 0.00") },
-                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.White,
-                                focusedContainerColor = Color.White,
-                                unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
-                                focusedBorderColor = PinkPrimary,
-                                focusedLabelColor = PinkPrimary,
-                                unfocusedLabelColor = TextLight,
-                                cursorColor = PinkPrimary
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.TrendingDown,
+                                contentDescription = null,
+                                tint = if (!isLent) BlackAccent else TextLight,
+                                modifier = Modifier.size(14.dp)
                             )
-                        )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "I Borrowed", 
+                                fontWeight = if (!isLent) FontWeight.Bold else FontWeight.Medium, 
+                                color = if (!isLent) BlackAccent else TextLight,
+                                fontSize = 13.sp
+                            )
+                        }
                     }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("CONTACT NAME", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextLight)
-                        Spacer(modifier = Modifier.height(4.dp))
+                }
+
+                // Section: Contact Details Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "CONTACT DETAILS",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Black,
+                            color = NavyDark,
+                            letterSpacing = 0.5.sp
+                        )
+                        
+                        // Contact Name with integrated Native Picker inside it
                         OutlinedTextField(
                             value = contactName,
                             onValueChange = { contactName = it },
+                            label = { Text("Contact Name") },
                             placeholder = { Text("e.g. Mike Smith") },
-                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
+                            trailingIcon = {
+                                IconButton(
+                                    onClick = {
+                                        if (hasPermission) {
+                                            contactPickerLauncher.launch(null)
+                                        } else {
+                                            permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = "Pick Contact",
+                                        tint = themeColor
+                                    )
+                                }
+                            },
+                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 14.sp),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 unfocusedContainerColor = Color.White,
                                 focusedContainerColor = Color.White,
-                                unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
-                                focusedBorderColor = PinkPrimary,
-                                focusedLabelColor = PinkPrimary,
+                                unfocusedBorderColor = Color(0xFFCBD5E1),
+                                focusedBorderColor = themeColor,
+                                focusedLabelColor = themeColor,
                                 unfocusedLabelColor = TextLight,
-                                cursorColor = PinkPrimary
+                                cursorColor = themeColor
                             )
                         )
+
+                        // Phone and Social (side-by-side or stacked cleanly)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = phoneNumber,
+                                onValueChange = { phoneNumber = it },
+                                label = { Text("Phone (Optional)") },
+                                placeholder = { Text("e.g. +1 555...") },
+                                textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.SemiBold, color = NavyDark, fontSize = 13.sp),
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedContainerColor = Color.White,
+                                    focusedContainerColor = Color.White,
+                                    unfocusedBorderColor = Color(0xFFCBD5E1),
+                                    focusedBorderColor = themeColor,
+                                    focusedLabelColor = themeColor,
+                                    unfocusedLabelColor = TextLight,
+                                    cursorColor = themeColor
+                                )
+                            )
+                            
+                            OutlinedTextField(
+                                value = socialDetails,
+                                onValueChange = { socialDetails = it },
+                                label = { Text("Social (Optional)") },
+                                placeholder = { Text("e.g. email / handle") },
+                                textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.SemiBold, color = NavyDark, fontSize = 13.sp),
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedContainerColor = Color.White,
+                                    focusedContainerColor = Color.White,
+                                    unfocusedBorderColor = Color(0xFFCBD5E1),
+                                    focusedBorderColor = themeColor,
+                                    focusedLabelColor = themeColor,
+                                    unfocusedLabelColor = TextLight,
+                                    cursorColor = themeColor
+                                )
+                            )
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("PHONE NUMBER (OPTIONAL)", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextLight)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = phoneNumber,
-                            onValueChange = { phoneNumber = it },
-                            placeholder = { Text("e.g. +1 555...") },
-                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.White,
-                                focusedContainerColor = Color.White,
-                                unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
-                                focusedBorderColor = PinkPrimary,
-                                focusedLabelColor = PinkPrimary,
-                                unfocusedLabelColor = TextLight,
-                                cursorColor = PinkPrimary
-                            )
-                        )
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("SOCIAL (OPTIONAL)", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextLight)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = socialDetails,
-                            onValueChange = { socialDetails = it },
-                            placeholder = { Text("e.g. email") },
-                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.White,
-                                focusedContainerColor = Color.White,
-                                unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
-                                focusedBorderColor = PinkPrimary,
-                                focusedLabelColor = PinkPrimary,
-                                unfocusedLabelColor = TextLight,
-                                cursorColor = PinkPrimary
-                            )
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("FLASHBACK NOTE (REQUIRED)", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextLight)
-                    Text("to recall exactly what occurred", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    placeholder = { Text("Explain exactly what happened, why the money changed hands, or what this is for...") },
-                    textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
-                    modifier = Modifier.fillMaxWidth().height(100.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedContainerColor = Color.White,
-                        focusedContainerColor = Color.White,
-                        unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
-                        focusedBorderColor = PinkPrimary,
-                        focusedLabelColor = PinkPrimary,
-                        unfocusedLabelColor = TextLight,
-                        cursorColor = PinkPrimary
-                    )
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                                Card(
-                    modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(12.dp),
+                // Section: Transaction Memo Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                    shape = RoundedCornerShape(16.dp),
                     border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Column {
-                            Text("Set a Deadline / Repayment Date?", fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 14.sp)
-                            val dateText = if (deadlineDate != null) {
-                                val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
-                                "Deadline: ${sdf.format(java.util.Date(deadlineDate!!))}"
-                            } else {
-                                "Alert alerts for upcoming due dates."
-                            }
-                            Text(dateText, color = TextLight, fontSize = 12.sp)
-                        }
-                        Checkbox(
-                            checked = deadlineDate != null,
-                            onCheckedChange = { 
-                                if (it) showDatePicker = true 
-                                else deadlineDate = null 
-                            },
-                            colors = CheckboxDefaults.colors(checkedColor = NavyDark, uncheckedColor = TextLight)
+                        Text(
+                            text = "TRANSACTION MEMO",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Black,
+                            color = NavyDark,
+                            letterSpacing = 0.5.sp
                         )
+                        
+                        OutlinedTextField(
+                            value = note,
+                            onValueChange = { note = it },
+                            label = { Text("Flashback Note (Required)") },
+                            placeholder = { Text("Why did the money change hands? Recall details easily later...") },
+                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium, color = NavyDark, fontSize = 14.sp),
+                            modifier = Modifier.fillMaxWidth().height(80.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = Color.White,
+                                focusedContainerColor = Color.White,
+                                unfocusedBorderColor = Color(0xFFCBD5E1),
+                                focusedBorderColor = themeColor,
+                                focusedLabelColor = themeColor,
+                                unfocusedLabelColor = TextLight,
+                                cursorColor = themeColor
+                            )
+                        )
+                        
+                        // Set Deadline Card inside section
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showDatePicker = true },
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Repayment Deadline?", fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 13.sp)
+                                    val dateText = if (deadlineDate != null) {
+                                        val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
+                                        "Due: ${sdf.format(java.util.Date(deadlineDate!!))}"
+                                    } else {
+                                        "No deadline set"
+                                    }
+                                    Text(dateText, color = TextLight, fontSize = 11.sp)
+                                }
+                                Checkbox(
+                                    checked = deadlineDate != null,
+                                    onCheckedChange = { 
+                                        if (it) showDatePicker = true 
+                                        else deadlineDate = null 
+                                    },
+                                    colors = CheckboxDefaults.colors(checkedColor = themeColor, uncheckedColor = TextLight)
+                                )
+                            }
+                        }
                     }
                 }
-                
+
                 if (showDatePicker) {
                     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = System.currentTimeMillis())
                     DatePickerDialog(
@@ -673,7 +917,7 @@ fun LoansScreen(
                             TextButton(onClick = {
                                 deadlineDate = datePickerState.selectedDateMillis
                                 showDatePicker = false
-                            }) { Text("OK", color = NavyDark) }
+                            }) { Text("Confirm", color = themeColor, fontWeight = FontWeight.Bold) }
                         },
                         dismissButton = {
                             TextButton(onClick = { showDatePicker = false }) { Text("Cancel", color = TextLight) }
@@ -682,9 +926,9 @@ fun LoansScreen(
                         DatePicker(state = datePickerState)
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Button(
                     onClick = {
                         val amount = amountStr.replace("$", "").trim().toDoubleOrNull()
@@ -695,7 +939,10 @@ fun LoansScreen(
                                     type = if (isLent) LoanType.LENT else LoanType.BORROWED,
                                     amount = amount,
                                     contactName = contactName,
-                                    note = note
+                                    phone = if (phoneNumber.isNotBlank()) phoneNumber else null,
+                                    social = if (socialDetails.isNotBlank()) socialDetails else null,
+                                    note = note,
+                                    deadline = deadlineDate
                                 )
                             )
                             showAddDialog = false
@@ -703,11 +950,12 @@ fun LoansScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = NavyDark)
+                        .height(52.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = themeColor),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                 ) {
-                    Text("RECORD ENTRY TO LEDGER", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("RECORD TO LEDGER", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp)
                 }
             }
         }
@@ -735,7 +983,7 @@ fun LoansScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 val typeText = if (selectedLoan!!.type == LoanType.LENT) "OWED TO ME" else "I OWE THIS"
-                val typeColor = if (selectedLoan!!.type == LoanType.LENT) GreenAccent else OrangeAccent
+                val typeColor = if (selectedLoan!!.type == LoanType.LENT) PinkAccent else BlackAccent
                 val prefix = if (selectedLoan!!.type == LoanType.LENT) "+" else "-"
                 
                 Surface(
@@ -793,7 +1041,7 @@ fun LoansScreen(
                         .fillMaxWidth()
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = if (selectedLoan!!.type == LoanType.LENT) GreenAccent else NavyDark)
+                    colors = ButtonDefaults.buttonColors(containerColor = if (selectedLoan!!.type == LoanType.LENT) PinkAccent else NavyDark)
                 ) {
                     Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))

@@ -38,7 +38,6 @@ import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
 import com.oryno.piggy_ledger.ui.theme.PurplePrimary
-import com.oryno.piggy_ledger.ui.theme.GreenAccent
 import com.oryno.piggy_ledger.ui.theme.AccentBlue
 
 enum class SettingsMode {

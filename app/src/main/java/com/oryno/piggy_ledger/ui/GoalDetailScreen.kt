@@ -32,7 +32,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import com.patrykandpatrick.vico.core.component.shape.Shapes
 import com.oryno.piggy_ledger.data.Transaction
 import kotlinx.coroutines.launch
-import com.oryno.piggy_ledger.ui.theme.GreenAccent
+import com.oryno.piggy_ledger.ui.theme.PinkAccent
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
@@ -129,7 +129,7 @@ fun GoalDetailScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "+$${String.format("%.2f", savedAmount - goal.targetAmount)} EXTRA",
-                    color = GreenAccent,
+                    color = PinkAccent,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -279,7 +279,7 @@ fun GoalDetailScreen(
                             
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = GreenAccent.copy(alpha = 0.2f)),
+                                colors = CardDefaults.cardColors(containerColor = PinkAccent.copy(alpha = 0.2f)),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Row(
@@ -287,9 +287,9 @@ fun GoalDetailScreen(
                                     horizontalArrangement = Arrangement.Center,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = GreenAccent)
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PinkAccent)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Goal Completed", color = GreenAccent, fontWeight = FontWeight.Bold)
+                                    Text("Goal Completed", color = PinkAccent, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -311,8 +311,7 @@ fun GoalDetailScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TabButton(text = "Overview", isSelected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
-                    TabButton(text = "Progress", isSelected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
-                    TabButton(text = "History", isSelected = selectedTab == 2, onClick = { selectedTab = 2 }, modifier = Modifier.weight(1f))
+                    TabButton(text = "History", isSelected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -327,9 +326,6 @@ fun GoalDetailScreen(
                         )
                     }
                     1 -> {
-                        ProgressContent(transactions = transactions, goal = goal)
-                    }
-                    2 -> {
                         TransactionsContent(transactions = transactions)
                     }
                 }
@@ -485,7 +481,7 @@ fun OverviewContent(
                 label = "EST. COMPLETION DATE", 
                 value = if (savedAmount >= goal.targetAmount) "Goal Reached!" else estCompletionDate, 
                 icon = Icons.Default.CheckCircle,
-                valueColor = if (savedAmount >= goal.targetAmount) GreenAccent else NavyDark
+                valueColor = if (savedAmount >= goal.targetAmount) PinkAccent else NavyDark
             )
         }
     }
@@ -787,10 +783,10 @@ fun TransactionsContent(transactions: List<Transaction>) {
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
-                                .background(GreenAccent.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
+                                .background(PinkAccent.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.CallMade, contentDescription = null, tint = GreenAccent, modifier = Modifier.size(20.dp))
+                            Icon(Icons.AutoMirrored.Filled.CallMade, contentDescription = null, tint = PinkAccent, modifier = Modifier.size(20.dp))
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
@@ -799,7 +795,7 @@ fun TransactionsContent(transactions: List<Transaction>) {
                             Text(txDate, color = TextLight, fontSize = 12.sp)
                         }
                     }
-                    Text("+$${String.format("%.2f", tx.amount)}", color = GreenAccent, fontWeight = FontWeight.Bold)
+                    Text("+$${String.format("%.2f", tx.amount)}", color = PinkAccent, fontWeight = FontWeight.Bold)
                 }
             }
         }

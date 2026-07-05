@@ -42,11 +42,7 @@ class MainActivity : ComponentActivity() {
         }
     }
     
-    val database = Room.databaseBuilder(
-        applicationContext,
-        PiggyLedgerDatabase::class.java,
-        "piggy_ledger_db"
-    ).build()
+    val database = PiggyLedgerDatabase.getInstance(applicationContext)
     
     val repository = PiggyLedgerRepository(database.piggyLedgerDao())
     val userPreferences = UserPreferences(applicationContext)

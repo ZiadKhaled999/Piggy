@@ -26,6 +26,49 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Piggy Ledger Summary Widget -->
+        <receiver
+            android:name=".widget.SummaryWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_summary" />
+        </receiver>
+
+        <!-- Piggy Ledger Streak Widget -->
+        <receiver
+            android:name=".widget.StreakWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_streak" />
+        </receiver>
+
+        <!-- Piggy Ledger Goals Widget -->
+        <receiver
+            android:name=".widget.GoalsWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.oryno.piggy_ledger.widget.ACTION_GOAL_CLICK" />
+                <action android:name="com.oryno.piggy_ledger.widget.ACTION_GOAL_BACK" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_goals" />
+        </receiver>
+
+        <service
+            android:name=".widget.GoalsWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
     </application>
 
 </manifest>

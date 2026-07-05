@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_goals_widget"
+    android:paddingLeft="14dp"
+    android:paddingRight="14dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
+
+    <!-- STATE 1: GOALS LIST -->
+    <LinearLayout
+        android:id="@+id/layout_goals_list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="visible">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="My Goals"
+                android:textColor="#9F1239"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+        </LinearLayout>
+
+        <!-- Dynamic List of Goals -->
+        <ListView
+            android:id="@+id/lv_goals"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:divider="@android:color/transparent"
+            android:dividerHeight="4dp"
+            android:scrollbars="none" />
+
+        <!-- Empty State View -->
+        <TextView
+            android:id="@+id/tv_empty_goals"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="No active goals yet!\nTap here to create one. 🚀"
+            android:textColor="#94A3B8"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- STATE 2: GOAL DETAIL -->
+    <LinearLayout
+        android:id="@+id/layout_goal_detail"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <!-- Top Row: Back button & Title -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <!-- Back Arrow Image Button or TextView Clickable -->
+            <LinearLayout
+                android:id="@+id/btn_back_to_list"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="4dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_arrow_back"
+                    android:contentDescription="Back" />
+            </LinearLayout>
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Goal Progress"
+                android:textColor="#94A3B8"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Goal Name Header -->
+        <TextView
+            android:id="@+id/tv_detail_goal_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Vacation Fund"
+            android:textColor="#0F172A"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Total Balance Info -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TOTAL BALANCE"
+            android:textColor="#64748B"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:id="@+id/tv_detail_saved_amount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="$0.00"
+                android:textColor="#0F172A"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_detail_goal_target"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" / $7946.00"
+                android:textColor="#64748B"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <!-- Beautiful Custom Progress Bar -->
+        <ProgressBar
+            android:id="@+id/pb_detail_progress"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="12dp"
+            android:max="100"
+            android:progress="45"
+            android:progressDrawable="@drawable/progress_bar_goals"
+            android:layout_marginBottom="12dp" />
+
+    </LinearLayout>
+
+</FrameLayout>

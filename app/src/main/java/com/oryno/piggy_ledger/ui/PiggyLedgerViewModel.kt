@@ -43,6 +43,9 @@ class PiggyLedgerViewModel(
             try {
                 val data = json.decodeFromString<BackupData>(jsonString)
                 repository.restoreBackup(data)
+                com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+                com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+                com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
                 onComplete()
             } catch (e: Exception) {
                 onError(e.message ?: "Unknown error during import")
@@ -99,6 +102,9 @@ class PiggyLedgerViewModel(
                     targetAmount = targetAmount
                 )
             )
+            com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
         }
     }
 
@@ -112,24 +118,39 @@ class PiggyLedgerViewModel(
                     note = note
                 )
             )
+            com.oryno.piggy_ledger.data.StreakManager.recordAction(context)
+            com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
         }
     }
 
     fun addLoan(loan: Loan) {
         viewModelScope.launch {
             repository.insertLoan(loan)
+            com.oryno.piggy_ledger.data.StreakManager.recordAction(context)
+            com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
         }
     }
 
     fun markLoanAsPaid(id: String) {
         viewModelScope.launch {
             repository.markLoanAsPaid(id)
+            com.oryno.piggy_ledger.data.StreakManager.recordAction(context)
+            com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
         }
     }
     
     fun deleteLoan(id: String) {
         viewModelScope.launch {
             repository.deleteLoan(id)
+            com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
         }
     }
 }

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_widget_card"
+    android:orientation="vertical"
+    android:paddingLeft="10dp"
+    android:paddingRight="10dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="6dp">
+
+    <!-- Main Row: The 3 metrics -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- Column 1: Owed to Me -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OWED TO ME"
+                android:textColor="@color/widget_text_muted"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_owed_to_me"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="$0"
+                android:textColor="@color/widget_green"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- Divider 1 -->
+        <FrameLayout
+            android:layout_width="1dp"
+            android:layout_height="28dp"
+            android:background="@color/widget_border_light"
+            android:layout_gravity="center_vertical" />
+
+        <!-- Column 2: I Owe -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="I OWE"
+                android:textColor="@color/widget_text_muted"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_i_owe"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="$0"
+                android:textColor="@color/widget_red"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- Divider 2 -->
+        <FrameLayout
+            android:layout_width="1dp"
+            android:layout_height="28dp"
+            android:background="@color/widget_border_light"
+            android:layout_gravity="center_vertical" />
+
+        <!-- Column 3: Net Ledger (pill highlight) -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.15"
+            android:background="@drawable/bg_widget_pill"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:paddingLeft="6dp"
+            android:paddingRight="6dp"
+            android:layout_marginStart="6dp">
+
+            <TextView
+                android:id="@+id/tv_net_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="NET LEDGER"
+                android:textColor="@color/widget_text_muted"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_net_ledger"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="$0"
+                android:textColor="@color/widget_text_dark"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+
+</LinearLayout>

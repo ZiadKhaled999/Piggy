@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_streak_widget"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:paddingLeft="16dp"
+    android:paddingRight="16dp"
+    android:paddingTop="20dp"
+    android:paddingBottom="0dp">
+
+    <!-- Streak Header: Flame/Fire Icon + Streak Count -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="4dp">
+
+        <!-- A clean, elegant flame icon matching the image color scheme -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔥"
+            android:textSize="26sp"
+            android:layout_marginEnd="6dp" />
+
+        <TextView
+            android:id="@+id/tv_streak_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="#000000"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium" />
+    </LinearLayout>
+
+    <!-- Message Underneath -->
+    <TextView
+        android:id="@+id/tv_streak_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Time to save!"
+        android:textColor="#000000"
+        android:textSize="15sp"
+        android:layout_marginBottom="12dp"
+        android:gravity="center"
+        android:maxLines="1"
+        android:fontFamily="sans-serif" />
+
+    <!-- Space Filler to push mascot down and match exact spacing -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.1" />
+
+    <!-- Cute Mascot matching the image, positioned exactly at the bottom -->
+    <ImageView
+        android:id="@+id/iv_streak_mascot"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1.2"
+        android:src="@drawable/img_streak_mascot_new"
+        android:scaleType="fitCenter"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="0dp"
+        android:contentDescription="Mascot" />
+
+</LinearLayout>

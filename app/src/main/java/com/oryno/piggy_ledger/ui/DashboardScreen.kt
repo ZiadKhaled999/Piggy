@@ -316,8 +316,6 @@ fun DashboardScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                     SettingsMode.FEEDBACK -> {
-                        var message by remember { mutableStateOf("") }
-                        
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
@@ -331,7 +329,7 @@ fun DashboardScreen(
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                "Give Feedback",
+                                "Community Feedback",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = NavyDark
@@ -356,42 +354,39 @@ fun DashboardScreen(
                         
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        Text(
-                            text = "Help us improve Piggy Ledger! Write your suggestions, bugs, or feature ideas below.",
-                            fontSize = 14.sp,
-                            color = TextLight,
-                            lineHeight = 20.sp
-                        )
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Join our Community Board",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = NavyDark
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Help us improve Piggy Ledger! Click below to visit our feature request board. There, you can suggest new features, report bugs, and upvote existing suggestions from other users.",
+                                    fontSize = 13.sp,
+                                    color = TextLight,
+                                    lineHeight = 18.sp
+                                )
+                            }
+                        }
                         
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        OutlinedTextField(
-                            value = message,
-                            onValueChange = { message = it },
-                            placeholder = { Text("Write your thoughts here...", color = TextLight, fontSize = 14.sp) },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = PinkPrimary,
-                                unfocusedBorderColor = Color(0xFFE2E8F0),
-                                cursorColor = PinkPrimary,
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp),
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                        
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
                         
                         Button(
                             onClick = {
-                                val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                    data = Uri.parse("mailto:albhyrytwamrwhy@gmail.com")
-                                    putExtra(Intent.EXTRA_SUBJECT, "Piggy Ledger Feedback")
-                                    putExtra(Intent.EXTRA_TEXT, message)
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://piggy-ledger.featureos.app"))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Could not open browser", Toast.LENGTH_SHORT).show()
                                 }
-                                context.startActivity(Intent.createChooser(intent, "Send Feedback"))
                                 showSettings = false
                             },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -399,10 +394,15 @@ fun DashboardScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = PinkPrimary,
                                 contentColor = Color.White
-                            ),
-                            enabled = message.isNotBlank()
+                            )
                         ) {
-                            Text("Send Feedback", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Icon(
+                                imageVector = Icons.Default.OpenInNew,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Open Feedback Board", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                     SettingsMode.RATING -> {
@@ -479,12 +479,17 @@ fun DashboardScreen(
                         
                         Button(
                             onClick = {
+                                val mailtoUrl = "mailto:albhyrytwamrwhy@gmail.com" +
+                                        "?subject=" + Uri.encode("Piggy Ledger Rating") +
+                                        "&body=" + Uri.encode("I rated Piggy Ledger $rating/5 stars!")
                                 val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                    data = Uri.parse("mailto:albhyrytwamrwhy@gmail.com")
-                                    putExtra(Intent.EXTRA_SUBJECT, "Piggy Ledger Rating")
-                                    putExtra(Intent.EXTRA_TEXT, "I rated Piggy Ledger $rating/5 stars!")
+                                    data = Uri.parse(mailtoUrl)
                                 }
-                                context.startActivity(Intent.createChooser(intent, "Send Rating"))
+                                try {
+                                    context.startActivity(Intent.createChooser(intent, "Send Rating"))
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "No email client found", Toast.LENGTH_SHORT).show()
+                                }
                                 showSettings = false
                             },
                             modifier = Modifier.fillMaxWidth().height(48.dp),

@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CallMade
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -383,6 +385,7 @@ fun GoalDetailScreen(
                     onValueChange = { amountStr = it },
                     label = { Text("DEPOSIT AMOUNT", fontWeight = FontWeight.Bold) },
                     placeholder = { Text("$ 0.00") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),

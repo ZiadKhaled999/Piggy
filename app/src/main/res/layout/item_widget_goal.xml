@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/item_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/bg_goal_item"
+    android:padding="10dp"
+    android:layout_marginTop="3dp"
+    android:layout_marginBottom="3dp"
+    android:layout_marginLeft="4dp"
+    android:layout_marginRight="4dp"
+    android:gravity="center_vertical">
+
+    <!-- Goal Icon/Bullet -->
+    <ImageView
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@mipmap/ic_launcher"
+        android:layout_marginEnd="8dp"
+        android:contentDescription="App Icon" />
+
+    <!-- Goal Details -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_weight="1">
+
+        <TextView
+            android:id="@+id/tv_goal_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="New Car"
+            android:textColor="#0F172A"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:maxLines="1" />
+
+        <TextView
+            android:id="@+id/tv_goal_target"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="/ $15,000"
+            android:textColor="#64748B"
+            android:textSize="10sp"
+            android:layout_marginTop="1dp" />
+    </LinearLayout>
+
+    <!-- Progress Info -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="end"
+        android:layout_marginStart="8dp">
+
+        <TextView
+            android:id="@+id/tv_goal_percentage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="45%"
+            android:textColor="#F43F5E"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_goal_saved"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="$6,750 saved"
+            android:textColor="#94A3B8"
+            android:textSize="9sp" />
+    </LinearLayout>
+
+</LinearLayout>

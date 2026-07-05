@@ -382,7 +382,11 @@ fun GoalDetailScreen(
                 
                 OutlinedTextField(
                     value = amountStr,
-                    onValueChange = { amountStr = it },
+                    onValueChange = { input ->
+                        if (input.all { it.isDigit() || it == '.' }) {
+                            amountStr = input
+                        }
+                    },
                     label = { Text("DEPOSIT AMOUNT", fontWeight = FontWeight.Bold) },
                     placeholder = { Text("$ 0.00") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

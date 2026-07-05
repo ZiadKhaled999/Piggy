@@ -48,5 +48,6 @@ enum class LoanType {
 data class BackupData(
     val goals: List<Goal>,
     val transactions: List<Transaction>,
-    val loans: List<Loan>
+    val loans: List<Loan>,
+    val streakDates: Set<String> = emptySet()
 )

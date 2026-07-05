@@ -618,20 +618,24 @@ fun LoansScreen(
                         ) {
                             Text(
                                 text = "$",
-                                fontSize = 28.sp,
+                                fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = themeColor,
                                 modifier = Modifier.padding(end = 6.dp)
                             )
                             BasicTextField(
                                 value = amountStr,
-                                onValueChange = { amountStr = it },
+                                onValueChange = { input ->
+                                    if (input.all { it.isDigit() || it == '.' }) {
+                                        amountStr = input
+                                    }
+                                },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 textStyle = LocalTextStyle.current.copy(
                                     fontSize = 32.sp,
                                     fontWeight = FontWeight.Black,
                                     color = NavyDark,
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Start
                                 ),
                                 singleLine = true,
                                 modifier = Modifier.widthIn(min = 120.dp),

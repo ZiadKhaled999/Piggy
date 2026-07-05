@@ -4,69 +4,138 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_streak_widget"
-    android:orientation="vertical"
-    android:gravity="center_horizontal"
-    android:paddingLeft="16dp"
-    android:paddingRight="16dp"
-    android:paddingTop="20dp"
-    android:paddingBottom="0dp">
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="8dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
 
-    <!-- Streak Header: Flame/Fire Icon + Streak Count -->
+    <!-- Mascot on the left, fits the height -->
+    <ImageView
+        android:id="@+id/iv_streak_mascot"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.8"
+        android:src="@drawable/img_streak_mascot_new"
+        android:scaleType="fitCenter"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:contentDescription="Mascot" />
+
+    <!-- Streak Info in the center -->
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="4dp">
+        android:layout_weight="1.8"
+        android:orientation="vertical"
+        android:gravity="start|center_vertical"
+        android:layout_marginStart="8dp">
 
-        <!-- A clean, elegant flame icon matching the image color scheme -->
         <TextView
+            android:id="@+id/tv_streak_message"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🔥"
-            android:textSize="26sp"
-            android:layout_marginEnd="6dp" />
+            android:text="Active streak"
+            android:textColor="#F43F5E"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium" />
 
         <TextView
             android:id="@+id/tv_streak_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="0"
-            android:textColor="#000000"
-            android:textSize="36sp"
+            android:text="0 days"
+            android:textColor="#374151"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:fontFamily="sans-serif-medium" />
+            android:fontFamily="sans-serif"
+            android:layout_marginBottom="6dp" />
+
+        <!-- Day Indicators Row -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_day_sun"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:background="@drawable/bg_streak_day_inactive"
+                android:text="S"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:gravity="center"
+                android:layout_marginEnd="4dp" />
+
+            <TextView
+                android:id="@+id/tv_day_mon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:background="@drawable/bg_streak_day_inactive"
+                android:text="M"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:gravity="center"
+                android:layout_marginEnd="4dp" />
+
+            <TextView
+                android:id="@+id/tv_day_tue"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:background="@drawable/bg_streak_day_inactive"
+                android:text="T"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:gravity="center"
+                android:layout_marginEnd="4dp" />
+
+            <TextView
+                android:id="@+id/tv_day_wed"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:background="@drawable/bg_streak_day_inactive"
+                android:text="W"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:gravity="center"
+                android:layout_marginEnd="4dp" />
+
+            <TextView
+                android:id="@+id/tv_day_thu"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:background="@drawable/bg_streak_day_inactive"
+                android:text="T"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:gravity="center"
+                android:layout_marginEnd="4dp" />
+
+            <TextView
+                android:id="@+id/tv_day_fri"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:background="@drawable/bg_streak_day_inactive"
+                android:text="F"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:gravity="center"
+                android:layout_marginEnd="4dp" />
+
+            <TextView
+                android:id="@+id/tv_day_sat"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:background="@drawable/bg_streak_day_inactive"
+                android:text="S"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:gravity="center" />
+        </LinearLayout>
     </LinearLayout>
-
-    <!-- Message Underneath -->
-    <TextView
-        android:id="@+id/tv_streak_message"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Time to save!"
-        android:textColor="#000000"
-        android:textSize="15sp"
-        android:layout_marginBottom="12dp"
-        android:gravity="center"
-        android:maxLines="1"
-        android:fontFamily="sans-serif" />
-
-    <!-- Space Filler to push mascot down and match exact spacing -->
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="0.1" />
-
-    <!-- Cute Mascot matching the image, positioned exactly at the bottom -->
-    <ImageView
-        android:id="@+id/iv_streak_mascot"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1.2"
-        android:src="@drawable/img_streak_mascot_new"
-        android:scaleType="fitCenter"
-        android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="0dp"
-        android:contentDescription="Mascot" />
 
 </LinearLayout>

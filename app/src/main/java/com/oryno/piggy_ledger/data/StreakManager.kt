@@ -69,4 +69,16 @@ object StreakManager {
         val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         return dates.contains(todayStr)
     }
+
+    fun getActionDates(context: Context): Set<String> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getStringSet(KEY_ACTION_DATES, emptySet()) ?: emptySet()
+    }
+
+    fun setActionDates(context: Context, dates: Set<String>) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putStringSet(KEY_ACTION_DATES, dates).apply()
+        com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+        com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+    }
 }

@@ -22,11 +22,12 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao) {
     }
     suspend fun deleteLoan(id: String) = dao.deleteLoanById(id)
 
-    suspend fun getFullBackup(): BackupData {
+    suspend fun getFullBackup(streakDates: Set<String>): BackupData {
         return BackupData(
             goals = dao.getAllGoalsSync(),
             transactions = dao.getAllTransactions(),
-            loans = dao.getAllLoansSync()
+            loans = dao.getAllLoansSync(),
+            streakDates = streakDates
         )
     }
 

@@ -32,7 +32,8 @@ class PiggyLedgerViewModel(
 
     fun exportData(onResult: (String) -> Unit) {
         viewModelScope.launch {
-            val backup = repository.getFullBackup()
+            val streakDates = com.oryno.piggy_ledger.data.StreakManager.getActionDates(context)
+            val backup = repository.getFullBackup(streakDates)
             val jsonString = json.encodeToString(backup)
             onResult(jsonString)
         }
@@ -43,6 +44,7 @@ class PiggyLedgerViewModel(
             try {
                 val data = json.decodeFromString<BackupData>(jsonString)
                 repository.restoreBackup(data)
+                com.oryno.piggy_ledger.data.StreakManager.setActionDates(context, data.streakDates)
                 com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
                 com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
                 com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)

@@ -10,6 +10,10 @@ import android.widget.RemoteViews
 import com.oryno.piggy_ledger.MainActivity
 import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.data.StreakManager
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class StreakWidgetProvider : AppWidgetProvider() {
 
@@ -23,17 +27,55 @@ class StreakWidgetProvider : AppWidgetProvider() {
 
         // Determine message
         val message = when {
-            hasActionToday -> "Active Streak! 🎉"
-            streak > 0 -> "Keep it going! 🔥"
-            else -> "Time to save!"
+            hasActionToday -> "Active streak"
+            streak > 0 -> "Keep it up"
+            else -> "Start saving"
         }
 
         for (appWidgetId in appWidgetIds) {
             val views = RemoteViews(context.packageName, R.layout.widget_streak)
 
             // Update text
-            views.setTextViewText(R.id.tv_streak_count, streak.toString())
+            views.setTextViewText(R.id.tv_streak_count, "$streak days")
             views.setTextViewText(R.id.tv_streak_message, message)
+
+            // Update Weekday Indicators
+            val activeDates = StreakManager.getActionDates(context)
+            val calendar = Calendar.getInstance()
+            // Go to start of current week (Sunday)
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+            while (calendar.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
+                calendar.add(Calendar.DAY_OF_YEAR, -1)
+            }
+
+            val dayIds = arrayOf(
+                R.id.tv_day_sun, R.id.tv_day_mon, R.id.tv_day_tue,
+                R.id.tv_day_wed, R.id.tv_day_thu, R.id.tv_day_fri, R.id.tv_day_sat
+            )
+
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            val todayDateStr = sdf.format(Date())
+            val todayCalendar = Calendar.getInstance()
+            
+            for (i in 0 until 7) {
+                val dateStr = sdf.format(calendar.time)
+                val isActive = activeDates.contains(dateStr)
+                val isPast = calendar.before(todayCalendar) && dateStr != todayDateStr
+                
+                val (bgRes, textColor) = when {
+                    isActive -> R.drawable.bg_streak_day_active to 0xFFFFFFFF.toInt()
+                    isPast -> R.drawable.bg_streak_day_missed to 0xFFFFFFFF.toInt()
+                    else -> R.drawable.bg_streak_day_inactive to 0xFF9CA3AF.toInt()
+                }
+
+                views.setInt(dayIds[i], "setBackgroundResource", bgRes)
+                views.setTextColor(dayIds[i], textColor)
+                
+                calendar.add(Calendar.DAY_OF_YEAR, 1)
+            }
 
             // Intent to launch MainActivity when clicking the widget
             val intent = Intent(context, MainActivity::class.java).apply {

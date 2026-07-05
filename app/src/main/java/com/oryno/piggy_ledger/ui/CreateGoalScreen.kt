@@ -185,7 +185,11 @@ fun CreateGoalScreen(
         if (!isOpenedBalance) {
             OutlinedTextField(
                 value = targetAmount,
-                onValueChange = { targetAmount = it },
+                onValueChange = { input ->
+                    if (input.all { it.isDigit() || it == '.' }) {
+                        targetAmount = input
+                    }
+                },
                 label = { Text("HOW MUCH DO YOU NEED? ($)", fontWeight = FontWeight.Bold) },
                 placeholder = { Text("0.00") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

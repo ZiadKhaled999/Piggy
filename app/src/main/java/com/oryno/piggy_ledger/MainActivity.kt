@@ -1,4 +1,4 @@
-package com.example
+package com.oryno.piggy_ledger
 
 import android.os.Bundle
 import android.Manifest
@@ -17,12 +17,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.room.Room
-import com.example.data.PiggyLedgerDatabase
-import com.example.data.PiggyLedgerRepository
-import com.example.data.UserPreferences
-import com.example.ui.PiggyLedgerApp
-import com.example.ui.ViewModelFactory
-import com.example.ui.theme.PiggyLedgerTheme
+import com.oryno.piggy_ledger.data.PiggyLedgerDatabase
+import com.oryno.piggy_ledger.data.PiggyLedgerRepository
+import com.oryno.piggy_ledger.data.UserPreferences
+import com.oryno.piggy_ledger.ui.PiggyLedgerApp
+import com.oryno.piggy_ledger.ui.ViewModelFactory
+import com.oryno.piggy_ledger.ui.theme.PiggyLedgerTheme
 
 class MainActivity : ComponentActivity() {
 

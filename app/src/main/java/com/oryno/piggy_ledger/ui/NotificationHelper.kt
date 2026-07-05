@@ -1,11 +1,11 @@
-package com.example.ui
+package com.oryno.piggy_ledger.ui
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import com.example.R
+import com.oryno.piggy_ledger.R
 
 class NotificationHelper(private val context: Context) {
 

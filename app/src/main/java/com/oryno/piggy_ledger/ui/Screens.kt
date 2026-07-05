@@ -1,4 +1,4 @@
-package com.example.ui
+package com.oryno.piggy_ledger.ui
 
 import kotlinx.serialization.Serializable
 

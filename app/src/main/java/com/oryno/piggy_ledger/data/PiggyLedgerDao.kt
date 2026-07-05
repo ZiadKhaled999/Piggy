@@ -1,4 +1,4 @@
-package com.example.data
+package com.oryno.piggy_ledger.data
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -20,6 +20,9 @@ interface PiggyLedgerDao {
 
     @Query("SELECT * FROM transactions WHERE goalId = :goalId ORDER BY timestamp DESC")
     fun getTransactionsForGoal(goalId: String): Flow<List<Transaction>>
+
+    @Query("SELECT * FROM transactions ORDER BY timestamp DESC")
+    fun getAllTransactionsFlow(): Flow<List<Transaction>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: Transaction)

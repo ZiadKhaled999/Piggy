@@ -1,4 +1,4 @@
-package com.example.ui.theme
+package com.oryno.piggy_ledger.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -14,3 +14,4 @@ val AccentBlue = Color(0xFF3B82F6) // A cleaner blue to replace the heavy purple
 val GreenAccent = Color(0xFF10B981)
 val OrangeAccent = Color(0xFFF59E0B)
 val PurplePrimary = Color(0xFF818CF8) // Softened purple for minor accents, not heavy surfaces
+val IndigoPrimary = Color(0xFF6366F1)

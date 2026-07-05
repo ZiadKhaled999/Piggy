@@ -1,4 +1,4 @@
-package com.example.ui
+package com.oryno.piggy_ledger.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -39,13 +39,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import com.example.data.Loan
-import com.example.data.LoanType
-import com.example.ui.theme.GreenAccent
-import com.example.ui.theme.NavyDark
-import com.example.ui.theme.OrangeAccent
-import com.example.ui.theme.PurplePrimary
-import com.example.ui.theme.TextLight
+import com.oryno.piggy_ledger.data.Loan
+import com.oryno.piggy_ledger.data.LoanType
+import com.oryno.piggy_ledger.ui.theme.GreenAccent
+import com.oryno.piggy_ledger.ui.theme.NavyDark
+import com.oryno.piggy_ledger.ui.theme.OrangeAccent
+import com.oryno.piggy_ledger.ui.theme.PinkPrimary
+import com.oryno.piggy_ledger.ui.theme.TextLight
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,9 +99,9 @@ fun LoansScreen(
         
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFFF8FAFC),
+            color = Color(0xFFF1F5F9),
             shape = RoundedCornerShape(28.dp),
-            border = BorderStroke(3.dp, Color(0xFFCBD5E1))
+            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
         ) {
             Row(
                 modifier = Modifier
@@ -114,7 +114,7 @@ fun LoansScreen(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(24.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = BorderStroke(3.dp, Color(0xFFCBD5E1))
+                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -132,7 +132,7 @@ fun LoansScreen(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(24.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = BorderStroke(3.dp, Color(0xFFCBD5E1))
+                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -150,7 +150,7 @@ fun LoansScreen(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(24.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = BorderStroke(3.dp, Color(0xFFCBD5E1))
+                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("NET LEDGER", fontSize = 9.sp, fontWeight = FontWeight.Black, color = TextLight)
@@ -194,7 +194,7 @@ fun LoansScreen(
             Button(
                 onClick = { showAddDialog = true },
                 modifier = Modifier.height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)),
+                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
                 shape = RoundedCornerShape(16.dp),
                 contentPadding = PaddingValues(horizontal = 20.dp)
             ) {
@@ -238,9 +238,9 @@ fun LoansScreen(
                     .fillMaxWidth()
                     .weight(1f)
                     .padding(bottom = 24.dp),
-                color = Color.White,
+                color = Color(0xFFF8FAFC),
                 shape = RoundedCornerShape(32.dp),
-                border = BorderStroke(1.dp, Color(0xFFF1F5F9).copy(alpha = 0.5f))
+                border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
             ) {
                 Column(
                     modifier = Modifier
@@ -274,9 +274,9 @@ fun LoansScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { selectedLoan = loan },
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = PinkPrimary.copy(alpha = 0.03f)),
                         shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+                        border = BorderStroke(1.5.dp, PinkPrimary.copy(alpha = 0.15f))
                     ) {
                         Row(
                             modifier = Modifier
@@ -321,11 +321,11 @@ fun LoansScreen(
                                 }
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Surface(
-                                    color = MaterialTheme.colorScheme.background,
+                                    color = Color.White,
                                     shape = RoundedCornerShape(16.dp),
-                                    border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+                                    border = BorderStroke(1.5.dp, PinkPrimary.copy(alpha = 0.15f))
                                 ) {
-                                    Text("DETAILS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = NavyDark, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+                                    Text("DETAILS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = PinkPrimary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
                                 }
                             }
                         }
@@ -451,7 +451,7 @@ fun LoansScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (isLent) Color.White else Color.Transparent)
                             .border(
-                                if (isLent) BorderStroke(2.dp, Color(0xFF2563EB)) else BorderStroke(0.dp, Color.Transparent),
+                                if (isLent) BorderStroke(2.dp, PinkPrimary) else BorderStroke(0.dp, Color.Transparent),
                                 RoundedCornerShape(12.dp)
                             )
                             .clickable { isLent = true },
@@ -460,7 +460,7 @@ fun LoansScreen(
                         Text(
                             "I Lent Money", 
                             fontWeight = if (isLent) FontWeight.Bold else FontWeight.Medium, 
-                            color = if (isLent) Color(0xFF2563EB) else TextLight,
+                            color = if (isLent) PinkPrimary else TextLight,
                             fontSize = 14.sp
                         )
                     }
@@ -471,7 +471,7 @@ fun LoansScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (!isLent) Color.White else Color.Transparent)
                             .border(
-                                if (!isLent) BorderStroke(2.dp, Color(0xFF2563EB)) else BorderStroke(0.dp, Color.Transparent),
+                                if (!isLent) BorderStroke(2.dp, PinkPrimary) else BorderStroke(0.dp, Color.Transparent),
                                 RoundedCornerShape(12.dp)
                             )
                             .clickable { isLent = false },
@@ -480,7 +480,7 @@ fun LoansScreen(
                         Text(
                             "I Borrowed Money", 
                             fontWeight = if (!isLent) FontWeight.Bold else FontWeight.Medium, 
-                            color = if (!isLent) Color(0xFF2563EB) else TextLight,
+                            color = if (!isLent) PinkPrimary else TextLight,
                             fontSize = 14.sp
                         )
                     }
@@ -499,7 +499,7 @@ fun LoansScreen(
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2563EB),
+                        containerColor = PinkPrimary,
                         contentColor = Color.White
                     )
                 ) {
@@ -518,14 +518,18 @@ fun LoansScreen(
                             value = amountStr,
                             onValueChange = { amountStr = it },
                             placeholder = { Text("$ 0.00") },
+                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 unfocusedContainerColor = Color.White,
                                 focusedContainerColor = Color.White,
-                                unfocusedBorderColor = Color(0xFFF1F5F9),
-                                focusedBorderColor = NavyDark
+                                unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
+                                focusedBorderColor = PinkPrimary,
+                                focusedLabelColor = PinkPrimary,
+                                unfocusedLabelColor = TextLight,
+                                cursorColor = PinkPrimary
                             )
                         )
                     }
@@ -536,14 +540,18 @@ fun LoansScreen(
                             value = contactName,
                             onValueChange = { contactName = it },
                             placeholder = { Text("e.g. Mike Smith") },
+                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 unfocusedContainerColor = Color.White,
                                 focusedContainerColor = Color.White,
-                                unfocusedBorderColor = Color(0xFFE2E8F0),
-                                focusedBorderColor = NavyDark
+                                unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
+                                focusedBorderColor = PinkPrimary,
+                                focusedLabelColor = PinkPrimary,
+                                unfocusedLabelColor = TextLight,
+                                cursorColor = PinkPrimary
                             )
                         )
                     }
@@ -559,14 +567,18 @@ fun LoansScreen(
                             value = phoneNumber,
                             onValueChange = { phoneNumber = it },
                             placeholder = { Text("e.g. +1 555...") },
+                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 unfocusedContainerColor = Color.White,
                                 focusedContainerColor = Color.White,
-                                unfocusedBorderColor = Color(0xFFE2E8F0),
-                                focusedBorderColor = NavyDark
+                                unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
+                                focusedBorderColor = PinkPrimary,
+                                focusedLabelColor = PinkPrimary,
+                                unfocusedLabelColor = TextLight,
+                                cursorColor = PinkPrimary
                             )
                         )
                     }
@@ -577,14 +589,18 @@ fun LoansScreen(
                             value = socialDetails,
                             onValueChange = { socialDetails = it },
                             placeholder = { Text("e.g. email") },
+                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 unfocusedContainerColor = Color.White,
                                 focusedContainerColor = Color.White,
-                                unfocusedBorderColor = Color(0xFFE2E8F0),
-                                focusedBorderColor = NavyDark
+                                unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
+                                focusedBorderColor = PinkPrimary,
+                                focusedLabelColor = PinkPrimary,
+                                unfocusedLabelColor = TextLight,
+                                cursorColor = PinkPrimary
                             )
                         )
                     }
@@ -601,13 +617,17 @@ fun LoansScreen(
                     value = note,
                     onValueChange = { note = it },
                     placeholder = { Text("Explain exactly what happened, why the money changed hands, or what this is for...") },
+                    textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
                     modifier = Modifier.fillMaxWidth().height(100.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = Color.White,
                         focusedContainerColor = Color.White,
-                        unfocusedBorderColor = Color(0xFFE2E8F0),
-                        focusedBorderColor = NavyDark
+                        unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
+                        focusedBorderColor = PinkPrimary,
+                        focusedLabelColor = PinkPrimary,
+                        unfocusedLabelColor = TextLight,
+                        cursorColor = PinkPrimary
                     )
                 )
                 

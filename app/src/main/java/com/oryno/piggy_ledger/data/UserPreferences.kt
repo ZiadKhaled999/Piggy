@@ -1,4 +1,4 @@
-package com.example.data
+package com.oryno.piggy_ledger.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey

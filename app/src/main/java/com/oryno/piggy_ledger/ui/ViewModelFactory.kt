@@ -1,9 +1,9 @@
-package com.example.ui
+package com.oryno.piggy_ledger.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.data.PiggyLedgerRepository
-import com.example.data.UserPreferences
+import com.oryno.piggy_ledger.data.PiggyLedgerRepository
+import com.oryno.piggy_ledger.data.UserPreferences
 
 import android.content.Context
 

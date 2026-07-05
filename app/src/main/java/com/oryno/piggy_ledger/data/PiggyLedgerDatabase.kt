@@ -1,4 +1,4 @@
-package com.example.data
+package com.oryno.piggy_ledger.data
 
 import androidx.room.Database
 import androidx.room.RoomDatabase

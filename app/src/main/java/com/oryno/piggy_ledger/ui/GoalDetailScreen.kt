@@ -1,4 +1,4 @@
-package com.example.ui
+package com.oryno.piggy_ledger.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,23 +30,26 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import com.patrykandpatrick.vico.core.component.shape.Shapes
-import com.example.data.Transaction
+import com.oryno.piggy_ledger.data.Transaction
 import kotlinx.coroutines.launch
-import com.example.ui.theme.GreenAccent
-import com.example.ui.theme.NavyDark
-import com.example.ui.theme.PinkPrimary
-import com.example.ui.theme.TextLight
+import com.oryno.piggy_ledger.ui.theme.GreenAccent
+import com.oryno.piggy_ledger.ui.theme.NavyDark
+import com.oryno.piggy_ledger.ui.theme.PinkPrimary
+import com.oryno.piggy_ledger.ui.theme.TextLight
 import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
 import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
 import com.patrykandpatrick.vico.compose.chart.Chart
 import com.patrykandpatrick.vico.compose.chart.column.columnChart
 import com.patrykandpatrick.vico.compose.chart.scroll.rememberChartScrollSpec
 import com.patrykandpatrick.vico.compose.component.lineComponent
+import com.patrykandpatrick.vico.compose.component.textComponent
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.PI
+import com.patrykandpatrick.vico.core.formatter.ValueFormatter
+import com.patrykandpatrick.vico.core.chart.values.ChartValues
 import com.patrykandpatrick.vico.core.axis.AxisPosition
 import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
 import com.patrykandpatrick.vico.core.chart.draw.ChartDrawContext
@@ -69,7 +72,10 @@ fun GoalDetailScreen(
 ) {
     val goals by viewModel.goals.collectAsState()
     val goal = goals.find { it.id == goalId }
-    val transactions by viewModel.getTransactionsForGoal(goalId).collectAsState()
+    val allTransactions by viewModel.allTransactions.collectAsState()
+    val transactions = remember(allTransactions, goalId) {
+        allTransactions.filter { it.goalId == goalId }
+    }
     
     var showDepositDialog by remember { mutableStateOf(false) }
     
@@ -262,7 +268,7 @@ fun GoalDetailScreen(
                                     .fillMaxWidth()
                                     .height(48.dp),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = NavyDark)
+                                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -348,7 +354,7 @@ fun GoalDetailScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.img_piggy_pool),
+                    painter = androidx.compose.ui.res.painterResource(id = com.oryno.piggy_ledger.R.drawable.img_piggy_pool),
                     contentDescription = null,
                     modifier = Modifier.size(100.dp),
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit
@@ -379,13 +385,19 @@ fun GoalDetailScreen(
                 OutlinedTextField(
                     value = amountStr,
                     onValueChange = { amountStr = it },
-                    label = { Text("DEPOSIT AMOUNT") },
+                    label = { Text("DEPOSIT AMOUNT", fontWeight = FontWeight.Bold) },
                     placeholder = { Text("$ 0.00") },
+                    textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = androidx.compose.ui.graphics.Color(0xFFE2E8F0),
-                        focusedBorderColor = NavyDark
+                        unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
+                        focusedBorderColor = PinkPrimary,
+                        focusedLabelColor = PinkPrimary,
+                        unfocusedLabelColor = TextLight,
+                        cursorColor = PinkPrimary,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
                     )
                 )
                 
@@ -394,13 +406,19 @@ fun GoalDetailScreen(
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text("NOTE (REQUIRED)") },
+                    label = { Text("NOTE (REQUIRED)", fontWeight = FontWeight.Bold) },
                     placeholder = { Text("e.g. Monthly contribution") },
+                    textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = androidx.compose.ui.graphics.Color(0xFFE2E8F0),
-                        focusedBorderColor = NavyDark
+                        unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
+                        focusedBorderColor = PinkPrimary,
+                        focusedLabelColor = PinkPrimary,
+                        unfocusedLabelColor = TextLight,
+                        cursorColor = PinkPrimary,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
                     )
                 )
                 
@@ -418,7 +436,7 @@ fun GoalDetailScreen(
                         .fillMaxWidth()
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = NavyDark)
+                    colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
                 ) {
                     Text("Confirm Deposit", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
@@ -429,7 +447,7 @@ fun GoalDetailScreen(
 
 @Composable
 fun OverviewContent(
-    goal: com.example.data.Goal,
+    goal: com.oryno.piggy_ledger.data.Goal,
     savedAmount: Double,
     transactions: List<Transaction>,
     establishedDate: String
@@ -508,7 +526,7 @@ fun MetadataCard(
 }
 
 @Composable
-fun ProgressContent(transactions: List<Transaction>, goal: com.example.data.Goal) {
+fun ProgressContent(transactions: List<Transaction>, goal: com.oryno.piggy_ledger.data.Goal) {
     if (transactions.isEmpty()) {
         EmptyState(message = "Start saving to see your progress chart!")
         return
@@ -527,20 +545,17 @@ fun ProgressContent(transactions: List<Transaction>, goal: com.example.data.Goal
 
     val totalSaved = transactions.sumOf { it.amount }
 
-    val dailyData = remember(transactions) {
-        val calendar = Calendar.getInstance()
-        val dayOfWeekSums = DoubleArray(7) { 0.0 }
-        transactions.forEach {
-            calendar.timeInMillis = it.timestamp
-            val day = calendar.get(Calendar.DAY_OF_WEEK) // 1 (Sun) to 7 (Sat)
-            dayOfWeekSums[day - 1] += it.amount
-        }
-        dayOfWeekSums.toList()
+    val depositData = remember(transactions) {
+        transactions.map { it.amount }
+    }
+    
+    val maxDeposit = remember(depositData) {
+        depositData.maxOrNull()?.toFloat() ?: 0f
     }
 
-    val barChartEntryModelProducer = remember(dailyData) {
-        // Create 7 series, each containing one day's data, to allow individual coloring
-        val entries = dailyData.mapIndexed { index, value ->
+    val barChartEntryModelProducer = remember(depositData) {
+        // Create entries for each deposit
+        val entries = depositData.mapIndexed { index, value ->
             listOf(entryOf(index.toFloat(), value.toFloat()))
         }
         ChartEntryModelProducer(entries)
@@ -604,11 +619,21 @@ fun ProgressContent(transactions: List<Transaction>, goal: com.example.data.Goal
                             columns = chartColors.map { color ->
                                 lineComponent(
                                     color = color,
-                                    thickness = 28.dp,
+                                    thickness = if (depositData.size > 8) 16.dp else 32.dp,
                                     shape = Shapes.roundedCornerShape(allPercent = 40)
                                 )
                             },
-                            spacing = 16.dp
+                            spacing = if (depositData.size > 8) 6.dp else 10.dp,
+                            dataLabel = axisLabelComponent(
+                                color = PinkPrimary,
+                                textSize = 9.sp,
+                                fontWeight = FontWeight.Black
+                            ),
+                            dataLabelValueFormatter = object : ValueFormatter {
+                                override fun formatValue(value: Float, chartValues: ChartValues): CharSequence {
+                                    return if (value > 0f && value >= maxDeposit) "Max" else ""
+                                }
+                            }
                         ),
                         chartModelProducer = barChartEntryModelProducer,
                         startAxis = null,
@@ -619,18 +644,17 @@ fun ProgressContent(transactions: List<Transaction>, goal: com.example.data.Goal
                                 fontWeight = FontWeight.Medium
                             ),
                             valueFormatter = { value, _ -> 
-                                val days = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-                                days[value.toInt() % days.size]
+                                if (depositData.size > 10) "" else "D${value.toInt() + 1}"
                             },
                             guideline = null
                         ),
                         isZoomEnabled = false,
-                        chartScrollSpec = rememberChartScrollSpec(isScrollEnabled = false)
+                        chartScrollSpec = rememberChartScrollSpec(isScrollEnabled = depositData.size > 7)
                     )
                 } else {
                     PolarAreaChart(
-                        data = dailyData,
-                        labels = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"),
+                        data = depositData,
+                        labels = depositData.mapIndexed { index, _ -> "D${index + 1}" },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -811,9 +835,9 @@ fun TabButton(
         modifier = modifier
             .fillMaxHeight()
             .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) MaterialTheme.colorScheme.surface else androidx.compose.ui.graphics.Color.Transparent)
+            .background(if (isSelected) Color.White else Color.Transparent)
             .then(
-                if (isSelected) Modifier.border(2.dp, Color(0xFFCBD5E1), RoundedCornerShape(20.dp))
+                if (isSelected) Modifier.border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(20.dp))
                 else Modifier
             )
             .clickable(onClick = onClick),

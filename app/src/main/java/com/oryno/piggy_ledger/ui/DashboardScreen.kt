@@ -1,4 +1,4 @@
-package com.example.ui
+package com.oryno.piggy_ledger.ui
 
 import android.content.Intent
 import android.net.Uri
@@ -33,13 +33,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.R
-import com.example.ui.theme.NavyDark
-import com.example.ui.theme.PinkPrimary
-import com.example.ui.theme.TextLight
-import com.example.ui.theme.PurplePrimary
-import com.example.ui.theme.GreenAccent
-import com.example.ui.theme.AccentBlue
+import com.oryno.piggy_ledger.R
+import com.oryno.piggy_ledger.ui.theme.NavyDark
+import com.oryno.piggy_ledger.ui.theme.PinkPrimary
+import com.oryno.piggy_ledger.ui.theme.TextLight
+import com.oryno.piggy_ledger.ui.theme.PurplePrimary
+import com.oryno.piggy_ledger.ui.theme.GreenAccent
+import com.oryno.piggy_ledger.ui.theme.AccentBlue
 
 enum class SettingsMode {
     MAIN, FEEDBACK, RATING, BACKUP, RESTORE
@@ -153,7 +153,7 @@ fun DashboardScreen(
             Spacer(modifier = Modifier.weight(1f))
             
             TextButton(onClick = onNavigateToMyGoals) {
-                Text("Go straight to Dashboard →", color = NavyDark, fontWeight = FontWeight.SemiBold)
+                Text("Go straight to Dashboard →", color = PinkPrimary, fontWeight = FontWeight.Bold)
             }
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -201,8 +201,8 @@ fun DashboardScreen(
                                 settingsMode = SettingsMode.FEEDBACK
                             },
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0))
+                            colors = CardDefaults.cardColors(containerColor = PinkPrimary.copy(alpha = 0.03f)),
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, PinkPrimary.copy(alpha = 0.2f))
                         ) {
                             Row(
                                 modifier = Modifier
@@ -231,8 +231,8 @@ fun DashboardScreen(
                                 settingsMode = SettingsMode.RATING
                             },
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0))
+                            colors = CardDefaults.cardColors(containerColor = PinkPrimary.copy(alpha = 0.03f)),
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, PinkPrimary.copy(alpha = 0.2f))
                         ) {
                             Row(
                                 modifier = Modifier
@@ -261,8 +261,8 @@ fun DashboardScreen(
                                 settingsMode = SettingsMode.BACKUP
                             },
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0))
+                            colors = CardDefaults.cardColors(containerColor = PinkPrimary.copy(alpha = 0.03f)),
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, PinkPrimary.copy(alpha = 0.2f))
                         ) {
                             Row(
                                 modifier = Modifier
@@ -291,8 +291,8 @@ fun DashboardScreen(
                                 settingsMode = SettingsMode.RESTORE
                             },
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0))
+                            colors = CardDefaults.cardColors(containerColor = PinkPrimary.copy(alpha = 0.03f)),
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, PinkPrimary.copy(alpha = 0.2f))
                         ) {
                             Row(
                                 modifier = Modifier
@@ -674,9 +674,9 @@ fun DashboardCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = PinkPrimary.copy(alpha = 0.05f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0))
+        border = androidx.compose.foundation.BorderStroke(2.dp, PinkPrimary.copy(alpha = 0.3f))
     ) {
         Row(
             modifier = Modifier
@@ -685,14 +685,14 @@ fun DashboardCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                Text(text = title, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = subtitle, fontSize = 14.sp, color = TextLight)
+                Text(text = subtitle, fontSize = 14.sp, color = TextLight, fontWeight = FontWeight.Medium)
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
-                tint = TextLight
+                tint = PinkPrimary
             )
         }
     }

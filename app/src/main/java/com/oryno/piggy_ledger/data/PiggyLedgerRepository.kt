@@ -1,10 +1,11 @@
-package com.example.data
+package com.oryno.piggy_ledger.data
 
 import kotlinx.coroutines.flow.Flow
 
 class PiggyLedgerRepository(private val dao: PiggyLedgerDao) {
     val allGoals: Flow<List<Goal>> = dao.getAllGoals()
     val allLoans: Flow<List<Loan>> = dao.getAllLoans()
+    val allTransactions: Flow<List<Transaction>> = dao.getAllTransactionsFlow()
 
     fun getGoalById(id: String) = dao.getGoalById(id)
     fun getTransactionsForGoal(id: String) = dao.getTransactionsForGoal(id)

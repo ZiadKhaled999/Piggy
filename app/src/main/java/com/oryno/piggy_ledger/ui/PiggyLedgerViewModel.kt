@@ -1,12 +1,14 @@
-package com.example.ui
+package com.oryno.piggy_ledger.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.Goal
-import com.example.data.Loan
-import com.example.data.PiggyLedgerRepository
-import com.example.data.Transaction
-import com.example.data.UserPreferences
+import com.oryno.piggy_ledger.data.Goal
+import com.oryno.piggy_ledger.data.Loan
+import com.oryno.piggy_ledger.data.PiggyLedgerRepository
+import com.oryno.piggy_ledger.data.Transaction
+import com.oryno.piggy_ledger.data.UserPreferences
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +20,7 @@ import java.util.UUID
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
-import com.example.data.BackupData
+import com.oryno.piggy_ledger.data.BackupData
 
 class PiggyLedgerViewModel(
     private val repository: PiggyLedgerRepository,
@@ -74,10 +76,12 @@ class PiggyLedgerViewModel(
         viewModelScope, SharingStarted.Eagerly, emptyList()
     )
 
-    fun getTransactionsForGoal(goalId: String): StateFlow<List<Transaction>> {
-        return repository.getTransactionsForGoal(goalId).stateIn(
-            viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
-        )
+    val allTransactions: StateFlow<List<Transaction>> = repository.allTransactions.stateIn(
+        viewModelScope, SharingStarted.Eagerly, emptyList()
+    )
+
+    fun getTransactionsForGoal(goalId: String): Flow<List<Transaction>> {
+        return allTransactions.map { list -> list.filter { it.goalId == goalId } }
     }
 
     fun completeOnboarding() {

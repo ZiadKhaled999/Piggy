@@ -1,4 +1,4 @@
-package com.example
+package com.oryno.piggy_ledger
 
 import org.junit.Assert.*
 import org.junit.Test

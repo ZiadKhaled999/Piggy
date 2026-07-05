@@ -1,4 +1,4 @@
-package com.example.ui
+package com.oryno.piggy_ledger.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,14 +26,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.R
-import com.example.data.Goal
-import com.example.data.Transaction
-import com.example.ui.theme.NavyDark
-import com.example.ui.theme.PinkPrimary
-import com.example.ui.theme.PurplePrimary
-import com.example.ui.theme.GreenAccent
-import com.example.ui.theme.TextLight
+import com.oryno.piggy_ledger.R
+import com.oryno.piggy_ledger.data.Goal
+import com.oryno.piggy_ledger.data.Transaction
+import com.oryno.piggy_ledger.ui.theme.NavyDark
+import com.oryno.piggy_ledger.ui.theme.PinkPrimary
+import com.oryno.piggy_ledger.ui.theme.PurplePrimary
+import com.oryno.piggy_ledger.ui.theme.GreenAccent
+import com.oryno.piggy_ledger.ui.theme.TextLight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +43,7 @@ fun MyGoalsScreen(
     onBack: () -> Unit
 ) {
     val goals by viewModel.goals.collectAsState()
+    val allTransactions by viewModel.allTransactions.collectAsState()
 
 
     Column(
@@ -103,7 +104,10 @@ fun MyGoalsScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(goals) { goal ->
-                    GoalCard(goal = goal, viewModel = viewModel, onClick = { onNavigateToGoal(goal.id) })
+                    val goalTransactions = remember(allTransactions, goal.id) {
+                        allTransactions.filter { it.goalId == goal.id }
+                    }
+                    GoalCard(goal = goal, transactions = goalTransactions, onClick = { onNavigateToGoal(goal.id) })
                 }
             }
         }
@@ -111,8 +115,7 @@ fun MyGoalsScreen(
 }
 
 @Composable
-fun GoalCard(goal: Goal, viewModel: PiggyLedgerViewModel, onClick: () -> Unit) {
-    val transactions by viewModel.getTransactionsForGoal(goal.id).collectAsState()
+fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit) {
     val savedAmount = transactions.sumOf { it.amount }
     val isOpenSavings = goal.targetAmount <= 0.0
     val progress = if (goal.targetAmount > 0) (savedAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f) else 0f
@@ -123,9 +126,9 @@ fun GoalCard(goal: Goal, viewModel: PiggyLedgerViewModel, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border = androidx.compose.foundation.BorderStroke(2.dp, androidx.compose.ui.graphics.Color(0xFFCBD5E1))
+        colors = CardDefaults.cardColors(containerColor = PinkPrimary.copy(alpha = 0.05f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(2.dp, PinkPrimary.copy(alpha = 0.3f))
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
@@ -159,12 +162,12 @@ fun GoalCard(goal: Goal, viewModel: PiggyLedgerViewModel, onClick: () -> Unit) {
                     )
                 } else if (isOpenSavings) {
                     Surface(
-                        color = androidx.compose.ui.graphics.Color(0xFFEFF6FF),
+                        color = PinkPrimary.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
                             text = "OPEN",
-                            color = androidx.compose.ui.graphics.Color(0xFF1D4ED8),
+                            color = PinkPrimary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
@@ -189,8 +192,8 @@ fun GoalCard(goal: Goal, viewModel: PiggyLedgerViewModel, onClick: () -> Unit) {
                         .fillMaxWidth()
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp)),
-                    color = if (isCompleted) GreenAccent else NavyDark,
-                    trackColor = androidx.compose.ui.graphics.Color(0xFFCBD5E1)
+                    color = if (isCompleted) GreenAccent else PinkPrimary,
+                    trackColor = PinkPrimary.copy(alpha = 0.1f)
                 )
             }
             

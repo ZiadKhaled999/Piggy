@@ -24,12 +24,16 @@ class StreakWidgetProvider : AppWidgetProvider() {
     ) {
         val streak = StreakManager.getStreak(context)
         val hasActionToday = StreakManager.hasActionToday(context)
+        val piggyState = StreakManager.getPiggyState(context)
+        val piggyRes = StreakManager.getPiggyResource(piggyState)
 
         // Determine message
-        val message = when {
-            hasActionToday -> "Active streak"
-            streak > 0 -> "Keep it up"
-            else -> "Start saving"
+        val message = when (piggyState) {
+            StreakManager.PiggyState.SUCCESS -> "Streak Active!"
+            StreakManager.PiggyState.LOST -> "Streak Broken"
+            StreakManager.PiggyState.HAPPY -> "Keep it up!"
+            StreakManager.PiggyState.WORRIED -> "Streak at risk!"
+            StreakManager.PiggyState.PANIC -> "SAVE NOW!"
         }
 
         for (appWidgetId in appWidgetIds) {
@@ -38,6 +42,9 @@ class StreakWidgetProvider : AppWidgetProvider() {
             // Update text
             views.setTextViewText(R.id.tv_streak_count, "$streak days")
             views.setTextViewText(R.id.tv_streak_message, message)
+            
+            // Update mascot
+            views.setImageViewResource(R.id.iv_streak_mascot, piggyRes)
 
             // Update Weekday Indicators
             val activeDates = StreakManager.getActionDates(context)

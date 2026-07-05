@@ -163,9 +163,9 @@ class GoalsWidgetProvider : AppWidgetProvider() {
 
     companion object {
         const val PREFS_NAME = "goals_widget_prefs"
-        const val ACTION_GOAL_CLICK = "com.oryno.piggy_ledger.widget.ACTION_GOAL_CLICK"
-        const val ACTION_GOAL_BACK = "com.oryno.piggy_ledger.widget.ACTION_GOAL_BACK"
-        const val EXTRA_GOAL_ID = "com.oryno.piggy_ledger.widget.EXTRA_GOAL_ID"
+        const val ACTION_GOAL_CLICK = "com.aistudio.piggyledger.vpxqwm.widget.ACTION_GOAL_CLICK"
+        const val ACTION_GOAL_BACK = "com.aistudio.piggyledger.vpxqwm.widget.ACTION_GOAL_BACK"
+        const val EXTRA_GOAL_ID = "com.aistudio.piggyledger.vpxqwm.widget.EXTRA_GOAL_ID"
 
         private fun getKeySelectedGoal(widgetId: Int) = "selected_goal_id_$widgetId"
 

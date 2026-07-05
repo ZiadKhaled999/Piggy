@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,7 +45,17 @@ fun MyGoalsScreen(
 ) {
     val goals by viewModel.goals.collectAsState()
     val allTransactions by viewModel.allTransactions.collectAsState()
-
+    val context = LocalContext.current
+    val streak = remember(allTransactions) { com.oryno.piggy_ledger.data.StreakManager.getStreak(context) }
+    val piggyState = remember(allTransactions) { com.oryno.piggy_ledger.data.StreakManager.getPiggyState(context) }
+    val piggyRes = com.oryno.piggy_ledger.data.StreakManager.getPiggyResource(piggyState)
+    val message = when (piggyState) {
+        com.oryno.piggy_ledger.data.StreakManager.PiggyState.SUCCESS -> "Streak Active! You're doing great!"
+        com.oryno.piggy_ledger.data.StreakManager.PiggyState.LOST -> "Streak Broken. Let's start fresh!"
+        com.oryno.piggy_ledger.data.StreakManager.PiggyState.HAPPY -> "Keep it up! Time to save today."
+        com.oryno.piggy_ledger.data.StreakManager.PiggyState.WORRIED -> "Streak at risk! Evening is here."
+        com.oryno.piggy_ledger.data.StreakManager.PiggyState.PANIC -> "SAVE NOW! Midnight is coming!"
+    }
 
     Column(
         modifier = Modifier
@@ -71,6 +82,43 @@ fun MyGoalsScreen(
             Text("My Goals", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = NavyDark)
         }
         
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Mascot Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = PinkPrimary.copy(alpha = 0.08f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = piggyRes),
+                    contentDescription = "Piggy Mascot",
+                    modifier = Modifier.size(80.dp).clip(RoundedCornerShape(16.dp)),
+                    contentScale = ContentScale.Fit
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "$streak Day Streak",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark
+                    )
+                    Text(
+                        text = message,
+                        fontSize = 14.sp,
+                        color = TextLight,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
         
         if (goals.isEmpty()) {

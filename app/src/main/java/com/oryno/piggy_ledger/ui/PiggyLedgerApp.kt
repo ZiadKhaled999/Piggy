@@ -32,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.oryno.piggy_ledger.ui.theme.PiggyLedgerTheme
 
 @Composable
@@ -101,10 +102,9 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
             }
             
             composable<Screen.GoalDetail> { backStackEntry ->
-                // Basic implementation for now
-                val id = backStackEntry.arguments?.getString("goalId") ?: ""
+                val screen = backStackEntry.toRoute<Screen.GoalDetail>()
                 GoalDetailScreen(
-                    goalId = id,
+                    goalId = screen.goalId,
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() }
                 )

@@ -16,9 +16,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/payoffs_loans"
-        android:textColor="@color/widget_text_muted"
-        android:textSize="11sp"
+        android:textColor="@color/widget_text_dark"
+        android:textSize="13sp"
         android:textStyle="bold"
+        android:fontFamily="sans-serif-black"
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="4dp" />
 
@@ -43,9 +44,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/widget_owed_to_me"
-                android:textColor="@color/widget_text_muted"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:textColor="@color/widget_text_dark"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-black" />
 
             <TextView
                 android:id="@+id/tv_owed_to_me"
@@ -79,9 +81,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/widget_i_owe"
-                android:textColor="@color/widget_text_muted"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:textColor="@color/widget_text_dark"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-black" />
 
             <TextView
                 android:id="@+id/tv_i_owe"
@@ -121,9 +124,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/widget_net_ledger"
-                android:textColor="@color/widget_text_muted"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:textColor="@color/widget_text_dark"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-black" />
 
             <TextView
                 android:id="@+id/tv_net_ledger"

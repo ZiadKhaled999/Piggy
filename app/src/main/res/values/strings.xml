@@ -158,7 +158,10 @@
     <string name="target_goal_desc">Save for a specific target amount.</string>
     <string name="open_savings_desc">Deposit just for saving (No target limit).</string>
     <string name="open_savings_hint">💡 Hint: Opened balance is for general/indefinite savings. You can deposit money here anytime for savings without setting any specific limit.</string>
-    <string name="egyptian">Egyptian Arabic</string>
+    <string name="egyptian">مصري</string>
+    <string name="egypt">Egypt</string>
+    <string name="saudi_arabia">Saudi Arabia</string>
+    <string name="united_states">United States</string>
 
 <string name="open_badge">OPEN</string>
     <string name="amount_saved">$%1$s saved</string>

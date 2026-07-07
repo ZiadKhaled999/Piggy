@@ -6,7 +6,10 @@
     <string name="choose_language_desc">اختار لغتك المفضلة عشان تكمل</string>
     <string name="english">English</string>
     <string name="arabic">العربية (الفصحى)</string>
-    <string name="egyptian">العامية المصرية</string>
+    <string name="egyptian">مصري</string>
+    <string name="egypt">مصر</string>
+    <string name="saudi_arabia">السعودية</string>
+    <string name="united_states">أمريكا</string>
     <string name="continue_btn">كمل</string>
     <string name="get_started">ابدأ دلوقتي</string>
     <string name="settings">الضبط والتظبيط</string>

@@ -158,7 +158,10 @@
     <string name="target_goal_desc">ادخر لمبلغ محدد.</string>
     <string name="open_savings_desc">إيداع لمجرد الادخار (لا يوجد حد).</string>
     <string name="open_savings_hint">💡 تلميح: الرصيد المفتوح هو للمدخرات العامة. يمكنك إيداع المال هنا في أي وقت دون تحديد حد معين.</string>
-    <string name="egyptian">العربية المصرية</string>
+    <string name="egyptian">مصري</string>
+    <string name="egypt">مصر</string>
+    <string name="saudi_arabia">السعودية</string>
+    <string name="united_states">الولايات المتحدة</string>
 
 <string name="open_badge">مفتوح</string>
     <string name="amount_saved">تم ادخار $%1$s</string>

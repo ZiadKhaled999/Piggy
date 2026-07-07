@@ -65,7 +65,7 @@ fun LanguageSelectionScreen(onLanguageSelected: () -> Unit) {
         
         LanguageOption(
             title = stringResource(id = R.string.english),
-            subtitle = "United States",
+            subtitle = stringResource(id = R.string.united_states),
             flagResId = R.drawable.ic_flag_us,
             isSelected = selectedLanguage == "en",
             onClick = { selectedLanguage = "en" }
@@ -75,7 +75,7 @@ fun LanguageSelectionScreen(onLanguageSelected: () -> Unit) {
         
         LanguageOption(
             title = stringResource(id = R.string.arabic),
-            subtitle = "Saudi Arabia",
+            subtitle = stringResource(id = R.string.saudi_arabia),
             flagResId = R.drawable.ic_flag_sa,
             isSelected = selectedLanguage == "ar",
             onClick = { selectedLanguage = "ar" }
@@ -85,7 +85,7 @@ fun LanguageSelectionScreen(onLanguageSelected: () -> Unit) {
         
         LanguageOption(
             title = stringResource(id = R.string.egyptian),
-            subtitle = "Egypt",
+            subtitle = stringResource(id = R.string.egypt),
             flagResId = R.drawable.ic_flag_eg,
             isSelected = selectedLanguage == "ar-EG",
             onClick = { selectedLanguage = "ar-EG" }

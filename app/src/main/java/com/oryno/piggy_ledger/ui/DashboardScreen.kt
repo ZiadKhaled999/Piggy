@@ -225,15 +225,14 @@ fun DashboardScreen(
                                     .padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
+                                Image(
+                                    painter = painterResource(id = R.drawable.img_settings_language_1783459964887),
+                                    contentDescription = null,
                                     modifier = Modifier
                                         .size(48.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(PinkPrimary.copy(alpha = 0.1f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(Icons.Default.Language, contentDescription = null, tint = PinkPrimary)
-                                }
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Text(stringResource(R.string.language), fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextLight)
@@ -383,13 +382,29 @@ fun DashboardScreen(
                             )
                         }
                         
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(110.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.img_settings_language_1783459964887),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(16.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        
                         Spacer(modifier = Modifier.height(24.dp))
                         
                         val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
                         
                         SettingsLanguageOption(
                             title = stringResource(id = R.string.english),
-                            subtitle = "United States",
+                            subtitle = stringResource(id = R.string.united_states),
                             flagResId = R.drawable.ic_flag_us,
                             isSelected = currentLocale.startsWith("en"),
                             onClick = {
@@ -401,7 +416,7 @@ fun DashboardScreen(
                         
                         SettingsLanguageOption(
                             title = stringResource(id = R.string.arabic),
-                            subtitle = "Saudi Arabia",
+                            subtitle = stringResource(id = R.string.saudi_arabia),
                             flagResId = R.drawable.ic_flag_sa,
                             isSelected = (currentLocale.startsWith("ar") && !currentLocale.contains("EG")) || (currentLocale.isEmpty() && java.util.Locale.getDefault().language == "ar"),
                             onClick = {
@@ -413,7 +428,7 @@ fun DashboardScreen(
                         
                         SettingsLanguageOption(
                             title = stringResource(id = R.string.egyptian),
-                            subtitle = "Egypt",
+                            subtitle = stringResource(id = R.string.egypt),
                             flagResId = R.drawable.ic_flag_eg,
                             isSelected = currentLocale.contains("ar-EG"),
                             onClick = {

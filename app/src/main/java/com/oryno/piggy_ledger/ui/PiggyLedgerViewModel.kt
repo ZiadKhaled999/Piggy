@@ -72,6 +72,10 @@ class PiggyLedgerViewModel(
     val hasOnboarded = userPreferences.hasOnboarded.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
     )
+    
+    val hasLanguageSelected = userPreferences.hasLanguageSelected.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), null
+    )
 
     val goals: StateFlow<List<Goal>> = repository.allGoals.stateIn(
         viewModelScope, SharingStarted.Eagerly, emptyList()
@@ -92,6 +96,12 @@ class PiggyLedgerViewModel(
     fun completeOnboarding() {
         viewModelScope.launch {
             userPreferences.saveOnboarding(true)
+        }
+    }
+    
+    fun completeLanguageSelection() {
+        viewModelScope.launch {
+            userPreferences.saveLanguageSelected(true)
         }
     }
 

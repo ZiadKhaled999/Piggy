@@ -41,6 +41,7 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
     val viewModel: PiggyLedgerViewModel = viewModel(factory = factory)
     
     val hasOnboarded by viewModel.hasOnboarded.collectAsState()
+    val hasLanguageSelected by viewModel.hasLanguageSelected.collectAsState()
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -48,17 +49,32 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
     ) {
         NavHost(navController = navController, startDestination = Screen.Splash) {
             composable<Screen.Splash> {
-                LaunchedEffect(hasOnboarded) {
-                    if (hasOnboarded == false) {
+                LaunchedEffect(hasOnboarded, hasLanguageSelected) {
+                    if (hasLanguageSelected == false) {
+                        navController.navigate(Screen.LanguageSelection) {
+                            popUpTo(Screen.Splash) { inclusive = true }
+                        }
+                    } else if (hasOnboarded == false) {
                         navController.navigate(Screen.Onboarding) {
                             popUpTo(Screen.Splash) { inclusive = true }
                         }
-                    } else if (hasOnboarded == true) {
+                    } else if (hasOnboarded == true && hasLanguageSelected == true) {
                         navController.navigate(Screen.Dashboard) {
                             popUpTo(Screen.Splash) { inclusive = true }
                         }
                     }
                 }
+            }
+            
+            composable<Screen.LanguageSelection> {
+                LanguageSelectionScreen(
+                    onLanguageSelected = {
+                        viewModel.completeLanguageSelection()
+                        navController.navigate(Screen.Onboarding) {
+                            popUpTo(Screen.LanguageSelection) { inclusive = true }
+                        }
+                    }
+                )
             }
             
             composable<Screen.Onboarding> {

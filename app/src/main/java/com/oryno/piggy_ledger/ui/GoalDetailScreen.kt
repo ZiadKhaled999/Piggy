@@ -19,6 +19,9 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.*
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
+import com.oryno.piggy_ledger.R
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,10 +104,10 @@ fun GoalDetailScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = NavyDark)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_icon), tint = NavyDark)
             }
             Text(
-                text = "BUDGETING",
+                text = stringResource(R.string.budgeting_title),
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold,
@@ -122,7 +125,7 @@ fun GoalDetailScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "TOTAL BALANCE",
+                text = stringResource(R.string.total_balance_label),
                 color = TextLight,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
@@ -130,7 +133,7 @@ fun GoalDetailScreen(
             if (savedAmount > goal.targetAmount) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "+$${String.format("%.2f", savedAmount - goal.targetAmount)} EXTRA",
+                    text = stringResource(R.string.amount_extra_simple, String.format("%.2f", savedAmount - goal.targetAmount)),
                     color = PinkAccent,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
@@ -159,7 +162,7 @@ fun GoalDetailScreen(
                 )
             } else {
                 Text(
-                    text = " (Open Savings)",
+                    text =  " (" + stringResource(R.string.open_savings) + ")",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = TextLight,
@@ -183,7 +186,7 @@ fun GoalDetailScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("YOUR BUDGET", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    Text(stringResource(R.string.your_budget_title), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                     
                     val isCompleted = goal.targetAmount > 0.0 && savedAmount >= goal.targetAmount
                     Surface(
@@ -191,7 +194,7 @@ fun GoalDetailScreen(
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Text(
-                            text = if (isCompleted) "COMPLETED" else if (goal.targetAmount <= 0.0) "OPEN SAVINGS" else "IN PROGRESS",
+                            text = if (isCompleted) stringResource(R.string.completed_status) else if (goal.targetAmount <= 0.0) stringResource(R.string.open_savings).uppercase() else stringResource(R.string.in_progress_status),
                             color = if (isCompleted) androidx.compose.ui.graphics.Color(0xFF15803D) else if (goal.targetAmount <= 0.0) androidx.compose.ui.graphics.Color(0xFF1D4ED8) else androidx.compose.ui.graphics.Color(0xFF4338CA),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
@@ -224,7 +227,7 @@ fun GoalDetailScreen(
                                 if (goal.targetAmount > 0.0) {
                                     Text("$${String.format("%.2f", savedAmount)} / $${String.format("%.2f", goal.targetAmount)}", color = TextLight, fontSize = 14.sp)
                                 } else {
-                                    Text("$${String.format("%.2f", savedAmount)} saved (Open Savings)", color = TextLight, fontSize = 14.sp)
+                                    Text(stringResource(R.string.amount_saved_simple, String.format("%.2f", savedAmount)) + " (" + stringResource(R.string.open_savings) + ")", color = TextLight, fontSize = 14.sp)
                                 }
                             }
                         }
@@ -251,11 +254,11 @@ fun GoalDetailScreen(
                                 Text("${(progress * 100).toInt()}%", color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 val remaining = goal.targetAmount - savedAmount
                                 val remainingText = if (remaining < 0) {
-                                    "$${String.format("%.2f", -remaining)} extra"
+                                    stringResource(R.string.amount_extra_simple, String.format("%.2f", -remaining))
                                 } else if (remaining == 0.0) {
-                                    "Goal reached"
+                                    stringResource(R.string.goal_reached_status)
                                 } else {
-                                    "$${String.format("%.2f", remaining)} left"
+                                    stringResource(R.string.amount_left_simple, String.format("%.2f", remaining))
                                 }
                                 Text(remainingText, color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
@@ -274,7 +277,7 @@ fun GoalDetailScreen(
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Add Deposit", fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.add_deposit), fontWeight = FontWeight.Bold)
                             }
                         } else {
                             Spacer(modifier = Modifier.height(24.dp))
@@ -291,7 +294,7 @@ fun GoalDetailScreen(
                                 ) {
                                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PinkAccent)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Goal Completed", color = PinkAccent, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.goal_completed_msg), color = PinkAccent, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -312,8 +315,8 @@ fun GoalDetailScreen(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TabButton(text = "Overview", isSelected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
-                    TabButton(text = "History", isSelected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
+                    TabButton(text = stringResource(R.string.overview_tab), isSelected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
+                    TabButton(text = stringResource(R.string.history_tab), isSelected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -361,7 +364,7 @@ fun GoalDetailScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    "Add Deposit",
+                    stringResource(R.string.add_deposit),
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = NavyDark,
@@ -369,7 +372,7 @@ fun GoalDetailScreen(
                     textAlign = TextAlign.Start
                 )
                 Text(
-                    "GROWTH YOUR SAVINGS BALANCE",
+                    stringResource(R.string.growth_savings_subtitle),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextLight,
@@ -387,8 +390,8 @@ fun GoalDetailScreen(
                             amountStr = input
                         }
                     },
-                    label = { Text("DEPOSIT AMOUNT", fontWeight = FontWeight.Bold) },
-                    placeholder = { Text("$ 0.00") },
+                    label = { Text(stringResource(R.string.deposit_amount_label), fontWeight = FontWeight.Bold) },
+                    placeholder = { Text(stringResource(R.string.zero_amount_placeholder)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
                     modifier = Modifier.fillMaxWidth(),
@@ -409,8 +412,8 @@ fun GoalDetailScreen(
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text("NOTE (REQUIRED)", fontWeight = FontWeight.Bold) },
-                    placeholder = { Text("e.g. Monthly contribution") },
+                    label = { Text(stringResource(R.string.note_required_label), fontWeight = FontWeight.Bold) },
+                    placeholder = { Text(stringResource(R.string.monthly_contribution_placeholder)) },
                     textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -441,7 +444,7 @@ fun GoalDetailScreen(
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
                 ) {
-                    Text("Confirm Deposit", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.confirm_deposit_btn), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -475,18 +478,18 @@ fun OverviewContent(
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            MetadataCard(label = "ESTABLISHED DATE", value = establishedDate, icon = Icons.Default.Info)
+            MetadataCard(label = stringResource(R.string.established_date_label), value = establishedDate, icon = Icons.Default.Info)
         }
         item {
-            MetadataCard(label = "DAYS SINCE START", value = "$daysRunning days", icon = Icons.Default.Timeline)
+            MetadataCard(label = stringResource(R.string.days_since_start_label), value = stringResource(R.string.days_count, daysRunning), icon = Icons.Default.Timeline)
         }
         item {
-            MetadataCard(label = "AVG. DAILY SAVING", value = "$${String.format("%.2f", avgDaily)}", icon = Icons.AutoMirrored.Filled.TrendingUp)
+            MetadataCard(label = stringResource(R.string.avg_daily_saving_label), value = "$${String.format("%.2f", avgDaily)}", icon = Icons.AutoMirrored.Filled.TrendingUp)
         }
         item {
             MetadataCard(
-                label = "EST. COMPLETION DATE", 
-                value = if (savedAmount >= goal.targetAmount) "Goal Reached!" else estCompletionDate, 
+                label = stringResource(R.string.est_completion_date_label), 
+                value = if (savedAmount >= goal.targetAmount) stringResource(R.string.goal_reached_success) else estCompletionDate, 
                 icon = Icons.Default.CheckCircle,
                 valueColor = if (savedAmount >= goal.targetAmount) PinkAccent else NavyDark
             )
@@ -530,8 +533,9 @@ fun MetadataCard(
 
 @Composable
 fun ProgressContent(transactions: List<Transaction>, goal: com.oryno.piggy_ledger.data.Goal) {
+    val context = LocalContext.current
     if (transactions.isEmpty()) {
-        EmptyState(message = "Start saving to see your progress chart!")
+        EmptyState(message = stringResource(R.string.start_saving_msg))
         return
     }
 
@@ -571,7 +575,7 @@ fun ProgressContent(transactions: List<Transaction>, goal: com.oryno.piggy_ledge
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text("Savings Challenge", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF334155))
+                Text(stringResource(R.string.savings_challenge_title), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF334155))
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("$${String.format("%.0f", totalSaved)}", fontSize = 28.sp, fontWeight = FontWeight.Black, color = NavyDark)
             }
@@ -591,7 +595,7 @@ fun ProgressContent(transactions: List<Transaction>, goal: com.oryno.piggy_ledge
                         .size(36.dp)
                         .background(if (pagerState.currentPage == 0) Color.White else Color.Transparent, RoundedCornerShape(8.dp))
                 ) {
-                    Icon(Icons.Default.Timeline, contentDescription = "Bar Chart", tint = if (pagerState.currentPage == 0) NavyDark else TextLight, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Timeline, contentDescription = stringResource(R.string.bar_chart_desc), tint = if (pagerState.currentPage == 0) NavyDark else TextLight, modifier = Modifier.size(20.dp))
                 }
                 IconButton(
                     onClick = { 
@@ -601,7 +605,7 @@ fun ProgressContent(transactions: List<Transaction>, goal: com.oryno.piggy_ledge
                         .size(36.dp)
                         .background(if (pagerState.currentPage == 1) Color.White else Color.Transparent, RoundedCornerShape(8.dp))
                 ) {
-                    Icon(Icons.Default.Info, contentDescription = "Polar Area Chart", tint = if (pagerState.currentPage == 1) NavyDark else TextLight, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Info, contentDescription = stringResource(R.string.polar_chart_desc), tint = if (pagerState.currentPage == 1) NavyDark else TextLight, modifier = Modifier.size(20.dp))
                 }
             }
         }
@@ -634,7 +638,7 @@ fun ProgressContent(transactions: List<Transaction>, goal: com.oryno.piggy_ledge
                             ),
                             dataLabelValueFormatter = object : ValueFormatter {
                                 override fun formatValue(value: Float, chartValues: ChartValues): CharSequence {
-                                    return if (value > 0f && value >= maxDeposit) "Max" else ""
+                                    return if (value > 0f && value >= maxDeposit) context.getString(R.string.max_label) else ""
                                 }
                             }
                         ),
@@ -685,9 +689,9 @@ fun ProgressContent(transactions: List<Transaction>, goal: com.oryno.piggy_ledge
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        Text("Milestones", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+        Text(stringResource(R.string.milestones_title), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark)
         Spacer(modifier = Modifier.height(8.dp))
-        Text("You've made ${transactions.size} contributions so far. Keep it up!", fontSize = 14.sp, color = TextLight)
+        Text(stringResource(R.string.contributions_count_msg, transactions.size), fontSize = 14.sp, color = TextLight)
     }
 }
 
@@ -769,7 +773,7 @@ fun axisLabelComponent(
 @Composable
 fun TransactionsContent(transactions: List<Transaction>) {
     if (transactions.isEmpty()) {
-        EmptyState(message = "No contributions yet.")
+        EmptyState(message = stringResource(R.string.no_contributions_msg))
         return
     }
 
@@ -797,7 +801,7 @@ fun TransactionsContent(transactions: List<Transaction>) {
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
-                            Text(tx.note.takeIf { it.isNotBlank() } ?: "Deposit", fontWeight = FontWeight.SemiBold, color = NavyDark)
+                            Text(tx.note.takeIf { it.isNotBlank() } ?: stringResource(R.string.deposit_tx_note), fontWeight = FontWeight.SemiBold, color = NavyDark)
                             val txDate = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(tx.timestamp))
                             Text(txDate, color = TextLight, fontSize = 12.sp)
                         }

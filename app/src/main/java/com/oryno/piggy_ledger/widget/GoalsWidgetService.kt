@@ -50,16 +50,23 @@ class GoalsRemoteViewsFactory(private val context: Context) : RemoteViewsService
     override fun getViewAt(position: Int): RemoteViews? {
         if (position < 0 || position >= goalsList.size) return null
 
+        val locales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+        val config = android.content.res.Configuration(context.resources.configuration)
+        if (!locales.isEmpty) {
+            config.setLocales(android.os.LocaleList.forLanguageTags(locales.toLanguageTags()))
+        }
+        val localizedContext = context.createConfigurationContext(config)
+
         val goal = goalsList[position]
         val goalTransactions = transactionsList.filter { it.goalId == goal.id }
         val savedAmount = goalTransactions.sumOf { it.amount }
         val isOpen = goal.targetAmount <= 0.0
 
-        val targetText = if (isOpen) "Open Savings" else "/ $${formatter.format(goal.targetAmount)}"
-        val savedText = "$${formatter.format(savedAmount)} saved"
+        val targetText = if (isOpen) localizedContext.getString(R.string.widget_open_savings) else "/ $${formatter.format(goal.targetAmount)}"
+        val savedText = localizedContext.getString(R.string.widget_amount_saved, "$${formatter.format(savedAmount)}")
 
         val percentageText = if (isOpen) {
-            "OPEN"
+            localizedContext.getString(R.string.widget_open_label)
         } else {
             val pct = if (goal.targetAmount > 0) (savedAmount / goal.targetAmount * 100).toInt() else 0
             "${pct.coerceIn(0, 100)}%"

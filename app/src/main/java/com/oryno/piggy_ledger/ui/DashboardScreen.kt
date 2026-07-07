@@ -33,6 +33,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.shape.CircleShape
+import androidx.core.os.LocaleListCompat
+import androidx.compose.ui.res.stringResource
+import androidx.compose.material.icons.filled.Language
 import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
@@ -41,7 +46,7 @@ import com.oryno.piggy_ledger.ui.theme.PurplePrimary
 import com.oryno.piggy_ledger.ui.theme.AccentBlue
 
 enum class SettingsMode {
-    MAIN, FEEDBACK, RATING, BACKUP, RESTORE
+    MAIN, FEEDBACK, RATING, BACKUP, RESTORE, LANGUAGE
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,9 +70,9 @@ fun DashboardScreen(
                     context.contentResolver.openOutputStream(it)?.use { stream ->
                         stream.write(jsonString.toByteArray())
                     }
-                    Toast.makeText(context, "Data exported successfully", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.export_success), Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
-                    Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, context.getString(R.string.export_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -83,16 +88,16 @@ fun DashboardScreen(
                     viewModel.importData(
                         jsonString = jsonString,
                         onComplete = {
-                            Toast.makeText(context, "Data restored successfully", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.restore_success), Toast.LENGTH_SHORT).show()
                             showSettings = false
                         },
                         onError = { error ->
-                            Toast.makeText(context, "Restore failed: $error", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, context.getString(R.string.restore_failed, error), Toast.LENGTH_LONG).show()
                         }
                     )
                 }
             } catch (e: Exception) {
-                Toast.makeText(context, "Failed to read file: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, context.getString(R.string.read_file_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -109,7 +114,7 @@ fun DashboardScreen(
             
             Image(
                 painter = painterResource(id = R.drawable.img_app_logo),
-                contentDescription = "Piggy Ledger Logo",
+                contentDescription = stringResource(R.string.piggy_ledger_logo),
                 modifier = Modifier.size(200.dp).clip(RoundedCornerShape(32.dp)),
                 contentScale = ContentScale.Fit
             )
@@ -117,7 +122,7 @@ fun DashboardScreen(
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = "Welcome to Your Circle",
+                text = stringResource(R.string.welcome_to_circle),
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = NavyDark,
@@ -127,33 +132,44 @@ fun DashboardScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Choose how you'd like to start your saving journey.",
+                text = stringResource(R.string.choose_saving_journey),
                 fontSize = 16.sp,
                 color = TextLight,
                 textAlign = TextAlign.Center
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(
+                onClick = onNavigateToMyGoals,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.height(40.dp)
+            ) {
+                Text(
+                    stringResource(R.string.go_straight_dashboard),
+                    color = PinkPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             DashboardCard(
-                title = "Start New Goal",
-                subtitle = "Set a target.",
+                title = stringResource(R.string.start_new_goal),
+                subtitle = stringResource(R.string.set_target),
                 onClick = onNavigateToCreateGoal
             )
             
             Spacer(modifier = Modifier.height(16.dp))
             
             DashboardCard(
-                title = "Payoffs & Loans",
-                subtitle = "Manage who you lent money to or who you owe.",
+                title = stringResource(R.string.payoffs_loans),
+                subtitle = stringResource(R.string.manage_loans),
                 onClick = onNavigateToLoans
             )
             
             Spacer(modifier = Modifier.weight(1f))
-            
-            TextButton(onClick = onNavigateToMyGoals) {
-                Text("Go straight to Dashboard →", color = PinkPrimary, fontWeight = FontWeight.Bold)
-            }
             
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -168,7 +184,7 @@ fun DashboardScreen(
                 .statusBarsPadding()
                 .padding(16.dp)
         ) {
-            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = NavyDark)
+            Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings_icon), tint = NavyDark)
         }
     }
 
@@ -187,13 +203,44 @@ fun DashboardScreen(
                 when (settingsMode) {
                     SettingsMode.MAIN -> {
                         Text(
-                            "Settings & Preferences",
+                            stringResource(R.string.settings),
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             color = NavyDark
                         )
                         
                         Spacer(modifier = Modifier.height(20.dp))
+                        
+                        Card(
+                            modifier = Modifier.fillMaxWidth().clickable { 
+                                settingsMode = SettingsMode.LANGUAGE
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = PinkPrimary.copy(alpha = 0.03f)),
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, PinkPrimary.copy(alpha = 0.2f))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(PinkPrimary.copy(alpha = 0.1f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Language, contentDescription = null, tint = PinkPrimary)
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(stringResource(R.string.language), fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextLight)
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
                         
                         Card(
                             modifier = Modifier.fillMaxWidth().clickable {
@@ -218,7 +265,7 @@ fun DashboardScreen(
                                     contentScale = ContentScale.Crop
                                 )
                                 Spacer(modifier = Modifier.width(16.dp))
-                                Text("Give Feedback", fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
+                                Text(stringResource(R.string.give_feedback), fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextLight)
                             }
                         }
@@ -248,7 +295,7 @@ fun DashboardScreen(
                                     contentScale = ContentScale.Crop
                                 )
                                 Spacer(modifier = Modifier.width(16.dp))
-                                Text("Rate the App", fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
+                                Text(stringResource(R.string.rate_app), fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextLight)
                             }
                         }
@@ -278,7 +325,7 @@ fun DashboardScreen(
                                     contentScale = ContentScale.Crop
                                 )
                                 Spacer(modifier = Modifier.width(16.dp))
-                                Text("Backup Data", fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
+                                Text(stringResource(R.string.backup_data), fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextLight)
                             }
                         }
@@ -308,12 +355,71 @@ fun DashboardScreen(
                                     contentScale = ContentScale.Crop
                                 )
                                 Spacer(modifier = Modifier.width(16.dp))
-                                Text("Restore Data", fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
+                                Text(stringResource(R.string.restore_data), fontWeight = FontWeight.SemiBold, color = NavyDark, modifier = Modifier.weight(1f))
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextLight)
                             }
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
+                    }
+                    SettingsMode.LANGUAGE -> {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            IconButton(onClick = { settingsMode = SettingsMode.MAIN }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.back_icon),
+                                    tint = NavyDark
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                stringResource(R.string.language),
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = NavyDark
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                        
+                        SettingsLanguageOption(
+                            title = stringResource(id = R.string.english),
+                            subtitle = "United States",
+                            flagResId = R.drawable.ic_flag_us,
+                            isSelected = currentLocale.startsWith("en"),
+                            onClick = {
+                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+                            }
+                        )
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        SettingsLanguageOption(
+                            title = stringResource(id = R.string.arabic),
+                            subtitle = "Saudi Arabia",
+                            flagResId = R.drawable.ic_flag_sa,
+                            isSelected = (currentLocale.startsWith("ar") && !currentLocale.contains("EG")) || (currentLocale.isEmpty() && java.util.Locale.getDefault().language == "ar"),
+                            onClick = {
+                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ar"))
+                            }
+                        )
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        SettingsLanguageOption(
+                            title = stringResource(id = R.string.egyptian),
+                            subtitle = "Egypt",
+                            flagResId = R.drawable.ic_flag_eg,
+                            isSelected = currentLocale.contains("ar-EG"),
+                            onClick = {
+                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ar-EG"))
+                            }
+                        )
                     }
                     SettingsMode.FEEDBACK -> {
                         Row(
@@ -323,13 +429,13 @@ fun DashboardScreen(
                             IconButton(onClick = { settingsMode = SettingsMode.MAIN }) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
+                                    contentDescription = stringResource(R.string.back_icon),
                                     tint = NavyDark
                                 )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                "Community Feedback",
+                                stringResource(R.string.community_feedback),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = NavyDark
@@ -344,7 +450,7 @@ fun DashboardScreen(
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.img_settings_feedback),
-                                contentDescription = "Feedback Illustration",
+                                contentDescription = stringResource(R.string.feedback_illustration),
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .clip(RoundedCornerShape(16.dp)),
@@ -362,14 +468,14 @@ fun DashboardScreen(
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = "Join our Community Board",
+                                    text = stringResource(R.string.join_community_board),
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = NavyDark
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "Help us improve Piggy Ledger! Click below to visit our feature request board. There, you can suggest new features, report bugs, and upvote existing suggestions from other users.",
+                                    text = stringResource(R.string.help_improve),
                                     fontSize = 13.sp,
                                     color = TextLight,
                                     lineHeight = 18.sp
@@ -385,7 +491,7 @@ fun DashboardScreen(
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://piggy-ledger.featureos.app"))
                                     context.startActivity(intent)
                                 } catch (e: Exception) {
-                                    Toast.makeText(context, "Could not open browser", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.browser_error), Toast.LENGTH_SHORT).show()
                                 }
                                 showSettings = false
                             },
@@ -402,7 +508,7 @@ fun DashboardScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Open Feedback Board", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.open_feedback_board), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                     SettingsMode.RATING -> {
@@ -415,13 +521,13 @@ fun DashboardScreen(
                             IconButton(onClick = { settingsMode = SettingsMode.MAIN }) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
+                                    contentDescription = stringResource(R.string.back_icon),
                                     tint = NavyDark
                                 )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                "Rate the App",
+                                stringResource(R.string.rate_app_title),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = NavyDark
@@ -436,7 +542,7 @@ fun DashboardScreen(
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.img_settings_rate),
-                                contentDescription = "Rate Illustration",
+                                contentDescription = stringResource(R.string.rate_illustration),
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .clip(RoundedCornerShape(16.dp)),
@@ -447,7 +553,7 @@ fun DashboardScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                         
                         Text(
-                            text = "Enjoying Piggy Ledger? Tap the stars to rate your experience. Your support keeps us going!",
+                            text = stringResource(R.string.enjoying_piggy_ledger),
                             fontSize = 14.sp,
                             color = TextLight,
                             lineHeight = 20.sp
@@ -488,7 +594,7 @@ fun DashboardScreen(
                                 try {
                                     context.startActivity(Intent.createChooser(intent, "Send Rating"))
                                 } catch (e: Exception) {
-                                    Toast.makeText(context, "No email client found", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.email_error), Toast.LENGTH_SHORT).show()
                                 }
                                 showSettings = false
                             },
@@ -500,7 +606,7 @@ fun DashboardScreen(
                             ),
                             enabled = rating > 0
                         ) {
-                            Text("Send Rating", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.send_rating), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                     SettingsMode.BACKUP -> {
@@ -511,13 +617,13 @@ fun DashboardScreen(
                             IconButton(onClick = { settingsMode = SettingsMode.MAIN }) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
+                                    contentDescription = stringResource(R.string.back_icon),
                                     tint = NavyDark
                                 )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                "Backup Data",
+                                stringResource(R.string.backup_data_title),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = NavyDark
@@ -532,7 +638,7 @@ fun DashboardScreen(
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.img_settings_backup),
-                                contentDescription = "Backup Illustration",
+                                contentDescription = stringResource(R.string.backup_illustration),
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .clip(RoundedCornerShape(16.dp)),
@@ -551,14 +657,14 @@ fun DashboardScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    "Secure Local Export",
+                                    stringResource(R.string.secure_local_export),
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = NavyDark
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    "Save your goals, logs, and ledger stats to a backup JSON file.",
+                                    stringResource(R.string.save_goals_desc),
                                     fontSize = 13.sp,
                                     color = TextLight,
                                     lineHeight = 18.sp
@@ -579,7 +685,7 @@ fun DashboardScreen(
                                 contentColor = Color.White
                             )
                         ) {
-                            Text("Create Backup File", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.create_backup_file), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                     SettingsMode.RESTORE -> {
@@ -590,13 +696,13 @@ fun DashboardScreen(
                             IconButton(onClick = { settingsMode = SettingsMode.MAIN }) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
+                                    contentDescription = stringResource(R.string.back_icon),
                                     tint = NavyDark
                                 )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                "Restore Data",
+                                stringResource(R.string.restore_data_title),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = NavyDark
@@ -611,7 +717,7 @@ fun DashboardScreen(
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.img_settings_restore),
-                                contentDescription = "Restore Illustration",
+                                contentDescription = stringResource(R.string.restore_illustration),
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .clip(RoundedCornerShape(16.dp)),
@@ -630,14 +736,14 @@ fun DashboardScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    "Import JSON Backup",
+                                    stringResource(R.string.import_json_backup),
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = NavyDark
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    "Restoring data will replace your current local goals and logs.",
+                                    stringResource(R.string.restoring_data_replace),
                                     fontSize = 13.sp,
                                     color = TextLight,
                                     lineHeight = 18.sp
@@ -658,7 +764,7 @@ fun DashboardScreen(
                                 contentColor = Color.White
                             )
                         ) {
-                            Text("Select Backup File", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.select_backup_file), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
                     }
             }
@@ -697,6 +803,73 @@ fun DashboardCard(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
                 tint = PinkPrimary
+            )
+        }
+    }
+}
+
+@Composable
+fun SettingsLanguageOption(
+    title: String,
+    subtitle: String,
+    flagResId: Int,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp)
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = if (isSelected) PinkPrimary else Color(0xFFF1F5F9),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) PinkPrimary.copy(alpha = 0.05f) else Color.White
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = flagResId),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = NavyDark
+                )
+                Text(
+                    text = subtitle,
+                    fontSize = 13.sp,
+                    color = TextLight
+                )
+            }
+            
+            RadioButton(
+                selected = isSelected,
+                onClick = onClick,
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = PinkPrimary,
+                    unselectedColor = Color(0xFFCBD5E1)
+                )
             )
         }
     }

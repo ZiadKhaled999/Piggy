@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">دفتر الحصالة</string>
+    <string name="language">اللغة</string>
+    <string name="select_language">اختر اللغة</string>
+    <string name="choose_language_desc">اختر لغتك المفضلة للمتابعة</string>
+    <string name="english">English</string>
+    <string name="arabic">العربية</string>
+    <string name="continue_btn">متابعة</string>
+    <string name="get_started">ابدأ الآن</string>
+    <string name="settings">الإعدادات والتفضيلات</string>
+    <string name="backup_data">النسخ الاحتياطي</string>
+    <string name="restore_data">استعادة البيانات</string>
+    <string name="rate_app">تقييم التطبيق</string>
+    <string name="give_feedback">تقديم ملاحظات</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_step_1_title">تتبع كل قرش</string>
+    <string name="onboarding_step_1_desc">لا مزيد من التخمين أين ذهبت أموالك. دفتر الحصالة يبقي كل شيء منظماً.</string>
+    <string name="onboarding_step_2_title">حدد أهدافاً كبيرة</string>
+    <string name="onboarding_step_2_desc">تدخر لإجازة أو حاسوب جديد؟ حدد أهدافاً بصرية وحققها.</string>
+    <string name="onboarding_step_3_title">ابقَ مستمراً</string>
+    <string name="onboarding_step_3_desc">ابنِ عادات مالية صحية مع التتبع اليومي والتذكيرات الودية.</string>
+    
+    <!-- Dashboard & UI -->
+    <string name="welcome_back">مرحباً بعودتك!</string>
+    <string name="dashboard_title">لوحة التحكم</string>
+    <string name="your_balance">رصيدك</string>
+    <string name="recent_activity">النشاط الأخير</string>
+    <string name="no_recent_activity">لا يوجد نشاط أخير</string>
+    <string name="view_all">عرض الكل</string>
+    <string name="go_straight_dashboard">الذهاب مباشرة إلى لوحة التحكم ←</string>
+    
+    <!-- Bottom Nav -->
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_goals">الأهداف</string>
+    <string name="nav_loans">القروض</string>
+    <string name="nav_settings">الإعدادات</string>
+
+
+    <string name="my_goals">أهدافي</string>
+    <string name="no_goals_yet">لا توجد أهداف بعد. أضف هدفاً!</string>
+    <string name="add_goal">إضافة هدف</string>
+    
+    <string name="new_goal">هدف جديد</string>
+    <string name="new_goal_subtitle">ما هي خطتك الكبيرة؟ قم بإعدادها هنا.</string>
+    <string name="what_are_you_saving_for">لماذا تدخر؟</string>
+    <string name="goal_name_placeholder">مثال: إجازة أحلامك، حاسوب جديد</string>
+    <string name="goal_type">نوع الهدف</string>
+    <string name="how_much_do_you_need">كم تحتاج؟ ($)</string>
+    <string name="lets_get_saving">لنبدأ الادخار!</string>
+
+    <string name="welcome_to_circle">مرحباً بك في دائرتك</string>
+    <string name="choose_saving_journey">اختر كيف تريد أن تبدأ رحلة التوفير.</string>
+    <string name="start_new_goal">بدء هدف جديد</string>
+    <string name="set_target">حدد هدفاً.</string>
+    <string name="payoffs_loans">المدفوعات والقروض</string>
+    <string name="manage_loans">أدر أموالك المقترضة أو المدين بها.</string>
+    <string name="community_feedback">ملاحظات المجتمع</string>
+    <string name="join_community_board">انضم إلى لوحة المجتمع</string>
+    <string name="help_improve">ساعدنا في تحسين دفتر الحصالة! انقر أدناه لزيارة لوحة طلب الميزات.</string>
+    <string name="rate_app_title">تقييم التطبيق</string>
+    <string name="enjoying_piggy_ledger">هل تستمتع بدفتر الحصالة؟ اضغط على النجوم لتقييم تجربتك.</string>
+    <string name="backup_data_title">نسخ احتياطي للبيانات</string>
+    <string name="secure_local_export">تصدير محلي آمن</string>
+    <string name="save_goals_desc">احفظ أهدافك وسجلاتك وإحصائياتك في ملف JSON.</string>
+    <string name="restore_data_title">استعادة البيانات</string>
+    <string name="import_json_backup">استيراد نسخة JSON الاحتياطية</string>
+    <string name="restoring_data_replace">استعادة البيانات ستستبدل الأهداف والسجلات الحالية.</string>
+    <string name="start_first_goal">ابدأ هدفك الأول اليوم!</string>
+    <string name="open_savings">مدخرات مفتوحة (عامة)</string>
+    <string name="target">الهدف:</string>
+
+
+    <string name="onboarding_welcome_to">مرحباً بك في</string>
+    <string name="onboarding_subtitle_1">طريقتك الحديثة للادخار وتجميع الموارد\nمع الأصدقاء والعائلة.</string>
+    <string name="onboarding_pool_your">اجمع</string>
+    <string name="onboarding_savings">مدخراتك</string>
+    <string name="onboarding_subtitle_2">أنشئ أهدافاً مشتركة وادعُ الآخرين للمساهمة.\nسواء كان ذلك لرحلة، أو هدية، أو\nمشروع جماعي.</string>
+    <string name="onboarding_track">تتبع</string>
+    <string name="onboarding_progress">التقدم</string>
+    <string name="onboarding_together">معاً</string>
+    <string name="onboarding_subtitle_3">تحديثات فورية للمساهمات واكتمال الأهداف.\nابق متحمساً وأنت ترى شريط\nالتقدم يمتلئ.</string>
+    <string name="onboarding_ready_to">مستعد</string>
+    <string name="onboarding_start">للبدء</string>
+    <string name="onboarding_subtitle_4">دعنا نعد هدفك الأول ونبدأ\nرحلتك نحو مدخرات جماعية أذكى.</string>
+    <string name="back_btn">رجوع</string>
+
+
+<string name="loans_payoffs_title">القروض والمدفوعات</string>
+    <string name="keep_tabs_subtitle">تتبع من يدين لمن</string>
+    <string name="net_ledger">صافي الدفتر</string>
+    <string name="search_person_notes">البحث عن شخص أو ملاحظات...</string>
+    <string name="add_record">إضافة سجل</string>
+    <string name="active_tab">نشط</string>
+    <string name="paid_off_tab">تم السداد</string>
+    <string name="show_all_tab">عرض الكل</string>
+    <string name="no_records_found">لم يتم العثور على سجلات معاملات</string>
+    <string name="log_lent_borrowed_desc">سجل من أقرضته أو من اقترضت منه لتعبئة دفترك.</string>
+    <string name="due_date">يستحق في %1$s</string>
+    <string name="open_ended">مفتوح</string>
+    <string name="details_badge">التفاصيل</string>
+    <string name="new_ledger_entry">إدخال دفتر جديد</string>
+    <string name="fill_all_details">املأ جميع التفاصيل</string>
+    <string name="transaction_amount_label">مبلغ المعاملة</string>
+    <string name="i_lent">أنا أقرضت</string>
+    <string name="i_borrowed">أنا اقترضت</string>
+    <string name="contact_details_label">تفاصيل الاتصال</string>
+    <string name="contact_name_label">اسم جهة الاتصال</string>
+    <string name="mike_smith_placeholder">مثال: محمد علي</string>
+    <string name="pick_contact_desc">اختر جهة اتصال</string>
+    <string name="phone_optional">الهاتف (اختياري)</string>
+    <string name="phone_placeholder">مثال: +20 10...</string>
+    <string name="social_optional">التواصل الاجتماعي (اختياري)</string>
+    <string name="social_placeholder">مثال: البريد الإلكتروني / الحساب</string>
+    <string name="flashback_note_required">ملاحظة الاستذكار (مطلوب)</string>
+    <string name="flashback_placeholder">لماذا تغير المال؟ تذكر التفاصيل بسهولة لاحقاً...</string>
+    <string name="repayment_deadline">موعد السداد؟</string>
+    <string name="confirm_btn">تأكيد</string>
+    <string name="record_to_ledger_btn">تسجيل في الدفتر</string>
+    <string name="contact_name_header">اسم جهة الاتصال</string>
+    <string name="repayment_deadline_header">موعد السداد</string>
+    <string name="no_strict_deadline">مفتوح (لا يوجد موعد محدد)</string>
+    <string name="flashback_recall_note">ملاحظة الاستذكار</string>
+    <string name="mark_as_paid_off">وضع علامة كمسدد وتسوية</string>
+    <string name="delete_confirm_msg">هل أنت متأكد تماماً من رغبتك في الحذف؟</string>
+    <string name="yes_btn">نعم</string>
+    <string name="no_btn">لا</string>
+    <string name="delete_record">حذف السجل</string>
+    <string name="budgeting_title">الميزانية</string>
+    <string name="total_balance_label">إجمالي الرصيد</string>
+    <string name="extra_amount">+$%1$s إضافي</string>
+    <string name="completed_status">اكتمل</string>
+    <string name="in_progress_status">قيد التنفيذ</string>
+    <string name="your_budget_title">ميزانيتك</string>
+    <string name="remaining_left">متبقي $%1$s</string>
+    <string name="goal_reached_status">تم الوصول للهدف</string>
+    <string name="add_deposit">إضافة إيداع</string>
+    <string name="goal_completed_msg">اكتمل الهدف</string>
+    <string name="overview_tab">نظرة عامة</string>
+    <string name="history_tab">السجل</string>
+    <string name="deposit_amount_label">مبلغ الإيداع</string>
+    <string name="zero_amount_placeholder">$ 0.00</string>
+    <string name="note_required_label">ملاحظة (مطلوب)</string>
+    <string name="monthly_contribution_placeholder">مثال: المساهمة الشهرية</string>
+    <string name="confirm_deposit_btn">تأكيد الإيداع</string>
+    <string name="established_date_label">تاريخ التأسيس</string>
+    <string name="days_since_start_label">أيام منذ البداية</string>
+    <string name="days_count">%1$d يوم</string>
+    <string name="avg_daily_saving_label">متوسط الادخار اليومي</string>
+    <string name="est_completion_date_label">تاريخ الاكتمال المتوقع</string>
+    <string name="goal_reached_success">تم تحقيق الهدف!</string>
+    <string name="savings_challenge_title">تحدي الادخار</string>
+    <string name="milestones_title">الإنجازات</string>
+    <string name="contributions_count_msg">لقد قمت بإجراء %1$d مساهمة حتى الآن. استمر!</string>
+    <string name="deposit_tx_note">إيداع</string>
+    <string name="target_goal_title">هدف محدد</string>
+    <string name="target_goal_desc">ادخر لمبلغ محدد.</string>
+    <string name="open_savings_desc">إيداع لمجرد الادخار (لا يوجد حد).</string>
+    <string name="open_savings_hint">💡 تلميح: الرصيد المفتوح هو للمدخرات العامة. يمكنك إيداع المال هنا في أي وقت دون تحديد حد معين.</string>
+    <string name="egyptian">العربية المصرية</string>
+
+<string name="open_badge">مفتوح</string>
+    <string name="amount_saved">تم ادخار $%1$s</string>
+    <string name="amount_total_extra">إجمالي $%1$s (إضافي $%2$s)</string>
+    <string name="growth_savings_subtitle">نمِّ رصيد مدخراتك</string>
+    <string name="piggy_ledger_logo">شعار حصالة</string>
+    <string name="settings_icon">الإعدادات</string>
+    <string name="back_icon">رجوع</string>
+    <string name="feedback_illustration">توضيح الملاحظات</string>
+    <string name="rate_illustration">توضيح التقييم</string>
+    <string name="backup_illustration">توضيح النسخ الاحتياطي</string>
+    <string name="restore_illustration">توضيح استعادة البيانات</string>
+    <string name="export_success">تم تصدير البيانات بنجاح</string>
+    <string name="export_failed">فشل التصدير: %1$s</string>
+    <string name="restore_success">تم استعادة البيانات بنجاح</string>
+    <string name="restore_failed">فشلت الاستعادة: %1$s</string>
+    <string name="read_file_failed">فشل قراءة الملف: %1$s</string>
+    <string name="browser_error">تعذر فتح المتصفح</string>
+    <string name="email_error">لم يتم العثور على تطبيق بريد إلكتروني</string>
+    <string name="selected_badge">محدد</string>
+    <string name="amount_extra_simple">%1$s إضافي</string>
+    <string name="amount_saved_simple">تم ادخار %1$s</string>
+    <string name="amount_left_simple">متبقي %1$s</string>
+    <string name="bar_chart_desc">رسم بياني شريطي</string>
+    <string name="polar_chart_desc">رسم بياني قطبي</string>
+    <string name="max_label">الأقصى</string>
+    <string name="start_saving_msg">ابدأ في الادخار لرؤية مخطط التقدم الخاص بك!</string>
+    <string name="no_contributions_msg">لا توجد مساهمات بعد.</string>
+    <string name="repayment_deadline_over">انتهى موعد السداد لـ %1$s. المبلغ المستحق: %2$s.</string>
+    <string name="zero_amount">0.00</string>
+    <string name="i_owe_this">أنا مدين بهذا</string>
+    <string name="i_owe">أنا مدين</string>
+    <string name="owed_to_me">ليا فلوس</string>
+    <string name="open_feedback_board">فتح لوحة الملاحظات</string>
+    <string name="send_rating">إرسال التقييم</string>
+    <string name="create_backup_file">إنشاء ملف نسخة احتياطية</string>
+    <string name="select_backup_file">اختر ملف النسخة الاحتياطية</string>
+    <string name="deadline_channel_name">تذكيرات الموعد النهائي</string>
+    <string name="deadline_channel_desc">إشعارات للمواعيد النهائية لسداد القروض</string>
+    <string name="deadline_title">انتهى الموعد النهائي!</string>
+    <string name="cancel_action">إلغاء</string>
+    <string name="snooze_action">غفوة</string>
+    <string name="completed_badge">مكتمل</string>
+    <string name="cancel_btn">إلغاء</string>
+    <string name="transaction_memo_header">مذكرة المعاملة</string>
+    <string name="due_prefix">تاريخ الاستحقاق: %1$s</string>
+    <string name="no_deadline_set">لم يتم تحديد موعد نهائي</string>
+
+    <string name="widget_owed_to_me">لي أموال</string>
+    <string name="widget_i_owe">علي أموال</string>
+    <string name="widget_net_ledger">صافي الحساب</string>
+    <string name="widget_my_goals">أهدافي</string>
+    <string name="widget_no_goals">لا توجد أهداف نشطة بعد!\nاضغط هنا لإنشاء هدف. 🚀</string>
+    <string name="widget_goal_progress">تقدم الهدف</string>
+    <string name="widget_total_balance">إجمالي الرصيد</string>
+    <string name="widget_payoffs">المدفوعات</string>
+    <string name="widget_loans">القروض</string>
+    <string name="widget_open_savings">ادخار مفتوح</string>
+    <string name="widget_amount_saved">تم ادخار %1$s</string>
+    <string name="widget_open_label">مفتوح</string>
+
+    <!-- Streak Statements -->
+    <string-array name="streak_statements_success">
+        <item>أنت رائع!</item>
+        <item>لا يمكن إيقافك!</item>
+        <item>تقدم أسطوري!</item>
+        <item>سلسلة مثالية!</item>
+        <item>استمر في التألق!</item>
+        <item>تحقق الهدف!</item>
+    </string-array>
+    <string-array name="streak_statements_happy">
+        <item>عمل رائع!</item>
+        <item>استمر في التقدم!</item>
+        <item>حافظ على استمراريتك!</item>
+        <item>أنت تفعل أشياء مذهلة!</item>
+        <item>فخورون بك!</item>
+        <item>تبدو رائعاً!</item>
+    </string-array>
+    <string-array name="streak_statements_panic">
+        <item>ادخر الآن!</item>
+        <item>لا تكسر السلسلة!</item>
+        <item>أسرع!</item>
+        <item>الوقت ينفد!</item>
+        <item>السلسلة في خطر!</item>
+        <item>مطلوب إجراء الآن!</item>
+    </string-array>
+    <string-array name="streak_statements_worried">
+        <item>السلسلة مهددة!</item>
+        <item>هل نسيت تقريباً؟</item>
+        <item>لا تتوقف الآن!</item>
+        <item>كن يقظاً!</item>
+        <item>كادت أن تضيع!</item>
+        <item>حافظ على السلسلة!</item>
+    </string-array>
+    <string-array name="streak_statements_lost">
+        <item>انكسرت السلسلة</item>
+        <item>ابدأ من جديد!</item>
+        <item>بداية جديدة!</item>
+        <item>لا تستسلم!</item>
+        <item>حاول مرة أخرى!</item>
+        <item>عد للمسار!</item>
+    </string-array>
+</resources>

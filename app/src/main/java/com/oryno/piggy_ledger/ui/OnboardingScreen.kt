@@ -1,4 +1,7 @@
 package com.oryno.piggy_ledger.ui
+import androidx.compose.ui.res.stringResource
+import com.oryno.piggy_ledger.R
+
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateDpAsState
@@ -28,7 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.oryno.piggy_ledger.R
+
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
@@ -43,52 +46,68 @@ data class OnboardingPageData(
 fun OnboardingScreen(onComplete: () -> Unit) {
     var currentPage by remember { mutableIntStateOf(0) }
     
-    val pages = remember {
-        listOf(
-            OnboardingPageData(
-                imageRes = R.drawable.img_piggy_hello,
-                title = buildAnnotatedString {
-                    append("Welcome to\n")
-                    withStyle(style = SpanStyle(color = PinkPrimary)) {
-                        append("Piggy Ledger")
-                    }
-                },
-                subtitle = "Your modern way to save and pool resources\nwith friends and family."
-            ),
-            OnboardingPageData(
-                imageRes = R.drawable.img_piggy_pool,
-                title = buildAnnotatedString {
-                    append("Pool Your ")
-                    withStyle(style = SpanStyle(color = PinkPrimary)) {
-                        append("Savings")
-                    }
-                },
-                subtitle = "Create shared goals and invite others to\ncontribute. Whether it's for a trip, a gift, or a\ngroup project."
-            ),
-            OnboardingPageData(
-                imageRes = R.drawable.img_piggy_track,
-                title = buildAnnotatedString {
-                    append("Track ")
-                    withStyle(style = SpanStyle(color = PinkPrimary)) {
-                        append("Progress")
-                    }
-                    append("\nTogether")
-                },
-                subtitle = "Real-time updates on contributions and goal\ncompletion. Stay motivated as you see the\nprogress bar fill up."
-            ),
-            OnboardingPageData(
-                imageRes = R.drawable.img_app_logo,
-                title = buildAnnotatedString {
-                    append("Ready to ")
-                    withStyle(style = SpanStyle(color = PinkPrimary)) {
-                        append("Start")
-                    }
-                    append("?")
-                },
-                subtitle = "Let's set up your first goal and begin your\njourney towards smarter collective savings."
-            )
+    
+    val welcomeTo = stringResource(R.string.onboarding_welcome_to)
+    val appName = stringResource(R.string.app_name)
+    val subtitle1 = stringResource(R.string.onboarding_subtitle_1)
+    
+    val poolYour = stringResource(R.string.onboarding_pool_your)
+    val savings = stringResource(R.string.onboarding_savings)
+    val subtitle2 = stringResource(R.string.onboarding_subtitle_2)
+    
+    val trackStr = stringResource(R.string.onboarding_track)
+    val progress = stringResource(R.string.onboarding_progress)
+    val together = stringResource(R.string.onboarding_together)
+    val subtitle3 = stringResource(R.string.onboarding_subtitle_3)
+    
+    val readyTo = stringResource(R.string.onboarding_ready_to)
+    val startStr = stringResource(R.string.onboarding_start)
+    val subtitle4 = stringResource(R.string.onboarding_subtitle_4)
+    
+    val pages = listOf(
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString {
+                append(welcomeTo + "\n")
+                withStyle(style = SpanStyle(color = PinkPrimary)) {
+                    append(appName)
+                }
+            },
+            subtitle = subtitle1
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_pool,
+            title = buildAnnotatedString {
+                append(poolYour + " ")
+                withStyle(style = SpanStyle(color = PinkPrimary)) {
+                    append(savings)
+                }
+            },
+            subtitle = subtitle2
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_track,
+            title = buildAnnotatedString {
+                append(trackStr + " ")
+                withStyle(style = SpanStyle(color = PinkPrimary)) {
+                    append(progress)
+                }
+                append("\n" + together)
+            },
+            subtitle = subtitle3
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_app_logo,
+            title = buildAnnotatedString {
+                append(readyTo + " ")
+                withStyle(style = SpanStyle(color = PinkPrimary)) {
+                    append(startStr)
+                }
+                append("?")
+            },
+            subtitle = subtitle4
         )
-    }
+    )
 
     Column(
         modifier = Modifier
@@ -195,7 +214,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Continue",
+                            text = stringResource(R.string.continue_btn),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -237,7 +256,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "BACK",
+                                text = stringResource(R.string.back_btn),
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = TextLight
@@ -265,7 +284,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (currentPage == pages.size - 1) "Get Started" else "Continue",
+                                text = if (currentPage == pages.size - 1) stringResource(R.string.get_started) else stringResource(R.string.continue_btn),
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White

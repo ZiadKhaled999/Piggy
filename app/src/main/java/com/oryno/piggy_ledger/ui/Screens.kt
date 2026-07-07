@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 sealed class Screen {
     @Serializable data object Splash : Screen()
+    @Serializable data object LanguageSelection : Screen()
     @Serializable data object Onboarding : Screen()
     @Serializable data object Dashboard : Screen()
     @Serializable data object CreateGoal : Screen()

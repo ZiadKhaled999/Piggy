@@ -15,8 +15,8 @@ class NotificationHelper(private val context: Context) {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Deadline Reminders"
-            val descriptionText = "Notifications for loan repayment deadlines"
+            val name = context.getString(R.string.deadline_channel_name)
+            val descriptionText = context.getString(R.string.deadline_channel_desc)
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText
@@ -33,12 +33,12 @@ class NotificationHelper(private val context: Context) {
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle("Deadline Over!")
-            .setContentText("The repayment deadline for $contactName is over. Outstanding amount: $$amount.")
+            .setContentTitle(context.getString(R.string.deadline_title))
+            .setContentText(context.getString(R.string.repayment_deadline_over, contactName, "$$amount"))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Cancel", null)
-            .addAction(android.R.drawable.ic_popup_reminder, "Snooze", null)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, context.getString(R.string.cancel_btn), null)
+            .addAction(android.R.drawable.ic_popup_reminder, context.getString(R.string.snooze_action), null)
 
         notificationManager.notify(contactName.hashCode(), builder.build())
     }

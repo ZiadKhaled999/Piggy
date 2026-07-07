@@ -1,3 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Piggy Ledger</string>
+    <string name="language">Language</string>
+    <string name="select_language">Select Language</string>
+    <string name="choose_language_desc">Choose your preferred language to continue</string>
+    <string name="english">English</string>
+    <string name="arabic">العربية</string>
+    <string name="continue_btn">Continue</string>
+    <string name="get_started">Get Started</string>
+    <string name="settings">Settings &amp; Preferences</string>
+    <string name="backup_data">Backup Data</string>
+    <string name="restore_data">Restore Data</string>
+    <string name="rate_app">Rate the App</string>
+    <string name="give_feedback">Give Feedback</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_step_1_title">Track Every Penny</string>
+    <string name="onboarding_step_1_desc">No more guessing where your money went. Piggy Ledger keeps everything organized.</string>
+    <string name="onboarding_step_2_title">Set Big Goals</string>
+    <string name="onboarding_step_2_desc">Saving for a vacation or a new PC? Set visual goals and crush them.</string>
+    <string name="onboarding_step_3_title">Stay Consistent</string>
+    <string name="onboarding_step_3_desc">Build healthy financial habits with daily streak tracking and friendly reminders.</string>
+    
+    <!-- Dashboard & UI -->
+    <string name="welcome_back">Welcome Back!</string>
+    <string name="dashboard_title">Dashboard</string>
+    <string name="your_balance">Your Balance</string>
+    <string name="recent_activity">Recent Activity</string>
+    <string name="no_recent_activity">No recent activity</string>
+    <string name="view_all">View All</string>
+    <string name="go_straight_dashboard">Go straight to Dashboard →</string>
+    
+    <!-- Bottom Nav -->
+    <string name="nav_home">Home</string>
+    <string name="nav_goals">Goals</string>
+    <string name="nav_loans">Loans</string>
+    <string name="nav_settings">Settings</string>
+
+    
+    <string name="my_goals">My Goals</string>
+    <string name="no_goals_yet">No goals yet. Add one!</string>
+    <string name="add_goal">Add Goal</string>
+    
+    <string name="new_goal">New Goal</string>
+    <string name="new_goal_subtitle">What\'s the big plan? Set it up here.</string>
+    <string name="what_are_you_saving_for">WHAT ARE YOU SAVING FOR?</string>
+    <string name="goal_name_placeholder">e.g. Dream Vacation, New PC</string>
+    <string name="goal_type">Goal Type</string>
+    <string name="how_much_do_you_need">HOW MUCH DO YOU NEED? ($)</string>
+    <string name="lets_get_saving">Let\'s Get Saving!</string>
+
+    <string name="welcome_to_circle">Welcome to Your Circle</string>
+    <string name="choose_saving_journey">Choose how you\'d like to start your saving journey.</string>
+    <string name="start_new_goal">Start New Goal</string>
+    <string name="set_target">Set a target.</string>
+    <string name="payoffs_loans">Payoffs &amp; Loans</string>
+    <string name="manage_loans">Manage who you lent money to or who you owe.</string>
+    <string name="community_feedback">Community Feedback</string>
+    <string name="join_community_board">Join our Community Board</string>
+    <string name="help_improve">Help us improve Piggy Ledger! Click below to visit our feature request board. There, you can suggest new features, report bugs, and upvote existing suggestions from other users.</string>
+    <string name="rate_app_title">Rate the App</string>
+    <string name="enjoying_piggy_ledger">Enjoying Piggy Ledger? Tap the stars to rate your experience. Your support keeps us going!</string>
+    <string name="backup_data_title">Backup Data</string>
+    <string name="secure_local_export">Secure Local Export</string>
+    <string name="save_goals_desc">Save your goals, logs, and ledger stats to a backup JSON file.</string>
+    <string name="restore_data_title">Restore Data</string>
+    <string name="import_json_backup">Import JSON Backup</string>
+    <string name="restoring_data_replace">Restoring data will replace your current local goals and logs.</string>
+    <string name="start_first_goal">Start your first goal today!</string>
+    <string name="open_savings">Open Savings (General)</string>
+    <string name="target">Target:</string>
+
+
+    <string name="onboarding_welcome_to">Welcome to</string>
+    <string name="onboarding_subtitle_1">Your modern way to save and pool resources\nwith friends and family.</string>
+    <string name="onboarding_pool_your">Pool Your</string>
+    <string name="onboarding_savings">Savings</string>
+    <string name="onboarding_subtitle_2">Create shared goals and invite others to\ncontribute. Whether it\'s for a trip, a gift, or a\ngroup project.</string>
+    <string name="onboarding_track">Track</string>
+    <string name="onboarding_progress">Progress</string>
+    <string name="onboarding_together">Together</string>
+    <string name="onboarding_subtitle_3">Real-time updates on contributions and goal\ncompletion. Stay motivated as you see the\nprogress bar fill up.</string>
+    <string name="onboarding_ready_to">Ready to</string>
+    <string name="onboarding_start">Start</string>
+    <string name="onboarding_subtitle_4">Let\'s set up your first goal and begin your\njourney towards smarter collective savings.</string>
+    <string name="back_btn">BACK</string>
+
+
+<string name="loans_payoffs_title">Loans &amp; Payoffs</string>
+    <string name="keep_tabs_subtitle">Keep tabs on who owes who</string>
+    <string name="net_ledger">NET LEDGER</string>
+    <string name="search_person_notes">Search person or notes...</string>
+    <string name="add_record">Add Record</string>
+    <string name="active_tab">Active</string>
+    <string name="paid_off_tab">Paid Off</string>
+    <string name="show_all_tab">Show All</string>
+    <string name="no_records_found">No transaction records found</string>
+    <string name="log_lent_borrowed_desc">Log who you lent to or who you borrowed from to populate your ledger.</string>
+    <string name="due_date">Due %1$s</string>
+    <string name="open_ended">Open-Ended</string>
+    <string name="details_badge">DETAILS</string>
+    <string name="new_ledger_entry">NEW LEDGER ENTRY</string>
+    <string name="fill_all_details">Fill all details</string>
+    <string name="transaction_amount_label">TRANSACTION AMOUNT</string>
+    <string name="i_lent">I Lent</string>
+    <string name="i_borrowed">I Borrowed</string>
+    <string name="contact_details_label">CONTACT DETAILS</string>
+    <string name="contact_name_label">Contact Name</string>
+    <string name="mike_smith_placeholder">e.g. Mike Smith</string>
+    <string name="pick_contact_desc">Pick Contact</string>
+    <string name="phone_optional">Phone (Optional)</string>
+    <string name="phone_placeholder">e.g. +1 555...</string>
+    <string name="social_optional">Social (Optional)</string>
+    <string name="social_placeholder">e.g. email / handle</string>
+    <string name="flashback_note_required">Flashback Note (Required)</string>
+    <string name="flashback_placeholder">Why did the money change hands? Recall details easily later...</string>
+    <string name="repayment_deadline">Repayment Deadline?</string>
+    <string name="confirm_btn">Confirm</string>
+    <string name="record_to_ledger_btn">RECORD TO LEDGER</string>
+    <string name="contact_name_header">CONTACT NAME</string>
+    <string name="repayment_deadline_header">REPAYMENT DEADLINE</string>
+    <string name="no_strict_deadline">Open-Ended (No strict deadline)</string>
+    <string name="flashback_recall_note">FLASHBACK RECALL NOTE</string>
+    <string name="mark_as_paid_off">MARK AS PAID OFF &amp; SETTLE</string>
+    <string name="delete_confirm_msg">Are you absolutely sure you want to delete?</string>
+    <string name="yes_btn">Yes</string>
+    <string name="no_btn">No</string>
+    <string name="delete_record">Delete Record</string>
+    <string name="budgeting_title">BUDGETING</string>
+    <string name="total_balance_label">TOTAL BALANCE</string>
+    <string name="extra_amount">+$%1$s EXTRA</string>
+    <string name="completed_status">COMPLETED</string>
+    <string name="in_progress_status">IN PROGRESS</string>
+    <string name="your_budget_title">YOUR BUDGET</string>
+    <string name="remaining_left">$%1$s left</string>
+    <string name="goal_reached_status">Goal reached</string>
+    <string name="add_deposit">Add Deposit</string>
+    <string name="goal_completed_msg">Goal Completed</string>
+    <string name="overview_tab">Overview</string>
+    <string name="history_tab">History</string>
+    <string name="deposit_amount_label">DEPOSIT AMOUNT</string>
+    <string name="zero_amount_placeholder">$ 0.00</string>
+    <string name="note_required_label">NOTE (REQUIRED)</string>
+    <string name="monthly_contribution_placeholder">e.g. Monthly contribution</string>
+    <string name="confirm_deposit_btn">Confirm Deposit</string>
+    <string name="established_date_label">ESTABLISHED DATE</string>
+    <string name="days_since_start_label">DAYS SINCE START</string>
+    <string name="days_count">%1$d days</string>
+    <string name="avg_daily_saving_label">AVG. DAILY SAVING</string>
+    <string name="est_completion_date_label">EST. COMPLETION DATE</string>
+    <string name="goal_reached_success">Goal Reached!</string>
+    <string name="savings_challenge_title">Savings Challenge</string>
+    <string name="milestones_title">Milestones</string>
+    <string name="contributions_count_msg">You\'ve made %1$d contributions so far. Keep it up!</string>
+    <string name="deposit_tx_note">Deposit</string>
+    <string name="target_goal_title">Target Goal</string>
+    <string name="target_goal_desc">Save for a specific target amount.</string>
+    <string name="open_savings_desc">Deposit just for saving (No target limit).</string>
+    <string name="open_savings_hint">💡 Hint: Opened balance is for general/indefinite savings. You can deposit money here anytime for savings without setting any specific limit.</string>
+    <string name="egyptian">Egyptian Arabic</string>
+
+<string name="open_badge">OPEN</string>
+    <string name="amount_saved">$%1$s saved</string>
+    <string name="amount_total_extra">$%1$s total ($%2$s extra)</string>
+    <string name="growth_savings_subtitle">GROW YOUR SAVINGS BALANCE</string>
+    <string name="piggy_ledger_logo">Piggy Ledger Logo</string>
+    <string name="settings_icon">Settings</string>
+    <string name="back_icon">Back</string>
+    <string name="feedback_illustration">Feedback Illustration</string>
+    <string name="rate_illustration">Rate Illustration</string>
+    <string name="backup_illustration">Backup Illustration</string>
+    <string name="restore_illustration">Restore Illustration</string>
+    <string name="export_success">Data exported successfully</string>
+    <string name="export_failed">Export failed: %1$s</string>
+    <string name="restore_success">Data restored successfully</string>
+    <string name="restore_failed">Restore failed: %1$s</string>
+    <string name="read_file_failed">Failed to read file: %1$s</string>
+    <string name="browser_error">Could not open browser</string>
+    <string name="email_error">No email client found</string>
+    <string name="selected_badge">Selected</string>
+    <string name="amount_extra_simple">%1$s EXTRA</string>
+    <string name="amount_saved_simple">%1$s saved</string>
+    <string name="amount_left_simple">%1$s left</string>
+    <string name="bar_chart_desc">Bar Chart</string>
+    <string name="polar_chart_desc">Polar Area Chart</string>
+    <string name="max_label">Max</string>
+    <string name="start_saving_msg">Start saving to see your progress chart!</string>
+    <string name="no_contributions_msg">No contributions yet.</string>
+    <string name="repayment_deadline_over">The repayment deadline for %1$s is over. Outstanding amount: %2$s.</string>
+    <string name="zero_amount">0.00</string>
+    <string name="i_owe_this">I OWE THIS</string>
+    <string name="i_owe">I OWE</string>
+    <string name="owed_to_me">OWED TO ME</string>
+    <string name="open_feedback_board">Open Feedback Board</string>
+    <string name="send_rating">Send Rating</string>
+    <string name="create_backup_file">Create Backup File</string>
+    <string name="select_backup_file">Select Backup File</string>
+    <string name="deadline_channel_name">Deadline Reminders</string>
+    <string name="deadline_channel_desc">Notifications for loan repayment deadlines</string>
+    <string name="deadline_title">Deadline Over!</string>
+    <string name="cancel_action">Cancel</string>
+    <string name="snooze_action">Snooze</string>
+    <string name="completed_badge">Completed</string>
+    <string name="cancel_btn">Cancel</string>
+    <string name="transaction_memo_header">TRANSACTION MEMO</string>
+    <string name="due_prefix">Due: %1$s</string>
+    <string name="no_deadline_set">No deadline set</string>
+
+    <string name="widget_owed_to_me">OWED TO ME</string>
+    <string name="widget_i_owe">I OWE</string>
+    <string name="widget_net_ledger">NET LEDGER</string>
+    <string name="widget_my_goals">My Goals</string>
+    <string name="widget_no_goals">No active goals yet!\nTap here to create one. 🚀</string>
+    <string name="widget_goal_progress">Goal Progress</string>
+    <string name="widget_total_balance">TOTAL BALANCE</string>
+    <string name="widget_payoffs">PAYOFFS</string>
+    <string name="widget_loans">LOANS</string>
+    <string name="widget_open_savings">Open Savings</string>
+    <string name="widget_amount_saved">%1$s saved</string>
+    <string name="widget_open_label">OPEN</string>
+
+    <!-- Streak Statements -->
+    <string-array name="streak_statements_success">
+        <item>You\'re on fire!</item>
+        <item>Unstoppable!</item>
+        <item>Legendary progress!</item>
+        <item>Perfect streak!</item>
+        <item>Keep killing it!</item>
+        <item>Goal achieved!</item>
+    </string-array>
+    <string-array name="streak_statements_happy">
+        <item>Great job!</item>
+        <item>Keep going!</item>
+        <item>Stay consistent!</item>
+        <item>You\'re doing amazing!</item>
+        <item>Proud of you!</item>
+        <item>Looking good!</item>
+    </string-array>
+    <string-array name="streak_statements_panic">
+        <item>SAVE NOW!</item>
+        <item>Don\'t break it!</item>
+        <item>Hurry up!</item>
+        <item>Time\'s running out!</item>
+        <item>Streak in danger!</item>
+        <item>ACTION REQUIRED!</item>
+    </string-array>
+    <string-array name="streak_statements_worried">
+        <item>Streak at risk!</item>
+        <item>Almost forgot?</item>
+        <item>Don\'t stop now!</item>
+        <item>Stay alert!</item>
+        <item>Nearly missed!</item>
+        <item>Keep the chain!</item>
+    </string-array>
+    <string-array name="streak_statements_lost">
+        <item>Streak broken</item>
+        <item>Start again!</item>
+        <item>New beginning!</item>
+        <item>Don\'t give up!</item>
+        <item>Try once more!</item>
+        <item>Pick it back up!</item>
+    </string-array>
 </resources>

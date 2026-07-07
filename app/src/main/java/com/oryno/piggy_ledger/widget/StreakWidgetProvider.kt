@@ -22,25 +22,26 @@ class StreakWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        val streak = StreakManager.getStreak(context)
-        val hasActionToday = StreakManager.hasActionToday(context)
+        // Create localized context
+        val locales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+        val config = android.content.res.Configuration(context.resources.configuration)
+        if (!locales.isEmpty) {
+            config.setLocales(android.os.LocaleList.forLanguageTags(locales.toLanguageTags()))
+        }
+        val localizedContext = context.createConfigurationContext(config)
+
+        val streakCount = StreakManager.getStreak(context)
         val piggyState = StreakManager.getPiggyState(context)
         val piggyRes = StreakManager.getPiggyResource(piggyState)
 
-        // Determine message
-        val message = when (piggyState) {
-            StreakManager.PiggyState.SUCCESS -> "Streak Active!"
-            StreakManager.PiggyState.LOST -> "Streak Broken"
-            StreakManager.PiggyState.HAPPY -> "Keep it up!"
-            StreakManager.PiggyState.WORRIED -> "Streak at risk!"
-            StreakManager.PiggyState.PANIC -> "SAVE NOW!"
-        }
+        // Determine adaptive message
+        val message = getStreakStatement(localizedContext, piggyState)
 
         for (appWidgetId in appWidgetIds) {
             val views = RemoteViews(context.packageName, R.layout.widget_streak)
 
             // Update text
-            views.setTextViewText(R.id.tv_streak_count, "$streak days")
+            views.setTextViewText(R.id.tv_streak_count, localizedContext.getString(R.string.days_count, streakCount))
             views.setTextViewText(R.id.tv_streak_message, message)
             
             // Update mascot
@@ -62,6 +63,7 @@ class StreakWidgetProvider : AppWidgetProvider() {
                 R.id.tv_day_sun, R.id.tv_day_mon, R.id.tv_day_tue,
                 R.id.tv_day_wed, R.id.tv_day_thu, R.id.tv_day_fri, R.id.tv_day_sat
             )
+            val dayLetters = arrayOf("S", "M", "T", "W", "T", "F", "S")
 
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
             val todayDateStr = sdf.format(Date())
@@ -72,14 +74,15 @@ class StreakWidgetProvider : AppWidgetProvider() {
                 val isActive = activeDates.contains(dateStr)
                 val isPast = calendar.before(todayCalendar) && dateStr != todayDateStr
                 
-                val (bgRes, textColor) = when {
-                    isActive -> R.drawable.bg_streak_day_active to 0xFFFFFFFF.toInt()
-                    isPast -> R.drawable.bg_streak_day_missed to 0xFFFFFFFF.toInt()
-                    else -> R.drawable.bg_streak_day_inactive to 0xFF9CA3AF.toInt()
+                val (bgRes, dayText) = when {
+                    isActive -> R.drawable.bg_streak_day_active to "✅"
+                    isPast -> R.drawable.bg_streak_day_missed to "X"
+                    else -> R.drawable.bg_streak_day_future to dayLetters[i]
                 }
 
                 views.setInt(dayIds[i], "setBackgroundResource", bgRes)
-                views.setTextColor(dayIds[i], textColor)
+                views.setTextColor(dayIds[i], 0xFFFFFFFF.toInt()) // Always white for better contrast
+                views.setTextViewText(dayIds[i], dayText)
                 
                 calendar.add(Calendar.DAY_OF_YEAR, 1)
             }
@@ -90,7 +93,7 @@ class StreakWidgetProvider : AppWidgetProvider() {
             }
             val pendingIntent = PendingIntent.getActivity(
                 context,
-                1, // unique request code to avoid collision with summary widget
+                1,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
@@ -98,6 +101,19 @@ class StreakWidgetProvider : AppWidgetProvider() {
 
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
+    }
+
+    private fun getStreakStatement(context: Context, state: StreakManager.PiggyState): String {
+        val resId = when (state) {
+            StreakManager.PiggyState.SUCCESS -> R.array.streak_statements_success
+            StreakManager.PiggyState.HAPPY -> R.array.streak_statements_happy
+            StreakManager.PiggyState.PANIC -> R.array.streak_statements_panic
+            StreakManager.PiggyState.WORRIED -> R.array.streak_statements_worried
+            StreakManager.PiggyState.LOST -> R.array.streak_statements_lost
+        }
+        val statements = context.resources.getStringArray(resId)
+        val seed = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
+        return statements[seed % statements.size]
     }
 
     companion object {

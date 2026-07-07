@@ -23,13 +23,20 @@ class SummaryWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        // Create localized context
+        val locales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+        val config = android.content.res.Configuration(context.resources.configuration)
+        if (!locales.isEmpty) {
+            config.setLocales(android.os.LocaleList.forLanguageTags(locales.toLanguageTags()))
+        }
+        val localizedContext = context.createConfigurationContext(config)
+
         // Run update in background coroutine to avoid blocking Main thread (battery and thread safety)
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val database = PiggyLedgerDatabase.getInstance(context)
                 val loans = database.piggyLedgerDao().getAllLoansSync()
-
                 val owedToMe = loans.filter { !it.isPaidOff && it.type == LoanType.LENT }.sumOf { it.amount }
                 val iOwe = loans.filter { !it.isPaidOff && it.type == LoanType.BORROWED }.sumOf { it.amount }
                 val netLedger = owedToMe - iOwe
@@ -40,6 +47,12 @@ class SummaryWidgetProvider : AppWidgetProvider() {
 
                 for (appWidgetId in appWidgetIds) {
                     val views = RemoteViews(context.packageName, R.layout.widget_summary)
+
+                    // Bind dynamic labels
+                    views.setTextViewText(R.id.tv_header_payoffs_loans, localizedContext.getString(R.string.payoffs_loans))
+                    views.setTextViewText(R.id.tv_label_owed_to_me, localizedContext.getString(R.string.widget_owed_to_me))
+                    views.setTextViewText(R.id.tv_label_i_owe, localizedContext.getString(R.string.widget_i_owe))
+                    views.setTextViewText(R.id.tv_net_label, localizedContext.getString(R.string.widget_net_ledger))
 
                     // Bind values
                     views.setTextViewText(R.id.tv_owed_to_me, "$${formatter.format(owedToMe)}")

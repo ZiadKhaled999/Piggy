@@ -1,4 +1,7 @@
 package com.oryno.piggy_ledger.ui
+import androidx.compose.ui.res.stringResource
+import com.oryno.piggy_ledger.R
+
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,7 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.oryno.piggy_ledger.R
+
 import com.oryno.piggy_ledger.data.Goal
 import com.oryno.piggy_ledger.data.Transaction
 import com.oryno.piggy_ledger.ui.theme.NavyDark
@@ -62,14 +65,14 @@ fun MyGoalsScreen(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.back_icon),
                     tint = NavyDark
                 )
             }
             
             Spacer(modifier = Modifier.width(8.dp))
             
-            Text("My Goals", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+            Text(stringResource(R.string.my_goals), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = NavyDark)
         }
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -88,13 +91,13 @@ fun MyGoalsScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        "No goals yet",
+                        stringResource(R.string.no_goals_yet),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = NavyDark.copy(alpha = 0.6f)
                     )
                     Text(
-                        "Start your first goal today!",
+                        stringResource(R.string.start_first_goal),
                         fontSize = 14.sp,
                         color = TextLight
                     )
@@ -148,7 +151,7 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit) {
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = if (isOpenSavings) "Open Savings (General)" else "Target: $${String.format("%.0f", goal.targetAmount)}",
+                        text = if (isOpenSavings) stringResource(R.string.open_savings) else stringResource(R.string.target) + " \$${String.format("%.0f", goal.targetAmount)}",
                         fontSize = 12.sp,
                         color = TextLight
                     )
@@ -157,7 +160,7 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit) {
                 if (isCompleted) {
                     Icon(
                         imageVector = Icons.Default.CheckCircle, 
-                        contentDescription = "Completed",
+                        contentDescription = stringResource(R.string.completed_badge),
                         tint = PinkAccent,
                         modifier = Modifier.size(24.dp)
                     )
@@ -167,7 +170,7 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit) {
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = "OPEN",
+                            text = stringResource(R.string.open_badge),
                             color = PinkPrimary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -206,11 +209,11 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit) {
             ) {
                 val remaining = goal.targetAmount - savedAmount
                 val savedText = if (isOpenSavings) {
-                    "$${String.format("%.2f", savedAmount)} saved"
+                    stringResource(R.string.amount_saved, String.format("%.2f", savedAmount))
                 } else if (remaining < 0) {
-                    "$${String.format("%.2f", savedAmount)} total ($${String.format("%.2f", -remaining)} extra)"
+                    stringResource(R.string.amount_total_extra, String.format("%.2f", savedAmount), String.format("%.2f", -remaining))
                 } else {
-                    "$${String.format("%.2f", savedAmount)} saved"
+                    stringResource(R.string.amount_saved, String.format("%.2f", savedAmount))
                 }
                 Text(
                     text = savedText,
@@ -221,7 +224,7 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit) {
                 
                 if (remaining > 0 && !isOpenSavings) {
                     Text(
-                        text = "$${String.format("%.2f", remaining)} left",
+                        text = stringResource(R.string.remaining_left, String.format("%.2f", remaining)),
                         color = NavyDark,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp

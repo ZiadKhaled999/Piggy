@@ -30,6 +30,8 @@ import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
+import androidx.compose.ui.res.stringResource
+import com.oryno.piggy_ledger.R
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,12 +93,12 @@ fun LoansScreen(
                     .background(Color.White, androidx.compose.foundation.shape.CircleShape)
                     .border(1.dp, Color(0xFFE2E8F0), androidx.compose.foundation.shape.CircleShape)
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = NavyDark, modifier = Modifier.size(20.dp))
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_icon), tint = NavyDark, modifier = Modifier.size(20.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text("Loans & Payoffs", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark)
-                Text("Keep tabs on who owes who", fontSize = 14.sp, color = TextLight, fontWeight = FontWeight.Medium)
+                Text(stringResource(R.string.loans_payoffs_title), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark)
+                Text(stringResource(R.string.keep_tabs_subtitle), fontSize = 14.sp, color = TextLight, fontWeight = FontWeight.Medium)
             }
         }
         
@@ -127,7 +129,7 @@ fun LoansScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = PinkAccent, modifier = Modifier.size(10.dp))
                                     Spacer(modifier = Modifier.width(3.dp))
-                                    Text("OWED TO ME", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text("$${String.format("%.0f", owedToMe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -145,7 +147,7 @@ fun LoansScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.AutoMirrored.Filled.TrendingDown, contentDescription = null, tint = BlackAccent, modifier = Modifier.size(10.dp))
                                     Spacer(modifier = Modifier.width(3.dp))
-                                    Text("I OWE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text("$${String.format("%.0f", iOwe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -167,7 +169,7 @@ fun LoansScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("NET LEDGER", fontSize = 9.sp, fontWeight = FontWeight.Black, color = TextLight)
+                            Text(stringResource(R.string.net_ledger), fontSize = 9.sp, fontWeight = FontWeight.Black, color = TextLight)
                             Text(
                                 text = if (netLedger >= 0) "+$${String.format("%.0f", netLedger)}" else "-$${String.format("%.0f", -netLedger)}", 
                                 fontSize = 15.sp, 
@@ -203,7 +205,7 @@ fun LoansScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = PinkAccent, modifier = Modifier.size(10.dp))
                                     Spacer(modifier = Modifier.width(3.dp))
-                                    Text("OWED TO ME", fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text("$${String.format("%.0f", owedToMe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -221,7 +223,7 @@ fun LoansScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.AutoMirrored.Filled.TrendingDown, contentDescription = null, tint = BlackAccent, modifier = Modifier.size(10.dp))
                                     Spacer(modifier = Modifier.width(3.dp))
-                                    Text("I OWE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text("$${String.format("%.0f", iOwe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -236,7 +238,7 @@ fun LoansScreen(
                             border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
                         ) {
                             Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
-                                Text("NET LEDGER", fontSize = 8.sp, fontWeight = FontWeight.Black, color = TextLight, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(stringResource(R.string.net_ledger), fontSize = 8.sp, fontWeight = FontWeight.Black, color = TextLight, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = if (netLedger >= 0) "+$${String.format("%.0f", netLedger)}" else "-$${String.format("%.0f", -netLedger)}", 
@@ -263,7 +265,7 @@ fun LoansScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Search person or notes...", color = TextLight, fontSize = 14.sp, fontWeight = FontWeight.Medium) },
+                placeholder = { Text(stringResource(R.string.search_person_notes), color = TextLight, fontSize = 14.sp, fontWeight = FontWeight.Medium) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextLight, modifier = Modifier.size(20.dp)) },
                 modifier = Modifier
                     .weight(1f)
@@ -287,7 +289,7 @@ fun LoansScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Add Record", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                Text(stringResource(R.string.add_record), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
             }
         }
         
@@ -302,9 +304,9 @@ fun LoansScreen(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TabButton(text = "Active", isSelected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
-            TabButton(text = "Paid Off", isSelected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
-            TabButton(text = "Show All", isSelected = selectedTab == 2, onClick = { selectedTab = 2 }, modifier = Modifier.weight(1f))
+            TabButton(text = stringResource(R.string.active_tab), isSelected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
+            TabButton(text = stringResource(R.string.paid_off_tab), isSelected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
+            TabButton(text = stringResource(R.string.show_all_tab), isSelected = selectedTab == 2, onClick = { selectedTab = 2 }, modifier = Modifier.weight(1f))
         }
         
         Spacer(modifier = Modifier.height(24.dp))
@@ -345,9 +347,9 @@ fun LoansScreen(
                         Icon(Icons.Default.HelpOutline, contentDescription = null, tint = TextLight.copy(alpha = 0.3f), modifier = Modifier.size(40.dp))
                     }
                     Spacer(modifier = Modifier.height(24.dp))
-                    Text("No transaction records found", fontWeight = FontWeight.ExtraBold, color = Color(0xFF334155), fontSize = 18.sp)
+                    Text(stringResource(R.string.no_records_found), fontWeight = FontWeight.ExtraBold, color = Color(0xFF334155), fontSize = 18.sp)
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("Log who you lent to or who you borrowed from to populate your ledger.", color = TextLight, textAlign = TextAlign.Center, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 16.dp))
+                    Text(stringResource(R.string.log_lent_borrowed_desc), color = TextLight, textAlign = TextAlign.Center, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 16.dp))
                 }
             }
         } else {
@@ -379,7 +381,7 @@ fun LoansScreen(
                             val bgTint = if (isPaidOff) Color(0xFFE2E8F0) else (if (loan.type == LoanType.LENT) PinkAccent.copy(alpha = 0.1f) else BlackAccent.copy(alpha = 0.1f))
                             val icon = if (loan.type == LoanType.LENT) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown
                             val prefix = if (loan.type == LoanType.LENT) "+" else "-"
-                            val text = if (loan.type == LoanType.LENT) "OWED TO ME" else "I OWE"
+                            val text = if (loan.type == LoanType.LENT) stringResource(R.string.owed_to_me) else stringResource(R.string.i_owe)
                             val textColor = if (isPaidOff) Color(0xFF94A3B8) else (if (loan.type == LoanType.LENT) PinkAccent else BlackAccent)
                             
                             // Left side section (occupies flexible space)
@@ -408,9 +410,9 @@ fun LoansScreen(
                                     )
                                     val dateText = if (loan.deadline != null) {
                                         val sdf = java.text.SimpleDateFormat("MMM dd", java.util.Locale.getDefault())
-                                        "Due ${sdf.format(java.util.Date(loan.deadline))}"
+                                        stringResource(R.string.due_date, sdf.format(java.util.Date(loan.deadline)))
                                     } else {
-                                        "Open-Ended"
+                                        stringResource(R.string.open_ended)
                                     }
                                     Text(
                                         text = dateText, 
@@ -455,7 +457,7 @@ fun LoansScreen(
                                     border = BorderStroke(1.dp, if (isPaidOff) Color(0xFFCBD5E1) else PinkPrimary.copy(alpha = 0.15f))
                                 ) {
                                     Text(
-                                        text = "DETAILS", 
+                                        text = stringResource(R.string.details_badge), 
                                         fontSize = 9.sp, 
                                         fontWeight = FontWeight.Black, 
                                         color = if (isPaidOff) Color(0xFF94A3B8) else PinkPrimary, 
@@ -574,14 +576,14 @@ fun LoansScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "NEW LEDGER ENTRY",
+                        text = stringResource(R.string.new_ledger_entry),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
                         color = NavyDark,
                         letterSpacing = 1.sp
                     )
                     Text(
-                        text = "Fill all details",
+                        text = stringResource(R.string.fill_all_details),
                         fontSize = 11.sp,
                         color = TextLight,
                         fontWeight = FontWeight.Medium
@@ -605,7 +607,7 @@ fun LoansScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "TRANSACTION AMOUNT",
+                            text = stringResource(R.string.transaction_amount_label),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Black,
                             color = themeColor,
@@ -643,7 +645,7 @@ fun LoansScreen(
                                     Box(contentAlignment = Alignment.Center) {
                                         if (amountStr.isEmpty()) {
                                             Text(
-                                                text = "0.00",
+                                                text = stringResource(R.string.zero_amount),
                                                 fontSize = 32.sp,
                                                 fontWeight = FontWeight.Black,
                                                 color = Color(0xFFCBD5E1),
@@ -693,7 +695,7 @@ fun LoansScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "I Lent", 
+                                text = stringResource(R.string.i_lent), 
                                 fontWeight = if (isLent) FontWeight.Bold else FontWeight.Medium, 
                                 color = if (isLent) PinkAccent else TextLight,
                                 fontSize = 13.sp
@@ -725,7 +727,7 @@ fun LoansScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "I Borrowed", 
+                                text = stringResource(R.string.i_borrowed), 
                                 fontWeight = if (!isLent) FontWeight.Bold else FontWeight.Medium, 
                                 color = if (!isLent) BlackAccent else TextLight,
                                 fontSize = 13.sp
@@ -746,7 +748,7 @@ fun LoansScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "CONTACT DETAILS",
+                            text = stringResource(R.string.contact_details_label),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Black,
                             color = NavyDark,
@@ -757,8 +759,8 @@ fun LoansScreen(
                         OutlinedTextField(
                             value = contactName,
                             onValueChange = { contactName = it },
-                            label = { Text("Contact Name") },
-                            placeholder = { Text("e.g. Mike Smith") },
+                            label = { Text(stringResource(R.string.contact_name_label)) },
+                            placeholder = { Text(stringResource(R.string.mike_smith_placeholder)) },
                             trailingIcon = {
                                 IconButton(
                                     onClick = {
@@ -771,7 +773,7 @@ fun LoansScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Person,
-                                        contentDescription = "Pick Contact",
+                                        contentDescription = stringResource(R.string.pick_contact_desc),
                                         tint = themeColor
                                     )
                                 }
@@ -799,8 +801,8 @@ fun LoansScreen(
                             OutlinedTextField(
                                 value = phoneNumber,
                                 onValueChange = { phoneNumber = it },
-                                label = { Text("Phone (Optional)") },
-                                placeholder = { Text("e.g. +1 555...") },
+                                label = { Text(stringResource(R.string.phone_optional)) },
+                                placeholder = { Text(stringResource(R.string.phone_placeholder)) },
                                 textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.SemiBold, color = NavyDark, fontSize = 13.sp),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp),
@@ -819,8 +821,8 @@ fun LoansScreen(
                             OutlinedTextField(
                                 value = socialDetails,
                                 onValueChange = { socialDetails = it },
-                                label = { Text("Social (Optional)") },
-                                placeholder = { Text("e.g. email / handle") },
+                                label = { Text(stringResource(R.string.social_optional)) },
+                                placeholder = { Text(stringResource(R.string.social_placeholder)) },
                                 textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.SemiBold, color = NavyDark, fontSize = 13.sp),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp),
@@ -851,7 +853,7 @@ fun LoansScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "TRANSACTION MEMO",
+                            text = stringResource(R.string.transaction_memo_header),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Black,
                             color = NavyDark,
@@ -861,8 +863,8 @@ fun LoansScreen(
                         OutlinedTextField(
                             value = note,
                             onValueChange = { note = it },
-                            label = { Text("Flashback Note (Required)") },
-                            placeholder = { Text("Why did the money change hands? Recall details easily later...") },
+                            label = { Text(stringResource(R.string.flashback_note_required)) },
+                            placeholder = { Text(stringResource(R.string.flashback_placeholder)) },
                             textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium, color = NavyDark, fontSize = 14.sp),
                             modifier = Modifier.fillMaxWidth().height(80.dp),
                             shape = RoundedCornerShape(12.dp),
@@ -894,12 +896,12 @@ fun LoansScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Repayment Deadline?", fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 13.sp)
+                                    Text(stringResource(R.string.repayment_deadline), fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 13.sp)
                                     val dateText = if (deadlineDate != null) {
                                         val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
-                                        "Due: ${sdf.format(java.util.Date(deadlineDate!!))}"
+                                        stringResource(R.string.due_prefix, sdf.format(java.util.Date(deadlineDate!!)))
                                     } else {
-                                        "No deadline set"
+                                        stringResource(R.string.no_deadline_set)
                                     }
                                     Text(dateText, color = TextLight, fontSize = 11.sp)
                                 }
@@ -924,10 +926,10 @@ fun LoansScreen(
                             TextButton(onClick = {
                                 deadlineDate = datePickerState.selectedDateMillis
                                 showDatePicker = false
-                            }) { Text("Confirm", color = themeColor, fontWeight = FontWeight.Bold) }
+                            }) { Text(stringResource(R.string.confirm_btn), color = themeColor, fontWeight = FontWeight.Bold) }
                         },
                         dismissButton = {
-                            TextButton(onClick = { showDatePicker = false }) { Text("Cancel", color = TextLight) }
+                            TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel_btn), color = TextLight) }
                         }
                     ) {
                         DatePicker(state = datePickerState)
@@ -962,7 +964,7 @@ fun LoansScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = themeColor),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                 ) {
-                    Text("RECORD TO LEDGER", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp)
+                    Text(stringResource(R.string.record_to_ledger_btn), fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp)
                 }
             }
         }
@@ -989,7 +991,7 @@ fun LoansScreen(
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                val typeText = if (selectedLoan!!.type == LoanType.LENT) "OWED TO ME" else "I OWE THIS"
+                val typeText = if (selectedLoan!!.type == LoanType.LENT) stringResource(R.string.owed_to_me) else stringResource(R.string.i_owe_this)
                 val typeColor = if (selectedLoan!!.type == LoanType.LENT) PinkAccent else BlackAccent
                 val prefix = if (selectedLoan!!.type == LoanType.LENT) "+" else "-"
                 
@@ -1012,15 +1014,15 @@ fun LoansScreen(
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("CONTACT NAME", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
+                    Text(stringResource(R.string.contact_name_header), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
                     Text(selectedLoan!!.contactName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("REPAYMENT DEADLINE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
-                    Text("Open-Ended (No strict deadline)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    Text(stringResource(R.string.repayment_deadline_header), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
+                    Text(stringResource(R.string.no_strict_deadline), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -1031,7 +1033,7 @@ fun LoansScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("FLASHBACK RECALL NOTE", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                        Text(stringResource(R.string.flashback_recall_note), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("\"${selectedLoan!!.note}\"", fontSize = 14.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = NavyDark)
                     }
@@ -1052,7 +1054,7 @@ fun LoansScreen(
                 ) {
                     Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("MARK AS PAID OFF & SETTLE", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.mark_as_paid_off), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -1063,7 +1065,7 @@ fun LoansScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Are you absolutely sure you want to delete?", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Text(stringResource(R.string.delete_confirm_msg), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         Row {
                             Button(
                                 onClick = {
@@ -1076,7 +1078,7 @@ fun LoansScreen(
                                 shape = RoundedCornerShape(8.dp),
                                 contentPadding = PaddingValues(horizontal = 12.dp)
                             ) {
-                                Text("Yes", fontSize = 12.sp)
+                                Text(stringResource(R.string.yes_btn), fontSize = 12.sp)
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(
@@ -1086,7 +1088,7 @@ fun LoansScreen(
                                 shape = RoundedCornerShape(8.dp),
                                 contentPadding = PaddingValues(horizontal = 12.dp)
                             ) {
-                                Text("No", color = NavyDark, fontSize = 12.sp)
+                                Text(stringResource(R.string.no_btn), color = NavyDark, fontSize = 12.sp)
                             }
                         }
                     }
@@ -1096,7 +1098,7 @@ fun LoansScreen(
                     ) {
                         Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = TextLight, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Delete Record", color = TextLight, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.delete_record), color = TextLight, fontWeight = FontWeight.Medium)
                     }
                 }
             }

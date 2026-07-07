@@ -1,4 +1,7 @@
 package com.oryno.piggy_ledger.ui
+import androidx.compose.ui.res.stringResource
+import com.oryno.piggy_ledger.R
+
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
@@ -42,21 +45,21 @@ fun CreateGoalScreen(
             onClick = onBack,
             modifier = Modifier.offset(x = (-12).dp)
         ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = NavyDark)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_icon), tint = NavyDark)
         }
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        Text("New Goal", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark)
-        Text("What's the big plan? Set it up here.", fontSize = 16.sp, color = TextLight)
+        Text(stringResource(R.string.new_goal), fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark)
+        Text(stringResource(R.string.new_goal_subtitle), fontSize = 16.sp, color = TextLight)
         
         Spacer(modifier = Modifier.height(32.dp))
         
         OutlinedTextField(
             value = goalName,
             onValueChange = { goalName = it },
-            label = { Text("WHAT ARE YOU SAVING FOR?", fontWeight = FontWeight.Bold) },
-            placeholder = { Text("e.g. Dream Vacation, New PC, General Savings") },
+            label = { Text(stringResource(R.string.what_are_you_saving_for), fontWeight = FontWeight.Bold) },
+            placeholder = { Text(stringResource(R.string.goal_name_placeholder)) },
             textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -73,7 +76,7 @@ fun CreateGoalScreen(
         
         Spacer(modifier = Modifier.height(20.dp))
 
-        Text("Goal Type", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+        Text(stringResource(R.string.goal_type), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
         Spacer(modifier = Modifier.height(8.dp))
         
         Row(
@@ -101,7 +104,7 @@ fun CreateGoalScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Target Goal",
+                            text = stringResource(R.string.target_goal_title),
                             fontWeight = FontWeight.ExtraBold,
                             color = if (targetSelected) PinkPrimary else NavyDark,
                             fontSize = 14.sp
@@ -109,7 +112,7 @@ fun CreateGoalScreen(
                         if (targetSelected) {
                             Icon(
                                 imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "Selected",
+                                contentDescription = stringResource(R.string.selected_badge),
                                 tint = PinkPrimary,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -123,7 +126,7 @@ fun CreateGoalScreen(
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Save for a specific target amount.",
+                        text = stringResource(R.string.target_goal_desc),
                         fontSize = 11.sp,
                         color = if (targetSelected) NavyDark.copy(alpha = 0.8f) else TextLight,
                         lineHeight = 14.sp
@@ -149,7 +152,7 @@ fun CreateGoalScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Open Savings",
+                            text = stringResource(R.string.open_savings),
                             fontWeight = FontWeight.ExtraBold,
                             color = if (openedSelected) PinkPrimary else NavyDark,
                             fontSize = 14.sp
@@ -157,7 +160,7 @@ fun CreateGoalScreen(
                         if (openedSelected) {
                             Icon(
                                 imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "Selected",
+                                contentDescription = stringResource(R.string.selected_badge),
                                 tint = PinkPrimary,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -171,7 +174,7 @@ fun CreateGoalScreen(
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Deposit just for saving (No target limit).",
+                        text = stringResource(R.string.open_savings_desc),
                         fontSize = 11.sp,
                         color = if (openedSelected) NavyDark.copy(alpha = 0.8f) else TextLight,
                         lineHeight = 14.sp
@@ -190,8 +193,8 @@ fun CreateGoalScreen(
                         targetAmount = input
                     }
                 },
-                label = { Text("HOW MUCH DO YOU NEED? ($)", fontWeight = FontWeight.Bold) },
-                placeholder = { Text("0.00") },
+                label = { Text(stringResource(R.string.how_much_do_you_need), fontWeight = FontWeight.Bold) },
+                placeholder = { Text(stringResource(R.string.zero_amount)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
                 modifier = Modifier.fillMaxWidth(),
@@ -218,7 +221,7 @@ fun CreateGoalScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "💡 Hint: Opened balance is for general/indefinite savings. You can deposit money here anytime for savings without setting any specific limit.",
+                        text = stringResource(R.string.open_savings_hint),
                         fontSize = 13.sp,
                         color = SlateDark,
                         fontWeight = FontWeight.Medium
@@ -248,7 +251,7 @@ fun CreateGoalScreen(
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
         ) {
-            Text("Let's Get Saving!", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.lets_get_saving), fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

@@ -23,6 +23,14 @@ class GoalsWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        // Create localized context
+        val locales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+        val config = android.content.res.Configuration(context.resources.configuration)
+        if (!locales.isEmpty) {
+            config.setLocales(android.os.LocaleList.forLanguageTags(locales.toLanguageTags()))
+        }
+        val localizedContext = context.createConfigurationContext(config)
+
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val db = PiggyLedgerDatabase.getInstance(context)
         val dao = db.piggyLedgerDao()
@@ -34,6 +42,12 @@ class GoalsWidgetProvider : AppWidgetProvider() {
         for (appWidgetId in appWidgetIds) {
             val selectedGoalId = prefs.getString(getKeySelectedGoal(appWidgetId), null)
             val views = RemoteViews(context.packageName, R.layout.widget_goals)
+
+            // Bind dynamic labels
+            views.setTextViewText(R.id.tv_header_my_goals, localizedContext.getString(R.string.widget_my_goals))
+            views.setTextViewText(R.id.tv_empty_goals, localizedContext.getString(R.string.widget_no_goals))
+            views.setTextViewText(R.id.tv_header_goal_progress, localizedContext.getString(R.string.widget_goal_progress))
+            views.setTextViewText(R.id.tv_header_total_balance, localizedContext.getString(R.string.widget_total_balance))
 
             if (selectedGoalId != null) {
                 // Show Detail View

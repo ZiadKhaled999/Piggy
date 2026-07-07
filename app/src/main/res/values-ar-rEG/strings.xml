@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">دفتر الحصالة</string>
+    <string name="language">اللغة</string>
+    <string name="select_language">اختار اللغة</string>
+    <string name="choose_language_desc">اختار لغتك المفضلة عشان تكمل</string>
+    <string name="english">English</string>
+    <string name="arabic">العربية (الفصحى)</string>
+    <string name="egyptian">العامية المصرية</string>
+    <string name="continue_btn">كمل</string>
+    <string name="get_started">ابدأ دلوقتي</string>
+    <string name="settings">الضبط والتظبيط</string>
+    <string name="backup_data">نسخة احتياطية</string>
+    <string name="restore_data">ترجيع البيانات</string>
+    <string name="rate_app">قيم التطبيق</string>
+    <string name="give_feedback">قول رأيك</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_to">أهلاً بيك في</string>
+    <string name="onboarding_subtitle_1">طريقتك الحديثة عشان تحوش وتجمع مواردك\nمع أصحابك وعيلتك.</string>
+    <string name="onboarding_pool_your">جمع</string>
+    <string name="onboarding_savings">تحويشتك</string>
+    <string name="onboarding_subtitle_2">اعمل أهداف مشتركة واعزم غيرك يشاركوا.\nسواء لرحلة، أو هدية، أو\nمشروع جماعي.</string>
+    <string name="onboarding_track">تابع</string>
+    <string name="onboarding_progress">التقدم</string>
+    <string name="onboarding_together">مع بعض</string>
+    <string name="onboarding_subtitle_3">تحديثات لحظية للمشاركات واكتمال الأهداف.\nخليك متحمس وأنت شايف شريط\nالتقدم بيملا.</string>
+    <string name="onboarding_ready_to">مستعد</string>
+    <string name="onboarding_start">تبدأ</string>
+    <string name="onboarding_subtitle_4">يلا نجهز أول هدف ليك ونبدأ\nرحلتك لادخار جماعي أذكى.</string>
+    <string name="back_btn">رجوع</string>
+    
+    <!-- Dashboard & UI -->
+    <string name="welcome_back">نورت تاني!</string>
+    <string name="dashboard_title">لوحة الحساب</string>
+    <string name="your_balance">رصيدك</string>
+    <string name="recent_activity">آخر العمليات</string>
+    <string name="no_recent_activity">مفيش عمليات قريبة</string>
+    <string name="view_all">شوف الكل</string>
+    <string name="go_straight_dashboard">خش على الحساب قوام ←</string>
+    
+    <!-- Bottom Nav -->
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_goals">الأهداف</string>
+    <string name="nav_loans">الديون</string>
+    <string name="nav_settings">الضبط</string>
+    
+    <string name="welcome_to_circle">أهلاً بيك في دايرتك</string>
+    <string name="choose_saving_journey">اختار عايز تبدأ رحلة التحويش إزاي.</string>
+    <string name="start_new_goal">ابدأ هدف جديد</string>
+    <string name="set_target">حدد رقم هدف.</string>
+    <string name="payoffs_loans">السلف والديون</string>
+    <string name="manage_loans">ظبط مين ليه فلوس ومين عليه.</string>
+    <string name="community_feedback">رأي الناس</string>
+    <string name="join_community_board">شارك في لوحة المجتمع</string>
+    <string name="help_improve">ساعدنا نحسن دفتر الحصالة! دوس تحت عشان تطلب مميزات جديدة.</string>
+    <string name="rate_app_title">قيم التطبيق</string>
+    <string name="enjoying_piggy_ledger">مبسوط بالحصالة؟ دوس على النجوم عشان تقيم تجربتك.</string>
+    <string name="backup_data_title">شيل نسخة من البيانات</string>
+    <string name="secure_local_export">تصدير محلي آمن</string>
+    <string name="save_goals_desc">احفظ أهدافك وسجلاتك في ملف JSON.</string>
+    <string name="restore_data_title">ترجيع البيانات</string>
+    <string name="import_json_backup">استيراد نسخة JSON</string>
+    <string name="restoring_data_replace">ترجيع البيانات هيمسح الأهداف والسجلات اللي موجودة دلوقتي.</string>
+    <string name="start_first_goal">ابدأ أول هدف ليك النهاردة!</string>
+    <string name="open_savings">حصالة مفتوحة</string>
+    <string name="target">الهدف:</string>
+    
+    <string name="loans_payoffs_title">السلف والديون</string>
+    <string name="keep_tabs_subtitle">خليك عارف مين ليه ومين عليه</string>
+    <string name="net_ledger">صافي الحساب</string>
+    <string name="search_person_notes">دور على حد أو ملاحظة...</string>
+    <string name="add_record">ضيف عملية سلف</string>
+    <string name="active_tab">شغال</string>
+    <string name="paid_off_tab">خلصان</string>
+    <string name="show_all_tab">كله</string>
+    <string name="no_records_found">مفيش ديون متسجلة</string>
+    <string name="log_lent_borrowed_desc">سجل اللي سلفته أو اللي استلفته عشان تملى دفترك.</string>
+    <string name="due_date">ميعاده في %1$s</string>
+    <string name="open_ended">مفتوح</string>
+    <string name="details_badge">تفاصيل</string>
+    <string name="new_ledger_entry">سجل جديد في الدفتر</string>
+    <string name="fill_all_details">املأ كل البيانات</string>
+    <string name="transaction_amount_label">هتحط كام؟</string>
+    <string name="i_lent">أنا سلفت</string>
+    <string name="i_borrowed">أنا استلفت</string>
+    <string name="contact_details_label">بيانات الشخص</string>
+    <string name="contact_name_label">اسم الشخص</string>
+    <string name="mike_smith_placeholder">مثلاً: أحمد محمد</string>
+    <string name="pick_contact_desc">اختار حد من الأسماء</string>
+    <string name="phone_optional">الموبايل (اختياري)</string>
+    <string name="phone_placeholder">مثلاً: 010...</string>
+    <string name="social_optional">تواصل اجتماعي (اختياري)</string>
+    <string name="social_placeholder">مثلاً: إيميل أو يوزر نيم</string>
+    <string name="flashback_note_required">ملحوظة عشان تفتكر (مهم)</string>
+    <string name="flashback_placeholder">الفلوس دي بتاعة إيه؟ عشان تفتكرها بعدين بسهولة...</string>
+    <string name="repayment_deadline">ميعاد السداد؟</string>
+    <string name="confirm_btn">أكد</string>
+    <string name="record_to_ledger_btn">سجله في الدفتر دلوقتي</string>
+    <string name="contact_name_header">اسم الشخص</string>
+    <string name="repayment_deadline_header">ميعاد السداد</string>
+    <string name="no_strict_deadline">مفتوح (مفيش ميعاد محدد)</string>
+    <string name="flashback_recall_note">ملحوظة عشان تفتكر</string>
+    <string name="mark_as_paid_off">سدد وسوي الحساب قوام</string>
+    <string name="delete_confirm_msg">متأكد إنك عايز تمسحه؟</string>
+    <string name="yes_btn">أيوة</string>
+    <string name="no_btn">لأ</string>
+    <string name="delete_record">مسح السجل</string>
+    <string name="budgeting_title">الميزانية</string>
+    <string name="total_balance_label">إجمالي الرصيد</string>
+    <string name="extra_amount">+$%1$s زيادة</string>
+    <string name="completed_status">خلص</string>
+    <string name="in_progress_status">شغال</string>
+    <string name="your_budget_title">ميزانيتك</string>
+    <string name="remaining_left">فاضل $%1$s</string>
+    <string name="goal_reached_status">وصلت للهدف</string>
+    <string name="add_deposit">زود فلوس</string>
+    <string name="goal_completed_msg">الهدف خلص</string>
+    <string name="overview_tab">نظرة عامة</string>
+    <string name="history_tab">السجل</string>
+    <string name="growth_savings_subtitle">كبر تحويشتك قوام</string>
+    <string name="deposit_amount_label">هتحط كام؟</string>
+    <string name="zero_amount_placeholder">$ 0.00</string>
+    <string name="note_required_label">ملحوظة (مهمة)</string>
+    <string name="monthly_contribution_placeholder">مثلاً: تحويشة الشهر</string>
+    <string name="confirm_deposit_btn">أكد الإيداع</string>
+    <string name="established_date_label">تاريخ البداية</string>
+    <string name="days_since_start_label">أيام من البداية</string>
+    <string name="days_count">%1$d يوم</string>
+    <string name="avg_daily_saving_label">متوسط التحويش في اليوم</string>
+    <string name="est_completion_date_label">ميعاد الخلاص المتوقع</string>
+    <string name="goal_reached_success">حققت الهدف!</string>
+    <string name="savings_challenge_title">تحدي التحويش</string>
+    <string name="milestones_title">وصلت لفين؟</string>
+    <string name="contributions_count_msg">أنت عملت %1$d مشاركة لحد دلوقتي. عاش!</string>
+    <string name="deposit_tx_note">إيداع</string>
+    <string name="target_goal_title">خطة تحويش</string>
+    <string name="target_goal_desc">حوش لمبلغ معين.</string>
+    <string name="open_savings_desc">إيداع للتحويش بس (من غير حد).</string>
+    <string name="open_savings_hint">💡 ملحوظة: الرصيد المفتوح للتحويش العام. تقدر تحط فلوس هنا في أي وقت من غير ما تحدد سقف معين.</string>
+    <string name="my_goals">أهدافي</string>
+    <string name="no_goals_yet">مفيش أهداف لسه. ضيف واحد!</string>
+    <string name="add_goal">ضيف هدف</string>
+    <string name="new_goal">هدف جديد</string>
+    <string name="new_goal_subtitle">إيه خطتك الكبيرة؟ ظبطها هنا.</string>
+    <string name="what_are_you_saving_for">بتحوش عشان إيه؟</string>
+    <string name="goal_name_placeholder">مثلاً: رحلة أحلامك، لابتوب جديد</string>
+    <string name="goal_type">نوع الهدف</string>
+    <string name="how_much_do_you_need">محتاج كام؟ ($)</string>
+    <string name="lets_get_saving">يلا نحوش!</string>
+    <string name="open_badge">مفتوح</string>
+    <string name="amount_saved">محوش $%1$s</string>
+    <string name="amount_total_extra">كله $%1$s (زيادة $%2$s)</string>
+    <string name="piggy_ledger_logo">لوجو الحصالة</string>
+    <string name="settings_icon">الضبط</string>
+    <string name="back_icon">رجوع</string>
+    <string name="feedback_illustration">رسمة التعليقات</string>
+    <string name="rate_illustration">رسمة التقييم</string>
+    <string name="backup_illustration">رسمة النسخة الاحتياطية</string>
+    <string name="restore_illustration">رسمة ترجيع البيانات</string>
+    <string name="export_success">البيانات خرجت تمام</string>
+    <string name="export_failed">التصدير باظ عشان: %1$s</string>
+    <string name="restore_success">البيانات رجعت زي الفل</string>
+    <string name="restore_failed">الترجيع فشل عشان: %1$s</string>
+    <string name="read_file_failed">مش عارف أقرأ الملف: %1$s</string>
+    <string name="browser_error">مش عارف أفتح المتصفح</string>
+    <string name="email_error">مفيش برنامج إيميلات هنا</string>
+    <string name="selected_badge">مختار</string>
+    <string name="amount_extra_simple">%1$s زيادة</string>
+    <string name="amount_saved_simple">محوش %1$s</string>
+    <string name="amount_left_simple">فاضل %1$s</string>
+    <string name="bar_chart_desc">رسم بياني عواميد</string>
+    <string name="polar_chart_desc">رسم بياني دواير</string>
+    <string name="max_label">أعلى حاجة</string>
+    <string name="start_saving_msg">ابدأ حوش عشان تشوف الرسم البياني بتاعك!</string>
+    <string name="no_contributions_msg">لسه مفيش مشاركات.</string>
+    <string name="repayment_deadline_over">ميعاد سداد %1$s خلص. المبلغ اللي فاضل: %2$s.</string>
+    <string name="zero_amount">0.00</string>
+    <string name="i_owe_this">عليا الفلوس دي</string>
+    <string name="i_owe">عليا فلوس للناس</string>
+    <string name="owed_to_me">ليا فلوس بره</string>
+    <string name="open_feedback_board">افتح لوحة الآراء</string>
+    <string name="send_rating">ابعت التقييم</string>
+    <string name="create_backup_file">اعمل ملف نسخة احتياطية</string>
+    <string name="select_backup_file">اختار ملف النسخة الاحتياطية</string>
+    <string name="deadline_channel_name">تنبيهات المواعيد</string>
+    <string name="deadline_channel_desc">إشعارات عشان تفكرك بمواعيد سداد الفلوس</string>
+    <string name="deadline_title">الميعاد خلص!</string>
+    <string name="cancel_action">إلغاء</string>
+    <string name="snooze_action">فكرني بعدين</string>
+    <string name="completed_badge">تم بنجاح</string>
+    <string name="cancel_btn">إلغاء</string>
+    <string name="transaction_memo_header">ملحوظة عن العملية</string>
+    <string name="due_prefix">ميعادها: %1$s</string>
+    <string name="no_deadline_set">مفيش ميعاد محدد</string>
+
+    <string name="widget_owed_to_me">ليا فلوس بره</string>
+    <string name="widget_i_owe">عليا فلوس للناس</string>
+    <string name="widget_net_ledger">الصافي</string>
+    <string name="widget_my_goals">أهدافي</string>
+    <string name="widget_no_goals">لسه مفيش أهداف!\nدوس هنا واعمل واحد. 🚀</string>
+    <string name="widget_goal_progress">وصلت لإيه</string>
+    <string name="widget_total_balance">الفلوس كلها</string>
+    <string name="widget_payoffs">المسدد</string>
+    <string name="widget_loans">الديون</string>
+    <string name="widget_open_savings">حصالة مفتوحة</string>
+    <string name="widget_amount_saved">حوشت %1$s</string>
+    <string name="widget_open_label">شغال</string>
+
+    <!-- Streak Statements -->
+    <string-array name="streak_statements_success">
+        <item>وحش الكون!</item>
+        <item>محدش هيعرف يحصلك!</item>
+        <item>عاش يا برنس، كمل!</item>
+        <item>سلسلة من نار!</item>
+        <item>أنت في حتة تانية خالص!</item>
+        <item>الهدف في الجون!</item>
+    </string-array>
+    <string-array name="streak_statements_happy">
+        <item>يا جامد، استمر!</item>
+        <item>قشطة عليك، كمل!</item>
+        <item>خليك في العالي!</item>
+        <item>عاش يا بطل، فخور بيك!</item>
+        <item>أداءك لوز العنب!</item>
+        <item>شكلك رايق النهاردة!</item>
+    </string-array>
+    <string-array name="streak_statements_panic">
+        <item>إلحق حوش بسرعة!</item>
+        <item>السلسلة هتضيع منك!</item>
+        <item>فُك الكيس قوام!</item>
+        <item>الوقت بيجري يا صاحبي!</item>
+        <item>الحق نفسك، السلسلة في خطر!</item>
+        <item>لازم تصرف دلوقتي!</item>
+    </string-array>
+    <string-array name="streak_statements_worried">
+        <item>السلسلة بتودع!</item>
+        <item>هتنام وتنسى ولا إيه؟</item>
+        <item>ماتوقفش، هانت!</item>
+        <item>فُوق كده وصحصح!</item>
+        <item>كنت هتجليها، إلحق!</item>
+        <item>خليك ماسك في السلسلة!</item>
+    </string-array>
+    <string-array name="streak_statements_lost">
+        <item>يا خسارة، السلسلة طارت!</item>
+        <item>ولا يهمك، ابدأ من جديد!</item>
+        <item>بداية جديدة يا وحش!</item>
+        <item>ماتقعش، قوم تاني!</item>
+        <item>جرب حظك المرة دي!</item>
+        <item>ارجع للعبتك قوام!</item>
+    </string-array>
+</resources>

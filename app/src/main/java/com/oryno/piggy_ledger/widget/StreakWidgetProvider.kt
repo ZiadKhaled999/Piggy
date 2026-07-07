@@ -65,23 +65,6 @@ class StreakWidgetProvider : AppWidgetProvider() {
             )
             val isArabic = locales.toLanguageTags().contains("ar") || 
                 (locales.isEmpty && java.util.Locale.getDefault().language == "ar")
-            
-            val layoutDir = if (isArabic) {
-                android.view.View.LAYOUT_DIRECTION_RTL
-            } else {
-                android.view.View.LAYOUT_DIRECTION_LTR
-            }
-            val gravity = if (isArabic) {
-                android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL
-            } else {
-                android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL
-            }
-            
-            views.setInt(R.id.ll_streak_info, "setGravity", gravity)
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                views.setInt(R.id.ll_streak_info, "setLayoutDirection", layoutDir)
-                views.setInt(R.id.ll_week_streak, "setLayoutDirection", layoutDir)
-            }
 
             val dayLetters = if (isArabic) {
                 arrayOf("ح", "ن", "ث", "ر", "خ", "ج", "س")

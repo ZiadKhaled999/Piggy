@@ -140,16 +140,22 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            TextButton(
+            OutlinedButton(
                 onClick = onNavigateToMyGoals,
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                modifier = Modifier.height(40.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, PinkPrimary),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = PinkPrimary,
+                    containerColor = PinkPrimary.copy(alpha = 0.02f)
+                )
             ) {
                 Text(
-                    stringResource(R.string.go_straight_dashboard),
-                    color = PinkPrimary,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.ExtraBold
+                    text = stringResource(R.string.go_straight_dashboard),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
             
@@ -226,7 +232,7 @@ fun DashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Image(
-                                    painter = painterResource(id = R.drawable.img_settings_language_1783459964887),
+                                    painter = painterResource(id = R.drawable.img_settings_language),
                                     contentDescription = null,
                                     modifier = Modifier
                                         .size(48.dp)
@@ -383,22 +389,6 @@ fun DashboardScreen(
                         }
                         
                         Spacer(modifier = Modifier.height(16.dp))
-                        
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(110.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.img_settings_language_1783459964887),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .clip(RoundedCornerShape(16.dp)),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(24.dp))
                         
                         val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
                         

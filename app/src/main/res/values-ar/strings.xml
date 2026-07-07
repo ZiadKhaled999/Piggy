@@ -29,7 +29,7 @@
     <string name="recent_activity">النشاط الأخير</string>
     <string name="no_recent_activity">لا يوجد نشاط أخير</string>
     <string name="view_all">عرض الكل</string>
-    <string name="go_straight_dashboard">الذهاب مباشرة إلى لوحة التحكم ←</string>
+    <string name="go_straight_dashboard">الذهاب مباشرة إلى لوحة التحكم</string>
     
     <!-- Bottom Nav -->
     <string name="nav_home">الرئيسية</string>

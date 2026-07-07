@@ -40,7 +40,7 @@
     <string name="recent_activity">آخر العمليات</string>
     <string name="no_recent_activity">مفيش عمليات قريبة</string>
     <string name="view_all">شوف الكل</string>
-    <string name="go_straight_dashboard">خش على الحساب قوام ←</string>
+    <string name="go_straight_dashboard">خش على الحساب قوام</string>
     
     <!-- Bottom Nav -->
     <string name="nav_home">الرئيسية</string>

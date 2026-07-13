@@ -4,23 +4,30 @@ import com.oryno.piggy_ledger.R
 
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
@@ -36,6 +43,8 @@ import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
 
+val TealGreen = Color(0xFF43B7A7)
+
 data class OnboardingPageData(
     val imageRes: Int,
     val title: AnnotatedString,
@@ -44,6 +53,15 @@ data class OnboardingPageData(
 
 @Composable
 fun OnboardingScreen(onComplete: () -> Unit) {
+    val configuration = LocalConfiguration.current
+    val isSmallScreen = configuration.screenWidthDp < 360
+    
+    val titleFontSize = if (isSmallScreen) 26.sp else 32.sp
+    val subtitleFontSize = if (isSmallScreen) 14.sp else 16.sp
+    val buttonFontSize = if (isSmallScreen) 16.sp else 18.sp
+    val backButtonFontSize = if (isSmallScreen) 13.sp else 15.sp
+    val horizontalPadding = if (isSmallScreen) 16.dp else 24.dp
+
     var currentPage by remember { mutableIntStateOf(0) }
     
     
@@ -115,7 +133,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             .background(Color.White)
             .statusBarsPadding()
             .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = horizontalPadding, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Upper Content with Crossfade Page Transition
@@ -148,21 +166,21 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     
                     Text(
                         text = page.title,
-                        fontSize = 32.sp,
+                        fontSize = titleFontSize,
                         fontWeight = FontWeight.ExtraBold,
                         color = NavyDark,
                         textAlign = TextAlign.Center,
-                        lineHeight = 40.sp
+                        lineHeight = if (isSmallScreen) 32.sp else 40.sp
                     )
                     
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(if (isSmallScreen) 12.dp else 18.dp))
                     
                     Text(
                         text = page.subtitle,
-                        fontSize = 16.sp,
+                        fontSize = subtitleFontSize,
                         color = TextLight,
                         textAlign = TextAlign.Center,
-                        lineHeight = 24.sp,
+                        lineHeight = if (isSmallScreen) 20.sp else 24.sp,
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
                 }
@@ -170,135 +188,115 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         }
         
         // Lower Content: Indicators & Buttons
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp),
+            contentAlignment = Alignment.Center
         ) {
-            // Page Indicator Dots
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 32.dp)
-            ) {
-                repeat(pages.size) { index ->
-                    val dotWidth by animateDpAsState(
-                        targetValue = if (index == currentPage) 24.dp else 8.dp,
-                        label = "dot_width"
-                    )
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .height(8.dp)
-                            .width(dotWidth)
-                            .clip(CircleShape)
-                            .background(
-                                if (index == currentPage) NavyDark else Color(0xFFE2E8F0)
-                            )
+            // Back Button (Optional/Visible when not on first page)
+            if (currentPage > 0) {
+                TextButton(
+                    onClick = { currentPage-- },
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .testTag("onboarding_back_button"),
+                    colors = ButtonDefaults.textButtonColors(contentColor = TextLight)
+                ) {
+                    Text(
+                        text = stringResource(R.string.back_btn),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
                     )
                 }
             }
+
+            // Custom Progress Button
+            ProgressNextButton(
+                currentPage = currentPage,
+                totalPages = pages.size,
+                onNext = {
+                    if (currentPage < pages.size - 1) {
+                        currentPage++
+                    } else {
+                        onComplete()
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun ProgressNextButton(
+    currentPage: Int,
+    totalPages: Int,
+    onNext: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val progress = (currentPage + 1).toFloat() / totalPages
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(durationMillis = 700),
+        label = "progress_anim"
+    )
+    
+    val buttonColor = if (currentPage == totalPages - 1) PinkPrimary else NavyDark
+    
+    Box(
+        modifier = modifier
+            .size(84.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onNext),
+        contentAlignment = Alignment.Center
+    ) {
+        // Progress Ring with segments
+        Canvas(modifier = Modifier.size(72.dp)) {
+            val strokeWidth = 4.dp.toPx()
+            val gap = 8f // Gap between segments in degrees
+            val segmentMaxSweep = (360f / totalPages) - gap
             
-            // Buttons Row matching the exact styles
-            if (currentPage == 0) {
-                Button(
-                    onClick = { currentPage++ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .testTag("onboarding_continue_button"),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = NavyDark)
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.continue_btn),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+            for (i in 0 until totalPages) {
+                val startAngle = -90f + (i * (360f / totalPages)) + (gap / 2)
+                
+                // Background segment
+                drawArc(
+                    color = Color(0xFFE2E8F0),
+                    startAngle = startAngle,
+                    sweepAngle = segmentMaxSweep,
+                    useCenter = false,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
+
+                // Smoothly fill segments based on animated progress
+                val segmentProgress = ((animatedProgress * totalPages) - i).coerceIn(0f, 1f)
+                
+                if (segmentProgress > 0f) {
+                    drawArc(
+                        color = TealGreen,
+                        startAngle = startAngle,
+                        sweepAngle = segmentMaxSweep * segmentProgress,
+                        useCenter = false,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
                 }
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedButton(
-                        onClick = { currentPage-- },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp)
-                            .testTag("onboarding_back_button"),
-                        shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.2.dp, Color(0xFFE2E8F0)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextLight)
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                contentDescription = null,
-                                tint = TextLight,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = stringResource(R.string.back_btn),
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextLight
-                            )
-                        }
-                    }
-                    
-                    Button(
-                        onClick = {
-                            if (currentPage < pages.size - 1) {
-                                currentPage++
-                            } else {
-                                onComplete()
-                            }
-                        },
-                        modifier = Modifier
-                            .weight(2f)
-                            .height(56.dp)
-                            .testTag(if (currentPage == pages.size - 1) "onboarding_get_started_button" else "onboarding_continue_button"),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = NavyDark)
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = if (currentPage == pages.size - 1) stringResource(R.string.get_started) else stringResource(R.string.continue_btn),
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
+            }
+        }
+        
+        // Inner Button
+        Surface(
+            modifier = Modifier.size(54.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = buttonColor,
+            shadowElevation = 4.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Next",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
             }
         }
     }

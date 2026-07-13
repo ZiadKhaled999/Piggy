@@ -264,4 +264,209 @@
         <item>حاول مرة أخرى!</item>
         <item>عد للمسار!</item>
     </string-array>
+    <string name="target_account">الحساب المستهدف</string>
+    <string name="select_account">اختر الحساب</string>
+    <string name="total_net_worth">إجمالي صافي الثروة</string>
+    <string name="balance">الرصيد</string>
+    <string name="income">الدخل</string>
+    <string name="expenses">المصروفات</string>
+    <string name="select_period">اختر الفترة</string>
+    <string name="month_caps">الشهر</string>
+    <string name="year_caps">السنة</string>
+    <string name="done">تم</string>
+    <string name="new_account">حساب جديد</string>
+    <string name="save">حفظ</string>
+    <string name="general_info">معلومات عامة</string>
+    <string name="account_name">اسم الحساب</string>
+    <string name="account_name_placeholder">مثال: مدخرات، مصروفات البيت...</string>
+    <string name="account_type">نوع الحساب</string>
+    <string name="bank">بنك</string>
+    <string name="card">بطاقة</string>
+    <string name="cash">كاش</string>
+    <string name="e_wallet">محفظة إلكترونية</string>
+    <string name="exclude_from_total_net_worth">استبعاد من إجمالي الثروة</string>
+    <string name="wallet_provider">مزود المحفظة</string>
+    <string name="select_wallet_provider">اختر مزود المحفظة</string>
+    <string name="starting_balance">الرصيد الافتتاحي</string>
+    <string name="currency">العملة</string>
+    <string name="budget">الميزانية</string>
+    <string name="add_account">إضافة حساب</string>
+    <string name="update_budget">تحديث الميزانية الشهرية</string>
+    <string name="budget_amount">مبلغ الميزانية</string>
+    <string name="add_transaction">إضافة معاملة</string>
+    <string name="expense_singular">مصروف</string>
+    <string name="amount_label">المبلغ</string>
+    <string name="merchant_desc">التاجر / الوصف</string>
+    <string name="merchant_placeholder">مثال: أوبر، ستاربكس، راتب</string>
+    <string name="select_month">اختر الشهر</string>
+    <string name="add_btn">إضافة</string>
+    <string name="no_accounts_added">لا يوجد حسابات مضافة</string>
+    <string name="no_accounts_desc">أضف حساب بنكي، بطاقة، أو محفظة إلكترونية لتتبع المعاملات والميزانيات مباشرة.</string>
+    <string name="bank_card_issuer">البنك / مصدر البطاقة</string>
+    <string name="eg_0_00">مثال: 0.00</string>
+    <string name="credit_limit">الحد الائتماني</string>
+    <string name="eg_25000">مثال: 25000</string>
+    <string name="available">المتاح</string>
+    <string name="eg_12000">مثال: 12000</string>
+    <string name="payment_due_day">يوم الاستحقاق</string>
+    <string name="eg_15">مثال: 15</string>
+    <string name="card_numbers_optional">أرقام البطاقة (اختياري)</string>
+    <string name="eg_card_numbers">مثال: 4567, 1234</string>
+    <string name="bank_account_number_optional">رقم الحساب البنكي (اختياري)</string>
+    <string name="eg_account_number">مثال: 074130001</string>
+    <string name="search_ellipsis">بحث...</string>
+    <string name="search_banks_ellipsis">ابحث عن بنك...</string>
+    <string name="select_color">اختر اللون</string>
+    <string name="select_icon">اختر الأيقونة</string>
+    <string name="credit_card_config">إعدادات البطاقة الائتمانية</string>
+    <string name="cash_tracking_desc">لتتبع الكاش الفعلي. البطاقات وأرقام الحسابات لا تنطبق هنا.</string>
+    <string name="payment_due_day_desc">يوم الاستحقاق في الشهر (1-28)</string>
+    <string name="sms_settings">إعدادات الرسائل النصية</string>
+    <string name="sms_auto_link_provider">سيتم ربط رسائل SMS من %1$s تلقائياً بهذا الحساب.</string>
+    <string name="sms_auto_link_default">سيتم ربط رسائل SMS من مزود المحفظة المختار تلقائياً بهذا الحساب.</string>
+    <string name="link_card_digits_desc">اربط آخر 3 أو 4 أرقام من بطاقتك لتسجيل مصروفات SMS مباشرة في هذا الحساب.</string>
+    <string name="bank_account_desc">يستخدم عندما تظهر رسالة SMS رقم الحساب بدلاً من أرقام البطاقة (مثال: انستاباي).</string>
+    <string name="add_instapay_fee">إضافة رسوم انستاباي تلقائياً</string>
+    <string name="instapay_fee_desc">يضيف رسوم تحويل انستاباي عندما تُظهر رسالة SMS المبلغ الأصلي فقط.</string>
+    <string name="advanced">متقدم</string>
+    <string name="exclude_from_all_accounts">استبعاد من كل الحسابات</string>
+    <string name="exclude_from_all_desc">لن يتم تضمين الرصيد والمعاملات في الإجمالي على الشاشة الرئيسية.</string>
+    <string name="select_bank">اختر البنك</string>
+    <string name="icon_and_color">الأيقونة واللون</string>
+    <string name="select_provider">اختر المزود</string>
+    <string name="select_currency">اختر العملة</string>
+
+    <!-- New Transaction Screen Strings in Modern Standard Arabic -->
+    <string name="new_transaction">عملية جديدة</string>
+    <string name="expense">مصروف</string>
+    <string name="transfer">تحويل</string>
+    <string name="category_label">الفئة</string>
+    <string name="select_category_placeholder">اختر الفئة</string>
+    <string name="account_label_caps">الحساب</string>
+    <string name="description_optional_label">الوصف (اختياري)</string>
+    <string name="hint_optional_label">ملاحظة إضافية (اختياري)</string>
+    <string name="date_label_caps">التاريخ</string>
+    <string name="pick_date">اختر التاريخ</string>
+    <string name="spend_on_placeholder">فيماذا أنفقت؟</string>
+    <string name="earn_from_placeholder">من أين كسبت؟</string>
+    <string name="transfer_placeholder">ماذا حولت؟</string>
+    <string name="add_note_placeholder">أضف تفاصيل إضافية...</string>
+    <string name="cant_find_it_create_own">لا تجدها؟ أنشئ فئة خاصة بك &gt;</string>
+    <string name="category_title">الفئة</string>
+    <string name="custom_category">فئة مخصصة</string>
+    <string name="enter_custom_category">أدخل اسم الفئة المخصصة:</string>
+    <string name="eg_subscription">مثال: الجيم، اشتراكات...</string>
+
+    <!-- Categories in Standard Arabic -->
+    <string name="cat_atm_withdrawal">سحب من الصراف الآلي</string>
+    <string name="cat_bonus">مكافأة</string>
+    <string name="cat_cashback">استرداد نقدي</string>
+    <string name="cat_credit_card_settlement">تسوية البطاقة الائتمانية</string>
+    <string name="cat_credit_card_settlement_desc">لا يؤثر على الإنفاق/الدخل الشهري</string>
+    <string name="cat_education">التعليم</string>
+    <string name="cat_entertainment">ترفيه</string>
+    <string name="cat_food">طعام وشراب</string>
+    <string name="cat_freelance">عمل حر</string>
+    <string name="cat_fuel">وقود</string>
+    <string name="cat_health">الصحة</string>
+    <string name="cat_home">المنزل</string>
+    <string name="cat_investment">الاستثمار</string>
+    <string name="cat_other">أخرى</string>
+    <string name="cat_personal_care">عناية شخصية</string>
+    <string name="cat_refund">مسترجع</string>
+    <string name="cat_salary">الراتب</string>
+    <string name="cat_shopping">تسوق</string>
+    <string name="cat_subscriptions">اشتراكات</string>
+    <string name="cat_transfer">تحويل</string>
+    <string name="cat_transportation">مواصلات</string>
+    <string name="cat_travel">سفر</string>
+    <string name="cat_utilities">مرافق وفواتير</string>
+    <string name="cat_work">العمل</string>
+
+    <!-- خيارات تجميع التحليلات -->
+    <string name="group_by_category">حسب الفئة</string>
+    <string name="group_by_account">حسب الحساب</string>
+    <string name="group_by_day">حسب اليوم</string>
+    <string name="group_by_month">حسب الشهر</string>
+
+    <!-- Clerk Auth Screen -->
+    <string name="auth_welcome_title">مرحباً بك في دفتر الحصالة</string>
+    <string name="auth_welcome_subtitle">بياناتك محفوظة بأمان</string>
+    <string name="auth_clerk_desc">النسخ الاحتياطي السحابي السلس والمزامنة بين الأجهزة تبقي حسابك آمناً.</string>
+    <string name="auth_continue_google">المتابعة باستخدام Google</string>
+    <string name="auth_choose_account">اختر حساباً</string>
+    <string name="auth_to_continue">للمتابعة إلى دفتر الحصالة</string>
+    <string name="auth_add_account">إضافة حساب آخر</string>
+    <string name="auth_signing_in">جاري تسجيل الدخول بجوجل...</string>
+    <string name="auth_profile_title">الملف الشخصي</string>
+    <string name="auth_sign_out">تسجيل الخروج</string>
+    <string name="auth_logged_in_as">تم تسجيل الدخول باسم %1$s</string>
+
+    <!-- Edit Account Strings in Standard Arabic -->
+    <string name="edit_account">تعديل الحساب</string>
+    <string name="current_balance">الرصيد الحالي</string>
+    <string name="credit_card_details">تفاصيل البطاقة الائتمانية</string>
+    <string name="bank_account_details">تفاصيل الحساب البنكي</string>
+    <string name="visual_style">النمط البصري</string>
+    <string name="card_theme_color">لون مظهر البطاقة</string>
+    <string name="delete_account">حذف الحساب</string>
+    <string name="delete_account_confirm_title">حذف الحساب؟</string>
+    <string name="delete_account_confirm_msg">هل أنت متأكد من رغبتك في حذف هذا الحساب؟ سيتم أيضاً حذف جميع المعاملات المرتبطة به بشكل دائم.</string>
+    <string name="delete">حذف</string>
+    <string name="cancel">إلغاء</string>
+
+    <!-- Months in Standard Arabic -->
+    <string name="month_january">يناير</string>
+    <string name="month_february">فبراير</string>
+    <string name="month_march">مارس</string>
+    <string name="month_april">أبريل</string>
+    <string name="month_may">مايو</string>
+    <string name="month_june">يونيو</string>
+    <string name="month_july">يوليو</string>
+    <string name="month_august">أغسطس</string>
+    <string name="month_september">سبتمبر</string>
+    <string name="month_october">أكتوبر</string>
+    <string name="month_november">نوفمبر</string>
+    <string name="month_december">ديسمبر</string>
+
+    <!-- Accounts & Analytics Screen Strings in Standard Arabic -->
+    <string name="total_spent">إجمالي المصروفات</string>
+    <string name="percent_used">تم استخدام %1$d%%</string>
+    <string name="transactions">المعاملات</string>
+    <string name="all_time">كل الأوقات</string>
+    <string name="this_month">هذا الشهر</string>
+    <string name="no_transactions_yet">لا توجد معاملات بعد</string>
+    <string name="no_transactions_this_month">لا توجد معاملات هذا الشهر</string>
+    <string name="no_transactions_desc_sub">ستظهر هنا المدفوعات التلقائية المستخرجة من رسائل SMS أو العمليات المدخلة يدوياً.</string>
+    <string name="switch_account">تبديل الحساب</string>
+    <string name="all_accounts">كل الحسابات</string>
+    <string name="all_accounts_sub">عرض مجمع للمصروفات والدخل والمعاملات</string>
+    <string name="add_new_account">إضافة حساب جديد</string>
+    <string name="spending_analytics">تحليلات المصروفات</string>
+    <string name="last_3_months">آخر ٣ أشهر</string>
+    <string name="this_year">هذه السنة</string>
+    <string name="filtered_account_label">الحساب المحدد</string>
+    <string name="all_filter">الكل</string>
+    <string name="no_transactions_found">لم يتم العثور على معاملات</string>
+    <string name="try_adjusting_filters">حاول تعديل التصفية أو التواريخ بالأعلى.</string>
+    <string name="transaction_count_format">%1$d عملية (عمليات)</string>
+    <string name="tap_segment_for_details">اضغط على أي جزء لعرض التفاصيل</string>
+    <string name="distribution_breakdowns">تفاصيل التوزيع</string>
+    <string name="filter_by_account">تصفية حسب الحساب</string>
+    <string name="total_value">القيمة الإجمالية</string>
+    <string name="transaction_logs">سجل المعاملات:</string>
+    <string name="currency_egp">ج.م.</string>
+    <string name="amount_with_currency">%1$s %2$s</string>
+    <string name="balance_label">الرصيد: %1$s</string>
+
+    <!-- Pending Transactions Strings -->
+    <string name="pending_transactions">المعاملات المعلقة</string>
+    <string name="pending_transactions_desc">عرض وتسوية معاملات SMS غير الموجهة أو الغامضة.</string>
+    <string name="pending_sms_detected">تم اكتشاف معاملة SMS جديدة</string>
+    <string name="pending_sms_prompt">لقد اكتشفنا معاملة بقيمة %1$.2f %2$s من %3$s.\nلأي حساب هذه المعاملة؟</string>
+    <string name="select_account_prompt">اختر حساباً لربط هذه المعاملة به:</string>
+    <string name="resolve_success">تم توجيه المعاملة بنجاح!</string>
+    <string name="discard_pending_success">تم تجاهل المعاملة المعلقة</string>
+    <string name="no_pending_transactions">لا توجد معاملات معلقة</string>
+    <string name="no_pending_transactions_desc">تم توجيه جميع مدفوعات SMS التلقائية بنجاح إلى حساباتك.</string>
 </resources>

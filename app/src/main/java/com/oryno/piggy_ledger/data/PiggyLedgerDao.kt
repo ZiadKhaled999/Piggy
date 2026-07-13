@@ -42,11 +42,73 @@ interface PiggyLedgerDao {
     @Query("DELETE FROM loans WHERE id = :id")
     suspend fun deleteLoanById(id: String)
 
+    @Query("SELECT * FROM accounts ORDER BY name ASC")
+    fun getAllAccounts(): Flow<List<Account>>
+
+    @Query("SELECT * FROM accounts WHERE exclude_from_all = 0 ORDER BY name ASC")
+    fun getIncludedAccounts(): Flow<List<Account>>
+
+    @Query("SELECT * FROM accounts WHERE id = :id")
+    suspend fun getAccountById(id: Long): Account?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccount(account: Account): Long
+
+    @Update
+    suspend fun updateAccount(account: Account)
+
+    @Query("DELETE FROM accounts WHERE id = :id")
+    suspend fun deleteAccountById(id: Long)
+
+    @Query("SELECT * FROM account_transactions WHERE account_id = :accountId ORDER BY timestamp DESC")
+    fun getTransactionsForAccount(accountId: Long): Flow<List<AccountTransaction>>
+
+    @Query("SELECT * FROM account_transactions ORDER BY timestamp DESC")
+    fun getAllAccountTransactions(): Flow<List<AccountTransaction>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccountTransaction(transaction: AccountTransaction)
+
+    @androidx.room.Transaction
+    suspend fun processSmsTransaction(accountId: Long, amount: Double, merchant: String, applyInstaPayFee: Boolean) {
+        val account = getAccountById(accountId) ?: return
+        
+        var finalAmount = amount
+        if (applyInstaPayFee) {
+            val fee = minOf(amount * 0.001, 20.0)
+            finalAmount += fee
+        }
+
+        val newTransaction = AccountTransaction(
+            account_id = accountId,
+            amount = -finalAmount, // Assuming SMS are expenses. We might need to refine this later if there are income SMS. Let's assume expense for now or as per standard.
+            merchant = merchant
+        )
+        insertAccountTransaction(newTransaction)
+        
+        val newBalance = account.current_balance - finalAmount
+        var newAvailableCredit = account.available_credit
+        if (account.type == AccountType.CARD && newAvailableCredit != null) {
+            newAvailableCredit -= finalAmount
+        }
+
+        updateAccount(account.copy(current_balance = newBalance, available_credit = newAvailableCredit))
+    }
+
+    @Query("DELETE FROM goals WHERE id = :id")
+    suspend fun deleteGoalById(id: String)
+
+    @Query("DELETE FROM transactions WHERE goalId = :goalId")
+    suspend fun deleteTransactionsForGoal(goalId: String)
+
     @Query("SELECT * FROM transactions")
     suspend fun getAllTransactions(): List<Transaction>
 
     @Query("SELECT * FROM goals")
     suspend fun getAllGoalsSync(): List<Goal>
+
+    @Query("SELECT * FROM accounts")
+    suspend fun getAllAccountsSync(): List<Account>
 
     @Query("SELECT * FROM loans")
     suspend fun getAllLoansSync(): List<Loan>
@@ -68,4 +130,31 @@ interface PiggyLedgerDao {
 
     @Query("DELETE FROM loans")
     suspend fun clearLoans()
+
+    @Query("SELECT * FROM pending_transactions ORDER BY timestamp DESC")
+    fun getAllPendingTransactionsFlow(): Flow<List<PendingTransaction>>
+
+    @Query("SELECT * FROM pending_transactions WHERE id = :id")
+    suspend fun getPendingTransactionById(id: Long): PendingTransaction?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPendingTransaction(transaction: PendingTransaction): Long
+
+    @Query("DELETE FROM pending_transactions WHERE id = :id")
+    suspend fun deletePendingTransactionById(id: Long)
+
+    @Query("DELETE FROM pending_transactions")
+    suspend fun clearPendingTransactions()
+
+    @androidx.room.Transaction
+    suspend fun resolvePendingTransaction(pendingId: Long, accountId: Long) {
+        val pending = getPendingTransactionById(pendingId) ?: return
+        processSmsTransaction(
+            accountId = accountId,
+            amount = pending.amount,
+            merchant = pending.merchant,
+            applyInstaPayFee = getAccountById(accountId)?.insta_pay_fee == true
+        )
+        deletePendingTransactionById(pendingId)
+    }
 }

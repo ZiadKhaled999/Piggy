@@ -4,8 +4,12 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.app.PendingIntent
+import android.content.Intent
+import android.graphics.Color as AndroidColor
 import androidx.core.app.NotificationCompat
 import com.oryno.piggy_ledger.R
+import com.oryno.piggy_ledger.MainActivity
 
 class NotificationHelper(private val context: Context) {
 
@@ -20,6 +24,9 @@ class NotificationHelper(private val context: Context) {
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText
+                enableLights(true)
+                lightColor = android.graphics.Color.RED
+                enableVibration(true)
             }
             val notificationManager: NotificationManager =
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -31,14 +38,28 @@ class NotificationHelper(private val context: Context) {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent: PendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val title = context.getString(R.string.deadline_title)
+        val message = context.getString(R.string.repayment_deadline_over, contactName, "$$amount")
+
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle(context.getString(R.string.deadline_title))
-            .setContentText(context.getString(R.string.repayment_deadline_over, contactName, "$$amount"))
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setColor(AndroidColor.parseColor("#F43F5E")) // PinkPrimary
+            .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, context.getString(R.string.cancel_btn), null)
-            .addAction(android.R.drawable.ic_popup_reminder, context.getString(R.string.snooze_action), null)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         notificationManager.notify(contactName.hashCode(), builder.build())
     }

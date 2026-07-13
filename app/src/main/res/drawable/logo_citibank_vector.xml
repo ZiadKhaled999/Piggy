@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Background Circle in Citibank Blue -->
+    <path
+        android:fillColor="#004687"
+        android:pathData="M24,24m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0"/>
+    <!-- Center white branding frame -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,18m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M18,22h12v11h-12z"/>
+    <!-- Iconic Red Arc spanning across the top -->
+    <path
+        android:fillColor="#DA291C"
+        android:pathData="M14,19c4,-4 16,-4 20,0c1,1 0,2.5 -1,2.5c-4,-3.5 -14,-3.5 -18,0c-1,0 -2,-1.5 -1,-2.5z"/>
+</vector>

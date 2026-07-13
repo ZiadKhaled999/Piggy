@@ -7,8 +7,9 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Goal::class, Transaction::class, Loan::class], version = 2, exportSchema = false)
+@Database(entities = [Goal::class, Transaction::class, Loan::class, Account::class, AccountTransaction::class, PendingTransaction::class], version = 7, exportSchema = false)
 abstract class PiggyLedgerDatabase : RoomDatabase() {
+
     companion object {
         @Volatile
         private var INSTANCE: PiggyLedgerDatabase? = null
@@ -19,6 +20,48 @@ abstract class PiggyLedgerDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE loans ADD COLUMN email TEXT")
+                database.execSQL("ALTER TABLE loans ADD COLUMN photoUri TEXT")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE TABLE IF NOT EXISTS `accounts` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, `icon_color` TEXT NOT NULL, `currency` TEXT NOT NULL, `starting_balance` REAL NOT NULL, `current_balance` REAL NOT NULL, `exclude_from_all` INTEGER NOT NULL, `credit_limit` REAL, `available_credit` REAL, `payment_due_day` INTEGER, `card_numbers` TEXT, `bank_account_no` TEXT, `provider` TEXT, `insta_pay_fee` INTEGER NOT NULL)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `account_transactions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `account_id` INTEGER NOT NULL, `amount` REAL NOT NULL, `merchant` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `source` TEXT NOT NULL, FOREIGN KEY(`account_id`) REFERENCES `accounts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_account_transactions_account_id` ON `account_transactions` (`account_id`)")
+            }
+        }
+        
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE accounts ADD COLUMN icon_name TEXT NOT NULL DEFAULT 'AccountBalance'")
+            }
+        }
+
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE accounts ADD COLUMN logo_url TEXT")
+                database.execSQL("ALTER TABLE accounts ADD COLUMN local_logo_path TEXT")
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `pending_transactions` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`amount` REAL NOT NULL, " +
+                    "`merchant` TEXT NOT NULL, " +
+                    "`raw_sms_body` TEXT NOT NULL, " +
+                    "`sender` TEXT NOT NULL, " +
+                    "`timestamp` INTEGER NOT NULL)"
+                )
+            }
+        }
+
         fun getInstance(context: Context): PiggyLedgerDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -26,7 +69,7 @@ abstract class PiggyLedgerDatabase : RoomDatabase() {
                     PiggyLedgerDatabase::class.java,
                     "piggy_ledger_db"
                 )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

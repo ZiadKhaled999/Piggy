@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.BasicTextField
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
@@ -51,9 +53,12 @@ import com.oryno.piggy_ledger.data.LoanType
 import com.oryno.piggy_ledger.ui.theme.PinkAccent
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.BlackAccent
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
 import java.util.UUID
+import android.net.Uri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,7 +69,9 @@ fun LoansScreen(
     val loans by viewModel.loans.collectAsState()
     
     var showAddDialog by remember { mutableStateOf(false) }
+    val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedLoan by remember { mutableStateOf<Loan?>(null) }
+    val detailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val owedToMe = loans.filter { !it.isPaidOff && it.type == LoanType.LENT }.sumOf { it.amount }
@@ -389,15 +396,27 @@ fun LoansScreen(
                                 modifier = Modifier.weight(1f),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .background(bgTint, RoundedCornerShape(8.dp)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(18.dp))
+                                if (!loan.photoUri.isNullOrBlank()) {
+                                    AsyncImage(
+                                        model = Uri.parse(loan.photoUri),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .clip(CircleShape)
+                                            .border(1.5.dp, iconTint.copy(alpha = 0.3f), CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .background(bgTint, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                                    }
                                 }
-                                Spacer(modifier = Modifier.width(10.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(
                                         text = loan.contactName, 
@@ -433,7 +452,7 @@ fun LoansScreen(
                             ) {
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
-                                        text = "$prefix$$${String.format("%.2f", loan.amount)}", 
+                                        text = "$prefix $${String.format("%.2f", loan.amount)}", 
                                         color = if (isPaidOff) Color(0xFF64748B) else textColor, 
                                         fontWeight = FontWeight.Bold, 
                                         fontSize = 15.sp,
@@ -479,6 +498,8 @@ fun LoansScreen(
         var amountStr by remember { mutableStateOf("") }
         var contactName by remember { mutableStateOf("") }
         var phoneNumber by remember { mutableStateOf("") }
+        var emailAddress by remember { mutableStateOf("") }
+        var contactPhotoUri by remember { mutableStateOf<String?>(null) }
         var socialDetails by remember { mutableStateOf("") }
         var note by remember { mutableStateOf("") }
         var hasDeadline by remember { mutableStateOf(false) }
@@ -501,7 +522,12 @@ fun LoansScreen(
                         
                         val idIndex = cursor.getColumnIndex(ContactsContract.Contacts._ID)
                         val hasPhoneIndex = cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)
+                        val photoUriIndex = cursor.getColumnIndex(ContactsContract.Contacts.PHOTO_URI)
                         
+                        if (photoUriIndex != -1) {
+                            contactPhotoUri = cursor.getString(photoUriIndex)
+                        }
+
                         if (idIndex != -1 && hasPhoneIndex != -1) {
                             val id = cursor.getString(idIndex)
                             val hasPhone = cursor.getInt(hasPhoneIndex) > 0
@@ -534,7 +560,7 @@ fun LoansScreen(
                             if (emailCur != null && emailCur.moveToFirst()) {
                                 val emailIndex = emailCur.getColumnIndex(ContactsContract.CommonDataKinds.Email.DATA)
                                 if (emailIndex != -1) {
-                                    socialDetails = emailCur.getString(emailIndex) ?: ""
+                                    emailAddress = emailCur.getString(emailIndex) ?: ""
                                 }
                                 emailCur.close()
                             }
@@ -549,6 +575,7 @@ fun LoansScreen(
         
         ModalBottomSheet(
             onDismissRequest = { showAddDialog = false },
+            sheetState = addSheetState,
             containerColor = Color.White,
             dragHandle = {
                 Box(
@@ -747,6 +774,85 @@ fun LoansScreen(
                         modifier = Modifier.padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        if (!contactPhotoUri.isNullOrBlank()) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AsyncImage(
+                                    model = Uri.parse(contactPhotoUri),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(72.dp)
+                                        .clip(CircleShape)
+                                        .border(3.dp, themeColor.copy(alpha = 0.4f), CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+
+                        // Highlighted Premium Import Button
+                        Surface(
+                            onClick = {
+                                if (hasPermission) {
+                                    contactPickerLauncher.launch(null)
+                                } else {
+                                    permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                                }
+                            },
+                            color = themeColor.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(20.dp),
+                            border = BorderStroke(2.dp, themeColor.copy(alpha = 0.4f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(20.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                if (contactName.isBlank()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .background(themeColor.copy(alpha = 0.2f), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PersonAdd,
+                                            contentDescription = null,
+                                            tint = themeColor,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                }
+                                Column(horizontalAlignment = if (contactName.isBlank()) Alignment.Start else Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = if (contactName.isNotBlank()) contactName else stringResource(R.string.import_from_contacts),
+                                        color = NavyDark,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                    if (contactName.isBlank()) {
+                                        Text(
+                                            text = stringResource(R.string.fill_all_details),
+                                            color = themeColor,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    } else {
+                                        Text(
+                                            text = stringResource(R.string.contact_imported_success),
+                                            color = themeColor,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         Text(
                             text = stringResource(R.string.contact_details_label),
                             fontSize = 9.sp,
@@ -755,29 +861,12 @@ fun LoansScreen(
                             letterSpacing = 0.5.sp
                         )
                         
-                        // Contact Name with integrated Native Picker inside it
+                        // Contact Name
                         OutlinedTextField(
                             value = contactName,
                             onValueChange = { contactName = it },
                             label = { Text(stringResource(R.string.contact_name_label)) },
                             placeholder = { Text(stringResource(R.string.mike_smith_placeholder)) },
-                            trailingIcon = {
-                                IconButton(
-                                    onClick = {
-                                        if (hasPermission) {
-                                            contactPickerLauncher.launch(null)
-                                        } else {
-                                            permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                                        }
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Person,
-                                        contentDescription = stringResource(R.string.pick_contact_desc),
-                                        tint = themeColor
-                                    )
-                                }
-                            },
                             textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 14.sp),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
@@ -793,7 +882,7 @@ fun LoansScreen(
                             )
                         )
 
-                        // Phone and Social (side-by-side or stacked cleanly)
+                        // Phone and Email (side-by-side or stacked cleanly)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -807,6 +896,7 @@ fun LoansScreen(
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp),
                                 singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     unfocusedContainerColor = Color.White,
                                     focusedContainerColor = Color.White,
@@ -819,14 +909,15 @@ fun LoansScreen(
                             )
                             
                             OutlinedTextField(
-                                value = socialDetails,
-                                onValueChange = { socialDetails = it },
-                                label = { Text(stringResource(R.string.social_optional)) },
-                                placeholder = { Text(stringResource(R.string.social_placeholder)) },
+                                value = emailAddress,
+                                onValueChange = { emailAddress = it },
+                                label = { Text(stringResource(R.string.email_optional)) },
+                                placeholder = { Text(stringResource(R.string.email_placeholder)) },
                                 textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.SemiBold, color = NavyDark, fontSize = 13.sp),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp),
                                 singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     unfocusedContainerColor = Color.White,
                                     focusedContainerColor = Color.White,
@@ -838,6 +929,27 @@ fun LoansScreen(
                                 )
                             )
                         }
+
+                        // Social Details
+                        OutlinedTextField(
+                            value = socialDetails,
+                            onValueChange = { socialDetails = it },
+                            label = { Text(stringResource(R.string.social_optional)) },
+                            placeholder = { Text(stringResource(R.string.social_placeholder)) },
+                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.SemiBold, color = NavyDark, fontSize = 13.sp),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = Color.White,
+                                focusedContainerColor = Color.White,
+                                unfocusedBorderColor = Color(0xFFCBD5E1),
+                                focusedBorderColor = themeColor,
+                                focusedLabelColor = themeColor,
+                                unfocusedLabelColor = TextLight,
+                                cursorColor = themeColor
+                            )
+                        )
                     }
                 }
 
@@ -949,6 +1061,8 @@ fun LoansScreen(
                                     amount = amount,
                                     contactName = contactName,
                                     phone = if (phoneNumber.isNotBlank()) phoneNumber else null,
+                                    email = if (emailAddress.isNotBlank()) emailAddress else null,
+                                    photoUri = contactPhotoUri,
                                     social = if (socialDetails.isNotBlank()) socialDetails else null,
                                     note = note,
                                     deadline = deadlineDate
@@ -976,6 +1090,7 @@ fun LoansScreen(
                 selectedLoan = null 
                 showDeleteConfirm = false
             },
+            sheetState = detailSheetState,
             containerColor = MaterialTheme.colorScheme.background,
             shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
         ) {
@@ -1002,40 +1117,116 @@ fun LoansScreen(
                     Text(typeText, color = typeColor, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
                 }
                 
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                if (!selectedLoan!!.photoUri.isNullOrBlank()) {
+                    AsyncImage(
+                        model = Uri.parse(selectedLoan!!.photoUri),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .border(2.dp, typeColor.copy(alpha = 0.3f), RoundedCornerShape(24.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .background(typeColor.copy(alpha = 0.1f), RoundedCornerShape(20.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            if (selectedLoan!!.type == LoanType.LENT) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
+                            contentDescription = null,
+                            tint = typeColor,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    "$prefix$$${String.format("%.2f", selectedLoan!!.amount)}",
-                    fontSize = 40.sp,
+                    "$prefix $${String.format("%.2f", selectedLoan!!.amount)}",
+                    fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     color = typeColor
                 )
                 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
                 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.contact_name_header), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
                     Text(selectedLoan!!.contactName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                 }
+
+                if (!selectedLoan!!.phone.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.phone_label), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
+                        Text(selectedLoan!!.phone!!, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    }
+                }
+
+                if (!selectedLoan!!.email.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.email_label), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
+                        Text(selectedLoan!!.email!!, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    }
+                }
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.repayment_deadline_header), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
-                    Text(stringResource(R.string.no_strict_deadline), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+                        val (deadlineLabel, dateValue) = if (selectedLoan!!.deadline != null) {
+                            val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
+                            stringResource(R.string.repayment_deadline_header) to stringResource(R.string.due_prefix, sdf.format(java.util.Date(selectedLoan!!.deadline!!)))
+                        } else {
+                            stringResource(R.string.repayment_deadline_header) to stringResource(R.string.no_strict_deadline)
+                        }
+                        
+                        Text(deadlineLabel, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            color = Color(0xFFF1F5F9),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = dateValue,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = NavyDark,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(12.dp)
+                    colors = CardDefaults.cardColors(containerColor = typeColor.copy(alpha = 0.08f)),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(2.dp, typeColor.copy(alpha = 0.3f))
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(stringResource(R.string.flashback_recall_note), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("\"${selectedLoan!!.note}\"", fontSize = 14.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = NavyDark)
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Info, contentDescription = null, tint = typeColor, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.flashback_recall_note), fontSize = 11.sp, fontWeight = FontWeight.Black, color = typeColor, letterSpacing = 1.sp)
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = "\"${selectedLoan!!.note}\"",
+                            fontSize = 16.sp,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDark,
+                            lineHeight = 24.sp
+                        )
                     }
                 }
                 

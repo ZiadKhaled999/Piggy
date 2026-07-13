@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Background Circle in Deep Blue -->
+    <path
+        android:fillColor="#0D47A1"
+        android:pathData="M24,24m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0"/>
+    <!-- Minimalist sailboat / shipping vessel symbolizing Suez Canal in gold and white -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M14,28c0,0 4,2 10,2s10,-2 10,-2c0,0 -1.5,4 -10,4s-10,-4 -10,-4z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M22,12l0,14l-6,-3.5zM26,10l0,16l8,-5z"/>
+    <!-- Dynamic canal waves at the bottom -->
+    <path
+        android:fillColor="#00BCD4"
+        android:pathData="M10,34c4,1 7,-1 11,-1s6,2 10,2s6,-2 9,-1c0,0.5 -0.5,1.5 -2,1.5s-6,-1.5 -10,-1.5s-6,2 -10,2s-7,-1.5 -8,-1.5z"/>
+</vector>

@@ -251,4 +251,211 @@
         <item>جرب حظك المرة دي!</item>
         <item>ارجع للعبتك قوام!</item>
     </string-array>
+
+    <!-- Accounts, Transactions & Budget in true Egyptian Colloquial -->
+    <string name="target_account">الحساب اللي هتحوش فيه</string>
+    <string name="select_account">اختار الحساب</string>
+    <string name="total_net_worth">ثروتك الصافية كلها</string>
+    <string name="balance">الرصيد</string>
+    <string name="income">الفلوس اللي دخلت</string>
+    <string name="expenses">المصروفات</string>
+    <string name="select_period">اختار الفترة</string>
+    <string name="month_caps">الشهر</string>
+    <string name="year_caps">السنة</string>
+    <string name="done">قشطة</string>
+    <string name="new_account">حساب جديد</string>
+    <string name="save">احفظ</string>
+    <string name="general_info">معلومات عامة</string>
+    <string name="account_name">اسم الحساب</string>
+    <string name="account_name_placeholder">مثلاً: تحويشة الزمن، مصروف البيت...</string>
+    <string name="account_type">نوع الحساب</string>
+    <string name="bank">بنك</string>
+    <string name="card">كارت</string>
+    <string name="cash">كاش</string>
+    <string name="e_wallet">محفظة إلكترونية</string>
+    <string name="exclude_from_total_net_worth">شيله من إجمالي ثروتك</string>
+    <string name="wallet_provider">مزود المحفظة (الشركة)</string>
+    <string name="select_wallet_provider">اختار مزود المحفظة</string>
+    <string name="starting_balance">الرصيد اللي هتبدأ بيه</string>
+    <string name="currency">العملة</string>
+    <string name="budget">الميزانية</string>
+    <string name="add_account">ضيف حساب جديد</string>
+    <string name="update_budget">تعديل الميزانية الشهرية</string>
+    <string name="budget_amount">مبلغ الميزانية</string>
+    <string name="add_transaction">ضيف عملية جديدة</string>
+    <string name="expense_singular">مصروف</string>
+    <string name="amount_label">المبلغ</string>
+    <string name="merchant_desc">الجهة / الوصف</string>
+    <string name="merchant_placeholder">مثلاً: أوبر، ستاربكس، المرتب...</string>
+    <string name="select_month">اختار الشهر</string>
+    <string name="add_btn">ضيف</string>
+    <string name="no_accounts_added">لسه مفيش حسابات مضافة!</string>
+    <string name="no_accounts_desc">ضيف حساب بنك، كارت، أو محفظة إلكترونية عشان تتابع كل مليم بيتصرف أو يدخل في ميزانيتك.</string>
+    <string name="bank_card_issuer">البنك / مصدر الكارت</string>
+    <string name="eg_0_00">مثلاً: 0.00</string>
+    <string name="credit_limit">حد الائتمان (الليميت)</string>
+    <string name="eg_25000">مثلاً: 25000</string>
+    <string name="available">الفلوس المتاحة</string>
+    <string name="eg_12000">مثلاً: 12000</string>
+    <string name="payment_due_day">يوم الدفع</string>
+    <string name="eg_15">مثلاً: 15</string>
+    <string name="card_numbers_optional">أرقام الكارت (اختياري)</string>
+    <string name="eg_card_numbers">مثلاً: 4567، 1234</string>
+    <string name="bank_account_number_optional">رقم الحساب البنكي (اختياري)</string>
+    <string name="eg_account_number">مثلاً: 074130001</string>
+    <string name="search_ellipsis">بتدور على إيه؟...</string>
+    <string name="search_banks_ellipsis">دور على بنك...</string>
+    <string name="select_color">اختار لون</string>
+    <string name="select_icon">اختار شكل الأيقونة</string>
+    <string name="credit_card_config">تظبيط الكارت الائتماني</string>
+    <string name="cash_tracking_desc">عشان تتابع الكاش اللي في جيبك. الكروت وأرقام الحسابات ملهاش لازمة هنا.</string>
+    <string name="payment_due_day_desc">يوم الدفع اللي في الشهر (من 1 لـ 28)</string>
+    <string name="sms_settings">تظبيط رسائل الـ SMS</string>
+    <string name="sms_auto_link_provider">أي رسائل SMS هتيجي من %1$s هتتربط تلقائياً بالحساب ده.</string>
+    <string name="sms_auto_link_default">الرسائل اللي هتيجي من محفظتك الإلكترونية هتتربط تلقائياً بالحساب ده.</string>
+    <string name="link_card_digits_desc">اربط آخر 3 أو 4 أرقام من كارتك عشان أي مصروف يجيلك في رسالة ينزل في الحساب ده علطول.</string>
+    <string name="bank_account_desc">بنستخدم ده لما رسالة الـ SMS تعرض رقم الحساب بدل أرقام الكارت (زي انستاباي).</string>
+    <string name="add_instapay_fee">ضيف رسوم انستاباي تلقائياً</string>
+    <string name="instapay_fee_desc">هنضيف رسوم تحويل انستاباي (10 جنيه) لو رسالة الـ SMS فيها المبلغ الصافي بس.</string>
+    <string name="advanced">تظبيطات متقدمة</string>
+    <string name="exclude_from_all_accounts">شيله من الحسابات كلها</string>
+    <string name="exclude_from_all_desc">الرصيد والمعاملات بتوع الحساب ده مش هيتحسبوا في إجمالي ثروتك على الشاشة الرئيسية.</string>
+    <string name="select_bank">اختار بنك</string>
+    <string name="icon_and_color">الأيقونة واللون</string>
+    <string name="select_provider">اختار الشركة</string>
+    <string name="select_currency">اختار العملة</string>
+
+    <!-- New Transaction Screen Strings in true Egyptian Colloquial -->
+    <string name="new_transaction">عملية جديدة</string>
+    <string name="expense">مصروف</string>
+    <string name="transfer">تحويل</string>
+    <string name="category_label">التصنيف</string>
+    <string name="select_category_placeholder">اختار التصنيف</string>
+    <string name="account_label_caps">الحساب</string>
+    <string name="description_optional_label">الوصف (اختياري)</string>
+    <string name="hint_optional_label">ملحوظة إضافية (اختياري)</string>
+    <string name="date_label_caps">التاريخ</string>
+    <string name="pick_date">اختار التاريخ</string>
+    <string name="spend_on_placeholder">صرفتهم في إيه؟</string>
+    <string name="earn_from_placeholder">جولك منين؟</string>
+    <string name="transfer_placeholder">حولتهم لإيه؟</string>
+    <string name="add_note_placeholder">اكتب تفاصيل أكتر هنا...</string>
+    <string name="cant_find_it_create_own">مش لاقيه؟ اكتب تصنيف من عندك &gt;</string>
+    <string name="category_title">التصنيف</string>
+    <string name="custom_category">تصنيف من عندك</string>
+    <string name="enter_custom_category">اكتب اسم التصنيف الجديد:</string>
+    <string name="eg_subscription">مثلاً: جيم، اشتراكات...</string>
+
+    <!-- Categories in Egyptian Colloquial -->
+    <string name="cat_atm_withdrawal">كاش من الـ ATM</string>
+    <string name="cat_bonus">مكافأة وبونص</string>
+    <string name="cat_cashback">كاش باك</string>
+    <string name="cat_credit_card_settlement">سداد كارت الائتمان</string>
+    <string name="cat_credit_card_settlement_desc">مش هيأثر على مصاريفك أو دخلك الشهر ده</string>
+    <string name="cat_education">تعليم وكورسات</string>
+    <string name="cat_entertainment">خروج وفسح</string>
+    <string name="cat_food">أكل وشرب</string>
+    <string name="cat_freelance">شغل فريلانس</string>
+    <string name="cat_fuel">بنزين وتموين</string>
+    <string name="cat_health">دكتور وصيدلية</string>
+    <string name="cat_home">مصروف البيت</string>
+    <string name="cat_investment">استثمار ودهب</string>
+    <string name="cat_other">حاجات تانية</string>
+    <string name="cat_personal_care">حلاقة وعناية شخصية</string>
+    <string name="cat_refund">فلوس رجعتلي</string>
+    <string name="cat_salary">المرتب</string>
+    <string name="cat_shopping">شوبينج ومشتريات</string>
+    <string name="cat_subscriptions">اشتراكات</string>
+    <string name="cat_transfer">تحويل فلوس</string>
+    <string name="cat_transportation">مواصلات (أوبر/مترو)</string>
+    <string name="cat_travel">سفر</string>
+    <string name="cat_utilities">فواتير (كهربا ومية وغاز)</string>
+    <string name="cat_work">بيزنس وشغل</string>
+
+    <!-- خيارات تجميع التحليلات باللهجة المصرية -->
+    <string name="group_by_category">بالتصنيف</string>
+    <string name="group_by_account">بالحساب</string>
+    <string name="group_by_day">باليوم</string>
+    <string name="group_by_month">بالشهر</string>
+
+    <!-- Clerk Auth Screen -->
+    <string name="auth_welcome_title">يا هلا بيك في دفتر الحصالة!</string>
+    <string name="auth_welcome_subtitle">بياناتك في الحفظ والصون</string>
+    <string name="auth_clerk_desc">بياناتك وتحاويشك بتتحفظ بشكل آمن عشان متضيعش منك أبداً ومتقلقش على أي قرش.</string>
+    <string name="auth_continue_google">خش بجوجل علطول</string>
+    <string name="auth_choose_account">اختار حساب من حساباتك</string>
+    <string name="auth_to_continue">عشان تفتح الحصالة بتاعتك</string>
+    <string name="auth_add_account">سجل بحساب تاني</string>
+    <string name="auth_signing_in">بندخلك بحساب جوجل بتاعك...</string>
+    <string name="auth_profile_title">ملفك الشخصي</string>
+    <string name="auth_sign_out">تسجيل خروج</string>
+    <string name="auth_logged_in_as">داخل بحساب: %1$s</string>
+
+    <!-- Edit Account Strings in Egyptian Arabic -->
+    <string name="edit_account">تعديل الحساب</string>
+    <string name="current_balance">الرصيد الحالي</string>
+    <string name="credit_card_details">تفاصيل الكارت الائتماني</string>
+    <string name="bank_account_details">تفاصيل الحساب البنكي</string>
+    <string name="visual_style">شكل الكارت</string>
+    <string name="card_theme_color">لون الكارت</string>
+    <string name="delete_account">امسح الحساب</string>
+    <string name="delete_account_confirm_title">عايز تمسح الحساب؟</string>
+    <string name="delete_account_confirm_msg">متأكد إنك عايز تمسح الحساب ده؟ كل المعاملات اللي متسجلة عليه هتتمسح معاه للأبد ومفيش رجوع.</string>
+    <string name="delete">امسح</string>
+    <string name="cancel">إلغاء</string>
+
+    <!-- Months in Egyptian Colloquial -->
+    <string name="month_january">يناير</string>
+    <string name="month_february">فبراير</string>
+    <string name="month_march">مارس</string>
+    <string name="month_april">أبريل</string>
+    <string name="month_may">مايو</string>
+    <string name="month_june">يونيو</string>
+    <string name="month_july">يوليو</string>
+    <string name="month_august">أغسطس</string>
+    <string name="month_september">سبتمبر</string>
+    <string name="month_october">أكتوبر</string>
+    <string name="month_november">نوفمبر</string>
+    <string name="month_december">ديسمبر</string>
+
+    <!-- Accounts & Analytics Screen Strings in Egyptian Colloquial -->
+    <string name="total_spent">كل اللي صرفته</string>
+    <string name="percent_used">طيرت %1$d%% منه</string>
+    <string name="transactions">العمليات</string>
+    <string name="all_time">من يوم ما بدأنا</string>
+    <string name="this_month">الشهر ده</string>
+    <string name="no_transactions_yet">لسه مفيش عمليات خالص</string>
+    <string name="no_transactions_this_month">لسه مفيش عمليات الشهر ده</string>
+    <string name="no_transactions_desc_sub">كل رسايل الـ SMS اللي بتجيلك أو العمليات اللي بتكتبها بإيدك هتظهر هنا علطول.</string>
+    <string name="switch_account">غير الحساب</string>
+    <string name="all_accounts">كل الحسابات</string>
+    <string name="all_accounts_sub">ملخص مجمع لكل اللي صرفته وقبضك وعملياتك</string>
+    <string name="add_new_account">ضيف حساب جديد</string>
+    <string name="spending_analytics">فلوسك طارت فين؟</string>
+    <string name="last_3_months">آخر ٣ شهور</string>
+    <string name="this_year">السنة دي</string>
+    <string name="filtered_account_label">الحساب المختار</string>
+    <string name="all_filter">كله</string>
+    <string name="no_transactions_found">ملقناش أي عمليات خالص</string>
+    <string name="try_adjusting_filters">جرب تغير الفلاتر أو التواريخ اللي فوق دي.</string>
+    <string name="transaction_count_format">%1$d عملية</string>
+    <string name="tap_segment_for_details">دوس على أي حتة عشان تشوف تفاصيلها</string>
+    <string name="distribution_breakdowns">الفلوس متوزعة إزاي بالظبط</string>
+    <string name="filter_by_account">فلتر حسب الحساب</string>
+    <string name="total_value">الإجمالي كله</string>
+    <string name="transaction_logs">دفتر العمليات اللي تمت:</string>
+    <string name="currency_egp">جنيه</string>
+    <string name="amount_with_currency">%1$s %2$s</string>
+    <string name="balance_label">الرصيد الحالي: %1$s</string>
+
+    <!-- Pending Transactions Strings -->
+    <string name="pending_transactions">عمليات معلقة</string>
+    <string name="pending_transactions_desc">شوف ووجه رسايل الـ SMS اللي مش واضحة أو محتاجة اختيار حساب.</string>
+    <string name="pending_sms_detected">لقينا رسالة عملية جديدة</string>
+    <string name="pending_sms_prompt">لقينا عملية بمبلغ %1$.2f %2$s من %3$s.\nالعملية دي تبع أنهي حساب؟</string>
+    <string name="select_account_prompt">اختار الحساب اللي عاوز تربط بيه العملية دي:</string>
+    <string name="resolve_success">تم ربط العملية بالحساب بنجاح!</string>
+    <string name="discard_pending_success">تم مسح العملية المعلقة</string>
+    <string name="no_pending_transactions">مفيش عمليات معلقة</string>
+    <string name="no_pending_transactions_desc">كل عمليات رسايل الـ SMS اتوزعت وتوجهت لـ حساباتك بنجاح.</string>
 </resources>

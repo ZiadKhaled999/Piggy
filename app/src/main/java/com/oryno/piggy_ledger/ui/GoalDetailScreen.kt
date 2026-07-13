@@ -1,11 +1,15 @@
 package com.oryno.piggy_ledger.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -13,6 +17,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CallMade
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
@@ -25,8 +30,10 @@ import com.oryno.piggy_ledger.R
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -68,7 +75,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun GoalDetailScreen(
     goalId: String,
@@ -83,6 +90,8 @@ fun GoalDetailScreen(
     }
     
     var showDepositDialog by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scrollState = rememberLazyListState()
     
     if (goal == null) return
 
@@ -92,247 +101,342 @@ fun GoalDetailScreen(
     val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
     val establishedDate = remember(goal.createdAt) { dateFormatter.format(Date(goal.createdAt)) }
 
-    Column(
+    val shrinkOffset by remember {
+        derivedStateOf {
+            if (scrollState.firstVisibleItemIndex == 0) {
+                scrollState.firstVisibleItemScrollOffset.toFloat()
+            } else {
+                500f
+            }
+        }
+    }
+    
+    val shrinkThreshold = 300f
+    val shrinkFactor = (shrinkOffset / shrinkThreshold).coerceIn(0f, 1f)
+    
+    val now = System.currentTimeMillis()
+    val daysRunning = remember(goal.createdAt) {
+        val diff = now - goal.createdAt
+        TimeUnit.MILLISECONDS.toDays(diff).coerceAtLeast(1)
+    }
+    
+    val avgDaily = savedAmount / daysRunning
+    val remaining = (goal.targetAmount - savedAmount).coerceAtLeast(0.0)
+    val estDaysToComplete = if (avgDaily > 0) (remaining / avgDaily).toInt() else null
+    
+    val estCompletionDate = remember(estDaysToComplete) {
+        if (estDaysToComplete != null) {
+            val calendar = Calendar.getInstance()
+            calendar.add(Calendar.DAY_OF_YEAR, estDaysToComplete)
+            dateFormatter.format(calendar.time)
+        } else "N/A"
+    }
+
+    var selectedTab by remember { mutableIntStateOf(0) }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // Content
+        LazyColumn(
+            state = scrollState,
+            modifier = Modifier.fillMaxSize()
         ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_icon), tint = NavyDark)
+            item {
+                // Header Spacer
+                Spacer(modifier = Modifier.height(180.dp))
             }
-            Text(
-                text = stringResource(R.string.budgeting_title),
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold,
-                color = TextLight,
-                letterSpacing = 1.sp
-            )
-            Spacer(modifier = Modifier.width(48.dp))
+            
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0))
+                ) {
+                    Column(modifier = Modifier.padding(24.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(stringResource(R.string.your_budget_title), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                            
+                            val isCompleted = goal.targetAmount > 0.0 && savedAmount >= goal.targetAmount
+                            Surface(
+                                color = if (isCompleted) androidx.compose.ui.graphics.Color(0xFFDCFCE7) else if (goal.targetAmount <= 0.0) androidx.compose.ui.graphics.Color(0xFFEFF6FF) else androidx.compose.ui.graphics.Color(0xFFE0E7FF),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Text(
+                                    text = if (isCompleted) stringResource(R.string.completed_status) else if (goal.targetAmount <= 0.0) stringResource(R.string.open_savings).uppercase() else stringResource(R.string.in_progress_status),
+                                    color = if (isCompleted) androidx.compose.ui.graphics.Color(0xFF15803D) else if (goal.targetAmount <= 0.0) androidx.compose.ui.graphics.Color(0xFF1D4ED8) else androidx.compose.ui.graphics.Color(0xFF4338CA),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0))
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .background(androidx.compose.ui.graphics.Color.White, androidx.compose.foundation.shape.CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.Add, contentDescription = null, tint = NavyDark) // Placeholder icon
+                                    }
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Column {
+                                        Text(goal.name, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                                        if (goal.targetAmount > 0.0) {
+                                            Text("$${String.format("%.2f", savedAmount)} / $${String.format("%.2f", goal.targetAmount)}", color = TextLight, fontSize = 14.sp)
+                                        } else {
+                                            Text(stringResource(R.string.amount_saved_simple, String.format("%.2f", savedAmount)) + " (" + stringResource(R.string.open_savings) + ")", color = TextLight, fontSize = 14.sp)
+                                        }
+                                    }
+                                }
+                                
+                                if (goal.targetAmount > 0.0) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    
+                                    LinearProgressIndicator(
+                                        progress = { progress },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(4.dp)),
+                                        color = NavyDark,
+                                        trackColor = Color(0xFFCBD5E1)
+                                    )
+                                    
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("${(progress * 100).toInt()}%", color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        val remaining = goal.targetAmount - savedAmount
+                                        val remainingText = if (remaining < 0) {
+                                            stringResource(R.string.amount_extra_simple, String.format("%.2f", -remaining))
+                                        } else if (remaining == 0.0) {
+                                            stringResource(R.string.goal_reached_status)
+                                        } else {
+                                            stringResource(R.string.amount_left_simple, String.format("%.2f", remaining))
+                                        }
+                                        Text(remainingText, color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                                
+                                if (goal.targetAmount <= 0.0 || savedAmount < goal.targetAmount) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    
+                                    Button(
+                                        onClick = { showDepositDialog = true },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(48.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+                                    ) {
+                                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(stringResource(R.string.add_deposit), fontWeight = FontWeight.Bold)
+                                    }
+                                } else {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(containerColor = PinkAccent.copy(alpha = 0.2f)),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PinkAccent)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(stringResource(R.string.goal_completed_msg), color = PinkAccent, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+                }
+            }
+            
+            stickyHeader {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 8.dp)
+                            .height(48.dp)
+                            .background(MaterialTheme.colorScheme.background, RoundedCornerShape(24.dp))
+                            .border(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0), RoundedCornerShape(24.dp))
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TabButton(text = stringResource(R.string.overview_tab), isSelected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
+                        TabButton(text = stringResource(R.string.history_tab), isSelected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+
+            if (selectedTab == 0) {
+                overviewContent(
+                    goal = goal,
+                    daysRunning = daysRunning,
+                    avgDaily = avgDaily,
+                    estCompletionDate = estCompletionDate,
+                    establishedDate = establishedDate,
+                    savedAmount = savedAmount
+                )
+            } else {
+                transactionsContent(transactions = transactions)
+            }
+            
+            item {
+                Spacer(modifier = Modifier.height(32.dp))
+            }
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+        // Shrinkable Header Section
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .graphicsLayer {
+                    translationY = -shrinkOffset * 0.5f
+                    alpha = (1f - shrinkFactor * 1.5f).coerceAtLeast(0f)
+                    val scale = (1f - shrinkFactor * 0.3f).coerceAtLeast(0.7f)
+                    scaleX = scale
+                    scaleY = scale
+                },
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = stringResource(R.string.total_balance_label),
-                color = TextLight,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-            if (savedAmount > goal.targetAmount) {
-                Spacer(modifier = Modifier.width(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_icon), tint = NavyDark)
+                }
                 Text(
-                    text = stringResource(R.string.amount_extra_simple, String.format("%.2f", savedAmount - goal.targetAmount)),
-                    color = PinkAccent,
+                    text = stringResource(R.string.budgeting_title),
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold,
+                    color = TextLight,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.width(48.dp))
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.total_balance_label),
+                    color = TextLight,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
+                if (savedAmount > goal.targetAmount) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.amount_extra_simple, String.format("%.2f", savedAmount - goal.targetAmount)),
+                        color = PinkAccent,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
-        }
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.Bottom
-        ) {
-            Text(
-                text = "$${String.format("%.2f", savedAmount)}",
-                fontSize = 48.sp,
-                fontWeight = FontWeight.Bold,
-                color = NavyDark
-            )
-            if (goal.targetAmount > 0.0) {
+            
+            Row(
+                verticalAlignment = Alignment.Bottom
+            ) {
                 Text(
-                    text = " / $${String.format("%.2f", goal.targetAmount)}",
-                    fontSize = 24.sp,
+                    text = "$${String.format("%.2f", savedAmount)}",
+                    fontSize = 42.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextLight,
-                    modifier = Modifier.padding(bottom = 6.dp)
+                    color = NavyDark
                 )
-            } else {
-                Text(
-                    text =  " (" + stringResource(R.string.open_savings) + ")",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextLight,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                )
+                if (goal.targetAmount > 0.0) {
+                    Text(
+                        text = " / $${String.format("%.2f", goal.targetAmount)}",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextLight,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                } else {
+                    Text(
+                        text =  "\n(" + stringResource(R.string.open_savings) + ")",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextLight,
+                        modifier = Modifier.padding(bottom = 6.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Card(
-            modifier = Modifier.fillMaxSize(),
-            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0))
-        ) {
-            Column(modifier = Modifier.padding(24.dp)) {
+
+        // Fixed Top Bar when scrolled
+        if (shrinkFactor > 0.8f) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(64.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 2.dp
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(stringResource(R.string.your_budget_title), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                    
-                    val isCompleted = goal.targetAmount > 0.0 && savedAmount >= goal.targetAmount
-                    Surface(
-                        color = if (isCompleted) androidx.compose.ui.graphics.Color(0xFFDCFCE7) else if (goal.targetAmount <= 0.0) androidx.compose.ui.graphics.Color(0xFFEFF6FF) else androidx.compose.ui.graphics.Color(0xFFE0E7FF),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(
-                            text = if (isCompleted) stringResource(R.string.completed_status) else if (goal.targetAmount <= 0.0) stringResource(R.string.open_savings).uppercase() else stringResource(R.string.in_progress_status),
-                            color = if (isCompleted) androidx.compose.ui.graphics.Color(0xFF15803D) else if (goal.targetAmount <= 0.0) androidx.compose.ui.graphics.Color(0xFF1D4ED8) else androidx.compose.ui.graphics.Color(0xFF4338CA),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_icon), tint = NavyDark)
                     }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0))
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(androidx.compose.ui.graphics.Color.White, androidx.compose.foundation.shape.CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = null, tint = NavyDark) // Placeholder icon
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text(goal.name, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                                if (goal.targetAmount > 0.0) {
-                                    Text("$${String.format("%.2f", savedAmount)} / $${String.format("%.2f", goal.targetAmount)}", color = TextLight, fontSize = 14.sp)
-                                } else {
-                                    Text(stringResource(R.string.amount_saved_simple, String.format("%.2f", savedAmount)) + " (" + stringResource(R.string.open_savings) + ")", color = TextLight, fontSize = 14.sp)
-                                }
-                            }
-                        }
-                        
-                        if (goal.targetAmount > 0.0) {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            
-                            LinearProgressIndicator(
-                                progress = { progress },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = NavyDark,
-                                trackColor = Color(0xFFCBD5E1)
-                            )
-                            
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("${(progress * 100).toInt()}%", color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                val remaining = goal.targetAmount - savedAmount
-                                val remainingText = if (remaining < 0) {
-                                    stringResource(R.string.amount_extra_simple, String.format("%.2f", -remaining))
-                                } else if (remaining == 0.0) {
-                                    stringResource(R.string.goal_reached_status)
-                                } else {
-                                    stringResource(R.string.amount_left_simple, String.format("%.2f", remaining))
-                                }
-                                Text(remainingText, color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        
-                        if (goal.targetAmount <= 0.0 || savedAmount < goal.targetAmount) {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            
-                            Button(
-                                onClick = { showDepositDialog = true },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.add_deposit), fontWeight = FontWeight.Bold)
-                            }
-                        } else {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = PinkAccent.copy(alpha = 0.2f)),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PinkAccent)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(R.string.goal_completed_msg), color = PinkAccent, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                var selectedTab by remember { mutableStateOf(0) }
-                
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .background(MaterialTheme.colorScheme.background, RoundedCornerShape(24.dp))
-                        .border(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0), RoundedCornerShape(24.dp))
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TabButton(text = stringResource(R.string.overview_tab), isSelected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
-                    TabButton(text = stringResource(R.string.history_tab), isSelected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                when (selectedTab) {
-                    0 -> {
-                        OverviewContent(
-                            goal = goal,
-                            savedAmount = savedAmount,
-                            transactions = transactions,
-                            establishedDate = establishedDate
-                        )
-                    }
-                    1 -> {
-                        TransactionsContent(transactions = transactions)
-                    }
+                    Text(
+                        text = goal.name,
+                        modifier = Modifier.weight(1f),
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark,
+                        fontSize = 18.sp,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = "$${String.format("%.0f", savedAmount)}",
+                        fontWeight = FontWeight.ExtraBold,
+                        color = PinkPrimary,
+                        fontSize = 18.sp
+                    )
                 }
             }
         }
@@ -344,6 +448,7 @@ fun GoalDetailScreen(
         
         ModalBottomSheet(
             onDismissRequest = { showDepositDialog = false },
+            sheetState = sheetState,
             containerColor = MaterialTheme.colorScheme.background,
             shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
         ) {
@@ -451,49 +556,33 @@ fun GoalDetailScreen(
     }
 }
 
-@Composable
-fun OverviewContent(
+fun LazyListScope.overviewContent(
     goal: com.oryno.piggy_ledger.data.Goal,
-    savedAmount: Double,
-    transactions: List<Transaction>,
-    establishedDate: String
+    daysRunning: Long,
+    avgDaily: Double,
+    estCompletionDate: String,
+    establishedDate: String,
+    savedAmount: Double
 ) {
-    val now = System.currentTimeMillis()
-    val daysRunning = remember(goal.createdAt) {
-        val diff = now - goal.createdAt
-        TimeUnit.MILLISECONDS.toDays(diff).coerceAtLeast(1)
+    item {
+        MetadataCard(label = stringResource(R.string.established_date_label), value = establishedDate, icon = Icons.Default.Info)
+        Spacer(modifier = Modifier.height(12.dp))
     }
-    val avgDaily = savedAmount / daysRunning
-    val remaining = (goal.targetAmount - savedAmount).coerceAtLeast(0.0)
-    val estDaysToComplete = if (avgDaily > 0) (remaining / avgDaily).toInt() else null
-    
-    val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
-    val estCompletionDate = remember(estDaysToComplete) {
-        if (estDaysToComplete != null) {
-            val calendar = Calendar.getInstance()
-            calendar.add(Calendar.DAY_OF_YEAR, estDaysToComplete)
-            dateFormatter.format(calendar.time)
-        } else "N/A"
+    item {
+        MetadataCard(label = stringResource(R.string.days_since_start_label), value = stringResource(R.string.days_count, daysRunning), icon = Icons.Default.Timeline)
+        Spacer(modifier = Modifier.height(12.dp))
     }
-
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item {
-            MetadataCard(label = stringResource(R.string.established_date_label), value = establishedDate, icon = Icons.Default.Info)
-        }
-        item {
-            MetadataCard(label = stringResource(R.string.days_since_start_label), value = stringResource(R.string.days_count, daysRunning), icon = Icons.Default.Timeline)
-        }
-        item {
-            MetadataCard(label = stringResource(R.string.avg_daily_saving_label), value = "$${String.format("%.2f", avgDaily)}", icon = Icons.AutoMirrored.Filled.TrendingUp)
-        }
-        item {
-            MetadataCard(
-                label = stringResource(R.string.est_completion_date_label), 
-                value = if (savedAmount >= goal.targetAmount) stringResource(R.string.goal_reached_success) else estCompletionDate, 
-                icon = Icons.Default.CheckCircle,
-                valueColor = if (savedAmount >= goal.targetAmount) PinkAccent else NavyDark
-            )
-        }
+    item {
+        MetadataCard(label = stringResource(R.string.avg_daily_saving_label), value = "$${String.format("%.2f", avgDaily)}", icon = Icons.AutoMirrored.Filled.TrendingUp)
+        Spacer(modifier = Modifier.height(12.dp))
+    }
+    item {
+        MetadataCard(
+            label = stringResource(R.string.est_completion_date_label), 
+            value = if (savedAmount >= goal.targetAmount && goal.targetAmount > 0) stringResource(R.string.goal_reached_success) else estCompletionDate, 
+            icon = Icons.Default.CheckCircle,
+            valueColor = if (savedAmount >= goal.targetAmount && goal.targetAmount > 0) PinkAccent else NavyDark
+        )
     }
 }
 
@@ -770,44 +859,44 @@ fun axisLabelComponent(
     typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, fontWeight.weight)
 )
 
-@Composable
-fun TransactionsContent(transactions: List<Transaction>) {
+fun LazyListScope.transactionsContent(transactions: List<Transaction>) {
     if (transactions.isEmpty()) {
-        EmptyState(message = stringResource(R.string.no_contributions_msg))
+        item {
+            EmptyState(message = stringResource(R.string.no_contributions_msg))
+        }
         return
     }
 
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(transactions.sortedByDescending { it.timestamp }) { tx ->
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
-                shape = RoundedCornerShape(12.dp)
+    items(transactions.sortedByDescending { it.timestamp }) { tx ->
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.padding(bottom = 8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(PinkAccent.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.CallMade, contentDescription = null, tint = PinkAccent, modifier = Modifier.size(20.dp))
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(tx.note.takeIf { it.isNotBlank() } ?: stringResource(R.string.deposit_tx_note), fontWeight = FontWeight.SemiBold, color = NavyDark)
-                            val txDate = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(tx.timestamp))
-                            Text(txDate, color = TextLight, fontSize = 12.sp)
-                        }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(PinkAccent.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.CallMade, contentDescription = null, tint = PinkAccent, modifier = Modifier.size(20.dp))
                     }
-                    Text("+$${String.format("%.2f", tx.amount)}", color = PinkAccent, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(tx.note.takeIf { it.isNotBlank() } ?: stringResource(R.string.deposit_tx_note), fontWeight = FontWeight.SemiBold, color = NavyDark)
+                        val txDate = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(tx.timestamp))
+                        Text(txDate, color = TextLight, fontSize = 12.sp)
+                    }
                 }
+                Text("+$${String.format("%.2f", tx.amount)}", color = PinkAccent, fontWeight = FontWeight.Bold)
             }
         }
     }

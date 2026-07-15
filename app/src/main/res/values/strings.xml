@@ -513,4 +513,13 @@
     <string name="discard_pending_success">Pending transaction discarded</string>
     <string name="no_pending_transactions">No Pending Transactions</string>
     <string name="no_pending_transactions_desc">All automatic SMS payments have been successfully routed to your accounts.</string>
+    
+    <string name="voice_prepair_words">Prepair all of your words before starting...</string>
+    <string name="logs_timeline">Logs Timeline</string>
+    <string name="add_payment">Add Payment</string>
+    <string name="payment_amount">Payment Amount</string>
+    <string name="payment_note">Note (Optional)</string>
+    <string name="confirm_payment">Confirm Payment</string>
+    <string name="no_payments_yet">No payments yet.</string>
+    <string name="remaining_of_prefix">Remaining of %1$s</string>
 </resources>

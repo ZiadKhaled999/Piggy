@@ -42,6 +42,27 @@ data class Loan(
 )
 
 @Serializable
+@Entity(
+    tableName = "loan_payments",
+    foreignKeys = [
+        androidx.room.ForeignKey(
+            entity = Loan::class,
+            parentColumns = ["id"],
+            childColumns = ["loanId"],
+            onDelete = androidx.room.ForeignKey.CASCADE
+        )
+    ],
+    indices = [androidx.room.Index("loanId")]
+)
+data class LoanPayment(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val loanId: String,
+    val amount: Double,
+    val timestamp: Long = System.currentTimeMillis(),
+    val note: String? = null
+)
+
+@Serializable
 enum class LoanType {
     LENT, BORROWED
 }
@@ -101,6 +122,7 @@ data class BackupData(
     val goals: List<Goal>,
     val transactions: List<Transaction>,
     val loans: List<Loan>,
+    val loanPayments: List<LoanPayment> = emptyList(),
     val streakDates: Set<String> = emptySet()
 )
 

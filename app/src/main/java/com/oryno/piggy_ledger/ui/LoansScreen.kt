@@ -71,6 +71,7 @@ fun LoansScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedLoan by remember { mutableStateOf<Loan?>(null) }
+    var showTimeline by remember { mutableStateOf(false) }
     val detailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -1085,211 +1086,361 @@ fun LoansScreen(
     }
 
     if (selectedLoan != null) {
+        val payments by viewModel.getPaymentsForLoan(selectedLoan!!.id).collectAsState(initial = emptyList())
+        val paidAmount = payments.sumOf { it.amount }
+        val remainingAmount = selectedLoan!!.amount - paidAmount
+
         ModalBottomSheet(
             onDismissRequest = { 
                 selectedLoan = null 
+                showTimeline = false
                 showDeleteConfirm = false
             },
             sheetState = detailSheetState,
             containerColor = MaterialTheme.colorScheme.background,
             shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Box(modifier = Modifier.width(32.dp).height(4.dp).background(Color(0xFFE5E7EB), RoundedCornerShape(2.dp)))
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                val typeText = if (selectedLoan!!.type == LoanType.LENT) stringResource(R.string.owed_to_me) else stringResource(R.string.i_owe_this)
-                val typeColor = if (selectedLoan!!.type == LoanType.LENT) PinkAccent else BlackAccent
-                val prefix = if (selectedLoan!!.type == LoanType.LENT) "+" else "-"
-                
-                Surface(
-                    color = typeColor.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(typeText, color = typeColor, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                if (!selectedLoan!!.photoUri.isNullOrBlank()) {
-                    AsyncImage(
-                        model = Uri.parse(selectedLoan!!.photoUri),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .border(2.dp, typeColor.copy(alpha = 0.3f), RoundedCornerShape(24.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .background(typeColor.copy(alpha = 0.1f), RoundedCornerShape(20.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            if (selectedLoan!!.type == LoanType.LENT) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
-                            contentDescription = null,
-                            tint = typeColor,
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Text(
-                    "$prefix $${String.format("%.2f", selectedLoan!!.amount)}",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = typeColor
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.contact_name_header), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
-                    Text(selectedLoan!!.contactName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                }
-
-                if (!selectedLoan!!.phone.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.phone_label), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
-                        Text(selectedLoan!!.phone!!, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                    }
-                }
-
-                if (!selectedLoan!!.email.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.email_label), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
-                        Text(selectedLoan!!.email!!, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
-                        val (deadlineLabel, dateValue) = if (selectedLoan!!.deadline != null) {
-                            val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
-                            stringResource(R.string.repayment_deadline_header) to stringResource(R.string.due_prefix, sdf.format(java.util.Date(selectedLoan!!.deadline!!)))
-                        } else {
-                            stringResource(R.string.repayment_deadline_header) to stringResource(R.string.no_strict_deadline)
-                        }
-                        
-                        Text(deadlineLabel, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Surface(
-                            color = Color(0xFFF1F5F9),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = dateValue,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = NavyDark,
-                                modifier = Modifier.padding(12.dp)
-                            )
-                        }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = typeColor.copy(alpha = 0.08f)),
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(2.dp, typeColor.copy(alpha = 0.3f))
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Info, contentDescription = null, tint = typeColor, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.flashback_recall_note), fontSize = 11.sp, fontWeight = FontWeight.Black, color = typeColor, letterSpacing = 1.sp)
-                        }
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Text(
-                            text = "\"${selectedLoan!!.note}\"",
-                            fontSize = 16.sp,
-                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                            fontWeight = FontWeight.Bold,
-                            color = NavyDark,
-                            lineHeight = 24.sp
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                Button(
-                    onClick = {
-                        viewModel.markLoanAsPaid(selectedLoan!!.id)
-                        selectedLoan = null
-                    },
+            if (showTimeline) {
+                // TIMELINE VIEW
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = if (selectedLoan!!.type == LoanType.LENT) PinkAccent else NavyDark)
+                        .padding(horizontal = 24.dp)
+                        .padding(bottom = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.mark_as_paid_off), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                if (showDeleteConfirm) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().background(Color(0xFFFFEBEE), RoundedCornerShape(12.dp)).padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(stringResource(R.string.delete_confirm_msg), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        Row {
-                            Button(
-                                onClick = {
-                                    // TODO: Add delete functionality to viewmodel if needed
-                                    // For now we just close it
-                                    selectedLoan = null
-                                    showDeleteConfirm = false
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp)
-                            ) {
-                                Text(stringResource(R.string.yes_btn), fontSize = 12.sp)
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Button(
-                                onClick = { showDeleteConfirm = false },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                                border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp)
-                            ) {
-                                Text(stringResource(R.string.no_btn), color = NavyDark, fontSize = 12.sp)
+                        IconButton(onClick = { showTimeline = false }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = NavyDark)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.logs_timeline), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    if (payments.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                            Text(stringResource(R.string.no_payments_yet), color = TextLight, fontSize = 16.sp)
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(payments) { payment ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "$${String.format("%.2f", payment.amount)}",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 16.sp,
+                                                color = NavyDark
+                                            )
+                                            if (!payment.note.isNullOrBlank()) {
+                                                Text(payment.note, fontSize = 12.sp, color = TextLight)
+                                            }
+                                        }
+                                        val sdf = java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.getDefault())
+                                        Text(sdf.format(java.util.Date(payment.timestamp)), fontSize = 11.sp, color = TextLight)
+                                        
+                                        IconButton(onClick = { viewModel.deleteLoanPayment(payment.id) }) {
+                                            Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
-                } else {
-                    TextButton(
-                        onClick = { showDeleteConfirm = true }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    var showAddPayment by remember { mutableStateOf(false) }
+                    if (showAddPayment) {
+                        var payAmount by remember { mutableStateOf("") }
+                        var payNote by remember { mutableStateOf("") }
+                        
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedTextField(
+                                value = payAmount,
+                                onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) payAmount = it },
+                                label = { Text(stringResource(R.string.payment_amount)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            OutlinedTextField(
+                                value = payNote,
+                                onValueChange = { payNote = it },
+                                label = { Text(stringResource(R.string.payment_note)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            Button(
+                                onClick = {
+                                    val amt = payAmount.toDoubleOrNull() ?: 0.0
+                                    if (amt > 0) {
+                                        viewModel.addLoanPayment(selectedLoan!!.id, amt, payNote.takeIf { it.isNotBlank() })
+                                        showAddPayment = false
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().height(52.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+                            ) {
+                                Text(stringResource(R.string.confirm_payment), fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    } else {
+                        Button(
+                            onClick = { showAddPayment = true },
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.add_payment), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else {
+                // MAIN DETAIL VIEW
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(bottom = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Box(modifier = Modifier.width(32.dp).height(4.dp).background(Color(0xFFE5E7EB), RoundedCornerShape(2.dp)))
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    val typeText = if (selectedLoan!!.type == LoanType.LENT) stringResource(R.string.owed_to_me) else stringResource(R.string.i_owe_this)
+                    val typeColor = if (selectedLoan!!.type == LoanType.LENT) PinkAccent else BlackAccent
+                    val prefix = if (selectedLoan!!.type == LoanType.LENT) "+" else "-"
+                    
+                    Surface(
+                        color = typeColor.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = TextLight, modifier = Modifier.size(16.dp))
+                        Text(typeText, color = typeColor, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+                    }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "$prefix $${String.format("%.2f", remainingAmount)}",
+                                fontSize = 36.sp,
+                                fontWeight = FontWeight.Black,
+                                color = typeColor
+                            )
+                            Text(
+                                text = stringResource(R.string.remaining_of_prefix, "$${String.format("%.2f", selectedLoan!!.amount)}"),
+                                fontSize = 12.sp,
+                                color = TextLight,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Button(
+                        onClick = { showTimeline = true },
+                        modifier = Modifier.fillMaxWidth().height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = typeColor.copy(alpha = 0.1f), contentColor = typeColor),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                    ) {
+                        Text(stringResource(R.string.logs_timeline), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    if (!selectedLoan!!.photoUri.isNullOrBlank()) {
+                        AsyncImage(
+                            model = Uri.parse(selectedLoan!!.photoUri),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(RoundedCornerShape(24.dp))
+                                .border(2.dp, typeColor.copy(alpha = 0.3f), RoundedCornerShape(24.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(typeColor.copy(alpha = 0.1f), RoundedCornerShape(20.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                if (selectedLoan!!.type == LoanType.LENT) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
+                                contentDescription = null,
+                                tint = typeColor,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.contact_name_header), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
+                        Text(selectedLoan!!.contactName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    }
+
+                    if (!selectedLoan!!.phone.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.phone_label), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
+                            Text(selectedLoan!!.phone!!, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                        }
+                    }
+
+                    if (!selectedLoan!!.email.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.email_label), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
+                            Text(selectedLoan!!.email!!, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+                            val (deadlineLabel, dateValue) = if (selectedLoan!!.deadline != null) {
+                                val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
+                                stringResource(R.string.repayment_deadline_header) to stringResource(R.string.due_prefix, sdf.format(java.util.Date(selectedLoan!!.deadline!!)))
+                            } else {
+                                stringResource(R.string.repayment_deadline_header) to stringResource(R.string.no_strict_deadline)
+                            }
+                            
+                            Text(deadlineLabel, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextLight)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Surface(
+                                color = Color(0xFFF1F5F9),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = dateValue,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = NavyDark,
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = typeColor.copy(alpha = 0.08f)),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(2.dp, typeColor.copy(alpha = 0.3f))
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Info, contentDescription = null, tint = typeColor, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.flashback_recall_note), fontSize = 11.sp, fontWeight = FontWeight.Black, color = typeColor, letterSpacing = 1.sp)
+                            }
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Text(
+                                text = "\"${selectedLoan!!.note}\"",
+                                fontSize = 16.sp,
+                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                fontWeight = FontWeight.Bold,
+                                color = NavyDark,
+                                lineHeight = 24.sp
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(32.dp))
+                    
+                    Button(
+                        onClick = {
+                            viewModel.markLoanAsPaid(selectedLoan!!.id)
+                            selectedLoan = null
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = if (selectedLoan!!.type == LoanType.LENT) PinkAccent else NavyDark)
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.delete_record), color = TextLight, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.mark_as_paid_off), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    if (showDeleteConfirm) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().background(Color(0xFFFFEBEE), RoundedCornerShape(12.dp)).padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(stringResource(R.string.delete_confirm_msg), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Row {
+                                Button(
+                                    onClick = {
+                                        viewModel.deleteLoan(selectedLoan!!.id)
+                                        selectedLoan = null
+                                        showDeleteConfirm = false
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp)
+                                ) {
+                                    Text(stringResource(R.string.yes_btn), fontSize = 12.sp)
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(
+                                    onClick = { showDeleteConfirm = false },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                                    border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp)
+                                ) {
+                                    Text(stringResource(R.string.no_btn), color = NavyDark, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    } else {
+                        TextButton(
+                            onClick = { showDeleteConfirm = true }
+                        ) {
+                            Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = TextLight, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.delete_record), color = TextLight, fontWeight = FontWeight.Medium)
+                        }
                     }
                 }
             }

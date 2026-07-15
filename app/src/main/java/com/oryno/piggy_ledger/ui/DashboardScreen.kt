@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -35,6 +36,8 @@ import androidx.compose.ui.res.stringResource
 import coil.compose.AsyncImage
 import com.clerk.api.Clerk
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.data.AccountType
 import com.oryno.piggy_ledger.ui.theme.*
@@ -44,6 +47,7 @@ import kotlin.math.sin
 @Composable
 fun DashboardScreen(
     viewModel: PiggyLedgerViewModel,
+    voiceViewModel: VoiceLedgerViewModel,
     onNavigateToCreateGoal: () -> Unit,
     onNavigateToMyGoals: () -> Unit,
     onNavigateToLoans: () -> Unit,
@@ -91,6 +95,18 @@ fun DashboardScreen(
     val totalBalance = accounts.sumOf { it.current_balance }
     val activeLoans = loans.filter { !it.isPaidOff }
     val totalLoan = activeLoans.sumOf { it.amount }
+
+    /*
+    val voiceUiState by voiceViewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    LaunchedEffect(voiceUiState) {
+        if (voiceUiState is VoiceUiState.Error) {
+            Toast.makeText(context, (voiceUiState as VoiceUiState.Error).message, Toast.LENGTH_LONG).show()
+            voiceViewModel.cancelRecording() // Reset state to Idle
+        }
+    }
+    */
 
     Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF4F6F9))) {
         LazyColumn(
@@ -155,22 +171,6 @@ fun DashboardScreen(
                 }
             }
 
-            if (pendingTransactions.isNotEmpty()) {
-                val firstPending = pendingTransactions.first()
-                item {
-                    PendingTransactionDashboardCard(
-                        tx = firstPending,
-                        accounts = accounts,
-                        onResolve = { accountId ->
-                            viewModel.resolvePendingTransaction(firstPending.id, accountId)
-                        },
-                        onOpenSheet = {
-                            selectedPendingTxForSheet = firstPending
-                        }
-                    )
-                }
-            }
-            
             // 1. My Wallet Widget (Glass Virtual Card)
             item {
                 VirtualCardsWidget(
@@ -247,6 +247,23 @@ fun DashboardScreen(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 GoalsHorizontalList(goals = goals, transactions = transactions, onClick = onNavigateToMyGoals)
+            }
+
+            if (pendingTransactions.isNotEmpty()) {
+                val firstPending = pendingTransactions.first()
+                item {
+                    Spacer(modifier = Modifier.height(32.dp))
+                    PendingTransactionDashboardCard(
+                        tx = firstPending,
+                        accounts = accounts,
+                        onResolve = { accountId ->
+                            viewModel.resolvePendingTransaction(firstPending.id, accountId)
+                        },
+                        onOpenSheet = {
+                            selectedPendingTxForSheet = firstPending
+                        }
+                    )
+                }
             }
         }
 
@@ -370,6 +387,234 @@ fun DashboardScreen(
                 )
             }
         }
+        
+        /*
+        // Dashboard Voice Record Button
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            com.oryno.piggy_ledger.ui.components.VoiceRecordButton(
+                onRecordStart = { voiceViewModel.startRecording() },
+                onRecordSend = { voiceViewModel.stopAndProcessRecording() },
+                onRecordCancel = { voiceViewModel.cancelRecording() }
+            )
+        }
+        */
+
+        /*
+        // Voice Loading Overlay
+        if (voiceUiState is VoiceUiState.Processing) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable(enabled = false) {},
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = AccentBlue)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Processing your voice...", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+        */
+
+        /*
+        // Voice Result Bottom Sheet
+        if (voiceUiState is VoiceUiState.Result) {
+            val resultState = voiceUiState as VoiceUiState.Result
+            var isCorrecting by remember { mutableStateOf(false) }
+            var editedText by remember { mutableStateOf(resultState.text) }
+
+            androidx.compose.ui.window.Dialog(
+                onDismissRequest = { voiceViewModel.cancelResult() },
+                properties = androidx.compose.ui.window.DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    decorFitsSystemWindows = false
+                )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { voiceViewModel.cancelResult() }
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
+                            .background(Color.White)
+                            .navigationBarsPadding()
+                            .padding(24.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {} // Block clicks from closing dialog
+                    ) {
+                        if (isCorrecting) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text("Correct Transaction", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                                Spacer(modifier = Modifier.height(16.dp))
+                                OutlinedTextField(
+                                    value = editedText,
+                                    onValueChange = { editedText = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = AccentBlue,
+                                        cursorColor = AccentBlue
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(24.dp))
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    OutlinedButton(
+                                        onClick = { isCorrecting = false; voiceViewModel.resumeCountdown() },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextLight)
+                                    ) {
+                                        Text("Cancel")
+                                    }
+                                    Button(
+                                        onClick = { 
+                                            isCorrecting = false
+                                            voiceViewModel.processTranscript(editedText)
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
+                                    ) {
+                                        Text("Re-Process")
+                                    }
+                                }
+                            }
+                        } else {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                                    Text("Transaction Details", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                                    Surface(
+                                        color = AccentBlue.copy(alpha = 0.1f),
+                                        shape = CircleShape
+                                    ) {
+                                        Text(
+                                            text = "${resultState.countdown}s",
+                                            color = AccentBlue,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                        )
+                                    }
+                                }
+                                
+                                Spacer(modifier = Modifier.height(24.dp))
+                                
+                                Text("You said:", fontSize = 14.sp, color = TextLight)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("\"${resultState.text}\"", fontSize = 16.sp, color = TextDark, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                                
+                                Spacer(modifier = Modifier.height(24.dp))
+                                
+                                // Parsed info
+                                val parsed = resultState.parsed
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Column {
+                                        Text("Amount", fontSize = 12.sp, color = TextLight)
+                                        Text(
+                                            text = if (parsed.amount > 0) "$${parsed.amount}" else "Unknown",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (!parsed.isExpense) Color(0xFF4CAF50) else Color(0xFFFF5252)
+                                        )
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text("Target (Account / Goal)", fontSize = 12.sp, color = TextLight)
+                                        Box {
+                                            var targetExpanded by remember { mutableStateOf(false) }
+                                            Row(
+                                                modifier = Modifier.clickable { 
+                                                    voiceViewModel.pauseCountdown()
+                                                    targetExpanded = true 
+                                                },
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = parsed.accountName ?: parsed.goalName ?: "Select Target",
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = AccentBlue
+                                                )
+                                                Icon(Icons.Default.ArrowDropDown, contentDescription = "Select", tint = AccentBlue)
+                                            }
+                                            DropdownMenu(
+                                                expanded = targetExpanded,
+                                                onDismissRequest = { targetExpanded = false }
+                                            ) {
+                                                accounts.forEach { acc ->
+                                                    DropdownMenuItem(
+                                                        text = { Text("Account: ${acc.name}") },
+                                                        onClick = {
+                                                            voiceViewModel.updateTarget(accountName = acc.name, goalName = null)
+                                                            targetExpanded = false
+                                                        }
+                                                    )
+                                                }
+                                                goals.forEach { goal ->
+                                                    DropdownMenuItem(
+                                                        text = { Text("Goal: ${goal.name}") },
+                                                        onClick = {
+                                                            voiceViewModel.updateTarget(accountName = null, goalName = goal.name)
+                                                            targetExpanded = false
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                Spacer(modifier = Modifier.height(32.dp))
+                                
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    OutlinedButton(
+                                        onClick = { voiceViewModel.cancelResult() },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF5252), containerColor = Color.Transparent)
+                                    ) {
+                                        Text("Cancel")
+                                    }
+                                    OutlinedButton(
+                                        onClick = { 
+                                            voiceViewModel.pauseCountdown()
+                                            isCorrecting = true 
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDark)
+                                    ) {
+                                        Text("Correct")
+                                    }
+                                    Button(
+                                        onClick = { voiceViewModel.confirmTransaction() },
+                                        modifier = Modifier.weight(1.5f),
+                                        colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
+                                    ) {
+                                        Text("Go Ahead")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        */
     }
 }
 
@@ -406,21 +651,12 @@ fun PendingTransactionDashboardCard(
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "📥",
-                    fontSize = 24.sp
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = stringResource(R.string.pending_sms_detected),
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-            }
+            Text(
+                text = stringResource(R.string.pending_sms_detected),
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
             
             Spacer(modifier = Modifier.height(12.dp))
             

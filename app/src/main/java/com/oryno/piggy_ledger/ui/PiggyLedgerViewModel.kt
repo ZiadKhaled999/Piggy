@@ -48,6 +48,64 @@ class PiggyLedgerViewModel(
         }
     }
 
+    fun exportCSVData(onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val streakDates = com.oryno.piggy_ledger.data.StreakManager.getActionDates(context)
+            val backup = repository.getFullDatabaseBackup(streakDates)
+            val csvString = com.oryno.piggy_ledger.data.BackupHelper.generateFullCsv(
+                goals = backup.goals,
+                transactions = backup.transactions,
+                loans = backup.loans,
+                loanPayments = backup.loanPayments,
+                accounts = backup.accounts,
+                accountTransactions = backup.accountTransactions,
+                pendingTransactions = backup.pendingTransactions,
+                streakDates = backup.streakDates
+            )
+            PostHog.capture(
+                event = "csv_data_exported",
+                properties = mapOf(
+                    "total_goals" to backup.goals.size,
+                    "total_loans" to backup.loans.size,
+                    "total_transactions" to backup.transactions.size,
+                    "total_accounts" to backup.accounts.size,
+                    "total_account_transactions" to backup.accountTransactions.size,
+                    "total_pending_transactions" to backup.pendingTransactions.size
+                )
+            )
+            onResult(csvString)
+        }
+    }
+
+    fun exportExcelData(onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val streakDates = com.oryno.piggy_ledger.data.StreakManager.getActionDates(context)
+            val backup = repository.getFullDatabaseBackup(streakDates)
+            val excelString = com.oryno.piggy_ledger.data.BackupHelper.generateBeautifulExcel(
+                goals = backup.goals,
+                transactions = backup.transactions,
+                loans = backup.loans,
+                loanPayments = backup.loanPayments,
+                accounts = backup.accounts,
+                accountTransactions = backup.accountTransactions,
+                pendingTransactions = backup.pendingTransactions,
+                streakDates = backup.streakDates
+            )
+            PostHog.capture(
+                event = "excel_data_exported",
+                properties = mapOf(
+                    "total_goals" to backup.goals.size,
+                    "total_loans" to backup.loans.size,
+                    "total_transactions" to backup.transactions.size,
+                    "total_accounts" to backup.accounts.size,
+                    "total_account_transactions" to backup.accountTransactions.size,
+                    "total_pending_transactions" to backup.pendingTransactions.size
+                )
+            )
+            onResult(excelString)
+        }
+    }
+
     fun importData(jsonString: String, onComplete: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
@@ -76,6 +134,41 @@ class PiggyLedgerViewModel(
                     )
                 )
                 onError(e.message ?: "Unknown error during import")
+            }
+        }
+    }
+
+    fun importCSVData(csvString: String, onComplete: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val data = com.oryno.piggy_ledger.data.BackupHelper.parseFullCsv(csvString)
+                repository.restoreFullDatabaseBackup(data)
+                com.oryno.piggy_ledger.data.StreakManager.setActionDates(context, data.streakDates)
+                com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+                com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+                com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+                PostHog.capture(
+                    event = "csv_data_imported",
+                    properties = mapOf(
+                        "success" to true,
+                        "total_goals" to data.goals.size,
+                        "total_loans" to data.loans.size,
+                        "total_transactions" to data.transactions.size,
+                        "total_accounts" to data.accounts.size,
+                        "total_account_transactions" to data.accountTransactions.size,
+                        "total_pending_transactions" to data.pendingTransactions.size
+                    )
+                )
+                onComplete()
+            } catch (e: Exception) {
+                PostHog.capture(
+                    event = "csv_data_imported",
+                    properties = mapOf(
+                        "success" to false,
+                        "error" to (e.message ?: "Unknown error")
+                    )
+                )
+                onError(e.message ?: "Unknown error during CSV import")
             }
         }
     }
@@ -483,6 +576,44 @@ class PiggyLedgerViewModel(
                 )
             )
             com.oryno.piggy_ledger.data.StreakManager.recordAction(context)
+            com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+        }
+    }
+
+    fun getPaymentsForLoan(loanId: String): Flow<List<com.oryno.piggy_ledger.data.LoanPayment>> {
+        return repository.getPaymentsForLoan(loanId)
+    }
+
+    fun addLoanPayment(loanId: String, amount: Double, note: String?) {
+        viewModelScope.launch {
+            repository.insertLoanPayment(
+                com.oryno.piggy_ledger.data.LoanPayment(
+                    loanId = loanId,
+                    amount = amount,
+                    timestamp = System.currentTimeMillis(),
+                    note = note
+                )
+            )
+            PostHog.capture(
+                event = "loan_payment_added",
+                properties = mapOf<String, Any>("loan_id" to loanId, "amount" to amount, "note" to (note ?: ""))
+            )
+            com.oryno.piggy_ledger.data.StreakManager.recordAction(context)
+            com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+        }
+    }
+
+    fun deleteLoanPayment(id: Long) {
+        viewModelScope.launch {
+            repository.deleteLoanPayment(id)
+            PostHog.capture(
+                event = "loan_payment_deleted",
+                properties = mapOf("payment_id" to id)
+            )
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)

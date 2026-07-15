@@ -44,6 +44,7 @@ import com.posthog.PostHog
 fun PiggyLedgerApp(factory: ViewModelFactory) {
     val navController = rememberNavController()
     val viewModel: PiggyLedgerViewModel = viewModel(factory = factory)
+    val voiceViewModel: VoiceLedgerViewModel = viewModel(factory = factory)
     
     val hasOnboarded by viewModel.hasOnboarded.collectAsState()
     val hasLanguageSelected by viewModel.hasLanguageSelected.collectAsState()
@@ -120,7 +121,7 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                 }
                 
                 composable<Screen.MainContainer> {
-                    MainContainer(viewModel = viewModel, appNavController = navController)
+                    MainContainer(viewModel = viewModel, voiceViewModel = voiceViewModel, appNavController = navController)
                 }
 
                 // Sub-screens that are not part of the main tabs but need to be accessible
@@ -188,6 +189,7 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
 @Composable
 fun MainContainer(
     viewModel: PiggyLedgerViewModel,
+    voiceViewModel: VoiceLedgerViewModel,
     appNavController: NavHostController
 ) {
     val bottomNavController = rememberNavController()
@@ -213,6 +215,7 @@ fun MainContainer(
                     }
                     DashboardScreen(
                         viewModel = viewModel,
+                        voiceViewModel = voiceViewModel,
                         onNavigateToCreateGoal = { appNavController.navigate(Screen.CreateGoal) },
                         onNavigateToMyGoals = { bottomNavController.navigate(Screen.MyGoals) },
                         onNavigateToLoans = { bottomNavController.navigate(Screen.Loans) },

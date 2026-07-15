@@ -39,6 +39,24 @@ interface PiggyLedgerDao {
     @Update
     suspend fun updateLoan(loan: Loan)
 
+    @Query("SELECT * FROM loan_payments WHERE loanId = :loanId ORDER BY timestamp DESC")
+    fun getPaymentsForLoan(loanId: String): Flow<List<LoanPayment>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLoanPayment(payment: LoanPayment)
+
+    @Query("DELETE FROM loan_payments WHERE id = :id")
+    suspend fun deleteLoanPaymentById(id: Long)
+
+    @Query("SELECT * FROM loan_payments")
+    suspend fun getAllLoanPaymentsSync(): List<LoanPayment>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLoanPayments(payments: List<LoanPayment>)
+
+    @Query("DELETE FROM loan_payments")
+    suspend fun clearLoanPayments()
+
     @Query("DELETE FROM loans WHERE id = :id")
     suspend fun deleteLoanById(id: String)
 
@@ -130,6 +148,27 @@ interface PiggyLedgerDao {
 
     @Query("DELETE FROM loans")
     suspend fun clearLoans()
+
+    @Query("SELECT * FROM account_transactions")
+    suspend fun getAllAccountTransactionsSync(): List<AccountTransaction>
+
+    @Query("SELECT * FROM pending_transactions")
+    suspend fun getAllPendingTransactionsSync(): List<PendingTransaction>
+
+    @Query("DELETE FROM accounts")
+    suspend fun clearAccounts()
+
+    @Query("DELETE FROM account_transactions")
+    suspend fun clearAccountTransactions()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccounts(accounts: List<Account>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccountTransactions(transactions: List<AccountTransaction>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPendingTransactions(transactions: List<PendingTransaction>)
 
     @Query("SELECT * FROM pending_transactions ORDER BY timestamp DESC")
     fun getAllPendingTransactionsFlow(): Flow<List<PendingTransaction>>

@@ -458,4 +458,13 @@
     <string name="discard_pending_success">تم مسح العملية المعلقة</string>
     <string name="no_pending_transactions">مفيش عمليات معلقة</string>
     <string name="no_pending_transactions_desc">كل عمليات رسايل الـ SMS اتوزعت وتوجهت لـ حساباتك بنجاح.</string>
-</resources>
+    
+    <string name="voice_prepair_words">جهز كلامك كله قبل ما تبدأ...</string>
+    <string name="logs_timeline">سجل الدفعات</string>
+    <string name="add_payment">ضيف دفعة</string>
+    <string name="payment_amount">هتدفع كام؟</string>
+    <string name="payment_note">ملحوظة (اختياري)</string>
+    <string name="confirm_payment">أكد الدفع</string>
+    <string name="no_payments_yet">لسه مفيش دفعات.</string>
+    <string name="remaining_of_prefix">فاضل من %1$s</string>
+ </resources>

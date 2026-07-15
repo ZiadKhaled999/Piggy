@@ -469,4 +469,13 @@
     <string name="discard_pending_success">تم تجاهل المعاملة المعلقة</string>
     <string name="no_pending_transactions">لا توجد معاملات معلقة</string>
     <string name="no_pending_transactions_desc">تم توجيه جميع مدفوعات SMS التلقائية بنجاح إلى حساباتك.</string>
-</resources>
+    
+    <string name="voice_prepair_words">جهز كل كلماتك قبل البدء...</string>
+    <string name="logs_timeline">سجل المدفوعات</string>
+    <string name="add_payment">إضافة دفعة</string>
+    <string name="payment_amount">مبلغ الدفعة</string>
+    <string name="payment_note">ملاحظة (اختياري)</string>
+    <string name="confirm_payment">تأكيد الدفعة</string>
+    <string name="no_payments_yet">لا توجد مدفوعات بعد.</string>
+    <string name="remaining_of_prefix">المتبقي من %1$s</string>
+ </resources>

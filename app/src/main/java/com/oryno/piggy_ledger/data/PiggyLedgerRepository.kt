@@ -20,6 +20,9 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao) {
     suspend fun insertTransaction(transaction: Transaction) = dao.insertTransaction(transaction)
     
     suspend fun insertLoan(loan: Loan) = dao.insertLoan(loan)
+    fun getPaymentsForLoan(loanId: String) = dao.getPaymentsForLoan(loanId)
+    suspend fun insertLoanPayment(payment: LoanPayment) = dao.insertLoanPayment(payment)
+    suspend fun deleteLoanPayment(id: Long) = dao.deleteLoanPaymentById(id)
     
     suspend fun insertAccount(account: Account) = dao.insertAccount(account)
     suspend fun updateAccount(account: Account) = dao.updateAccount(account)
@@ -43,6 +46,7 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao) {
             goals = dao.getAllGoalsSync(),
             transactions = dao.getAllTransactions(),
             loans = dao.getAllLoansSync(),
+            loanPayments = dao.getAllLoanPaymentsSync(),
             streakDates = streakDates
         )
     }
@@ -51,9 +55,42 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao) {
         dao.clearGoals()
         dao.clearTransactions()
         dao.clearLoans()
+        dao.clearLoanPayments()
         dao.insertGoals(data.goals)
         dao.insertTransactions(data.transactions)
         dao.insertLoans(data.loans)
+        dao.insertLoanPayments(data.loanPayments)
+    }
+
+    suspend fun getFullDatabaseBackup(streakDates: Set<String>): FullBackupData {
+        return FullBackupData(
+            goals = dao.getAllGoalsSync(),
+            transactions = dao.getAllTransactions(),
+            loans = dao.getAllLoansSync(),
+            loanPayments = dao.getAllLoanPaymentsSync(),
+            accounts = dao.getAllAccountsSync(),
+            accountTransactions = dao.getAllAccountTransactionsSync(),
+            pendingTransactions = dao.getAllPendingTransactionsSync(),
+            streakDates = streakDates
+        )
+    }
+
+    suspend fun restoreFullDatabaseBackup(data: FullBackupData) {
+        dao.clearGoals()
+        dao.clearTransactions()
+        dao.clearLoans()
+        dao.clearLoanPayments()
+        dao.clearAccounts()
+        dao.clearAccountTransactions()
+        dao.clearPendingTransactions()
+
+        dao.insertGoals(data.goals)
+        dao.insertTransactions(data.transactions)
+        dao.insertLoans(data.loans)
+        dao.insertLoanPayments(data.loanPayments)
+        dao.insertAccounts(data.accounts)
+        dao.insertAccountTransactions(data.accountTransactions)
+        dao.insertPendingTransactions(data.pendingTransactions)
     }
 
     val allPendingTransactions: Flow<List<PendingTransaction>> = dao.getAllPendingTransactionsFlow()

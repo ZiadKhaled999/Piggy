@@ -51,6 +51,7 @@ fun EditAccountScreen(
     val account = remember { viewModel.allAccounts.value.find { it.id == accountId } }
     
     var name by remember { mutableStateOf("") }
+    var accountLabel by remember { mutableStateOf("") }
     var type by remember { mutableStateOf(AccountType.BANK) }
     var currency by remember { mutableStateOf("EGP") }
     var startingBalance by remember { mutableStateOf("") }
@@ -164,6 +165,7 @@ fun EditAccountScreen(
             instaPayFee = it.insta_pay_fee
             selectedColorHex = it.icon_color
             selectedIconName = it.icon_name
+            accountLabel = it.label ?: ""
         }
     }
 
@@ -224,7 +226,8 @@ fun EditAccountScreen(
                                         card_numbers = cardNumbers.takeIf { it.isNotBlank() },
                                         bank_account_no = bankAccountNo.takeIf { it.isNotBlank() },
                                         provider = provider.takeIf { it.isNotBlank() },
-                                        insta_pay_fee = instaPayFee
+                                        insta_pay_fee = instaPayFee,
+                                        label = accountLabel.takeIf { it.isNotBlank() }
                                     )
                                 )
                                 Toast.makeText(context, context.getString(R.string.toast_account_updated), Toast.LENGTH_SHORT).show()
@@ -263,6 +266,21 @@ fun EditAccountScreen(
                         value = name,
                         onValueChange = { name = it },
                         placeholder = { Text(stringResource(R.string.account_name_placeholder), color = TextLight) },
+                        singleLine = true,
+                        textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium, color = NavyDark, fontSize = 16.sp),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = textFieldColors
+                    )
+                }
+
+                // Account Label
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(stringResource(R.string.account_label), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    OutlinedTextField(
+                        value = accountLabel,
+                        onValueChange = { accountLabel = it },
+                        placeholder = { Text(stringResource(R.string.account_label_placeholder), color = TextLight) },
                         singleLine = true,
                         textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium, color = NavyDark, fontSize = 16.sp),
                         modifier = Modifier.fillMaxWidth(),

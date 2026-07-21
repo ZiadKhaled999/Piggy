@@ -322,7 +322,9 @@
     <string name="new_account">حساب جديد</string>
     <string name="general_info">معلومات عامة</string>
     <string name="account_name">اسم الحساب</string>
-    <string name="account_name_placeholder">مثلاً الحصالة، مصاريف البيت، جيب...</string>
+    <string name="account_name_placeholder">الاسم القانوني الخاص بك</string>
+    <string name="account_label">تسمية الحساب</string>
+    <string name="account_label_placeholder">الغرض من هذا الحساب مثل البقالة</string>
     <string name="account_type">نوع الحساب</string>
     <string name="bank">بنك</string>
     <string name="card">كارت</string>

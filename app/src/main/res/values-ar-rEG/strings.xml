@@ -311,7 +311,9 @@
     <string name="save">احفظ</string>
     <string name="general_info">معلومات عامة</string>
     <string name="account_name">اسم الحساب</string>
-    <string name="account_name_placeholder">مثلاً: تحويشة الزمن، مصروف البيت...</string>
+    <string name="account_name_placeholder">اسمك القانوني بالكامل</string>
+    <string name="account_label">تصنيف الحساب</string>
+    <string name="account_label_placeholder">هدف الحساب ده زي البقالة ومصروف البيت</string>
     <string name="account_type">نوع الحساب</string>
     <string name="bank">بنك</string>
     <string name="card">كارت</string>

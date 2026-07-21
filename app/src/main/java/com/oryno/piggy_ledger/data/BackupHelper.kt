@@ -143,7 +143,8 @@ object BackupHelper {
                 .append(escapeCsv(a.card_numbers ?: "")).append(",")
                 .append(escapeCsv(a.bank_account_no ?: "")).append(",")
                 .append(escapeCsv(a.provider ?: "")).append(",")
-                .append(escapeCsv(a.insta_pay_fee))
+                .append(escapeCsv(a.insta_pay_fee)).append(",")
+                .append(escapeCsv(a.label ?: ""))
                 .append("\n")
         }
         
@@ -277,7 +278,8 @@ object BackupHelper {
                                     card_numbers = row[15].takeIf { it.isNotEmpty() },
                                     bank_account_no = row[16].takeIf { it.isNotEmpty() },
                                     provider = row[17].takeIf { it.isNotEmpty() },
-                                    insta_pay_fee = row[18].toBooleanStrictOrNull() ?: false
+                                    insta_pay_fee = row[18].toBooleanStrictOrNull() ?: false,
+                                    label = row.getOrNull(19)?.takeIf { it.isNotEmpty() }
                                 )
                             )
                         }

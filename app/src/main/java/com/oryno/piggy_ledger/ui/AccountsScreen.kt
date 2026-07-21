@@ -652,8 +652,13 @@ fun AccountsScreen(
                             Spacer(modifier = Modifier.width(16.dp))
 
                             Column(modifier = Modifier.weight(1f)) {
+                                val displayName = if (!account.label.isNullOrBlank()) {
+                                    "${account.name} (${account.label})"
+                                } else {
+                                    account.name
+                                }
                                 Text(
-                                    text = account.name,
+                                    text = displayName,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
                                     color = NavyDark

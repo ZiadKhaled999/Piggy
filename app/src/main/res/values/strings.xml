@@ -341,7 +341,9 @@
     <string name="save">Save</string>
     <string name="general_info">General Info</string>
     <string name="account_name">Account Name</string>
-    <string name="account_name_placeholder">e.g., Savings, Groceries, Pocket Money...</string>
+    <string name="account_name_placeholder">Your legal name</string>
+    <string name="account_label">Account Label</string>
+    <string name="account_label_placeholder">your purpose for this account like groceries</string>
     <string name="account_type">Account Type</string>
     <string name="bank">Bank</string>
     <string name="card">Card</string>

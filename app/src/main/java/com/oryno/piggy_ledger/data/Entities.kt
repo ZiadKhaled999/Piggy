@@ -92,7 +92,8 @@ data class Account(
     val card_numbers: String? = null,
     val bank_account_no: String? = null,
     val provider: String? = null,
-    val insta_pay_fee: Boolean = false
+    val insta_pay_fee: Boolean = false,
+    val label: String? = null
 )
 
 @Serializable

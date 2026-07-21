@@ -1,75 +1,77 @@
 import os
 import re
 
-def replace_in_file(filepath, replacements):
-    with open(filepath, 'r') as f:
+files_to_update = {
+    "app/src/main/java/com/oryno/piggy_ledger/ui/SettingsScreen.kt": [
+        ('Toast.makeText(context, "Data exported successfully"', 'Toast.makeText(context, context.getString(R.string.export_success)'),
+        ('Toast.makeText(context, "Export failed: ${e.message}"', 'Toast.makeText(context, context.getString(R.string.export_failed, e.message ?: ""))'),
+        ('Toast.makeText(context, "Data restored successfully"', 'Toast.makeText(context, context.getString(R.string.restore_success)'),
+        ('Toast.makeText(context, "Restore failed: $error"', 'Toast.makeText(context, context.getString(R.string.restore_failed, error))'),
+        ('Toast.makeText(context, "Failed to read file: ${e.message}"', 'Toast.makeText(context, context.getString(R.string.read_file_failed, e.message ?: ""))'),
+        ('Toast.makeText(context, "No browser found to open link."', 'Toast.makeText(context, context.getString(R.string.browser_error)'),
+        ('Toast.makeText(context, "No email client installed."', 'Toast.makeText(context, context.getString(R.string.email_error)'),
+        ('Toast.makeText(context, "CSV exported successfully"', 'Toast.makeText(context, context.getString(R.string.csv_export_success)'),
+        ('Toast.makeText(context, "CSV export failed: ${e.message}"', 'Toast.makeText(context, context.getString(R.string.csv_export_failed, e.message ?: ""))'),
+        ('Toast.makeText(context, "Excel exported successfully"', 'Toast.makeText(context, context.getString(R.string.excel_export_success)'),
+        ('Toast.makeText(context, "Excel export failed: ${e.message}"', 'Toast.makeText(context, context.getString(R.string.excel_export_failed, e.message ?: ""))'),
+        ('Text("Export Beautiful Excel"', 'Text(stringResource(R.string.export_excel_title)'),
+        ('Text("Export CSV File"', 'Text(stringResource(R.string.export_csv_title)'),
+        ('Toast.makeText(context, "Data restored successfully from CSV"', 'Toast.makeText(context, context.getString(R.string.csv_restore_success)'),
+        ('Toast.makeText(context, "CSV import failed: $error"', 'Toast.makeText(context, context.getString(R.string.csv_restore_failed, error))'),
+        ('Toast.makeText(context, "CSV import failed: ${e.message}"', 'Toast.makeText(context, context.getString(R.string.csv_restore_failed, e.message ?: ""))'),
+        ('Text("Select CSV File"', 'Text(stringResource(R.string.select_csv_file)'),
+        ('Text("Save")', 'Text(stringResource(R.string.save))')
+    ],
+    "app/src/main/java/com/oryno/piggy_ledger/ui/AccountsScreen.kt": [
+        ('Text("Close", color = Color.White', 'Text(stringResource(R.string.close), color = Color.White')
+    ],
+    "app/src/main/java/com/oryno/piggy_ledger/ui/components/VoiceRecordButton.kt": [
+        ('Toast.makeText(context, "Microphone permission is required to record voice"', 'Toast.makeText(context, context.getString(R.string.mic_permission_required)')
+    ],
+    "app/src/main/java/com/oryno/piggy_ledger/ui/EditAccountScreen.kt": [
+        ('Text("e.g. 1234 5678 9012"', 'Text(stringResource(R.string.card_number_placeholder)')
+    ],
+    "app/src/main/java/com/oryno/piggy_ledger/ui/DashboardScreen.kt": [
+        ('Text("Spent"', 'Text(stringResource(R.string.spent)'),
+        ('Text("Payoffs"', 'Text(stringResource(R.string.payoffs)'),
+        ('Text("Savings Goals"', 'Text(stringResource(R.string.savings_goals)'),
+        ('Text("See all"', 'Text(stringResource(R.string.see_all)'),
+        ('Text("Processing your voice..."', 'Text(stringResource(R.string.processing_voice)'),
+        ('Text("Correct Transaction"', 'Text(stringResource(R.string.correct_transaction)'),
+        ('Text("Cancel")', 'Text(stringResource(R.string.cancel))'),
+        ('Text("Re-Process")', 'Text(stringResource(R.string.re_process))'),
+        ('Text("Transaction Details"', 'Text(stringResource(R.string.transaction_details)'),
+        ('Text("You said:"', 'Text(stringResource(R.string.you_said)'),
+        ('Text("Amount"', 'Text(stringResource(R.string.amount)'),
+        ('Text("Target (Account / Goal)"', 'Text(stringResource(R.string.target_account_goal)'),
+        ('text = { Text("Account: ${acc.name}") }', 'text = { Text(stringResource(R.string.account_name_format, acc.name)) }'),
+        ('text = { Text("Goal: ${goal.name}") }', 'text = { Text(stringResource(R.string.goal_name_format, goal.name)) }'),
+        ('Text("Correct")', 'Text(stringResource(R.string.correct))'),
+        ('Text("Go Ahead")', 'Text(stringResource(R.string.go_ahead))'),
+        ('Text("No goals set yet. Tap to start saving!"', 'Text(stringResource(R.string.no_goals_set)')
+    ],
+    "app/src/main/java/com/oryno/piggy_ledger/ui/AuthScreen.kt": [
+        ('text = "Piggy Ledger"', 'text = stringResource(R.string.auth_welcome_title_main)'),
+        ('text = "Secure, simple, and smart."', 'text = stringResource(R.string.auth_welcome_subtitle_main)'),
+        ('text = "Track your expenses, set goals, and save money effortlessly."', 'text = stringResource(R.string.auth_welcome_desc)'),
+        ('text = "Continue with Google"', 'text = stringResource(R.string.auth_continue_google)')
+    ],
+    "app/src/main/java/com/oryno/piggy_ledger/ui/OnboardingScreen.kt": [
+        ('Toast.makeText(context, "Please select an option to proceed"', 'Toast.makeText(context, context.getString(R.string.please_select_option)')
+    ]
+}
+
+for file_path, replacements in files_to_update.items():
+    if not os.path.exists(file_path):
+        print(f"Skipping {file_path}, does not exist.")
+        continue
+    with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
     
-    # Needs a small check to inject import androidx.compose.ui.res.stringResource if needed
-    if 'stringResource' in str(replacements) and 'androidx.compose.ui.res.stringResource' not in content:
-        content = content.replace('import androidx.compose.runtime.Composable', 'import androidx.compose.runtime.Composable\nimport androidx.compose.ui.res.stringResource\nimport com.oryno.piggy_ledger.R')
-
     for old, new in replacements:
         content = content.replace(old, new)
         
-    with open(filepath, 'w') as f:
+    with open(file_path, "w", encoding="utf-8") as f:
         f.write(content)
 
-replacements_dashboard = [
-    ('Text("Settings & Preferences"', 'Text(stringResource(R.string.settings)'),
-    ('Text("Welcome Back!"', 'Text(stringResource(R.string.welcome_back)"'), # Wait, wait, simple replace might break. Let's do exact match
-    ('Text("Welcome Back!",', 'Text(stringResource(R.string.welcome_back),'),
-    ('Text("Your Balance",', 'Text(stringResource(R.string.your_balance),'),
-    ('Text("Recent Activity",', 'Text(stringResource(R.string.recent_activity),'),
-    ('Text("No recent activity",', 'Text(stringResource(R.string.no_recent_activity),'),
-    ('Text("View All",', 'Text(stringResource(R.string.view_all),'),
-    ('Text("Go straight to Dashboard →",', 'Text(stringResource(R.string.go_straight_dashboard),'),
-    ('Text("Home",', 'Text(stringResource(R.string.nav_home),'),
-    ('Text("Goals",', 'Text(stringResource(R.string.nav_goals),'),
-    ('Text("Loans",', 'Text(stringResource(R.string.nav_loans),'),
-    ('Text("Settings",', 'Text(stringResource(R.string.nav_settings),'),
-    ('Text("Give Feedback",', 'Text(stringResource(R.string.give_feedback),'),
-    ('Text("Rate the App",', 'Text(stringResource(R.string.rate_app),'),
-    ('Text("Backup Data",', 'Text(stringResource(R.string.backup_data),'),
-    ('Text("Restore Data",', 'Text(stringResource(R.string.restore_data),'),
-    ('Text("Open Feedback Board",', 'Text(stringResource(R.string.open_feedback_board),'),
-    ('Text("Send Rating",', 'Text(stringResource(R.string.send_rating),'),
-    ('Text("Create Backup File",', 'Text(stringResource(R.string.create_backup_file),'),
-    ('Text("Select Backup File",', 'Text(stringResource(R.string.select_backup_file),')
-]
-
-replacements_onboarding = [
-    ('Text("Track Every Penny"', 'Text(stringResource(R.string.onboarding_step_1_title)"'), # bug here with quotes
-    ('Text("Track Every Penny",', 'Text(stringResource(R.string.onboarding_step_1_title),'),
-    ('Text("No more guessing where your money went. Piggy Ledger keeps everything organized.",', 'Text(stringResource(R.string.onboarding_step_1_desc),'),
-    ('Text("Set Big Goals",', 'Text(stringResource(R.string.onboarding_step_2_title),'),
-    ('Text("Saving for a vacation or a new PC? Set visual goals and crush them.",', 'Text(stringResource(R.string.onboarding_step_2_desc),'),
-    ('Text("Stay Consistent",', 'Text(stringResource(R.string.onboarding_step_3_title),'),
-    ('Text("Build healthy financial habits with daily streak tracking and friendly reminders.",', 'Text(stringResource(R.string.onboarding_step_3_desc),'),
-    ('Text("Continue",', 'Text(stringResource(R.string.continue_btn),'),
-    ('Text("Get Started",', 'Text(stringResource(R.string.get_started),')
-]
-
-replacements_mygoals = [
-    ('Text("My Goals",', 'Text(stringResource(R.string.my_goals),'),
-    ('Text("No goals yet. Add one!",', 'Text(stringResource(R.string.no_goals_yet),'),
-    ('Text("Add Goal",', 'Text(stringResource(R.string.add_goal),')
-]
-
-replacements_creategoal = [
-    ('Text("New Goal",', 'Text(stringResource(R.string.new_goal),'),
-    ('Text("What\'s the big plan? Set it up here.",', 'Text(stringResource(R.string.new_goal_subtitle),'),
-    ('Text("WHAT ARE YOU SAVING FOR?",', 'Text(stringResource(R.string.what_are_you_saving_for),'),
-    ('Text("e.g. Dream Vacation, New PC, General Savings")', 'Text(stringResource(R.string.goal_name_placeholder))'),
-    ('Text("Goal Type",', 'Text(stringResource(R.string.goal_type),'),
-    ('Text("HOW MUCH DO YOU NEED? ($)",', 'Text(stringResource(R.string.how_much_do_you_need),'),
-    ('Text("Let\'s Get Saving!",', 'Text(stringResource(R.string.lets_get_saving),')
-]
-
-try:
-    replace_in_file('app/src/main/java/com/oryno/piggy_ledger/ui/DashboardScreen.kt', replacements_dashboard)
-    replace_in_file('app/src/main/java/com/oryno/piggy_ledger/ui/OnboardingScreen.kt', replacements_onboarding)
-    replace_in_file('app/src/main/java/com/oryno/piggy_ledger/ui/MyGoalsScreen.kt', replacements_mygoals)
-    replace_in_file('app/src/main/java/com/oryno/piggy_ledger/ui/CreateGoalScreen.kt', replacements_creategoal)
-except Exception as e:
-    print(e)
+print("Done replacing.")

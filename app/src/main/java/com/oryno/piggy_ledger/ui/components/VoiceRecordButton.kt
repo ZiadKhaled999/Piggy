@@ -69,7 +69,7 @@ fun VoiceRecordButton(
         if (isGranted) {
             isSheetOpen = true
         } else {
-            Toast.makeText(context, "Microphone permission is required to record voice", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(com.oryno.piggy_ledger.R.string.mic_permission_required), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -158,7 +158,7 @@ fun VoiceRecordButton(
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = if (isCancelling) "Release to cancel" else "Slide up to pause/cancel",
+                        text = if (isCancelling) androidx.compose.ui.res.stringResource(com.oryno.piggy_ledger.R.string.release_to_cancel) else androidx.compose.ui.res.stringResource(com.oryno.piggy_ledger.R.string.slide_up_to_pause),
                         color = textColor,
                         fontSize = 24.sp, // Highlighted heading
                         fontWeight = FontWeight.ExtraBold,
@@ -170,7 +170,7 @@ fun VoiceRecordButton(
                     }
 
                     Text(
-                        text = if (state == VoiceRecordState.RECORDING) "Recording..." else "Hold anywhere here to record",
+                        text = if (state == VoiceRecordState.RECORDING) androidx.compose.ui.res.stringResource(com.oryno.piggy_ledger.R.string.recording_state) else androidx.compose.ui.res.stringResource(com.oryno.piggy_ledger.R.string.hold_anywhere_to_record),
                         color = if (state == VoiceRecordState.RECORDING) AccentBlue else Color(0xFF64748B),
                         fontSize = 22.sp, // Highlighted notes text
                         fontWeight = FontWeight.Bold,

@@ -1,6 +1,7 @@
 package com.oryno.piggy_ledger.ui
 
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,7 +29,10 @@ import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
 
 @Composable
-fun LanguageSelectionScreen(onLanguageSelected: () -> Unit) {
+fun LanguageSelectionScreen(
+    onLanguageSelected: () -> Unit,
+    onAlreadyHaveAccount: () -> Unit
+) {
     var selectedLanguage by remember { mutableStateOf<String?>(null) }
 
     Column(
@@ -117,6 +121,36 @@ fun LanguageSelectionScreen(onLanguageSelected: () -> Unit) {
                 fontWeight = FontWeight.Bold
             )
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedButton(
+            onClick = {
+                selectedLanguage?.let {
+                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(it))
+                }
+                onAlreadyHaveAccount()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp),
+            enabled = true,
+            shape = RoundedCornerShape(20.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = Color.White,
+                contentColor = NavyDark
+            ),
+            border = BorderStroke(
+                width = 1.dp,
+                color = NavyDark
+            )
+        ) {
+            Text(
+                text = stringResource(id = R.string.already_have_account),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
@@ -133,8 +167,8 @@ fun LanguageOption(
             .fillMaxWidth()
             .height(84.dp)
             .border(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) PinkPrimary else Color(0xFFF1F5F9),
+                width = if (isSelected) 3.dp else 2.dp,
+                color = if (isSelected) PinkPrimary else Color(0xFF94A3B8),
                 shape = RoundedCornerShape(20.dp)
             )
             .clickable(onClick = onClick),

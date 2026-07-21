@@ -1,4 +1,5 @@
 package com.oryno.piggy_ledger.ui
+import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -82,6 +83,7 @@ fun AddTransactionScreen(
     onDismiss: () -> Unit,
     onNavigateToAddAccount: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     // Core Transaction Data
     var isExpense by remember { mutableStateOf(true) }
     
@@ -163,6 +165,7 @@ fun AddTransactionScreen(
                                     val finalMerchant = "$categoryKey|$descText"
                                     
                                     viewModel.addAccountTransaction(sourceAccountId, finalAmt, finalMerchant, "MANUAL", selectedTimestamp)
+                                    Toast.makeText(context, context.getString(R.string.toast_transaction_added), Toast.LENGTH_SHORT).show()
                                     onDismiss()
                                 }
                             },

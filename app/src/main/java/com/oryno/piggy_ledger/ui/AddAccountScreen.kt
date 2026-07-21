@@ -1,5 +1,7 @@
 package com.oryno.piggy_ledger.ui
 
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -54,6 +56,7 @@ fun AddAccountScreen(
     viewModel: PiggyLedgerViewModel,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     var name by remember { mutableStateOf("") }
     var type by remember { mutableStateOf(AccountType.BANK) }
     var currency by remember { mutableStateOf("EGP") }
@@ -211,6 +214,7 @@ fun AddAccountScreen(
                                         insta_pay_fee = instaPayFee
                                     )
                                 )
+                                Toast.makeText(context, context.getString(R.string.toast_account_added), Toast.LENGTH_SHORT).show()
                                 onBack()
                             }
                         },

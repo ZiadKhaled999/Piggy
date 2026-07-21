@@ -1,4 +1,5 @@
 package com.oryno.piggy_ledger.ui
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clerk.api.Clerk
 import com.clerk.api.network.serialization.onFailure
@@ -68,18 +70,20 @@ fun AuthScreen(
                     modifier = Modifier.padding(top = 16.dp)
                 ) {
                     Text(
-                        text = "Piggy Ledger",
+                        text = stringResource(R.string.auth_welcome_title_main),
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onBackground,
-                        letterSpacing = (-1).sp,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Text(
-                        text = "Secure, simple, and smart.",
+                        text = stringResource(R.string.auth_welcome_subtitle_main),
                         fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                        fontWeight = FontWeight.Normal
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
                     )
                 }
 
@@ -108,10 +112,11 @@ fun AuthScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Track your expenses, set goals, and save money effortlessly.",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                        text = stringResource(R.string.auth_welcome_desc),
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
                         textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.SemiBold,
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
                             .padding(bottom = 32.dp)
@@ -152,12 +157,14 @@ fun AuthScreen(
                                 tint = Color.Unspecified
                             )
                             Text(
-                                text = "Continue with Google",
+                                text = stringResource(R.string.auth_continue_google),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium
                             )
                         }
                     }
+
+
                 }
             }
         } else {

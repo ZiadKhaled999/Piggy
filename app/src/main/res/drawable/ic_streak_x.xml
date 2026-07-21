@@ -4,12 +4,14 @@
     android:height="22dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <!-- Circle Background (Rose Red) -->
+    <!-- Circle Background (Dark Grey) -->
     <path
-        android:fillColor="#EF4444"
+        android:fillColor="#333333"
         android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10s10,-4.48 10,-10S17.52,2 12,2z" />
-    <!-- White X -->
+    <!-- Red X -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M15.5,8.5L12,12L8.5,8.5l-1.41,1.41L10.59,13.41l-3.5,3.5L8.5,18.32L12,14.82l3.5,3.5l1.41,-1.41L13.41,13.41l3.5,-3.5z" />
+        android:strokeColor="#EF4444"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M8.5,8.5 L15.5,15.5 M15.5,8.5 L8.5,15.5" />
 </vector>

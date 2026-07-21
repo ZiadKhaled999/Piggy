@@ -22,45 +22,70 @@ object StreakManager {
         com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
     }
 
-    fun getStreak(context: Context): Int {
+    fun getStreakAndFrozenDates(context: Context): Pair<Int, Set<String>> {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val dates = prefs.getStringSet(KEY_ACTION_DATES, emptySet()) ?: return 0
-        if (dates.isEmpty()) return 0
+        val dates = prefs.getStringSet(KEY_ACTION_DATES, emptySet()) ?: return Pair(0, emptySet())
+        if (dates.isEmpty()) return Pair(0, emptySet())
 
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        val today = Calendar.getInstance()
-        val todayStr = dateFormat.format(today.time)
-
-        // Check if today has an action
-        val hasActionToday = dates.contains(todayStr)
-
-        val checkCalendar = Calendar.getInstance()
-        if (!hasActionToday) {
-            // If not today, check yesterday. If yesterday also has no action, streak is 0
-            checkCalendar.add(Calendar.DAY_OF_YEAR, -1)
-            val yesterdayStr = dateFormat.format(checkCalendar.time)
-            if (!dates.contains(yesterdayStr)) {
-                return 0
-            }
-        }
-
-        // Calculate consecutive days backwards
+        val monthFormat = SimpleDateFormat("yyyy-MM", Locale.US)
+        
+        val currentDay = Calendar.getInstance()
         var streak = 0
-        val countCalendar = Calendar.getInstance()
-        if (!hasActionToday) {
-            countCalendar.add(Calendar.DAY_OF_YEAR, -1)
+        var consecutiveFreezes = 0
+        val monthFreezes = mutableMapOf<String, Int>()
+        var isFirstDay = true
+
+        val frozenDates = mutableSetOf<String>()
+        val pendingFreezes = mutableSetOf<String>()
+
+        // Find the earliest date to avoid infinite loop safely
+        var earliestDateStr = "9999-99-99"
+        for (d in dates) {
+            if (d < earliestDateStr) earliestDateStr = d
         }
 
         while (true) {
-            val dateStr = dateFormat.format(countCalendar.time)
+            val dateStr = dateFormat.format(currentDay.time)
+            val monthStr = monthFormat.format(currentDay.time)
+
             if (dates.contains(dateStr)) {
                 streak++
-                countCalendar.add(Calendar.DAY_OF_YEAR, -1)
+                consecutiveFreezes = 0
+                frozenDates.addAll(pendingFreezes)
+                pendingFreezes.clear()
             } else {
+                if (!isFirstDay) {
+                    val freezes = monthFreezes[monthStr] ?: 0
+                    if (consecutiveFreezes < 3 && freezes < 5) {
+                        consecutiveFreezes++
+                        monthFreezes[monthStr] = freezes + 1
+                        pendingFreezes.add(dateStr)
+                    } else {
+                        // Streak broken
+                        break
+                    }
+                }
+            }
+
+            if (dateStr < earliestDateStr) {
+                // Traversed past the earliest known action
                 break
             }
+
+            currentDay.add(Calendar.DAY_OF_YEAR, -1)
+            isFirstDay = false
         }
-        return streak
+        
+        return Pair(streak, frozenDates)
+    }
+
+    fun getStreak(context: Context): Int {
+        return getStreakAndFrozenDates(context).first
+    }
+
+    fun getFrozenDates(context: Context): Set<String> {
+        return getStreakAndFrozenDates(context).second
     }
 
     fun hasActionToday(context: Context): Boolean {
@@ -68,6 +93,28 @@ object StreakManager {
         val dates = prefs.getStringSet(KEY_ACTION_DATES, emptySet()) ?: return false
         val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         return dates.contains(todayStr)
+    }
+
+    fun getConsecutiveMissedDays(context: Context): Int {
+        val dates = getActionDates(context)
+        if (dates.isEmpty()) return 0
+        
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val currentDay = Calendar.getInstance()
+        var missed = 0
+        
+        while (true) {
+            val dateStr = dateFormat.format(currentDay.time)
+            if (dates.contains(dateStr)) {
+                break
+            }
+            missed++
+            currentDay.add(Calendar.DAY_OF_YEAR, -1)
+            
+            // Limit to 100 days backwards just in case
+            if (missed > 100) break
+        }
+        return missed
     }
 
     fun getActionDates(context: Context): Set<String> {
@@ -93,28 +140,17 @@ object StreakManager {
 
         val streak = getStreak(context)
         if (streak == 0) {
-            // Check if we had an action yesterday. If not, and no action today, it's LOST.
-            // Actually getStreak already returns 0 if no action today and yesterday.
-            // But if we just started, streak might be 0.
-            // The logic says: "If the clock hits 00:00 and lastLessonTimestamp belongs to the day before yesterday, the streak resets to 0."
             val dates = getActionDates(context)
             if (dates.isNotEmpty()) {
-                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-                val yesterday = Calendar.getInstance()
-                yesterday.add(Calendar.DAY_OF_YEAR, -1)
-                val yesterdayStr = dateFormat.format(yesterday.time)
-                
-                if (!dates.contains(yesterdayStr)) {
-                    return PiggyState.LOST
-                }
+                return PiggyState.LOST
             }
         }
 
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         return when {
-            hour < 18 -> PiggyState.HAPPY
-            hour < 22 -> PiggyState.WORRIED
-            else -> PiggyState.PANIC
+            hour < 14 -> PiggyState.HAPPY // Morning to early afternoon
+            hour < 18 -> PiggyState.WORRIED // Late afternoon
+            else -> PiggyState.PANIC // Evening
         }
     }
 

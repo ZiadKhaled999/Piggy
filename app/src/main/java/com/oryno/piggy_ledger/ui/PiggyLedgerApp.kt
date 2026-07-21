@@ -88,6 +88,13 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                             navController.navigate(Screen.Onboarding) {
                                 popUpTo(Screen.LanguageSelection) { inclusive = true }
                             }
+                        },
+                        onAlreadyHaveAccount = {
+                            viewModel.completeLanguageSelection()
+                            viewModel.completeOnboarding(1, 1, "Balanced")
+                            navController.navigate(Screen.Auth) {
+                                popUpTo(Screen.LanguageSelection) { inclusive = true }
+                            }
                         }
                     )
                 }
@@ -97,8 +104,8 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                         PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Onboarding"))
                     }
                     OnboardingScreen(
-                        onComplete = {
-                            viewModel.completeOnboarding()
+                        onComplete = { intent, intensity, savingMode ->
+                            viewModel.completeOnboarding(intent, intensity, savingMode)
                             navController.navigate(Screen.Auth) {
                                 popUpTo(Screen.Onboarding) { inclusive = true }
                             }

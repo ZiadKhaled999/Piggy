@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,21 @@ class UserPreferences(private val context: Context) {
         val LAST_EXIT_TIME = longPreferencesKey("last_exit_time")
         val IS_SCREENSHOT_PROTECTION_ENABLED = booleanPreferencesKey("is_screenshot_protection_enabled")
         val PIN_LOCK = stringPreferencesKey("pin_lock")
+        val PERSONALIZED_INTENT = intPreferencesKey("personalized_intent")
+        val PERSONALIZED_INTENSITY = intPreferencesKey("personalized_intensity")
+        val SAVING_MODE = stringPreferencesKey("saving_mode")
+    }
+
+    val personalizedIntent: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[PERSONALIZED_INTENT] ?: -1
+    }
+
+    val personalizedIntensity: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[PERSONALIZED_INTENSITY] ?: -1
+    }
+
+    val savingMode: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[SAVING_MODE] ?: "piggy"
     }
 
     val hasOnboarded: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -122,6 +138,14 @@ class UserPreferences(private val context: Context) {
             } else {
                 prefs[PIN_LOCK] = pin
             }
+        }
+    }
+
+    suspend fun savePersonalization(intent: Int, intensity: Int, savingMode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[PERSONALIZED_INTENT] = intent
+            prefs[PERSONALIZED_INTENSITY] = intensity
+            prefs[SAVING_MODE] = savingMode
         }
     }
 }

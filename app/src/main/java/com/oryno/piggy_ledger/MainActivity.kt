@@ -80,31 +80,16 @@ class MainActivity : AppCompatActivity() {
     super.onCreate(savedInstanceState)
     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
     enableEdgeToEdge()
+    
+    // Schedule background notifications
+    com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
 
     // Update widgets so they reflect language changes or app launches
     com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(this)
     com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(this)
     com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(this)
     
-    val permissionsToRequest = mutableListOf<String>()
-    
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-    }
-    
-    if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
-        permissionsToRequest.add(Manifest.permission.RECEIVE_SMS)
-    }
-    if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
-        permissionsToRequest.add(Manifest.permission.READ_SMS)
-    }
-    
-    if (permissionsToRequest.isNotEmpty()) {
-        requestPermissionsLauncher.launch(permissionsToRequest.toTypedArray())
-    }
-    
+
     val database = PiggyLedgerDatabase.getInstance(applicationContext)
     
     val repository = PiggyLedgerRepository(database.piggyLedgerDao())
@@ -262,20 +247,38 @@ class MainActivity : AppCompatActivity() {
           combine(
               userPreferences.isAuthenticated,
               userPreferences.authUserEmail,
-              userPreferences.authUserName
-          ) { authenticated, email, name ->
-              Triple(authenticated, email, name)
-          }.collectLatest { (authenticated, email, name) ->
-              if (authenticated && email.isNotBlank()) {
+              userPreferences.authUserName,
+              combine(
+                  userPreferences.personalizedIntent,
+                  userPreferences.personalizedIntensity,
+                  userPreferences.savingMode
+              ) { intent, intensity, mode -> Triple(intent, intensity, mode) }
+          ) { authenticated, email, name, personalization ->
+              val (intent, intensity, mode) = personalization
+              PersonalizationAuthData(authenticated, email, name, intent, intensity, mode)
+          }.collectLatest { data ->
+              if (data.authenticated && data.email.isNotBlank()) {
                   val props = mutableMapOf<String, Any>()
-                  if (name.isNotBlank()) props["name"] = name
-                  PostHog.identify(email, props)
+                  if (data.name.isNotBlank()) props["name"] = data.name
+                  props["personalized_intent"] = data.intent
+                  props["personalized_intensity"] = data.intensity
+                  props["saving_mode"] = data.savingMode
+                  PostHog.identify(data.email, props)
               } else {
                   PostHog.reset()
               }
           }
       }
   }
+
+  private data class PersonalizationAuthData(
+      val authenticated: Boolean,
+      val email: String,
+      val name: String,
+      val intent: Int,
+      val intensity: Int,
+      val savingMode: String
+  )
 
   override fun onStart() {
       super.onStart()

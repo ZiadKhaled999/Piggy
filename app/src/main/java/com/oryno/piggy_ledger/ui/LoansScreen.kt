@@ -1,5 +1,6 @@
 package com.oryno.piggy_ledger.ui
 
+import android.widget.Toast
 import android.Manifest
 import android.content.pm.PackageManager
 import android.provider.ContactsContract
@@ -66,6 +67,7 @@ fun LoansScreen(
     viewModel: PiggyLedgerViewModel,
     onBack: () -> Unit
 ) {
+    val screenContext = LocalContext.current
     val loans by viewModel.loans.collectAsState()
     
     var showAddDialog by remember { mutableStateOf(false) }
@@ -1069,6 +1071,7 @@ fun LoansScreen(
                                     deadline = deadlineDate
                                 )
                             )
+                            Toast.makeText(context, context.getString(R.string.toast_loan_added), Toast.LENGTH_SHORT).show()
                             showAddDialog = false
                         }
                     },
@@ -1194,6 +1197,7 @@ fun LoansScreen(
                                     val amt = payAmount.toDoubleOrNull() ?: 0.0
                                     if (amt > 0) {
                                         viewModel.addLoanPayment(selectedLoan!!.id, amt, payNote.takeIf { it.isNotBlank() })
+                                        Toast.makeText(screenContext, screenContext.getString(R.string.toast_loan_payment_added), Toast.LENGTH_SHORT).show()
                                         showAddPayment = false
                                     }
                                 },
@@ -1386,6 +1390,7 @@ fun LoansScreen(
                     Button(
                         onClick = {
                             viewModel.markLoanAsPaid(selectedLoan!!.id)
+                            Toast.makeText(screenContext, screenContext.getString(R.string.toast_loan_closed), Toast.LENGTH_SHORT).show()
                             selectedLoan = null
                         },
                         modifier = Modifier
@@ -1412,6 +1417,7 @@ fun LoansScreen(
                                 Button(
                                     onClick = {
                                         viewModel.deleteLoan(selectedLoan!!.id)
+                                        Toast.makeText(screenContext, screenContext.getString(R.string.toast_loan_deleted), Toast.LENGTH_SHORT).show()
                                         selectedLoan = null
                                         showDeleteConfirm = false
                                     },

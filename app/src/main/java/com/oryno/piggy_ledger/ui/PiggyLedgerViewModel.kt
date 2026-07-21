@@ -222,6 +222,7 @@ class PiggyLedgerViewModel(
                 event = "user_sign_in",
                 properties = mapOf("email" to email, "name" to name, "method" to "google")
             )
+            com.oryno.piggy_ledger.ui.NotificationHelper(context).showAuthNotification(true)
         }
     }
 
@@ -230,6 +231,7 @@ class PiggyLedgerViewModel(
             userPreferences.saveAuthentication(false, "", "", "")
             PostHog.capture("user_sign_out")
             PostHog.reset()
+            com.oryno.piggy_ledger.ui.NotificationHelper(context).showAuthNotification(false)
         }
     }
 
@@ -510,10 +512,18 @@ class PiggyLedgerViewModel(
         return allTransactions.map { list -> list.filter { it.goalId == goalId } }
     }
 
-    fun completeOnboarding() {
+    fun completeOnboarding(intent: Int, intensity: Int, savingMode: String) {
         viewModelScope.launch {
             userPreferences.saveOnboarding(true)
-            PostHog.capture("onboarding_completed")
+            userPreferences.savePersonalization(intent, intensity, savingMode)
+            PostHog.capture(
+                event = "onboarding_completed",
+                properties = mapOf(
+                    "personalized_intent" to intent,
+                    "personalized_intensity" to intensity,
+                    "saving_mode" to savingMode
+                )
+            )
         }
     }
     
@@ -521,6 +531,15 @@ class PiggyLedgerViewModel(
         viewModelScope.launch {
             userPreferences.saveLanguageSelected(true)
             PostHog.capture("language_selection_completed")
+        }
+    }
+
+    fun resetAppFlow() {
+        viewModelScope.launch {
+            userPreferences.saveOnboarding(false)
+            userPreferences.saveLanguageSelected(false)
+            userPreferences.saveAuthentication(false)
+            PostHog.capture("app_flow_reset")
         }
     }
 

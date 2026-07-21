@@ -1,5 +1,6 @@
 package com.oryno.piggy_ledger.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,7 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -85,27 +89,30 @@ fun PendingTransactionsScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Inbox,
+                    Image(
+                        painter = painterResource(id = R.drawable.img_pending_empty),
                         contentDescription = null,
-                        tint = PinkPrimary.copy(alpha = 0.5f),
-                        modifier = Modifier.size(72.dp)
+                        modifier = Modifier
+                            .size(240.dp)
+                            .clip(RoundedCornerShape(24.dp)),
+                        contentScale = ContentScale.Fit
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         text = stringResource(R.string.no_pending_transactions),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
                         color = NavyDark,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.no_pending_transactions_desc),
-                        fontSize = 14.sp,
+                        fontSize = 15.sp,
                         color = TextLight,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 24.dp)
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        lineHeight = 22.sp
                     )
                 }
             } else {

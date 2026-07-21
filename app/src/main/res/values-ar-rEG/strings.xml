@@ -32,6 +32,50 @@
     <string name="onboarding_start">تبدأ</string>
     <string name="onboarding_subtitle_4">يلا نجهز أول هدف ليك ونبدأ\nرحلتك لادخار جماعي أذكى.</string>
     <string name="back_btn">رجوع</string>
+    <string name="onboarding_sms_title">تتبع تلقائي ذكي</string>
+    <string name="onboarding_sms_subtitle">فَعَّل إذن قراية الرسائل (SMS) عشان نحسب ونسجل تحويلات المحافظ الإلكترونية اللي بتجيلك (زي فودافون كاش، أورانج كاش) تلقائيًا أول بأول.</string>
+    <string name="onboarding_sms_btn">تفعيل التتبع الآمن</string>
+    <string name="onboarding_sms_skip">تخطي دلوقتي</string>
+    <string name="onboarding_sms_granted">تم تفعيل التتبع الآمن بنجاح!</string>
+    <string name="onboarding_sms_denied">تم تخطي التتبع الآمن. تقدر تفعله من إعدادات الموبايل في أي وقت.</string>
+    <string name="onboarding_notif_title">تنبيهات فورية ذكية</string>
+    <string name="onboarding_notif_subtitle">استقبل إشعارات أول بأول بمشاركات المجموعة، وتحويلات المحفظة، والأهداف اللي بتكملها، وفكر نفسك بالاستمرار عشان تفضل على خطتك دايماً.</string>
+    <string name="onboarding_notif_btn">تفعيل التنبيهات الذكية</string>
+    <string name="onboarding_notif_skip">تخطي دلوقتي</string>
+    <string name="onboarding_notif_granted">تم تفعيل الإشعارات بنجاح!</string>
+    <string name="onboarding_notif_denied">تم تخطي الإشعارات. تقدر تفعيلها من إعدادات الموبايل في أي وقت.</string>
+
+    <!-- Personalization Onboarding -->
+    <string name="onboarding_personalize_intent_title">إيه تركيزك المالي الأساسي دلوقتي؟</string>
+    <string name="onboarding_personalize_intent_subtitle">اختار هدفك الأساسي وهنظبطلك لوحة التحكم، التنبيهات، وحسابات الادخار على مقاسك.</string>
+    <string name="onboarding_personalize_intent_group">جمعية أو حصالة مشتركة</string>
+    <string name="onboarding_personalize_intent_group_desc">حوشوا مع بعض لرحلة، جواز، أو أي مشروع مشترك مع أصحابك وعيلتك.</string>
+    <string name="onboarding_personalize_intent_personal">حصالة شخصية ليا</string>
+    <string name="onboarding_personalize_intent_personal_desc">اعمل لنفسك قرشين على جنب، صندوق طوارئ، أو أي هدف شخصي حابه.</string>
+    <string name="onboarding_personalize_intent_loans">ديون وسلف وقروض</string>
+    <string name="onboarding_personalize_intent_loans_desc">تابع الفلوس اللي ليك واللي عليك وظبط مواعيد السداد والأقساط بالملي.</string>
+    <string name="onboarding_personalize_intent_auto">تتبع وتوفير ذكي</string>
+    <string name="onboarding_personalize_intent_auto_desc">تتبع تلقائي وسهل لكل تحويلات المحافظ (فودافون كاش، أورانج كاش) من غير أي تعب.</string>
+
+    <string name="onboarding_personalize_intensity_title">اختار حماس ادخارك</string>
+    <string name="onboarding_personalize_intensity_subtitle">حابب تحوش كام في المية من دخلك كهدف أساسي؟</string>
+    <string name="onboarding_personalize_intensity_casual">على الهادي خالص</string>
+    <string name="onboarding_personalize_intensity_casual_desc">5٪ - 10٪ من الدخل. خفيف ولطيف ومناسب جداً للبدايات.</string>
+    <string name="onboarding_personalize_intensity_balanced">متوازن ومظبوط</string>
+    <string name="onboarding_personalize_intensity_balanced_desc">15٪ - 20٪ من الدخل. استقرار ونمو ثابت لأهدافك بجد.</string>
+    <string name="onboarding_personalize_intensity_aggressive">حماس ملوش حدود</string>
+    <string name="onboarding_personalize_intensity_aggressive_desc">30٪+ من الدخل. أقصى سرعة تحويش عشان تكسر أهدافك بسرعة البرق.</string>
+
+    <string name="onboarding_personalize_roadmap_title">خطة تحويشك المتفصلة ليك</string>
+    <string name="onboarding_personalize_roadmap_subtitle">دليلك المتفصل عشان توصل لأهداف تحويشك بسهولة.</string>
+    <string name="onboarding_personalize_roadmap_step1_title">ظبطنا حسابك بالملي</string>
+    <string name="onboarding_personalize_roadmap_step1_desc">جهزنالك مساحة مخصصة لـ %s.</string>
+    <string name="onboarding_personalize_roadmap_step2_title">ابدأ هدف %s بتاعك</string>
+    <string name="onboarding_personalize_roadmap_step2_desc">بنقترح تبدأ تحوش %s من دخلك.</string>
+    <string name="onboarding_personalize_roadmap_step3_title">تتبع ذكي شغال تلقائي</string>
+    <string name="onboarding_personalize_roadmap_step3_desc">متابعة وتحديث تلقائي لرسائل التحويلات والمعاملات يومياً.</string>
+    <string name="onboarding_personalize_roadmap_step4_title">حافظ على الاستمرارية (الستريك)</string>
+    <string name="onboarding_personalize_roadmap_step4_desc">تابع تحليلات ورسوم بيانية خطيرة وحدث إضافات الشاشة أول بأول!</string>
     
     <!-- Dashboard & UI -->
     <string name="welcome_back">نورت تاني!</string>
@@ -467,4 +511,20 @@
     <string name="confirm_payment">أكد الدفع</string>
     <string name="no_payments_yet">لسه مفيش دفعات.</string>
     <string name="remaining_of_prefix">فاضل من %1$s</string>
- </resources>
+    <string name="reset_app_flow">رجع التطبيق من الأول خالص</string>
+    <string name="reset_app_flow_desc">ارجع لـ شاشات اختيار اللغة والترحيب والتعريف بالخدمة.</string>
+    <string name="reset_confirm_title">هترجع للأول؟</string>
+    <string name="reset_confirm_msg">متأكد إنك عاوز ترجع للأول؟ ده هيسجل خروجك وهيرجعك لـ شاشات اختيار اللغة والترحيب عشان تجربهم تاني.</string>
+    <string name="already_have_account">عندي حساب بالفعل</string>
+    <string name="toast_transaction_added">المعاملة انضافت بنجاح!</string>
+    <string name="toast_savings_added">تحويشتك انضافت للهدف بنجاح!</string>
+    <string name="toast_goal_created">هدف التحويش اتعمل بنجاح!</string>
+    <string name="toast_goal_deleted">تم حذف الهدف.</string>
+    <string name="toast_account_added">الحساب انضاف بنجاح!</string>
+    <string name="toast_account_updated">الحساب اتحدث بنجاح!</string>
+    <string name="toast_account_deleted">الحساب اتحذف.</string>
+    <string name="toast_loan_added">المعاملة اتسجلت بنجاح!</string>
+    <string name="toast_loan_payment_added">الدفعة اتسجلت بنجاح!</string>
+    <string name="toast_loan_closed">المعاملة اتقفلت وبقت مدفوعة بالكامل!</string>
+    <string name="toast_loan_deleted">المعاملة اتحذفت.</string>
+  </resources>

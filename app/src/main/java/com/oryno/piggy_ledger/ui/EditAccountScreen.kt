@@ -1,5 +1,7 @@
 package com.oryno.piggy_ledger.ui
 
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -45,6 +47,7 @@ fun EditAccountScreen(
     viewModel: PiggyLedgerViewModel,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     val account = remember { viewModel.allAccounts.value.find { it.id == accountId } }
     
     var name by remember { mutableStateOf("") }
@@ -224,6 +227,7 @@ fun EditAccountScreen(
                                         insta_pay_fee = instaPayFee
                                     )
                                 )
+                                Toast.makeText(context, context.getString(R.string.toast_account_updated), Toast.LENGTH_SHORT).show()
                                 onBack()
                             }
                         },
@@ -495,7 +499,7 @@ fun EditAccountScreen(
                         OutlinedTextField(
                             value = bankAccountNo,
                             onValueChange = { bankAccountNo = it },
-                            placeholder = { Text("e.g. 1234 5678 9012", color = TextLight) },
+                            placeholder = { Text(stringResource(R.string.card_number_placeholder), color = TextLight) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
@@ -579,6 +583,7 @@ fun EditAccountScreen(
                     onClick = {
                         showDeleteConfirmDialog = false
                         viewModel.deleteAccount(accountId)
+                        Toast.makeText(context, context.getString(R.string.toast_account_deleted), Toast.LENGTH_SHORT).show()
                         onBack()
                     }
                 ) {

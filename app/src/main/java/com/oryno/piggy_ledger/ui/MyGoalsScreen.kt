@@ -148,7 +148,10 @@ fun MyGoalsScreen(
                 
                 Button(
                     onClick = {
-                        goalToDelete?.let { viewModel.deleteGoal(it.id) }
+                        goalToDelete?.let {
+                            viewModel.deleteGoal(it.id)
+                            Toast.makeText(context, context.getString(R.string.toast_goal_deleted), Toast.LENGTH_SHORT).show()
+                        }
                         goalToDelete = null
                         confirmNameInput = ""
                     },

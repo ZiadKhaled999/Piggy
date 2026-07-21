@@ -2,16 +2,33 @@ package com.oryno.piggy_ledger.ui
 import androidx.compose.ui.res.stringResource
 import com.oryno.piggy_ledger.R
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import android.content.pm.PackageManager
+import android.os.Build
+import android.Manifest
+import android.widget.Toast
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.RepeatMode
+import kotlinx.coroutines.delay
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -23,6 +40,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -35,6 +53,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,6 +61,9 @@ import androidx.compose.ui.unit.sp
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
+import com.oryno.piggy_ledger.ui.theme.SlateDark
+import com.oryno.piggy_ledger.ui.theme.AccentBlue
+import com.clerk.api.Clerk
 
 val TealGreen = Color(0xFF43B7A7)
 
@@ -52,7 +74,8 @@ data class OnboardingPageData(
 )
 
 @Composable
-fun OnboardingScreen(onComplete: () -> Unit) {
+fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
+    val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val isSmallScreen = configuration.screenWidthDp < 360
     
@@ -63,8 +86,37 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     val horizontalPadding = if (isSmallScreen) 16.dp else 24.dp
 
     var currentPage by remember { mutableIntStateOf(0) }
+    var selectedIntent by remember { mutableIntStateOf(-1) }
+    var selectedIntensity by remember { mutableIntStateOf(-1) }
+    var selectedSavingMode by remember { mutableStateOf("piggy") }
     
-    
+    // Register SMS permission launcher
+    val smsPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val smsReceivedGranted = permissions[Manifest.permission.RECEIVE_SMS] ?: false
+        val smsReadGranted = permissions[Manifest.permission.READ_SMS] ?: false
+        
+        if (smsReceivedGranted || smsReadGranted) {
+            Toast.makeText(context, context.getString(R.string.onboarding_sms_granted), Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, context.getString(R.string.onboarding_sms_denied), Toast.LENGTH_SHORT).show()
+        }
+        currentPage++
+    }
+
+    // Register Notification permission launcher
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            Toast.makeText(context, context.getString(R.string.onboarding_notif_granted), Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, context.getString(R.string.onboarding_notif_denied), Toast.LENGTH_SHORT).show()
+        }
+        currentPage++
+    }
+
     val welcomeTo = stringResource(R.string.onboarding_welcome_to)
     val appName = stringResource(R.string.app_name)
     val subtitle1 = stringResource(R.string.onboarding_subtitle_1)
@@ -81,6 +133,37 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     val readyTo = stringResource(R.string.onboarding_ready_to)
     val startStr = stringResource(R.string.onboarding_start)
     val subtitle4 = stringResource(R.string.onboarding_subtitle_4)
+
+    fun requestSmsPermissions() {
+        val permissionsToRequest = mutableListOf<String>()
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.RECEIVE_SMS)
+        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.READ_SMS)
+        }
+        
+        if (permissionsToRequest.isNotEmpty()) {
+            smsPermissionLauncher.launch(permissionsToRequest.toTypedArray())
+        } else {
+            Toast.makeText(context, context.getString(R.string.onboarding_sms_granted), Toast.LENGTH_SHORT).show()
+            currentPage++
+        }
+    }
+
+    fun requestNotificationPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                Toast.makeText(context, context.getString(R.string.onboarding_notif_granted), Toast.LENGTH_SHORT).show()
+                currentPage++
+            }
+        } else {
+            Toast.makeText(context, context.getString(R.string.onboarding_notif_granted), Toast.LENGTH_SHORT).show()
+            currentPage++
+        }
+    }
     
     val pages = listOf(
         OnboardingPageData(
@@ -115,6 +198,40 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             subtitle = subtitle3
         ),
         OnboardingPageData(
+            imageRes = R.drawable.wallet_illustration_1783782766357,
+            title = buildAnnotatedString {
+                append(stringResource(R.string.onboarding_sms_title))
+            },
+            subtitle = stringResource(R.string.onboarding_sms_subtitle)
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_settings_feedback,
+            title = buildAnnotatedString {
+                append(stringResource(R.string.onboarding_notif_title))
+            },
+            subtitle = stringResource(R.string.onboarding_notif_subtitle)
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append(stringResource(R.string.onboarding_personalize_intent_title)) },
+            subtitle = stringResource(R.string.onboarding_personalize_intent_subtitle)
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append(stringResource(R.string.onboarding_personalize_intensity_title)) },
+            subtitle = stringResource(R.string.onboarding_personalize_intensity_subtitle)
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append(stringResource(R.string.onboarding_personalize_roadmap_title)) },
+            subtitle = stringResource(R.string.onboarding_personalize_roadmap_subtitle)
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append("Choose Your Pace") },
+            subtitle = "Decide how you want to reach your financial milestones."
+        ),
+        OnboardingPageData(
             imageRes = R.drawable.img_app_logo,
             title = buildAnnotatedString {
                 append(readyTo + " ")
@@ -147,42 +264,810 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 targetState = currentPage,
                 label = "onboarding_page_fade"
             ) { pageIndex ->
-                val page = pages[pageIndex]
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = page.imageRes),
-                        contentDescription = null,
+                if (pageIndex == 5) {
+                    Column(
                         modifier = Modifier
-                            .fillMaxWidth(0.75f)
-                            .aspectRatio(1f),
-                        contentScale = ContentScale.Fit
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.onboarding_personalize_intent_title),
+                            fontSize = titleFontSize,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = NavyDark,
+                            textAlign = TextAlign.Center,
+                            lineHeight = if (isSmallScreen) 32.sp else 40.sp
+                        )
+                        
+                        Spacer(modifier = Modifier.height(10.dp))
+                        
+                        Text(
+                            text = stringResource(R.string.onboarding_personalize_intent_subtitle),
+                            fontSize = subtitleFontSize,
+                            color = TextLight,
+                            textAlign = TextAlign.Center,
+                            lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        
+                        Spacer(modifier = Modifier.height(28.dp))
+                        
+                        val intents = listOf(
+                            Pair(stringResource(R.string.onboarding_personalize_intent_group), stringResource(R.string.onboarding_personalize_intent_group_desc)) to "👥",
+                            Pair(stringResource(R.string.onboarding_personalize_intent_personal), stringResource(R.string.onboarding_personalize_intent_personal_desc)) to "💰",
+                            Pair(stringResource(R.string.onboarding_personalize_intent_loans), stringResource(R.string.onboarding_personalize_intent_loans_desc)) to "🤝",
+                            Pair(stringResource(R.string.onboarding_personalize_intent_auto), stringResource(R.string.onboarding_personalize_intent_auto_desc)) to "⚡"
+                        )
+                        
+                        intents.forEachIndexed { index, pair ->
+                            val (textPair, emoji) = pair
+                            val (title, desc) = textPair
+                            val isSelected = selectedIntent == index
+                            
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.96f)
+                                    .padding(vertical = 8.dp)
+                                    .clickable { selectedIntent = index }
+                                    .testTag("intent_card_$index"),
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (isSelected) Color(0xFFFFF1F2) else Color(0xFFF8FAFC),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    width = if (isSelected) 3.dp else 2.dp,
+                                    color = if (isSelected) PinkPrimary else Color(0xFF94A3B8)
+                                ),
+                                shadowElevation = if (isSelected) 3.dp else 0.dp
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(50.dp)
+                                            .clip(CircleShape)
+                                            .background(if (isSelected) PinkPrimary.copy(alpha = 0.15f) else Color(0xFFF1F5F9)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = emoji,
+                                            fontSize = 24.sp
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.width(14.dp))
+                                    
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = title,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isSelected) PinkPrimary else NavyDark
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = desc,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (isSelected) SlateDark else TextLight,
+                                            lineHeight = 16.sp
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = { selectedIntent = index },
+                                        colors = RadioButtonDefaults.colors(
+                                            selectedColor = PinkPrimary,
+                                            unselectedColor = Color(0xFFCBD5E1)
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else if (pageIndex == 6) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.onboarding_personalize_intensity_title),
+                            fontSize = titleFontSize,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = NavyDark,
+                            textAlign = TextAlign.Center,
+                            lineHeight = if (isSmallScreen) 32.sp else 40.sp
+                        )
+                        
+                        Spacer(modifier = Modifier.height(10.dp))
+                        
+                        Text(
+                            text = stringResource(R.string.onboarding_personalize_intensity_subtitle),
+                            fontSize = subtitleFontSize,
+                            color = TextLight,
+                            textAlign = TextAlign.Center,
+                            lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        
+                        Spacer(modifier = Modifier.height(28.dp))
+                        
+                        val intensities = listOf(
+                            Pair(stringResource(R.string.onboarding_personalize_intensity_casual), stringResource(R.string.onboarding_personalize_intensity_casual_desc)) to "🌱",
+                            Pair(stringResource(R.string.onboarding_personalize_intensity_balanced), stringResource(R.string.onboarding_personalize_intensity_balanced_desc)) to "⚡",
+                            Pair(stringResource(R.string.onboarding_personalize_intensity_aggressive), stringResource(R.string.onboarding_personalize_intensity_aggressive_desc)) to "🔥"
+                        )
+                        
+                        intensities.forEachIndexed { index, pair ->
+                            val (textPair, emoji) = pair
+                            val (title, desc) = textPair
+                            val isSelected = selectedIntensity == index
+                            
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.96f)
+                                    .padding(vertical = 8.dp)
+                                    .clickable { selectedIntensity = index }
+                                    .testTag("intensity_card_$index"),
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (isSelected) Color(0xFFFFF1F2) else Color(0xFFF8FAFC),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    width = if (isSelected) 3.dp else 2.dp,
+                                    color = if (isSelected) PinkPrimary else Color(0xFF94A3B8)
+                                ),
+                                shadowElevation = if (isSelected) 3.dp else 0.dp
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(50.dp)
+                                                .clip(CircleShape)
+                                                .background(if (isSelected) PinkPrimary.copy(alpha = 0.15f) else Color(0xFFF1F5F9)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = emoji,
+                                                fontSize = 26.sp
+                                            )
+                                        }
+                                        
+                                        Spacer(modifier = Modifier.width(14.dp))
+                                        
+                                        Column(
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text(
+                                                text = title,
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) PinkPrimary else NavyDark
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            val rateLabel = if (index == 0) "5% – 10%" else if (index == 1) "15% – 20%" else "30%+"
+                                            Text(
+                                                text = "Saving Rate: $rateLabel",
+                                                fontSize = 11.sp,
+                                                color = if (isSelected) PinkPrimary else TextLight,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                        
+                                        RadioButton(
+                                            selected = isSelected,
+                                            onClick = { selectedIntensity = index },
+                                            colors = RadioButtonDefaults.colors(
+                                                selectedColor = PinkPrimary,
+                                                unselectedColor = Color(0xFFCBD5E1)
+                                            )
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Text(
+                                        text = desc,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isSelected) SlateDark else TextLight,
+                                        lineHeight = 16.sp,
+                                        modifier = Modifier.padding(start = 2.dp)
+                                    )
+                                    
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    
+                                    // Custom visual speed progress bar inside the card
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(6.dp)
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(Color(0xFFE2E8F0))
+                                    ) {
+                                        val fillRatio = if (index == 0) 0.12f else if (index == 1) 0.25f else 0.50f
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth(fillRatio)
+                                                .fillMaxHeight()
+                                                .background(if (isSelected) PinkPrimary else Color(0xFF94A3B8))
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (pageIndex == 7) {
+                    val focusName = when (selectedIntent) {
+                        0 -> stringResource(R.string.onboarding_personalize_intent_group)
+                        1 -> stringResource(R.string.onboarding_personalize_intent_personal)
+                        2 -> stringResource(R.string.onboarding_personalize_intent_loans)
+                        else -> stringResource(R.string.onboarding_personalize_intent_auto)
+                    }
+
+                    val focusDesc = when (selectedIntent) {
+                        0 -> "Optimized for splitting deposits and coordinating reports easily."
+                        1 -> "Private vault configured to keep your core balance safe."
+                        2 -> "Tailored to track lent/borrowed cash and deadlines."
+                        else -> "Prepared to automatically organize incoming receipts."
+                    }
+
+                    val intensityName = when (selectedIntensity) {
+                        0 -> stringResource(R.string.onboarding_personalize_intensity_casual)
+                        1 -> stringResource(R.string.onboarding_personalize_intensity_balanced)
+                        else -> stringResource(R.string.onboarding_personalize_intensity_aggressive)
+                    }
+
+                    val intensityValue = when (selectedIntensity) {
+                        0 -> "5% – 10%"
+                        1 -> "15% – 20%"
+                        else -> "30%+"
+                    }
+
+                    val intensityDesc = when (selectedIntensity) {
+                        0 -> "A light, steady habit to build savings without strain."
+                        1 -> "The perfect pace for hitting your major milestones."
+                        else -> "High-velocity savings mode to smash buffers in record time."
+                    }
+
+                    val isSmsGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED ||
+                            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+                    
+                    val syncTitle = "Automation Assistant"
+                    val syncDesc = if (isSmsGranted) {
+                        "Vodafone Cash, Orange Cash, and bank alert SMS parsed automatically!"
+                    } else {
+                        "Log transactions manually. Enable SMS auto-sync anytime in Settings."
+                    }
+
+                    val milestoneTitle = "Your First Major Goal"
+                    val milestoneDesc = when (selectedIntent) {
+                        0 -> "Invite your co-savers and deposit your first contribution!"
+                        1 -> "Create a vault and set a deposit to start your streak!"
+                        2 -> "Log your first lent/borrowed deal to see net dues."
+                        else -> "Complete a transfer and let our automation handle it."
+                    }
+
+                    val steps = listOf(
+                        Triple("Workspace Configured: $focusName", focusDesc, "👥"),
+                        Triple("Savings Rate Configured: $intensityName ($intensityValue)", intensityDesc, "📈"),
+                        Triple(syncTitle, syncDesc, if (isSmsGranted) "⚡" else "📋"),
+                        Triple(milestoneTitle, milestoneDesc, "🎯")
                     )
+
+                    // AI ROAMAP LOADING LOGIC
+                    var roadmapStep by remember { mutableStateOf(-1) } // -1: Thinking, 0-3: Steps, 4: Done
+                    var thinkingPhase by remember { mutableStateOf(0) } // 0: Thinking, 1: Sketching, 2: Planning
                     
-                    Spacer(modifier = Modifier.height(40.dp))
-                    
-                    Text(
-                        text = page.title,
-                        fontSize = titleFontSize,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = NavyDark,
-                        textAlign = TextAlign.Center,
-                        lineHeight = if (isSmallScreen) 32.sp else 40.sp
+                    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
+                    val shimmerAlpha by infiniteTransition.animateFloat(
+                        initialValue = 0.3f,
+                        targetValue = 0.6f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(800),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "shimmer_alpha"
                     )
-                    
-                    Spacer(modifier = Modifier.height(if (isSmallScreen) 12.dp else 18.dp))
-                    
-                    Text(
-                        text = page.subtitle,
-                        fontSize = subtitleFontSize,
-                        color = TextLight,
-                        textAlign = TextAlign.Center,
-                        lineHeight = if (isSmallScreen) 20.sp else 24.sp,
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    )
+
+                    LaunchedEffect(Unit) {
+                        if (roadmapStep == -1) {
+                            delay(800)
+                            thinkingPhase = 1 // Sketching
+                            delay(800)
+                            thinkingPhase = 2 // Planning
+                            delay(1000)
+                            
+                            for (i in 0..3) {
+                                roadmapStep = i
+                                delay(1200)
+                            }
+                            roadmapStep = 4 // All Done
+                        }
+                    }
+
+                    if (roadmapStep == -1) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(54.dp),
+                                    color = PinkPrimary,
+                                    strokeWidth = 4.dp
+                                )
+                                Spacer(modifier = Modifier.height(28.dp))
+                                val text = when(thinkingPhase) {
+                                    0 -> "Thinking..."
+                                    1 -> "Sketching..."
+                                    else -> "Making Plan..."
+                                }
+                                Text(
+                                    text = text,
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = NavyDark
+                                )
+                            }
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState()),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.onboarding_personalize_roadmap_title),
+                                fontSize = titleFontSize,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = NavyDark,
+                                textAlign = TextAlign.Center,
+                                lineHeight = if (isSmallScreen) 32.sp else 40.sp
+                            )
+                            
+                            Spacer(modifier = Modifier.height(10.dp))
+                            
+                            Text(
+                                text = stringResource(R.string.onboarding_personalize_roadmap_subtitle),
+                                fontSize = subtitleFontSize,
+                                color = TextLight,
+                                textAlign = TextAlign.Center,
+                                lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                            
+                            Spacer(modifier = Modifier.height(28.dp))
+                            
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.96f)
+                                    .padding(bottom = 16.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                color = Color(0xFFF8FAFC),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                shadowElevation = 1.dp
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 20.dp)
+                                ) {
+                                    steps.forEachIndexed { index, step ->
+                                        if (index <= roadmapStep) {
+                                            val (stepTitle, stepDesc, stepEmoji) = step
+                                            val isSyncing = index == roadmapStep && roadmapStep < 4
+                                            
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(bottom = if (index < steps.size - 1) 16.dp else 0.dp),
+                                                verticalAlignment = Alignment.Top
+                                            ) {
+                                                Column(
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    modifier = Modifier.padding(end = 14.dp)
+                                                ) {
+                                                    if (isSyncing) {
+                                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                            Box(
+                                                                modifier = Modifier.size(36.dp),
+                                                                contentAlignment = Alignment.Center
+                                                            ) {
+                                                                CircularProgressIndicator(
+                                                                    modifier = Modifier.size(24.dp),
+                                                                    color = PinkPrimary,
+                                                                    strokeWidth = 2.dp
+                                                                )
+                                                            }
+                                                            Spacer(modifier = Modifier.height(4.dp))
+                                                            Text(
+                                                                text = "syncing",
+                                                                fontSize = 9.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = PinkPrimary
+                                                            )
+                                                        }
+                                                    } else {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .size(36.dp)
+                                                                .clip(CircleShape)
+                                                                .background(
+                                                                    (when (index) {
+                                                                        0 -> PinkPrimary
+                                                                        1 -> PinkPrimary
+                                                                        2 -> AccentBlue
+                                                                        else -> Color(0xFFF59E0B)
+                                                                    }).copy(alpha = 0.15f)
+                                                                ),
+                                                            contentAlignment = Alignment.Center
+                                                        ) {
+                                                            Text(
+                                                                text = stepEmoji,
+                                                                fontSize = 18.sp
+                                                            )
+                                                        }
+                                                    }
+                                                    
+                                                    if (index < steps.size - 1) {
+                                                        val startColor = when (index) {
+                                                            0 -> PinkPrimary
+                                                            1 -> PinkPrimary
+                                                            2 -> AccentBlue
+                                                            else -> Color(0xFFF59E0B)
+                                                        }
+                                                        val endColor = when (index + 1) {
+                                                            0 -> PinkPrimary
+                                                            1 -> PinkPrimary
+                                                            2 -> AccentBlue
+                                                            else -> Color(0xFFF59E0B)
+                                                        }
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .width(2.dp)
+                                                                .height(if (isSyncing) 54.dp else 54.dp)
+                                                                .background(
+                                                                    Brush.verticalGradient(
+                                                                        colors = listOf(
+                                                                            startColor.copy(alpha = 0.4f),
+                                                                            endColor.copy(alpha = 0.4f)
+                                                                        )
+                                                                    )
+                                                                )
+                                                        )
+                                                    }
+                                                }
+                                                
+                                                Column(
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .padding(top = 2.dp)
+                                                ) {
+                                                    if (isSyncing) {
+                                                        Column {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth(0.7f)
+                                                                    .height(18.dp)
+                                                                    .clip(RoundedCornerShape(4.dp))
+                                                                    .background(Color(0xFFE2E8F0).copy(alpha = shimmerAlpha))
+                                                            )
+                                                            Spacer(modifier = Modifier.height(10.dp))
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth(0.9f)
+                                                                    .height(12.dp)
+                                                                    .clip(RoundedCornerShape(4.dp))
+                                                                    .background(Color(0xFFE2E8F0).copy(alpha = shimmerAlpha))
+                                                            )
+                                                            Spacer(modifier = Modifier.height(6.dp))
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth(0.5f)
+                                                                    .height(12.dp)
+                                                                    .clip(RoundedCornerShape(4.dp))
+                                                                    .background(Color(0xFFE2E8F0).copy(alpha = shimmerAlpha))
+                                                            )
+                                                        }
+                                                    } else {
+                                                        Text(
+                                                            text = stepTitle,
+                                                            fontSize = 15.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = NavyDark
+                                                        )
+                                                        Spacer(modifier = Modifier.height(4.dp))
+                                                        Text(
+                                                            text = stepDesc,
+                                                            fontSize = 12.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            color = TextLight,
+                                                            lineHeight = 17.sp
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (pageIndex == 8) {
+                    val anim1 = remember { Animatable(0f) }
+                    val anim2 = remember { Animatable(0f) }
+                    LaunchedEffect(Unit) {
+                        anim1.animateTo(1f, animationSpec = tween(durationMillis = 800))
+                    }
+                    LaunchedEffect(Unit) {
+                        kotlinx.coroutines.delay(150)
+                        anim2.animateTo(1f, animationSpec = tween(durationMillis = 800))
+                    }
+
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                                .padding(top = 0.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Top
+                        ) {
+                            Text(
+                                text = "Supercharge Savings",
+                                fontSize = titleFontSize,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = NavyDark,
+                                textAlign = TextAlign.Center,
+                                lineHeight = if (isSmallScreen) 32.sp else 40.sp
+                            )
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Text(
+                                text = "Automated guidance helps you reach milestones up to 7 times faster than manual tracking.",
+                                fontSize = subtitleFontSize,
+                                color = TextLight,
+                                textAlign = TextAlign.Center,
+                                lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                                modifier = Modifier.padding(horizontal = 32.dp)
+                            )
+                        }
+                        
+                        // Comparison visualization
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(if (isSmallScreen) 300.dp else 380.dp)
+                                .padding(horizontal = 24.dp)
+                                .align(Alignment.Center),
+                            contentAlignment = Alignment.BottomCenter
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(if (isSmallScreen) 16.dp else 32.dp),
+                                verticalAlignment = Alignment.Bottom
+                            ) {
+                                // Solo Card (Smaller)
+                                val soloHeight = if (isSmallScreen) 32.dp else 38.dp
+                                Column(
+                                    modifier = Modifier
+                                        .weight(0.4f)
+                                        .graphicsLayer {
+                                            translationY = 60.dp.toPx() * (1f - anim1.value)
+                                            alpha = anim1.value
+                                        },
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(soloHeight * anim1.value),
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = Color(0xFF0F172A),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155)),
+                                        shadowElevation = 2.dp
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text("x1", fontWeight = FontWeight.Bold, color = Color.White)
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "Solo",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = TextLight
+                                    )
+                                }
+
+                                // With Piggy Card (7x taller)
+                                Column(
+                                    modifier = Modifier
+                                        .weight(0.6f)
+                                        .graphicsLayer {
+                                            translationY = 60.dp.toPx() * (1f - anim2.value)
+                                            alpha = anim2.value
+                                        },
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height((soloHeight * 7) * anim2.value),
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = Color.White,
+                                        border = androidx.compose.foundation.BorderStroke(2.dp, PinkPrimary),
+                                        shadowElevation = 8.dp
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(
+                                                    Brush.verticalGradient(
+                                                        colors = listOf(PinkPrimary, Color(0xFFF43F5E))
+                                                    )
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    text = "x7",
+                                                    fontSize = if (isSmallScreen) 40.sp else 54.sp,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = Color.White
+                                                )
+                                                Text(
+                                                    text = "FASTER",
+                                                    fontSize = if (isSmallScreen) 14.sp else 18.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White.copy(alpha = 0.9f),
+                                                    letterSpacing = 2.sp
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "With Piggy",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PinkPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Visible
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    val page = pages[pageIndex]
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = page.imageRes),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth(0.75f)
+                                .aspectRatio(1f),
+                            contentScale = ContentScale.Fit
+                        )
+                        
+                        Spacer(modifier = Modifier.height(30.dp))
+                        
+                        Text(
+                            text = page.title,
+                            fontSize = titleFontSize,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = NavyDark,
+                            textAlign = TextAlign.Center,
+                            lineHeight = if (isSmallScreen) 32.sp else 40.sp
+                        )
+                        
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 10.dp else 14.dp))
+                        
+                        Text(
+                            text = page.subtitle,
+                            fontSize = subtitleFontSize,
+                            color = TextLight,
+                            textAlign = TextAlign.Center,
+                            lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+
+                        if (pageIndex == 3) {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = { requestSmsPermissions() },
+                                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
+                                modifier = Modifier
+                                    .fillMaxWidth(0.85f)
+                                    .height(50.dp)
+                                    .testTag("grant_sms_permission_button"),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.onboarding_sms_btn),
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TextButton(
+                                onClick = {
+                                    Toast.makeText(context, context.getString(R.string.onboarding_sms_denied), Toast.LENGTH_SHORT).show()
+                                    currentPage++
+                                },
+                                modifier = Modifier.testTag("skip_sms_permission_button")
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.onboarding_sms_skip),
+                                    color = TextLight,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        if (pageIndex == 4) {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = { requestNotificationPermissions() },
+                                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
+                                modifier = Modifier
+                                    .fillMaxWidth(0.85f)
+                                    .height(50.dp)
+                                    .testTag("grant_notif_permission_button"),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.onboarding_notif_btn),
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TextButton(
+                                onClick = {
+                                    Toast.makeText(context, context.getString(R.string.onboarding_notif_denied), Toast.LENGTH_SHORT).show()
+                                    currentPage++
+                                },
+                                modifier = Modifier.testTag("skip_notif_permission_button")
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.onboarding_notif_skip),
+                                    color = TextLight,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -217,9 +1102,19 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 totalPages = pages.size,
                 onNext = {
                     if (currentPage < pages.size - 1) {
-                        currentPage++
+                        if (currentPage == 3) {
+                            requestSmsPermissions()
+                        } else if (currentPage == 4) {
+                            requestNotificationPermissions()
+                        } else if (currentPage == 5 && selectedIntent == -1) {
+                            Toast.makeText(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT).show()
+                        } else if (currentPage == 6 && selectedIntensity == -1) {
+                            Toast.makeText(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT).show()
+                        } else {
+                            currentPage++
+                        }
                     } else {
-                        onComplete()
+                        onComplete(selectedIntent, selectedIntensity, selectedSavingMode)
                     }
                 }
             )
@@ -273,7 +1168,7 @@ fun ProgressNextButton(
                 
                 if (segmentProgress > 0f) {
                     drawArc(
-                        color = TealGreen,
+                        color = PinkPrimary,
                         startAngle = startAngle,
                         sweepAngle = segmentMaxSweep * segmentProgress,
                         useCenter = false,

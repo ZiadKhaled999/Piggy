@@ -996,7 +996,7 @@ fun AccountsScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = NavyDark),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Close", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.close), color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         }

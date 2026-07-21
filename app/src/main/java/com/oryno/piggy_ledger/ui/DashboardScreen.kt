@@ -199,7 +199,7 @@ fun DashboardScreen(
                         Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.SpaceBetween) {
                             Icon(Icons.Default.TrendingDown, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(24.dp))
                             Column {
-                                Text("Spent", color = TextLight, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                Text(stringResource(R.string.spent), color = TextLight, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                 val totalSpent = accountTransactions.filter { it.amount < 0 }.sumOf { Math.abs(it.amount) }
                                 Text(
                                     text = "$${String.format("%,.0f", totalSpent)}",
@@ -221,7 +221,7 @@ fun DashboardScreen(
                         Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.SpaceBetween) {
                             Icon(Icons.Default.AccountBalance, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(24.dp))
                             Column {
-                                Text("Payoffs", color = TextLight, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                Text(stringResource(R.string.payoffs), color = TextLight, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                 Text(
                                     text = "$${String.format("%,.0f", totalLoan)}",
                                     color = NavyDark,
@@ -242,8 +242,8 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Savings Goals", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                    Text("See all", fontSize = 14.sp, color = PinkPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onNavigateToMyGoals() }.padding(4.dp))
+                    Text(stringResource(R.string.savings_goals), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    Text(stringResource(R.string.see_all), fontSize = 14.sp, color = PinkPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onNavigateToMyGoals() }.padding(4.dp))
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 GoalsHorizontalList(goals = goals, transactions = transactions, onClick = onNavigateToMyGoals)
@@ -415,7 +415,7 @@ fun DashboardScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(color = AccentBlue)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Processing your voice...", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.processing_voice), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -459,7 +459,7 @@ fun DashboardScreen(
                     ) {
                         if (isCorrecting) {
                             Column(modifier = Modifier.fillMaxWidth()) {
-                                Text("Correct Transaction", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                                Text(stringResource(R.string.correct_transaction), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextDark)
                                 Spacer(modifier = Modifier.height(16.dp))
                                 OutlinedTextField(
                                     value = editedText,
@@ -480,7 +480,7 @@ fun DashboardScreen(
                                         modifier = Modifier.weight(1f),
                                         colors = ButtonDefaults.outlinedButtonColors(contentColor = TextLight)
                                     ) {
-                                        Text("Cancel")
+                                        Text(stringResource(R.string.cancel))
                                     }
                                     Button(
                                         onClick = { 
@@ -490,14 +490,14 @@ fun DashboardScreen(
                                         modifier = Modifier.weight(1f),
                                         colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
                                     ) {
-                                        Text("Re-Process")
+                                        Text(stringResource(R.string.re_process))
                                     }
                                 }
                             }
                         } else {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                                    Text("Transaction Details", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                                    Text(stringResource(R.string.transaction_details), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextDark)
                                     Surface(
                                         color = AccentBlue.copy(alpha = 0.1f),
                                         shape = CircleShape
@@ -513,7 +513,7 @@ fun DashboardScreen(
                                 
                                 Spacer(modifier = Modifier.height(24.dp))
                                 
-                                Text("You said:", fontSize = 14.sp, color = TextLight)
+                                Text(stringResource(R.string.you_said), fontSize = 14.sp, color = TextLight)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text("\"${resultState.text}\"", fontSize = 16.sp, color = TextDark, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                                 
@@ -523,7 +523,7 @@ fun DashboardScreen(
                                 val parsed = resultState.parsed
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Column {
-                                        Text("Amount", fontSize = 12.sp, color = TextLight)
+                                        Text(stringResource(R.string.amount), fontSize = 12.sp, color = TextLight)
                                         Text(
                                             text = if (parsed.amount > 0) "$${parsed.amount}" else "Unknown",
                                             fontSize = 18.sp,
@@ -532,7 +532,7 @@ fun DashboardScreen(
                                         )
                                     }
                                     Column(horizontalAlignment = Alignment.End) {
-                                        Text("Target (Account / Goal)", fontSize = 12.sp, color = TextLight)
+                                        Text(stringResource(R.string.target_account_goal), fontSize = 12.sp, color = TextLight)
                                         Box {
                                             var targetExpanded by remember { mutableStateOf(false) }
                                             Row(
@@ -556,7 +556,7 @@ fun DashboardScreen(
                                             ) {
                                                 accounts.forEach { acc ->
                                                     DropdownMenuItem(
-                                                        text = { Text("Account: ${acc.name}") },
+                                                        text = { Text(stringResource(R.string.account_name_format, acc.name)) },
                                                         onClick = {
                                                             voiceViewModel.updateTarget(accountName = acc.name, goalName = null)
                                                             targetExpanded = false
@@ -565,7 +565,7 @@ fun DashboardScreen(
                                                 }
                                                 goals.forEach { goal ->
                                                     DropdownMenuItem(
-                                                        text = { Text("Goal: ${goal.name}") },
+                                                        text = { Text(stringResource(R.string.goal_name_format, goal.name)) },
                                                         onClick = {
                                                             voiceViewModel.updateTarget(accountName = null, goalName = goal.name)
                                                             targetExpanded = false
@@ -588,7 +588,7 @@ fun DashboardScreen(
                                         modifier = Modifier.weight(1f),
                                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF5252), containerColor = Color.Transparent)
                                     ) {
-                                        Text("Cancel")
+                                        Text(stringResource(R.string.cancel))
                                     }
                                     OutlinedButton(
                                         onClick = { 
@@ -598,14 +598,14 @@ fun DashboardScreen(
                                         modifier = Modifier.weight(1f),
                                         colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDark)
                                     ) {
-                                        Text("Correct")
+                                        Text(stringResource(R.string.correct))
                                     }
                                     Button(
                                         onClick = { voiceViewModel.confirmTransaction() },
                                         modifier = Modifier.weight(1.5f),
                                         colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
                                     ) {
-                                        Text("Go Ahead")
+                                        Text(stringResource(R.string.go_ahead))
                                     }
                                 }
                             }
@@ -651,12 +651,28 @@ fun PendingTransactionDashboardCard(
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            Text(
-                text = stringResource(R.string.pending_sms_detected),
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.pending_sms_detected),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Image(
+                    painter = painterResource(id = R.drawable.img_settings_pending_1784465160290),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(10.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
             
             Spacer(modifier = Modifier.height(12.dp))
             
@@ -885,7 +901,7 @@ fun GoalsHorizontalList(goals: List<com.oryno.piggy_ledger.data.Goal>, transacti
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                Text("No goals set yet. Tap to start saving!", color = TextLight, fontSize = 14.sp)
+                Text(stringResource(R.string.no_goals_set), color = TextLight, fontSize = 14.sp)
             }
         }
     } else {
@@ -895,7 +911,8 @@ fun GoalsHorizontalList(goals: List<com.oryno.piggy_ledger.data.Goal>, transacti
         ) {
             goals.take(2).forEach { goal ->
                 val saved = transactions.filter { it.goalId == goal.id }.sumOf { it.amount }
-                val progress = if (goal.targetAmount > 0) (saved / goal.targetAmount).toFloat().coerceIn(0f, 1f) else 0f
+                val isOpenSavings = goal.targetAmount <= 0.0
+                val progress = if (!isOpenSavings) (saved / goal.targetAmount).toFloat().coerceIn(0f, 1f) else 0f
                 
                 Card(
                     modifier = Modifier.weight(1f).height(120.dp).clickable { onClick() },
@@ -910,20 +927,28 @@ fun GoalsHorizontalList(goals: List<com.oryno.piggy_ledger.data.Goal>, transacti
                         Column {
                             Text(text = goal.name, fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 15.sp, maxLines = 1)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = "$${String.format("%.0f", saved)} / $${String.format("%.0f", goal.targetAmount)}", color = TextLight, fontSize = 12.sp)
+                            val goalText = if (isOpenSavings) {
+                                "$${String.format("%.0f", saved)} / " + stringResource(R.string.widget_open_savings)
+                            } else {
+                                "$${String.format("%.0f", saved)} / $${String.format("%.0f", goal.targetAmount)}"
+                            }
+                            Text(text = goalText, color = TextLight, fontSize = 12.sp)
                         }
                         
                         Column {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                Text(text = "${(progress * 100).toInt()}%", fontWeight = FontWeight.Bold, color = PinkPrimary, fontSize = 12.sp)
+                                val percentageText = if (isOpenSavings) stringResource(R.string.widget_open_label) else "${(progress * 100).toInt()}%"
+                                Text(text = percentageText, fontWeight = FontWeight.Bold, color = PinkPrimary, fontSize = 12.sp)
                             }
-                            Spacer(modifier = Modifier.height(6.dp))
-                            LinearProgressIndicator(
-                                progress = { progress },
-                                modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
-                                color = PinkPrimary,
-                                trackColor = Color(0xFFF1F5F9)
-                            )
+                            if (!isOpenSavings) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                LinearProgressIndicator(
+                                    progress = { progress },
+                                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
+                                    color = PinkPrimary,
+                                    trackColor = Color(0xFFF1F5F9)
+                                )
+                            }
                         }
                     }
                 }

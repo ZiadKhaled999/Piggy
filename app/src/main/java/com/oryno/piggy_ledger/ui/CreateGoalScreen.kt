@@ -1,4 +1,6 @@
 package com.oryno.piggy_ledger.ui
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.oryno.piggy_ledger.R
 
@@ -31,6 +33,7 @@ fun CreateGoalScreen(
     onGoalCreated: (String, Double) -> Unit,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     var goalName by remember { mutableStateOf("") }
     var targetAmount by remember { mutableStateOf("") }
     var isOpenedBalance by remember { mutableStateOf(false) }
@@ -236,10 +239,12 @@ fun CreateGoalScreen(
             onClick = { 
                 if (goalName.isNotBlank()) {
                     if (isOpenedBalance) {
+                        Toast.makeText(context, context.getString(R.string.toast_goal_created), Toast.LENGTH_SHORT).show()
                         onGoalCreated(goalName, 0.0)
                     } else {
                         val amount = targetAmount.replace("$", "").trim().toDoubleOrNull()
                         if (amount != null) {
+                            Toast.makeText(context, context.getString(R.string.toast_goal_created), Toast.LENGTH_SHORT).show()
                             onGoalCreated(goalName, amount)
                         }
                     }

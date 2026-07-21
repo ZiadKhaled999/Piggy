@@ -1,293 +1,337 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">دفتر الحصالة</string>
-    <string name="language">اللغة</string>
-    <string name="select_language">اختر اللغة</string>
-    <string name="choose_language_desc">اختر لغتك المفضلة للمتابعة</string>
-    <string name="english">English</string>
-    <string name="arabic">العربية</string>
-    <string name="continue_btn">متابعة</string>
-    <string name="get_started">ابدأ الآن</string>
-    <string name="settings">الإعدادات والتفضيلات</string>
-    <string name="backup_data">النسخ الاحتياطي</string>
-    <string name="restore_data">استعادة البيانات</string>
-    <string name="rate_app">تقييم التطبيق</string>
-    <string name="give_feedback">تقديم ملاحظات</string>
-
-    <!-- Onboarding -->
-    <string name="onboarding_step_1_title">تتبع كل قرش</string>
-    <string name="onboarding_step_1_desc">لا مزيد من التخمين أين ذهبت أموالك. دفتر الحصالة يبقي كل شيء منظماً.</string>
-    <string name="onboarding_step_2_title">حدد أهدافاً كبيرة</string>
-    <string name="onboarding_step_2_desc">تدخر لإجازة أو حاسوب جديد؟ حدد أهدافاً بصرية وحققها.</string>
-    <string name="onboarding_step_3_title">ابقَ مستمراً</string>
-    <string name="onboarding_step_3_desc">ابنِ عادات مالية صحية مع التتبع اليومي والتذكيرات الودية.</string>
+    <string name="onboarding_step_1_title">سجل كل قرش</string>
+    <string name="onboarding_step_1_desc">مفيش حيرة بعد كده فلوسك راحت فين. بيجي ليدجر بيظبطلك كل حاجة.</string>
+    <string name="onboarding_step_2_title">حط أهداف كبيرة</string>
+    <string name="onboarding_step_2_desc">بتحوش لسفرية أو جهاز جديد؟ حط أهداف وشوف إزاي هتوصلها.</string>
+    <string name="onboarding_step_3_title">خليك مستمر</string>
+    <string name="onboarding_step_3_desc">ابني عادات مالية صح بتتبع يومي وتنبيهات تفكرك.</string>
+    <string name="onboarding_welcome_to">أهلاً بيك في</string>
+    <string name="onboarding_subtitle_1">طريقتك الجديدة عشان تحوش\nوتجمع فلوس مع أصحابك وعيلتك.</string>
+    <string name="onboarding_pool_your">جمع</string>
+    <string name="onboarding_savings">تحويشتك</string>
+    <string name="onboarding_subtitle_2">اعمل أهداف مشتركة واعزم غيرك\nيشاركوا فيها. سواء لسفرية، هدية، أو\nمشروع مشترك.</string>
+    <string name="onboarding_track">تابع</string>
+    <string name="onboarding_progress">تقدمك</string>
+    <string name="onboarding_together">سوا</string>
+    <string name="onboarding_subtitle_3">تحديثات لحظية عن المساهمات\nوالوصول للهدف. خليك متحمس\nوانت بتشوف شريط التقدم بيتملى.</string>
+    <string name="onboarding_ready_to">جاهز</string>
+    <string name="onboarding_start">تبدأ؟</string>
+    <string name="onboarding_subtitle_4">يلا نظبط أول هدف ليك ونبدأ\nرحلتك للتحويش الذكي سوا.</string>
     
-    <!-- Dashboard & UI -->
-    <string name="welcome_back">مرحباً بعودتك!</string>
-    <string name="dashboard_title">لوحة التحكم</string>
-    <string name="your_balance">رصيدك</string>
-    <string name="recent_activity">النشاط الأخير</string>
-    <string name="no_recent_activity">لا يوجد نشاط أخير</string>
-    <string name="view_all">عرض الكل</string>
-    <string name="go_straight_dashboard">الذهاب مباشرة إلى لوحة التحكم</string>
+    <string name="onboarding_sms_title">تتبع تلقائي ذكي</string>
+    <string name="onboarding_sms_subtitle">فعّل قراية الرسايل بأمان عشان تتبع المحافظ زي (فودافون كاش، أورانج كاش) لحظة بلحظة.</string>
+    <string name="onboarding_sms_btn">فعّل التتبع الآمن</string>
+    <string name="onboarding_sms_skip">مش دلوقتي</string>
+    <string name="onboarding_sms_granted">تتبع الرسايل اتفعّل بنجاح!</string>
+    <string name="onboarding_sms_denied">تخطينا التتبع. تقدر تفعله بعدين من الإعدادات.</string>
     
-    <!-- Bottom Nav -->
-    <string name="nav_home">الرئيسية</string>
-    <string name="nav_goals">الأهداف</string>
-    <string name="nav_loans">القروض</string>
-    <string name="nav_settings">الإعدادات</string>
-
-
-    <string name="my_goals">أهدافي</string>
-    <string name="no_goals_yet">لا توجد أهداف بعد. أضف هدفاً!</string>
-    <string name="add_goal">إضافة هدف</string>
+    <string name="onboarding_notif_title">تنبيهات ذكية لحظية</string>
+    <string name="onboarding_notif_subtitle">هيجيلك إشعارات لحظية بمساهمات الجروب، الإيداعات، تحقيق الأهداف، وتفكرك دايماً بميزانيتك.</string>
+    <string name="onboarding_notif_btn">فعّل التنبيهات الذكية</string>
+    <string name="onboarding_notif_skip">مش دلوقتي</string>
+    <string name="onboarding_notif_granted">التنبيهات اتفعّلت بنجاح!</string>
+    <string name="onboarding_notif_denied">تخطينا التنبيهات. تقدر تفعلها بعدين من الإعدادات.</string>
     
-    <string name="new_goal">هدف جديد</string>
-    <string name="new_goal_subtitle">ما هي خطتك الكبيرة؟ قم بإعدادها هنا.</string>
-    <string name="what_are_you_saving_for">لماذا تدخر؟</string>
-    <string name="goal_name_placeholder">مثال: إجازة أحلامك، حاسوب جديد</string>
-    <string name="goal_type">نوع الهدف</string>
-    <string name="how_much_do_you_need">كم تحتاج؟ ($)</string>
-    <string name="lets_get_saving">لنبدأ الادخار!</string>
+    <string name="onboarding_personalize_intent_title">إيه تركيزك الأساسي؟</string>
+    <string name="onboarding_personalize_intent_subtitle">اختار هدفك الأساسي وهنظبطلك الواجهة، الإشعارات، وطرق التحويش.</string>
+    <string name="onboarding_personalize_intent_group">تحويش جماعي (جمعية)</string>
+    <string name="onboarding_personalize_intent_group_desc">حوشوا سوا لسفرية، فرح، أو مشاريع مع العيلة والأصحاب.</string>
+    <string name="onboarding_personalize_intent_personal">حصالة شخصية</string>
+    <string name="onboarding_personalize_intent_personal_desc">اعمل احتياطي كاش، صندوق طوارئ، وأهداف على مزاجك.</string>
+    <string name="onboarding_personalize_intent_loans">سداد ديون وقروض</string>
+    <string name="onboarding_personalize_intent_loans_desc">تابع الفلوس اللي ليك واللي عليك وظبط مواعيد السداد صح.</string>
+    <string name="onboarding_personalize_intent_auto">تتبع تلقائي</string>
+    <string name="onboarding_personalize_intent_auto_desc">تتبع تحويلات المحافظ (فودافون، أورانج كاش) من غير أي مجهود.</string>
+    
+    <string name="onboarding_personalize_intensity_title">اختار قوة التحويش</string>
+    <string name="onboarding_personalize_intensity_subtitle">حابب تشيل قد إيه من دخلك؟</string>
+    <string name="onboarding_personalize_intensity_casual">محوش على الهادي</string>
+    <string name="onboarding_personalize_intensity_casual_desc">٥٪ - ١٠٪ من الدخل. خفيف ومناسب كبداية.</string>
+    <string name="onboarding_personalize_intensity_balanced">باني متوازن</string>
+    <string name="onboarding_personalize_intensity_balanced_desc">١٥٪ - ٢٠٪ من الدخل. نمو مستقر لأهداف ثابتة.</string>
+    <string name="onboarding_personalize_intensity_aggressive">تركيز ليزر</string>
+    <string name="onboarding_personalize_intensity_aggressive_desc">٣٠٪+ من الدخل. أقصى سرعة تحويش عشان تكسر أهدافك.</string>
+    
+    <string name="onboarding_personalize_roadmap_title">خطتك المخصصة للتحويش</string>
+    <string name="onboarding_personalize_roadmap_subtitle">دليلك المخصص عشان توصل لأهدافك.</string>
+    <string name="onboarding_personalize_roadmap_step1_title">البروفايل جاهز</string>
+    <string name="onboarding_personalize_roadmap_step1_desc">جهزنا مكان متفصل عشان %s.</string>
+    <string name="onboarding_personalize_roadmap_step2_title">ظبط هدفك كـ %s</string>
+    <string name="onboarding_personalize_roadmap_step2_desc">بنقترح تبدأ بهدف %s.</string>
+    <string name="onboarding_personalize_roadmap_step3_title">المزامنة الذكية شغالة</string>
+    <string name="onboarding_personalize_roadmap_step3_desc">بيتابع رسايل الـ SMS ومعاملاتك اليومية تلقائي.</string>
+    <string name="onboarding_personalize_roadmap_step4_title">ابني سلسلتك اليومية</string>
+    <string name="onboarding_personalize_roadmap_step4_desc">خليك مستمر، شوف إحصائياتك، وافتح الودجت المحلية!</string>
 
-    <string name="welcome_to_circle">مرحباً بك في دائرتك</string>
-    <string name="choose_saving_journey">اختر كيف تريد أن تبدأ رحلة التوفير.</string>
-    <string name="start_new_goal">بدء هدف جديد</string>
-    <string name="set_target">حدد هدفاً.</string>
-    <string name="payoffs_loans">المدفوعات والقروض</string>
-    <string name="manage_loans">أدر أموالك المقترضة أو المدين بها.</string>
-    <string name="community_feedback">ملاحظات المجتمع</string>
-    <string name="join_community_board">انضم إلى لوحة المجتمع</string>
-    <string name="help_improve">ساعدنا في تحسين دفتر الحصالة! انقر أدناه لزيارة لوحة طلب الميزات.</string>
-    <string name="rate_app_title">تقييم التطبيق</string>
-    <string name="enjoying_piggy_ledger">هل تستمتع بدفتر الحصالة؟ اضغط على النجوم لتقييم تجربتك.</string>
-    <string name="backup_data_title">نسخ احتياطي للبيانات</string>
-    <string name="secure_local_export">تصدير محلي آمن</string>
-    <string name="save_goals_desc">احفظ أهدافك وسجلاتك وإحصائياتك في ملف JSON.</string>
-    <string name="restore_data_title">استعادة البيانات</string>
-    <string name="import_json_backup">استيراد نسخة JSON الاحتياطية</string>
-    <string name="restoring_data_replace">استعادة البيانات ستستبدل الأهداف والسجلات الحالية.</string>
-    <string name="start_first_goal">ابدأ هدفك الأول اليوم!</string>
-    <string name="open_savings">مدخرات مفتوحة (عامة)</string>
-    <string name="target">الهدف:</string>
-
-
-    <string name="onboarding_welcome_to">مرحباً بك في</string>
-    <string name="onboarding_subtitle_1">طريقتك الحديثة للادخار وتجميع الموارد\nمع الأصدقاء والعائلة.</string>
-    <string name="onboarding_pool_your">اجمع</string>
-    <string name="onboarding_savings">مدخراتك</string>
-    <string name="onboarding_subtitle_2">أنشئ أهدافاً مشتركة وادعُ الآخرين للمساهمة.\nسواء كان ذلك لرحلة، أو هدية، أو\nمشروع جماعي.</string>
-    <string name="onboarding_track">تتبع</string>
-    <string name="onboarding_progress">التقدم</string>
-    <string name="onboarding_together">معاً</string>
-    <string name="onboarding_subtitle_3">تحديثات فورية للمساهمات واكتمال الأهداف.\nابق متحمساً وأنت ترى شريط\nالتقدم يمتلئ.</string>
-    <string name="onboarding_ready_to">مستعد</string>
-    <string name="onboarding_start">للبدء</string>
-    <string name="onboarding_subtitle_4">دعنا نعد هدفك الأول ونبدأ\nرحلتك نحو مدخرات جماعية أذكى.</string>
+    <string name="repayment_deadline_header">ميعاد السداد</string>
+    <string name="repayment_deadline_over">ميعاد السداد لـ %1$s خلص. المبلغ المتبقي: %2$s.</string>
+    <string name="deadline_channel_name">تفكرات ميعاد السداد</string>
+    <string name="deadline_channel_desc">إشعارات بمواعيد سداد الديون</string>
+    <string name="deadline_title">الميعاد خلص!</string>
+    <string name="no_deadline_set">مفيش ميعاد سداد</string>
     <string name="back_btn">رجوع</string>
 
 
-<string name="loans_payoffs_title">القروض والمدفوعات</string>
-    <string name="keep_tabs_subtitle">تتبع من يدين لمن</string>
+    <!-- Dashboard Screen -->
+    <string name="spent">صرفت</string>
+    <string name="payoffs">التسديدات</string>
+    <string name="savings_goals">أهداف التحويش</string>
+    <string name="see_all">شوف الكل</string>
+    <string name="processing_voice">بنعالج صوتك...</string>
+    <string name="correct_transaction">صحح المعاملة</string>
+    <string name="re_process">عالج تاني</string>
+    <string name="transaction_details">تفاصيل المعاملة</string>
+    <string name="you_said">إنت قولت:</string>
+    <string name="amount">المبلغ</string>
+    <string name="target_account_goal">الهدف (حساب / هدف)</string>
+    <string name="account_name_format">الحساب: %1$s</string>
+    <string name="goal_name_format">الهدف: %1$s</string>
+    <string name="correct">صح</string>
+    <string name="go_ahead">كمل</string>
+    <string name="no_goals_set">مفيش أهداف لسه. دوس عشان تبدأ تحوش!</string>
+
+    <!-- Settings Screen (Export/Import) -->
+    <string name="export_success">البيانات اتصدرت بنجاح</string>
+    <string name="export_failed">التصدير فشل: %1$s</string>
+    <string name="restore_success">البيانات استرجعت بنجاح</string>
+    <string name="restore_failed">الاسترجاع فشل: %1$s</string>
+    <string name="read_file_failed">فشل قراية الملف: %1$s</string>
+    <string name="browser_error">مفيش متصفح لفتح الرابط.</string>
+    <string name="email_error">مفيش برنامج إيميل متسطب.</string>
+    <string name="csv_export_success">ملف CSV اتصدر بنجاح</string>
+    <string name="csv_export_failed">تصدير CSV فشل: %1$s</string>
+    <string name="excel_export_success">ملف الإكسيل اتصدر بنجاح</string>
+    <string name="excel_export_failed">تصدير الإكسيل فشل: %1$s</string>
+    <string name="export_excel_title">تصدير إكسيل شيك</string>
+    <string name="export_csv_title">تصدير ملف CSV</string>
+    <string name="csv_restore_success">البيانات استرجعت بنجاح من CSV</string>
+    <string name="csv_restore_failed">استيراد CSV فشل: %1$s</string>
+    <string name="select_csv_file">اختار ملف CSV</string>
+    <string name="save">حفظ</string>
+    <string name="close">قفل</string>
+    <string name="mic_permission_required">لازم تدي إذن المايك عشان تسجل صوت</string>
+    <string name="card_number_placeholder">مثال 1234 5678 9012</string>
+
+    <!-- Auth Screen -->
+    <string name="auth_welcome_title_main">بيجي ليدجر</string>
+    <string name="auth_welcome_subtitle_main">أمان، بسيط، وذكي.</string>
+    <string name="auth_welcome_desc">تابع مصاريفك، حط أهداف، وحوش فلوس من غير مجهود.</string>
+    <string name="please_select_option">من فضلك اختار عشان تكمل</string>
+
+
+    <string name="release_to_cancel">سيب عشان تلغي</string>
+    <string name="slide_up_to_pause">اسحب لفوق عشان توقف/تلغي</string>
+    <string name="recording_state">بيسجل...</string>
+    <string name="hold_anywhere_to_record">دوس في أي حتة هنا عشان تسجل</string>
+
+    <!-- Auto-added missing translations for full localization -->
+    <string name="language">اللغة</string>
+    <string name="select_language">اختار اللغة</string>
+    <string name="choose_language_desc">اختار لغتك المفضلة عشان تكمل</string>
+    <string name="english">English (الإنجليزية)</string>
+    <string name="arabic">العربية</string>
+    <string name="continue_btn">استمرار</string>
+    <string name="get_started">يلا نبدأ</string>
+    <string name="settings">الإعدادات والتفضيلات</string>
+    <string name="backup_data">نسخة احتياطية للبيانات</string>
+    <string name="restore_data">استرجاع البيانات</string>
+    <string name="rate_app">تقييم التطبيق</string>
+    <string name="give_feedback">رأيك يهمنا</string>
+    <string name="cancel_btn">إلغاء</string>
+    <string name="security">الأمان</string>
+    <string name="my_goals">أهدافي</string>
+    <string name="no_goals_yet">مفيش أهداف لسه. ضيف هدف!</string>
+    <string name="add_goal">إضافة هدف</string>
+    <string name="new_goal">هدف جديد</string>
+    <string name="new_goal_subtitle">إيه خطتك الجاية؟ ظبطها هنا.</string>
+    <string name="what_are_you_saving_for">بتحوش لإيه؟</string>
+    <string name="goal_name_placeholder">مثلاً سفرية الأحلام، كمبيوتر جديد</string>
+    <string name="goal_type">نوع الهدف</string>
+    <string name="how_much_do_you_need">محتاج كام؟ ($)</string>
+    <string name="lets_get_saving">يلا نحوش سوا!</string>
+    <string name="welcome_to_circle">أهلاً بيك في دايرتك</string>
+    <string name="choose_saving_journey">اختار إزاي حابب تبدأ رحلة تحويشك.</string>
+    <string name="start_new_goal">ابدأ هدف جديد</string>
+    <string name="set_target">حدد المبلغ المستهدف.</string>
+    <string name="payoffs_loans">التسديدات والقروض</string>
+    <string name="manage_loans">تابع الفلوس اللي سلفتها أو اللي عليك.</string>
+    <string name="community_feedback">آراء المجتمع</string>
+    <string name="join_community_board">انضم لصفحة الاقتراحات والآراء</string>
+    <string name="help_improve">ساعدنا نحسن بيجي ليدجر! دوس تحت عشان تزور صفحة الاقتراحات. هناك تقدر تقترح ميزات جديدة، تبلغ عن المشاكل، وتصوت للأفكار التانية.</string>
+    <string name="rate_app_title">قيم التطبيق</string>
+    <string name="enjoying_piggy_ledger">مبسوط مع بيجي ليدجر؟ قيم تجربتك بنجوم. دعمك هو اللي بيخلينا نستمر!</string>
+    <string name="backup_data_title">نسخ احتياطي للبيانات</string>
+    <string name="secure_local_export">تصدير محلي آمن</string>
+    <string name="save_goals_desc">احفظ أهدافك، معاملاتك، وإحصائياتك في ملف باك أب آمن.</string>
+    <string name="restore_data_title">استرجاع البيانات</string>
+    <string name="import_json_backup">استيراد نسخة احتياطية (JSON)</string>
+    <string name="restoring_data_replace">استرجاع البيانات هيمسح البيانات الحالية ويحط النسخة الاحتياطية مكانها.</string>
+    <string name="start_first_goal">ابدأ أول هدف ليك النهاردة!</string>
+    <string name="open_savings">تحويش حر (عام)</string>
+    <string name="target">الهدف:</string>
+    <string name="loans_payoffs_title">القروض والتسديدات</string>
+    <string name="keep_tabs_subtitle">تابع الفلوس اللي ليك واللي عليك</string>
     <string name="net_ledger">صافي الدفتر</string>
-    <string name="search_person_notes">البحث عن شخص أو ملاحظات...</string>
+    <string name="search_person_notes">ابحث باسم الشخص أو الملاحظات...</string>
     <string name="add_record">إضافة سجل</string>
-    <string name="active_tab">نشط</string>
-    <string name="paid_off_tab">تم السداد</string>
-    <string name="show_all_tab">عرض الكل</string>
-    <string name="no_records_found">لم يتم العثور على سجلات معاملات</string>
-    <string name="log_lent_borrowed_desc">سجل من أقرضته أو من اقترضت منه لتعبئة دفترك.</string>
-    <string name="due_date">يستحق في %1$s</string>
-    <string name="open_ended">مفتوح</string>
+    <string name="active_tab">النشطة</string>
+    <string name="paid_off_tab">المسددة</string>
+    <string name="show_all_tab">الكل</string>
+    <string name="no_records_found">مفيش سجلات معاملات</string>
+    <string name="log_lent_borrowed_desc">سجل الفلوس اللي سلفتها أو استلفتها عشان تظهر هنا في الدفتر.</string>
+    <string name="due_date">مستحق في %1$s</string>
+    <string name="open_ended">مفتوح بدون موعد</string>
     <string name="details_badge">التفاصيل</string>
-    <string name="new_ledger_entry">إدخال دفتر جديد</string>
-    <string name="fill_all_details">املأ جميع التفاصيل</string>
+    <string name="new_ledger_entry">سجل جديد في الدفتر</string>
+    <string name="fill_all_details">املا كل البيانات</string>
     <string name="transaction_amount_label">مبلغ المعاملة</string>
-    <string name="i_lent">أنا أقرضت</string>
-    <string name="i_borrowed">أنا اقترضت</string>
-    <string name="contact_details_label">تفاصيل الاتصال</string>
+    <string name="i_lent">أنا سلفت</string>
+    <string name="i_borrowed">أنا استلفت</string>
+    <string name="contact_details_label">بيانات جهة الاتصال</string>
     <string name="contact_name_label">اسم جهة الاتصال</string>
-    <string name="mike_smith_placeholder">مثال: محمد علي</string>
-    <string name="pick_contact_desc">اختر جهة اتصال</string>
-    <string name="phone_optional">الهاتف (اختياري)</string>
-    <string name="phone_placeholder">مثال: +20 10...</string>
-    <string name="social_optional">التواصل الاجتماعي (اختياري)</string>
-    <string name="social_placeholder">مثال: البريد الإلكتروني / الحساب</string>
-    <string name="flashback_note_required">ملاحظة الاستذكار (مطلوب)</string>
-    <string name="flashback_placeholder">لماذا تغير المال؟ تذكر التفاصيل بسهولة لاحقاً...</string>
+    <string name="mike_smith_placeholder">مثلاً أحمد محمد</string>
+    <string name="pick_contact_desc">اختار جهة اتصال</string>
+    <string name="phone_optional">رقم التليفون (اختياري)</string>
+    <string name="phone_label">رقم التليفون</string>
+    <string name="phone_placeholder">مثلاً +20 10...</string>
+    <string name="import_from_contacts">استيراد من الأسماء</string>
+    <string name="email_optional">الإيميل (اختياري)</string>
+    <string name="email_placeholder">مثلاً name@example.com</string>
+    <string name="email_label">عنوان الإيميل</string>
+    <string name="social_optional">حساب التواصل الاجتماعي (اختياري)</string>
+    <string name="social_placeholder">مثلاً فيسبوك / تليجرام</string>
+    <string name="flashback_note_required">ملاحظة تذكيرية (مطلوبة)</string>
+    <string name="flashback_placeholder">الفلوس دي كانت عشان إيه؟ عشان تفتكر التفاصيل دي بسهولة بعدين...</string>
     <string name="repayment_deadline">موعد السداد؟</string>
     <string name="confirm_btn">تأكيد</string>
     <string name="record_to_ledger_btn">تسجيل في الدفتر</string>
     <string name="contact_name_header">اسم جهة الاتصال</string>
-    <string name="repayment_deadline_header">موعد السداد</string>
-    <string name="no_strict_deadline">مفتوح (لا يوجد موعد محدد)</string>
-    <string name="flashback_recall_note">ملاحظة الاستذكار</string>
-    <string name="mark_as_paid_off">وضع علامة كمسدد وتسوية</string>
-    <string name="delete_confirm_msg">هل أنت متأكد تماماً من رغبتك في الحذف؟</string>
-    <string name="yes_btn">نعم</string>
+    <string name="no_strict_deadline">مفتوح (مفيش ميعاد سداد محدد)</string>
+    <string name="flashback_recall_note">الملاحظة التذكيرية للمعاملة</string>
+    <string name="mark_as_paid_off">تعليم كمسددة وتسوية الحساب</string>
+    <string name="delete_confirm_msg">هل أنت متأكد تماماً إنك عايز تحذف السجل ده؟</string>
+    <string name="yes_btn">أيوة</string>
     <string name="no_btn">لا</string>
     <string name="delete_record">حذف السجل</string>
     <string name="budgeting_title">الميزانية</string>
     <string name="total_balance_label">إجمالي الرصيد</string>
-    <string name="extra_amount">+$%1$s إضافي</string>
-    <string name="completed_status">اكتمل</string>
-    <string name="in_progress_status">قيد التنفيذ</string>
+    <string name="extra_amount">+%1$s زيادة</string>
+    <string name="completed_status">مكتمل</string>
+    <string name="in_progress_status">جاري العمل عليه</string>
     <string name="your_budget_title">ميزانيتك</string>
-    <string name="remaining_left">متبقي $%1$s</string>
-    <string name="goal_reached_status">تم الوصول للهدف</string>
+    <string name="remaining_left">باقي %1$s</string>
+    <string name="goal_reached_status">الهدف اتحقق</string>
     <string name="add_deposit">إضافة إيداع</string>
-    <string name="goal_completed_msg">اكتمل الهدف</string>
+    <string name="goal_completed_msg">تم تحقيق الهدف!</string>
     <string name="overview_tab">نظرة عامة</string>
     <string name="history_tab">السجل</string>
     <string name="deposit_amount_label">مبلغ الإيداع</string>
-    <string name="zero_amount_placeholder">$ 0.00</string>
-    <string name="note_required_label">ملاحظة (مطلوب)</string>
-    <string name="monthly_contribution_placeholder">مثال: المساهمة الشهرية</string>
+    <string name="zero_amount_placeholder">0.00 ج.م</string>
+    <string name="note_required_label">ملاحظة (مطلوبة)</string>
+    <string name="monthly_contribution_placeholder">مثلاً مساهمة شهرية</string>
     <string name="confirm_deposit_btn">تأكيد الإيداع</string>
-    <string name="established_date_label">تاريخ التأسيس</string>
-    <string name="days_since_start_label">أيام منذ البداية</string>
+    <string name="established_date_label">تاريخ البدء</string>
+    <string name="days_since_start_label">الأيام منذ البدء</string>
     <string name="days_count">%1$d يوم</string>
-    <string name="avg_daily_saving_label">متوسط الادخار اليومي</string>
+    <string name="avg_daily_saving_label">متوسط التحويش اليومي</string>
     <string name="est_completion_date_label">تاريخ الاكتمال المتوقع</string>
-    <string name="goal_reached_success">تم تحقيق الهدف!</string>
-    <string name="savings_challenge_title">تحدي الادخار</string>
-    <string name="milestones_title">الإنجازات</string>
-    <string name="contributions_count_msg">لقد قمت بإجراء %1$d مساهمة حتى الآن. استمر!</string>
+    <string name="goal_reached_success">الهدف اتحقق!</string>
+    <string name="savings_challenge_title">تحدي التحويش</string>
+    <string name="milestones_title">المحطات الرئيسية</string>
+    <string name="contributions_count_msg">أنت عملت %1$d مساهمة لحد دلوقتي. استمر!</string>
     <string name="deposit_tx_note">إيداع</string>
     <string name="target_goal_title">هدف محدد</string>
-    <string name="target_goal_desc">ادخر لمبلغ محدد.</string>
-    <string name="open_savings_desc">إيداع لمجرد الادخار (لا يوجد حد).</string>
-    <string name="open_savings_hint">💡 تلميح: الرصيد المفتوح هو للمدخرات العامة. يمكنك إيداع المال هنا في أي وقت دون تحديد حد معين.</string>
+    <string name="target_goal_desc">حوش للوصول لمبلغ مستهدف معين.</string>
+    <string name="open_savings_desc">إيداع بغرض التحويش فقط (بدون حد أقصى للهدف).</string>
+    <string name="open_savings_hint">💡 نصيحة: الرصيد المفتوح هو للتحويش العام أو غير المحدود. تقدر تودع فيه أي مبلغ في أي وقت بدون تحديد سقف معين.</string>
     <string name="egyptian">مصري</string>
     <string name="egypt">مصر</string>
     <string name="saudi_arabia">السعودية</string>
-    <string name="united_states">الولايات المتحدة</string>
-
-<string name="open_badge">مفتوح</string>
-    <string name="amount_saved">تم ادخار $%1$s</string>
-    <string name="amount_total_extra">إجمالي $%1$s (إضافي $%2$s)</string>
-    <string name="growth_savings_subtitle">نمِّ رصيد مدخراتك</string>
-    <string name="piggy_ledger_logo">شعار حصالة</string>
+    <string name="united_states">أمريكا</string>
+    <string name="open_badge">حر</string>
+    <string name="amount_saved">تم تحويش %1$s</string>
+    <string name="amount_total_extra">الإجمالي %1$s (%2$s زيادة)</string>
+    <string name="growth_savings_subtitle">زود رصيد تحويشك</string>
+    <string name="piggy_ledger_logo">شعار بيجي ليدجر</string>
     <string name="settings_icon">الإعدادات</string>
     <string name="back_icon">رجوع</string>
-    <string name="feedback_illustration">توضيح الملاحظات</string>
-    <string name="rate_illustration">توضيح التقييم</string>
-    <string name="backup_illustration">توضيح النسخ الاحتياطي</string>
-    <string name="restore_illustration">توضيح استعادة البيانات</string>
-    <string name="export_success">تم تصدير البيانات بنجاح</string>
-    <string name="export_failed">فشل التصدير: %1$s</string>
-    <string name="restore_success">تم استعادة البيانات بنجاح</string>
-    <string name="restore_failed">فشلت الاستعادة: %1$s</string>
-    <string name="read_file_failed">فشل قراءة الملف: %1$s</string>
-    <string name="browser_error">تعذر فتح المتصفح</string>
-    <string name="email_error">لم يتم العثور على تطبيق بريد إلكتروني</string>
-    <string name="selected_badge">محدد</string>
-    <string name="amount_extra_simple">%1$s إضافي</string>
-    <string name="amount_saved_simple">تم ادخار %1$s</string>
-    <string name="amount_left_simple">متبقي %1$s</string>
-    <string name="bar_chart_desc">رسم بياني شريطي</string>
-    <string name="polar_chart_desc">رسم بياني قطبي</string>
+    <string name="feedback_illustration">صورة الآراء والاقتراحات</string>
+    <string name="rate_illustration">صورة التقييم</string>
+    <string name="backup_illustration">صورة النسخ الاحتياطي</string>
+    <string name="restore_illustration">صورة استرجاع البيانات</string>
+    <string name="selected_badge">تم الاختيار</string>
+    <string name="amount_extra_simple">%1$s زيادة</string>
+    <string name="amount_saved_simple">%1$s تم تحويشه</string>
+    <string name="amount_left_simple">%1$s متبقي</string>
+    <string name="bar_chart_desc">مخطط الأعمدة</string>
+    <string name="polar_chart_desc">المخطط القطبي</string>
     <string name="max_label">الأقصى</string>
-    <string name="start_saving_msg">ابدأ في الادخار لرؤية مخطط التقدم الخاص بك!</string>
-    <string name="no_contributions_msg">لا توجد مساهمات بعد.</string>
-    <string name="repayment_deadline_over">انتهى موعد السداد لـ %1$s. المبلغ المستحق: %2$s.</string>
+    <string name="start_saving_msg">ابدأ تحوش عشان تشوف رسمة تقدمك الحقيقي!</string>
+    <string name="no_contributions_msg">مفيش مساهمات لسه.</string>
     <string name="zero_amount">0.00</string>
-    <string name="i_owe_this">أنا مدين بهذا</string>
-    <string name="i_owe">أنا مدين</string>
+    <string name="i_owe_this">أنا عليا الفلوس دي</string>
+    <string name="i_owe">أنا عليا</string>
     <string name="owed_to_me">ليا فلوس</string>
-    <string name="open_feedback_board">فتح لوحة الملاحظات</string>
+    <string name="open_feedback_board">فتح صفحة المقترحات</string>
     <string name="send_rating">إرسال التقييم</string>
     <string name="create_backup_file">إنشاء ملف نسخة احتياطية</string>
-    <string name="select_backup_file">اختر ملف النسخة الاحتياطية</string>
-    <string name="deadline_channel_name">تذكيرات الموعد النهائي</string>
-    <string name="deadline_channel_desc">إشعارات للمواعيد النهائية لسداد القروض</string>
-    <string name="deadline_title">انتهى الموعد النهائي!</string>
+    <string name="select_backup_file">اختار ملف النسخة الاحتياطية</string>
     <string name="cancel_action">إلغاء</string>
-    <string name="snooze_action">غفوة</string>
+    <string name="snooze_action">تأجيل</string>
     <string name="completed_badge">مكتمل</string>
-    <string name="cancel_btn">إلغاء</string>
-    <string name="transaction_memo_header">مذكرة المعاملة</string>
-    <string name="due_prefix">تاريخ الاستحقاق: %1$s</string>
-    <string name="no_deadline_set">لم يتم تحديد موعد نهائي</string>
-
-    <string name="widget_owed_to_me">لي أموال</string>
-    <string name="widget_i_owe">علي أموال</string>
-    <string name="widget_net_ledger">صافي الحساب</string>
+    <string name="transaction_memo_header">ملاحظة المعاملة</string>
+    <string name="due_prefix">مستحق: %1$s</string>
+    <string name="widget_owed_to_me">ليا فلوس</string>
+    <string name="widget_i_owe">عليا فلوس</string>
+    <string name="widget_net_ledger">صافي الدفتر</string>
     <string name="widget_my_goals">أهدافي</string>
-    <string name="widget_no_goals">لا توجد أهداف نشطة بعد!\nاضغط هنا لإنشاء هدف. 🚀</string>
+    <string name="widget_no_goals">مفيش أهداف نشطة لسه!
+دوس هنا عشان تعمل واحد. 🚀</string>
     <string name="widget_goal_progress">تقدم الهدف</string>
     <string name="widget_total_balance">إجمالي الرصيد</string>
-    <string name="widget_payoffs">المدفوعات</string>
+    <string name="widget_payoffs">التسديدات</string>
     <string name="widget_loans">القروض</string>
-    <string name="widget_open_savings">ادخار مفتوح</string>
-    <string name="widget_amount_saved">تم ادخار %1$s</string>
+    <string name="widget_open_savings">تحويش حر</string>
+    <string name="widget_amount_saved">%1$s تم تحويشه</string>
     <string name="widget_open_label">مفتوح</string>
-
-    <!-- Streak Statements -->
-    <string-array name="streak_statements_success">
-        <item>أنت رائع!</item>
-        <item>لا يمكن إيقافك!</item>
-        <item>تقدم أسطوري!</item>
-        <item>سلسلة مثالية!</item>
-        <item>استمر في التألق!</item>
-        <item>تحقق الهدف!</item>
-    </string-array>
-    <string-array name="streak_statements_happy">
-        <item>عمل رائع!</item>
-        <item>استمر في التقدم!</item>
-        <item>حافظ على استمراريتك!</item>
-        <item>أنت تفعل أشياء مذهلة!</item>
-        <item>فخورون بك!</item>
-        <item>تبدو رائعاً!</item>
-    </string-array>
-    <string-array name="streak_statements_panic">
-        <item>ادخر الآن!</item>
-        <item>لا تكسر السلسلة!</item>
-        <item>أسرع!</item>
-        <item>الوقت ينفد!</item>
-        <item>السلسلة في خطر!</item>
-        <item>مطلوب إجراء الآن!</item>
-    </string-array>
-    <string-array name="streak_statements_worried">
-        <item>السلسلة مهددة!</item>
-        <item>هل نسيت تقريباً؟</item>
-        <item>لا تتوقف الآن!</item>
-        <item>كن يقظاً!</item>
-        <item>كادت أن تضيع!</item>
-        <item>حافظ على السلسلة!</item>
-    </string-array>
-    <string-array name="streak_statements_lost">
-        <item>انكسرت السلسلة</item>
-        <item>ابدأ من جديد!</item>
-        <item>بداية جديدة!</item>
-        <item>لا تستسلم!</item>
-        <item>حاول مرة أخرى!</item>
-        <item>عد للمسار!</item>
-    </string-array>
+    <string name="contact_imported_success">تم استيراد جهة الاتصال بنجاح!</string>
+    <string name="language_illustration">صورة اللغة</string>
+    <string name="delete_goal_title">حذف الهدف</string>
+    <string name="delete_goal_warning">متأكد إنك عايز تحذف الهدف ده؟ الحركة دي مش هيرجع فيها وكل المعاملات المرتبطة بالهدف ده هتتحذف كمان.</string>
+    <string name="delete_goal_confirm_hint">اكتب اسم الهدف للتأكيد:</string>
+    <string name="delete_goal_confirm_placeholder">اسم الهدف</string>
+    <string name="delete_button">حذف</string>
+    <string name="copied">اتنسخ للحافظة</string>
+    <string name="total_saved">إجمالي اللي اتحوش</string>
+    <string name="overall_goal">الهدف الإجمالي</string>
+    <string name="my_goals_btn">أهدافي</string>
+    <string name="new_goal_btn">هدف جديد</string>
+    <string name="next_milestone">المحطة الجاية</string>
+    <string name="milestone_teaser_format">فاضلك بس %1$s على تحقيق %2$s!</string>
     <string name="target_account">الحساب المستهدف</string>
-    <string name="select_account">اختر الحساب</string>
+    <string name="select_account">اختار الحساب</string>
     <string name="total_net_worth">إجمالي صافي الثروة</string>
     <string name="balance">الرصيد</string>
     <string name="income">الدخل</string>
-    <string name="expenses">المصروفات</string>
-    <string name="select_period">اختر الفترة</string>
-    <string name="month_caps">الشهر</string>
-    <string name="year_caps">السنة</string>
+    <string name="expenses">المصاريف</string>
+    <string name="select_period">اختار الفترة</string>
+    <string name="month_caps">شهر</string>
+    <string name="year_caps">سنة</string>
     <string name="done">تم</string>
     <string name="new_account">حساب جديد</string>
-    <string name="save">حفظ</string>
     <string name="general_info">معلومات عامة</string>
     <string name="account_name">اسم الحساب</string>
-    <string name="account_name_placeholder">مثال: مدخرات، مصروفات البيت...</string>
+    <string name="account_name_placeholder">مثلاً الحصالة، مصاريف البيت، جيب...</string>
     <string name="account_type">نوع الحساب</string>
     <string name="bank">بنك</string>
-    <string name="card">بطاقة</string>
+    <string name="card">كارت</string>
     <string name="cash">كاش</string>
     <string name="e_wallet">محفظة إلكترونية</string>
-    <string name="exclude_from_total_net_worth">استبعاد من إجمالي الثروة</string>
-    <string name="wallet_provider">مزود المحفظة</string>
-    <string name="select_wallet_provider">اختر مزود المحفظة</string>
-    <string name="starting_balance">الرصيد الافتتاحي</string>
+    <string name="exclude_from_total_net_worth">استبعاد من إجمالي صافي الثروة</string>
+    <string name="wallet_provider">مزود الخدمة</string>
+    <string name="select_wallet_provider">اختار مزود الخدمة</string>
+    <string name="starting_balance">الرصيد البدائي</string>
     <string name="currency">العملة</string>
     <string name="budget">الميزانية</string>
     <string name="add_account">إضافة حساب</string>
@@ -297,125 +341,113 @@
     <string name="expense_singular">مصروف</string>
     <string name="amount_label">المبلغ</string>
     <string name="merchant_desc">التاجر / الوصف</string>
-    <string name="merchant_placeholder">مثال: أوبر، ستاربكس، راتب</string>
-    <string name="select_month">اختر الشهر</string>
+    <string name="merchant_placeholder">مثلاً أوبر، ستاربكس، المرتب</string>
+    <string name="select_month">اختار الشهر</string>
     <string name="add_btn">إضافة</string>
-    <string name="no_accounts_added">لا يوجد حسابات مضافة</string>
-    <string name="no_accounts_desc">أضف حساب بنكي، بطاقة، أو محفظة إلكترونية لتتبع المعاملات والميزانيات مباشرة.</string>
-    <string name="bank_card_issuer">البنك / مصدر البطاقة</string>
-    <string name="eg_0_00">مثال: 0.00</string>
-    <string name="credit_limit">الحد الائتماني</string>
-    <string name="eg_25000">مثال: 25000</string>
+    <string name="no_accounts_added">مفيش حسابات مضافة</string>
+    <string name="no_accounts_desc">ضيف حساب بنكي، كارت، أو محفظة إلكترونية عشان تتابع المعاملات والميزانيات مباشرة.</string>
+    <string name="bank_card_issuer">البنك / مصدر الكارت</string>
+    <string name="eg_0_00">مثلاً 0.00</string>
+    <string name="credit_limit">حد الائتمان</string>
+    <string name="eg_25000">مثلاً 25000</string>
     <string name="available">المتاح</string>
-    <string name="eg_12000">مثال: 12000</string>
-    <string name="payment_due_day">يوم الاستحقاق</string>
-    <string name="eg_15">مثال: 15</string>
-    <string name="card_numbers_optional">أرقام البطاقة (اختياري)</string>
-    <string name="eg_card_numbers">مثال: 4567, 1234</string>
+    <string name="eg_12000">مثلاً 12000</string>
+    <string name="payment_due_day">يوم دفع المديونية</string>
+    <string name="eg_15">مثلاً 15</string>
+    <string name="card_numbers_optional">أرقام الكارت (اختياري)</string>
+    <string name="eg_card_numbers">مثلاً 4567، 1234</string>
     <string name="bank_account_number_optional">رقم الحساب البنكي (اختياري)</string>
-    <string name="eg_account_number">مثال: 074130001</string>
+    <string name="eg_account_number">مثلاً 074130001</string>
     <string name="search_ellipsis">بحث...</string>
-    <string name="search_banks_ellipsis">ابحث عن بنك...</string>
-    <string name="select_color">اختر اللون</string>
-    <string name="select_icon">اختر الأيقونة</string>
-    <string name="credit_card_config">إعدادات البطاقة الائتمانية</string>
-    <string name="cash_tracking_desc">لتتبع الكاش الفعلي. البطاقات وأرقام الحسابات لا تنطبق هنا.</string>
-    <string name="payment_due_day_desc">يوم الاستحقاق في الشهر (1-28)</string>
-    <string name="sms_settings">إعدادات الرسائل النصية</string>
-    <string name="sms_auto_link_provider">سيتم ربط رسائل SMS من %1$s تلقائياً بهذا الحساب.</string>
-    <string name="sms_auto_link_default">سيتم ربط رسائل SMS من مزود المحفظة المختار تلقائياً بهذا الحساب.</string>
-    <string name="link_card_digits_desc">اربط آخر 3 أو 4 أرقام من بطاقتك لتسجيل مصروفات SMS مباشرة في هذا الحساب.</string>
-    <string name="bank_account_desc">يستخدم عندما تظهر رسالة SMS رقم الحساب بدلاً من أرقام البطاقة (مثال: انستاباي).</string>
-    <string name="add_instapay_fee">إضافة رسوم انستاباي تلقائياً</string>
-    <string name="instapay_fee_desc">يضيف رسوم تحويل انستاباي عندما تُظهر رسالة SMS المبلغ الأصلي فقط.</string>
-    <string name="advanced">متقدم</string>
+    <string name="search_banks_ellipsis">البحث في البنوك...</string>
+    <string name="select_color">اختار اللون</string>
+    <string name="select_icon">اختار الأيقونة</string>
+    <string name="credit_card_config">إعدادات كارت الائتمان</string>
+    <string name="cash_tracking_desc">لتتبع الكاش الفعلي معاك. الأرقام والحسابات مش بتنطبق هنا.</string>
+    <string name="payment_due_day_desc">يوم من الشهر المالي اللي المديونية مستحقة فيه (1-28)</string>
+    <string name="sms_settings">إعدادات رسائل الـ SMS</string>
+    <string name="sms_auto_link_provider">رسائل الـ SMS الجاية من %1$s هتتربط تلقائي بالحساب ده.</string>
+    <string name="sms_auto_link_default">رسائل الـ SMS الجاية من مزود المحفظة هتتربط تلقائي بالحساب ده.</string>
+    <string name="link_card_digits_desc">اربط آخر 3 أو 4 أرقام من الكارت عشان معاملات الرسايل تنزل في الحساب ده علطول.</string>
+    <string name="bank_account_desc">بيستخدم لما الرسايل بتعرض رقم الحساب بدل الكارت (مثال: إنستا باي).</string>
+    <string name="add_instapay_fee">إضافة رسوم إنستا باي تلقائياً</string>
+    <string name="instapay_fee_desc">بيضيف رسوم تحويل إنستا باي لما رسالة الـ SMS تعرض المبلغ الأساسي بس.</string>
+    <string name="advanced">خيارات متقدمة</string>
     <string name="exclude_from_all_accounts">استبعاد من كل الحسابات</string>
-    <string name="exclude_from_all_desc">لن يتم تضمين الرصيد والمعاملات في الإجمالي على الشاشة الرئيسية.</string>
-    <string name="select_bank">اختر البنك</string>
+    <string name="exclude_from_all_desc">الرصيد والمعاملات مش هتتحسب في الإجمالي العام على واجهة التحكم بتاعتك.</string>
+    <string name="select_bank">اختار البنك</string>
     <string name="icon_and_color">الأيقونة واللون</string>
-    <string name="select_provider">اختر المزود</string>
-    <string name="select_currency">اختر العملة</string>
-
-    <!-- New Transaction Screen Strings in Modern Standard Arabic -->
-    <string name="new_transaction">عملية جديدة</string>
+    <string name="select_provider">اختار مزود الخدمة</string>
+    <string name="select_currency">اختار العملة</string>
+    <string name="new_transaction">معاملة جديدة</string>
     <string name="expense">مصروف</string>
     <string name="transfer">تحويل</string>
     <string name="category_label">الفئة</string>
-    <string name="select_category_placeholder">اختر الفئة</string>
+    <string name="select_category_placeholder">اختار الفئة</string>
     <string name="account_label_caps">الحساب</string>
     <string name="description_optional_label">الوصف (اختياري)</string>
-    <string name="hint_optional_label">ملاحظة إضافية (اختياري)</string>
+    <string name="hint_optional_label">تلميح (اختياري)</string>
     <string name="date_label_caps">التاريخ</string>
-    <string name="pick_date">اختر التاريخ</string>
-    <string name="spend_on_placeholder">فيماذا أنفقت؟</string>
-    <string name="earn_from_placeholder">من أين كسبت؟</string>
-    <string name="transfer_placeholder">ماذا حولت؟</string>
-    <string name="add_note_placeholder">أضف تفاصيل إضافية...</string>
-    <string name="cant_find_it_create_own">لا تجدها؟ أنشئ فئة خاصة بك &gt;</string>
+    <string name="pick_date">اختار التاريخ</string>
+    <string name="spend_on_placeholder">صرفت في إيه؟</string>
+    <string name="earn_from_placeholder">كسبت من إيه؟</string>
+    <string name="transfer_placeholder">حولت إيه؟</string>
+    <string name="add_note_placeholder">ضيف ملاحظة أو سياق...</string>
+    <string name="cant_find_it_create_own">مش لاقيها؟ اعمل فئتك المخصصة ></string>
     <string name="category_title">الفئة</string>
     <string name="custom_category">فئة مخصصة</string>
-    <string name="enter_custom_category">أدخل اسم الفئة المخصصة:</string>
-    <string name="eg_subscription">مثال: الجيم، اشتراكات...</string>
-
-    <!-- Categories in Standard Arabic -->
-    <string name="cat_atm_withdrawal">سحب من الصراف الآلي</string>
+    <string name="enter_custom_category">اكتب اسم الفئة المخصصة:</string>
+    <string name="eg_subscription">مثلاً جيم، اشتراكات</string>
+    <string name="cat_atm_withdrawal">سحب من صراف آلي ATM</string>
     <string name="cat_bonus">مكافأة</string>
-    <string name="cat_cashback">استرداد نقدي</string>
-    <string name="cat_credit_card_settlement">تسوية البطاقة الائتمانية</string>
-    <string name="cat_credit_card_settlement_desc">لا يؤثر على الإنفاق/الدخل الشهري</string>
-    <string name="cat_education">التعليم</string>
+    <string name="cat_cashback">كاش باك</string>
+    <string name="cat_credit_card_settlement">تسوية كارت ائتمان</string>
+    <string name="cat_credit_card_settlement_desc">مش بيأثر على الدخل أو الصرف الشهري</string>
+    <string name="cat_education">تعليم</string>
     <string name="cat_entertainment">ترفيه</string>
-    <string name="cat_food">طعام وشراب</string>
+    <string name="cat_food">أكل وشرب</string>
     <string name="cat_freelance">عمل حر</string>
-    <string name="cat_fuel">وقود</string>
-    <string name="cat_health">الصحة</string>
-    <string name="cat_home">المنزل</string>
-    <string name="cat_investment">الاستثمار</string>
+    <string name="cat_fuel">بنزين / وقود</string>
+    <string name="cat_health">صحة وطب</string>
+    <string name="cat_home">البيت</string>
+    <string name="cat_investment">استثمار</string>
     <string name="cat_other">أخرى</string>
     <string name="cat_personal_care">عناية شخصية</string>
-    <string name="cat_refund">مسترجع</string>
-    <string name="cat_salary">الراتب</string>
+    <string name="cat_refund">استرداد أموال</string>
+    <string name="cat_salary">المرتب</string>
     <string name="cat_shopping">تسوق</string>
     <string name="cat_subscriptions">اشتراكات</string>
     <string name="cat_transfer">تحويل</string>
     <string name="cat_transportation">مواصلات</string>
     <string name="cat_travel">سفر</string>
-    <string name="cat_utilities">مرافق وفواتير</string>
-    <string name="cat_work">العمل</string>
-
-    <!-- خيارات تجميع التحليلات -->
+    <string name="cat_utilities">مرافق (كهربا، مية، غاز)</string>
+    <string name="cat_work">عمل</string>
     <string name="group_by_category">حسب الفئة</string>
     <string name="group_by_account">حسب الحساب</string>
     <string name="group_by_day">حسب اليوم</string>
     <string name="group_by_month">حسب الشهر</string>
-
-    <!-- Clerk Auth Screen -->
-    <string name="auth_welcome_title">مرحباً بك في دفتر الحصالة</string>
-    <string name="auth_welcome_subtitle">بياناتك محفوظة بأمان</string>
-    <string name="auth_clerk_desc">النسخ الاحتياطي السحابي السلس والمزامنة بين الأجهزة تبقي حسابك آمناً.</string>
-    <string name="auth_continue_google">المتابعة باستخدام Google</string>
-    <string name="auth_choose_account">اختر حساباً</string>
-    <string name="auth_to_continue">للمتابعة إلى دفتر الحصالة</string>
+    <string name="auth_welcome_title">أهلاً بيك في بيجي ليدجر</string>
+    <string name="auth_welcome_subtitle">بيانات دفترك آمنة ومحمية</string>
+    <string name="auth_clerk_desc">النسخ الاحتياطي السحابي الآمن والمزامنة على كذا جهاز بيحافظوا على حسابك محمي.</string>
+    <string name="auth_continue_google">الاستمرار باستخدام جوجل</string>
+    <string name="auth_choose_account">اختار حساب</string>
+    <string name="auth_to_continue">عشان تكمل لـ بيجي ليدجر</string>
     <string name="auth_add_account">إضافة حساب آخر</string>
     <string name="auth_signing_in">جاري تسجيل الدخول بجوجل...</string>
-    <string name="auth_profile_title">الملف الشخصي</string>
+    <string name="auth_profile_title">ملفك الشخصي</string>
     <string name="auth_sign_out">تسجيل الخروج</string>
-    <string name="auth_logged_in_as">تم تسجيل الدخول باسم %1$s</string>
-
-    <!-- Edit Account Strings in Standard Arabic -->
+    <string name="auth_logged_in_as">مسجل الدخول كـ %1$s</string>
     <string name="edit_account">تعديل الحساب</string>
     <string name="current_balance">الرصيد الحالي</string>
-    <string name="credit_card_details">تفاصيل البطاقة الائتمانية</string>
+    <string name="credit_card_details">تفاصيل كارت الائتمان</string>
     <string name="bank_account_details">تفاصيل الحساب البنكي</string>
-    <string name="visual_style">النمط البصري</string>
-    <string name="card_theme_color">لون مظهر البطاقة</string>
+    <string name="visual_style">المظهر المرئي</string>
+    <string name="card_theme_color">لون سمة الكارت</string>
     <string name="delete_account">حذف الحساب</string>
     <string name="delete_account_confirm_title">حذف الحساب؟</string>
-    <string name="delete_account_confirm_msg">هل أنت متأكد من رغبتك في حذف هذا الحساب؟ سيتم أيضاً حذف جميع المعاملات المرتبطة به بشكل دائم.</string>
+    <string name="delete_account_confirm_msg">متأكد إنك عايز تحذف الحساب ده؟ كل المعاملات المرتبطة بيه هتتمسح معاه نهائياً.</string>
     <string name="delete">حذف</string>
     <string name="cancel">إلغاء</string>
-
-    <!-- Months in Standard Arabic -->
     <string name="month_january">يناير</string>
     <string name="month_february">فبراير</string>
     <string name="month_march">مارس</string>
@@ -428,54 +460,140 @@
     <string name="month_october">أكتوبر</string>
     <string name="month_november">نوفمبر</string>
     <string name="month_december">ديسمبر</string>
-
-    <!-- Accounts & Analytics Screen Strings in Standard Arabic -->
-    <string name="total_spent">إجمالي المصروفات</string>
+    <string name="total_spent">إجمالي المصاريف</string>
     <string name="percent_used">تم استخدام %1$d%%</string>
     <string name="transactions">المعاملات</string>
-    <string name="all_time">كل الأوقات</string>
-    <string name="this_month">هذا الشهر</string>
-    <string name="no_transactions_yet">لا توجد معاملات بعد</string>
-    <string name="no_transactions_this_month">لا توجد معاملات هذا الشهر</string>
-    <string name="no_transactions_desc_sub">ستظهر هنا المدفوعات التلقائية المستخرجة من رسائل SMS أو العمليات المدخلة يدوياً.</string>
-    <string name="switch_account">تبديل الحساب</string>
+    <string name="all_time">كل الوقت</string>
+    <string name="this_month">الشهر ده</string>
+    <string name="no_transactions_yet">مفيش معاملات لسه</string>
+    <string name="no_transactions_this_month">مفيش معاملات الشهر ده</string>
+    <string name="no_transactions_desc_sub">مدفوعات رسايل الـ SMS أو المعاملات اليدوية هتظهر وتتسجل هنا علطول.</string>
+    <string name="switch_account">تغيير الحساب</string>
     <string name="all_accounts">كل الحسابات</string>
-    <string name="all_accounts_sub">عرض مجمع للمصروفات والدخل والمعاملات</string>
+    <string name="all_accounts_sub">عرض مجمع للمصاريف، الدخل، والمعاملات</string>
     <string name="add_new_account">إضافة حساب جديد</string>
-    <string name="spending_analytics">تحليلات المصروفات</string>
-    <string name="last_3_months">آخر ٣ أشهر</string>
-    <string name="this_year">هذه السنة</string>
-    <string name="filtered_account_label">الحساب المحدد</string>
+    <string name="spending_analytics">تحليلات الصرف</string>
+    <string name="last_3_months">آخر 3 شهور</string>
+    <string name="this_year">السنة دي</string>
+    <string name="filtered_account_label">الحساب المصفى</string>
     <string name="all_filter">الكل</string>
-    <string name="no_transactions_found">لم يتم العثور على معاملات</string>
-    <string name="try_adjusting_filters">حاول تعديل التصفية أو التواريخ بالأعلى.</string>
-    <string name="transaction_count_format">%1$d عملية (عمليات)</string>
-    <string name="tap_segment_for_details">اضغط على أي جزء لعرض التفاصيل</string>
-    <string name="distribution_breakdowns">تفاصيل التوزيع</string>
+    <string name="try_adjusting_filters">جرب تعدل الفلاتر أو التواريخ فوق.</string>
+    <string name="transaction_count_format">%1$d معاملة</string>
+    <string name="tap_segment_for_details">دوس على أي جزء عشان تشوف تفاصيله</string>
+    <string name="distribution_breakdowns">توزيع المصاريف</string>
     <string name="filter_by_account">تصفية حسب الحساب</string>
-    <string name="total_value">القيمة الإجمالية</string>
-    <string name="transaction_logs">سجل المعاملات:</string>
-    <string name="currency_egp">ج.م.</string>
+    <string name="total_value">الإجمالي</string>
+    <string name="transaction_logs">سجلات المعاملات:</string>
+    <string name="currency_egp">ج.م</string>
     <string name="amount_with_currency">%1$s %2$s</string>
     <string name="balance_label">الرصيد: %1$s</string>
-
-    <!-- Pending Transactions Strings -->
+    <string name="biometric_lock">قفل البصمة / الوجه</string>
+    <string name="biometric_lock_desc">اطلب البصمة أو التعرف على الوجه لفتح التطبيق.</string>
+    <string name="biometric_login_title">تسجيل الدخول بالبصمة</string>
+    <string name="biometric_login_subtitle">استخدم البصمة للوصول لـ بيجي ليدجر</string>
+    <string name="lock_timeout">مهلة القفل</string>
+    <string name="lock_timeout_desc">الوقت المطلوب قبل قفل التطبيق بعد الخروج منه.</string>
+    <string name="instant">في نفس اللحظة</string>
+    <string name="minutes_1">دقيقة واحدة</string>
+    <string name="minutes_2">دقيقتين</string>
+    <string name="minutes_3">3 دقائق</string>
+    <string name="minutes_5">5 دقائق</string>
+    <string name="minutes_10">10 دقائق</string>
+    <string name="minutes_30">30 دقيقة</string>
+    <string name="hour_1">ساعة واحدة</string>
+    <string name="hours_3">3 ساعات</string>
+    <string name="screenshot_protection">حماية لقطة الشاشة</string>
+    <string name="screenshot_protection_desc">منع لقطات الشاشة وتسجيلات الفيديو للتطبيق لحماية خصوصيتك.</string>
+    <string name="pin_lock_app">قفل التطبيق برقم سري (PIN)</string>
+    <string name="pin_lock_app_desc">اعمل رقم سري مخصص لقفل التطبيق (بديل للبصمة).</string>
+    <string name="enter_pin">اكتب الرقم السري (PIN)</string>
+    <string name="set_pin">عمل رقم سري (PIN)</string>
+    <string name="confirm_pin">تأكيد الرقم السري (PIN)</string>
+    <string name="pins_dont_match">الأرقام السرية مش متطابقة</string>
+    <string name="invalid_pin">رقم سري غير صحيح</string>
+    <string name="pin_min_digits">الرقم السري لازم يكون 4 أرقام على الأقل</string>
     <string name="pending_transactions">المعاملات المعلقة</string>
-    <string name="pending_transactions_desc">عرض وتسوية معاملات SMS غير الموجهة أو الغامضة.</string>
-    <string name="pending_sms_detected">تم اكتشاف معاملة SMS جديدة</string>
-    <string name="pending_sms_prompt">لقد اكتشفنا معاملة بقيمة %1$.2f %2$s من %3$s.\nلأي حساب هذه المعاملة؟</string>
-    <string name="select_account_prompt">اختر حساباً لربط هذه المعاملة به:</string>
-    <string name="resolve_success">تم توجيه المعاملة بنجاح!</string>
+    <string name="pending_transactions_desc">عرض وحل المعاملات غير الموجهة أو الغامضة من رسائل الـ SMS.</string>
+    <string name="pending_sms_detected">تم كشف معاملة رسالة SMS جديدة</string>
+    <string name="pending_sms_prompt">كشفنا معاملة بقيمة %1$.2f %2$s من %3$s.\nدي كانت لأي حساب؟</string>
+    <string name="select_account_prompt">اختار حساب عشان تربط المعاملة دي بيه:</string>
+    <string name="resolve_success">تم ربط وتوجيه المعاملة بنجاح!</string>
     <string name="discard_pending_success">تم تجاهل المعاملة المعلقة</string>
-    <string name="no_pending_transactions">لا توجد معاملات معلقة</string>
-    <string name="no_pending_transactions_desc">تم توجيه جميع مدفوعات SMS التلقائية بنجاح إلى حساباتك.</string>
-    
-    <string name="voice_prepair_words">جهز كل كلماتك قبل البدء...</string>
-    <string name="logs_timeline">سجل المدفوعات</string>
+    <string name="no_pending_transactions">مفيش معاملات معلقة</string>
+    <string name="no_pending_transactions_desc">كل مدفوعات رسائل الـ SMS التلقائية تم توجيهها بنجاح لحساباتك.</string>
+    <string name="reset_app_flow">إعادة تهيئة التطبيق</string>
+    <string name="reset_app_flow_desc">الرجوع لشاشات الترحيب والتعريف واختيار اللغة.</string>
+    <string name="reset_confirm_title">إعادة تهيئة التطبيق؟</string>
+    <string name="reset_confirm_msg">متأكد إنك عايز تعمل إعادة تهيئة؟ ده هيسجل خروجك ويرجعك لصفحة اختيار اللغة والترحيب عشان تجربهم من الأول وجديد.</string>
+    <string name="voice_prepair_words">جهز كل الكلمات اللي عايز تقولها قبل ما تبدأ...</string>
+    <string name="logs_timeline">الخط الزمني للمعاملات</string>
     <string name="add_payment">إضافة دفعة</string>
     <string name="payment_amount">مبلغ الدفعة</string>
     <string name="payment_note">ملاحظة (اختياري)</string>
     <string name="confirm_payment">تأكيد الدفعة</string>
-    <string name="no_payments_yet">لا توجد مدفوعات بعد.</string>
+    <string name="no_payments_yet">مفيش دفعات لسه.</string>
     <string name="remaining_of_prefix">المتبقي من %1$s</string>
- </resources>
+    <string-array name="streak_statements_success">
+        <item>عاش يا بطل!</item>
+        <item>أنت مكمل ومنطلق!</item>
+        <item>تقدم أسطوري!</item>
+        <item>سلسلة مثالية!</item>
+        <item>استمر في تحقيق تقدمك!</item>
+        <item>تم تحقيق الهدف!</item>
+    </string-array>
+    <string-array name="streak_statements_happy">
+        <item>عمل رائع!</item>
+        <item>استمر في السعي!</item>
+        <item>حافظ على استمراريتك!</item>
+        <item>أداؤك مذهل!</item>
+        <item>فخورين بيك!</item>
+        <item>ماشي على الطريق الصح!</item>
+    </string-array>
+    <string-array name="streak_statements_panic">
+        <item>حوش دلوقتي!</item>
+        <item>متكسرش السلسلة!</item>
+        <item>شد حيلك بسرعة!</item>
+        <item>الوقت بيجري!</item>
+        <item>السلسلة في خطر!</item>
+        <item>مطلوب حركة فورية!</item>
+    </string-array>
+    <string-array name="streak_statements_worried">
+        <item>السلسلة مهددة!</item>
+        <item>شكل كدة نسيت؟</item>
+        <item>متقفش دلوقتي!</item>
+        <item>خليك منتبه!</item>
+        <item>قربت تفوت المعاملة!</item>
+        <item>حافظ على السلسلة!</item>
+    </string-array>
+    <string-array name="streak_statements_lost">
+        <item>السلسلة اتكسرت</item>
+        <item>ابدأ من تاني!</item>
+        <item>بداية جديدة!</item>
+        <item>ماتيأسش!</item>
+        <item>حاول مرة تانية!</item>
+        <item>ارجع من جديد علطول!</item>
+    </string-array>
+    <string name="export_screen_desc">صدر سجل المعاملات، الحسابات، وبيانات تتبع الأهداف لصيغ محلية آمنة.</string>
+    <string name="export_excel_subtitle">ملف إكسيل ممتاز</string>
+    <string name="export_excel_desc">دفتر إكسيل متعدد الصفحات ومنسق باحترافية، بيشمل لوحة تحكم تفاعلية، ترويسات ملونة، مصفوفة حسابات، سجل المعاملات، القروض النشطة، وأهداف التحويش.</string>
+    <string name="export_csv_subtitle">ملف CSV مبسط</string>
+    <string name="export_csv_desc">تصدير كل قواعد البيانات والجداول لملف نصي واحد مفصول بفواصل. خفيف وتقدر تسترجعه بالكامل لبيجي ليدجر في أي وقت.</string>
+    <string name="export_json_subtitle">نسخة JSON كلاسيكية</string>
+    <string name="export_json_desc">احفظ الأهداف، السلاسل اليومية، والمعاملات في ملف باك أب منسق وبسيط.</string>
+    <string name="restore_csv_subtitle">الاسترجاع من ملف CSV</string>
+    <string name="restore_csv_desc">استيراد واسترجاع كامل لقاعدة البيانات بما فيها الحسابات، رسايل الـ SMS القديمة، والمعاملات المعلقة من ملف CSV محفوظ.</string>
+    <string name="restore_json_subtitle">الاسترجاع من نسخة JSON</string>
+    <string name="restore_json_desc">استرجاع الأهداف وملفات المعاملات الأساسية من ملف نسخة احتياطية بصيغة JSON.</string>
+    <string name="already_have_account">لديك حساب بالفعل؟</string>
+    <string name="toast_transaction_added">تم إضافة المعاملة بنجاح!</string>
+    <string name="toast_savings_added">تم إضافة التوفير للهدف!</string>
+    <string name="toast_goal_created">تم إنشاء هدف الادخار بنجاح!</string>
+    <string name="toast_goal_deleted">تم حذف الهدف.</string>
+    <string name="toast_account_added">تم إضافة الحساب بنجاح!</string>
+    <string name="toast_account_updated">تم تحديث الحساب بنجاح!</string>
+    <string name="toast_account_deleted">تم حذف الحساب.</string>
+    <string name="toast_loan_added">تم تسجيل المعاملة بنجاح!</string>
+    <string name="toast_loan_payment_added">تم تسجيل الدفعة بنجاح!</string>
+    <string name="toast_loan_closed">تم إغلاق المعاملة بالكامل!</string>
+    <string name="toast_loan_deleted">تم حذف المعاملة.</string>
+</resources>

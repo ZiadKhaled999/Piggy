@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -145,8 +146,7 @@ fun SettingsMainContent(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SettingsItem(
             title = stringResource(R.string.pending_transactions),
-            iconRes = null,
-            iconVector = Icons.Default.Inbox,
+            iconRes = R.drawable.img_settings_pending_1784465160290,
             onClick = onNavigateToPendingTransactions
         )
 
@@ -185,6 +185,8 @@ fun SettingsMainContent(
             iconRes = R.drawable.img_settings_security,
             onClick = { onModeChange(SettingsMode.SECURITY) }
         )
+        
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -486,9 +488,9 @@ fun DetailSettingsView(
                                 context.contentResolver.openOutputStream(it)?.use { stream ->
                                     stream.write(csvString.toByteArray())
                                 }
-                                Toast.makeText(context, "CSV exported successfully", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.csv_export_success), Toast.LENGTH_SHORT).show()
                             } catch (e: Exception) {
-                                Toast.makeText(context, "CSV export failed: ${e.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, context.getString(R.string.csv_export_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
                             }
                         }
                     }
@@ -503,9 +505,9 @@ fun DetailSettingsView(
                                 context.contentResolver.openOutputStream(it)?.use { stream ->
                                     stream.write(excelString.toByteArray())
                                 }
-                                Toast.makeText(context, "Excel exported successfully", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.excel_export_success), Toast.LENGTH_SHORT).show()
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Excel export failed: ${e.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, context.getString(R.string.excel_export_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
                             }
                         }
                     }
@@ -546,7 +548,7 @@ fun DetailSettingsView(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                "Export your transaction ledger, accounts, and goal tracking data to secure offline formats.",
+                                stringResource(R.string.export_screen_desc),
                                 fontSize = 13.sp,
                                 color = TextLight,
                                 lineHeight = 18.sp
@@ -572,7 +574,7 @@ fun DetailSettingsView(
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(
-                                        "Beautiful Excel Spreadsheet",
+                                        stringResource(R.string.export_excel_subtitle),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
                                         color = NavyDark
@@ -580,7 +582,7 @@ fun DetailSettingsView(
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    "A highly polished multi-sheet Excel ledger including dynamic summary dashboards, colored headers, account matrices, transaction history, active loans, and saving goals.",
+                                    stringResource(R.string.export_excel_desc),
                                     fontSize = 12.sp,
                                     color = TextLight,
                                     lineHeight = 16.sp
@@ -597,7 +599,7 @@ fun DetailSettingsView(
                                         contentColor = Color.White
                                     )
                                 ) {
-                                    Text("Export Beautiful Excel", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.export_excel_title), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -621,7 +623,7 @@ fun DetailSettingsView(
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(
-                                        "Flat CSV Document",
+                                        stringResource(R.string.export_csv_subtitle),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
                                         color = NavyDark
@@ -629,7 +631,7 @@ fun DetailSettingsView(
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    "Export all relational databases containing everything into a single comma-separated text file. Highly portable and can be restored back into Piggy Ledger anytime.",
+                                    stringResource(R.string.export_csv_desc),
                                     fontSize = 12.sp,
                                     color = TextLight,
                                     lineHeight = 16.sp
@@ -646,7 +648,7 @@ fun DetailSettingsView(
                                         contentColor = Color.White
                                     )
                                 ) {
-                                    Text("Export CSV File", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.export_csv_title), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -670,7 +672,7 @@ fun DetailSettingsView(
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(
-                                        "Legacy JSON Configuration",
+                                        stringResource(R.string.export_json_subtitle),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
                                         color = NavyDark
@@ -678,7 +680,7 @@ fun DetailSettingsView(
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    "Save goals, streak counts, and legacy transactions as a simple machine-readable backup document.",
+                                    stringResource(R.string.export_json_desc),
                                     fontSize = 12.sp,
                                     color = TextLight,
                                     lineHeight = 16.sp
@@ -713,15 +715,15 @@ fun DetailSettingsView(
                                 viewModel.importCSVData(
                                     csvString = csvString,
                                     onComplete = {
-                                        Toast.makeText(context, "Data restored successfully from CSV", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.csv_restore_success), Toast.LENGTH_SHORT).show()
                                     },
                                     onError = { error ->
-                                        Toast.makeText(context, "CSV import failed: $error", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, context.getString(R.string.csv_restore_failed, error), Toast.LENGTH_LONG).show()
                                     }
                                 )
                             }
                         } catch (e: Exception) {
-                            Toast.makeText(context, "CSV import failed: ${e.message}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, context.getString(R.string.csv_restore_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
                         }
                     }
                 }
@@ -787,7 +789,7 @@ fun DetailSettingsView(
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(
-                                        "Restore from CSV Ledger",
+                                        stringResource(R.string.restore_csv_subtitle),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
                                         color = NavyDark
@@ -795,7 +797,7 @@ fun DetailSettingsView(
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    "Import and completely restore your relational databases including accounts, historical SMS transactions, and pending queue items from a saved CSV file.",
+                                    stringResource(R.string.restore_csv_desc),
                                     fontSize = 12.sp,
                                     color = TextLight,
                                     lineHeight = 16.sp
@@ -812,7 +814,7 @@ fun DetailSettingsView(
                                         contentColor = Color.White
                                     )
                                 ) {
-                                    Text("Select CSV File", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.select_csv_file), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -836,7 +838,7 @@ fun DetailSettingsView(
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(
-                                        "Restore from Legacy JSON",
+                                        stringResource(R.string.restore_json_subtitle),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
                                         color = NavyDark
@@ -844,7 +846,7 @@ fun DetailSettingsView(
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    "Restore goals and basic legacy transaction files from a legacy JSON backup file.",
+                                    stringResource(R.string.restore_json_desc),
                                     fontSize = 12.sp,
                                     color = TextLight,
                                     lineHeight = 16.sp
@@ -1094,6 +1096,7 @@ fun PinSetupDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var pin by remember { mutableStateOf("") }
     var confirmPin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
@@ -1140,14 +1143,14 @@ fun PinSetupDialog(
                     if (pin == confirmPin && pin.length >= 4) {
                         onConfirm(pin)
                     } else if (pin.length < 4) {
-                        error = "PIN must be at least 4 digits"
+                        error = context.getString(R.string.pin_min_digits)
                     } else {
-                        error = "PINs do not match"
+                        error = context.getString(R.string.pins_dont_match)
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
             ) {
-                Text("Save")
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {

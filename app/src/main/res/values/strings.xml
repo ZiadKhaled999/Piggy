@@ -85,6 +85,50 @@
     <string name="onboarding_start">Start</string>
     <string name="onboarding_subtitle_4">Let\'s set up your first goal and begin your\njourney towards smarter collective savings.</string>
     <string name="back_btn">BACK</string>
+    <string name="onboarding_sms_title">Smart Automatic Tracking</string>
+    <string name="onboarding_sms_subtitle">Enable secure SMS reading to automatically parse and log incoming wallet transfers (e.g., Vodafone Cash, Orange Cash) in real-time.</string>
+    <string name="onboarding_sms_btn">Enable Secure Tracking</string>
+    <string name="onboarding_sms_skip">Skip for Now</string>
+    <string name="onboarding_sms_granted">Secure SMS tracking enabled successfully!</string>
+    <string name="onboarding_sms_denied">Secure tracking skipped. You can enable it in system settings later.</string>
+    <string name="onboarding_notif_title">Real-Time Smart Alerts</string>
+    <string name="onboarding_notif_subtitle">Get instant notifications for group contributions, wallet deposits, goals milestones, and streak reminders to keep your budget on track.</string>
+    <string name="onboarding_notif_btn">Enable Smart Alerts</string>
+    <string name="onboarding_notif_skip">Skip for Now</string>
+    <string name="onboarding_notif_granted">Notifications enabled successfully!</string>
+    <string name="onboarding_notif_denied">Notifications skipped. You can enable them in system settings later.</string>
+
+    <!-- Personalization Onboarding -->
+    <string name="onboarding_personalize_intent_title">What\'s your primary focus?</string>
+    <string name="onboarding_personalize_intent_subtitle">Select your main goal. We\'ll customize your dashboard, alerts, and saving formulas.</string>
+    <string name="onboarding_personalize_intent_group">Group Savings Pool</string>
+    <string name="onboarding_personalize_intent_group_desc">Save together for trips, weddings, or shared projects with family &amp; friends.</string>
+    <string name="onboarding_personalize_intent_personal">Personal Piggy Bank</string>
+    <string name="onboarding_personalize_intent_personal_desc">Build your own personal cash reserves, emergency funds, and custom goals.</string>
+    <string name="onboarding_personalize_intent_loans">Debt Payoff &amp; Loans</string>
+    <string name="onboarding_personalize_intent_loans_desc">Keep track of money lent, borrowed, and schedule payoff installments perfectly.</string>
+    <string name="onboarding_personalize_intent_auto">Smart Automation</string>
+    <string name="onboarding_personalize_intent_auto_desc">Automate incoming wallet transfers (Vodafone Cash, Orange Cash) with zero friction.</string>
+
+    <string name="onboarding_personalize_intensity_title">Choose your saving intensity</string>
+    <string name="onboarding_personalize_intensity_subtitle">How much of your income would you like to set aside as a target?</string>
+    <string name="onboarding_personalize_intensity_casual">Casual Saver</string>
+    <string name="onboarding_personalize_intensity_casual_desc">5% – 10% of income. Light &amp; easy, perfect for starting out.</string>
+    <string name="onboarding_personalize_intensity_balanced">Balanced Builder</string>
+    <string name="onboarding_personalize_intensity_balanced_desc">15% – 20% of income. Steady, sustainable growth for solid goals.</string>
+    <string name="onboarding_personalize_intensity_aggressive">Laser Focus</string>
+    <string name="onboarding_personalize_intensity_aggressive_desc">30%%+ of income. Maximum savings speed to crash through targets.</string>
+
+    <string name="onboarding_personalize_roadmap_title">Your Personalized Saving Roadmap</string>
+    <string name="onboarding_personalize_roadmap_subtitle">Your personalized guide to reaching your saving goals.</string>
+    <string name="onboarding_personalize_roadmap_step1_title">Profile Optimized</string>
+    <string name="onboarding_personalize_roadmap_step1_desc">Prepared a custom workspace tailored for %s.</string>
+    <string name="onboarding_personalize_roadmap_step2_title">Setup Your %s Target</string>
+    <string name="onboarding_personalize_roadmap_step2_desc">We suggest starting with a %s target.</string>
+    <string name="onboarding_personalize_roadmap_step3_title">Smart Sync Activated</string>
+    <string name="onboarding_personalize_roadmap_step3_desc">Automatically tracks SMS receipts and daily transactions.</string>
+    <string name="onboarding_personalize_roadmap_step4_title">Build Your Daily Streak</string>
+    <string name="onboarding_personalize_roadmap_step4_desc">Stay consistent, view dynamic charts, and unlock local widget updates!</string>
 
 
 <string name="loans_payoffs_title">Loans &amp; Payoffs</string>
@@ -522,4 +566,77 @@
     <string name="confirm_payment">Confirm Payment</string>
     <string name="no_payments_yet">No payments yet.</string>
     <string name="remaining_of_prefix">Remaining of %1$s</string>
+    <string name="reset_app_flow">Reset App Flow (Onboarding)</string>
+    <string name="reset_app_flow_desc">Go back to the onboarding and language selection screens.</string>
+    <string name="reset_confirm_title">Reset App Flow?</string>
+    <string name="reset_confirm_msg">Are you sure you want to reset? This will sign you out and take you back to the language selection and onboarding screens so you can re-experience them.</string>
+
+
+    <!-- Dashboard Screen -->
+    <string name="spent">Spent</string>
+    <string name="payoffs">Payoffs</string>
+    <string name="savings_goals">Savings Goals</string>
+    <string name="see_all">See all</string>
+    <string name="processing_voice">Processing your voice...</string>
+    <string name="correct_transaction">Correct Transaction</string>
+    <string name="re_process">Re-Process</string>
+    <string name="transaction_details">Transaction Details</string>
+    <string name="you_said">You said:</string>
+    <string name="amount">Amount</string>
+    <string name="target_account_goal">Target (Account / Goal)</string>
+    <string name="account_name_format">Account: %1$s</string>
+    <string name="goal_name_format">Goal: %1$s</string>
+    <string name="correct">Correct</string>
+    <string name="go_ahead">Go Ahead</string>
+    <string name="no_goals_set">No goals set yet. Tap to start saving!</string>
+
+    <!-- Settings Screen (Export/Import) -->
+    <string name="csv_export_success">CSV exported successfully</string>
+    <string name="csv_export_failed">CSV export failed: %1$s</string>
+    <string name="excel_export_success">Excel exported successfully</string>
+    <string name="excel_export_failed">Excel export failed: %1$s</string>
+    <string name="export_excel_title">Export Beautiful Excel</string>
+    <string name="export_csv_title">Export CSV File</string>
+    <string name="csv_restore_success">Data restored successfully from CSV</string>
+    <string name="csv_restore_failed">CSV import failed: %1$s</string>
+    <string name="select_csv_file">Select CSV File</string>
+    <string name="close">Close</string>
+    <string name="mic_permission_required">Microphone permission is required to record voice</string>
+    <string name="card_number_placeholder">e.g. 1234 5678 9012</string>
+
+    <!-- Auth Screen -->
+    <string name="auth_welcome_title_main">Piggy Ledger</string>
+    <string name="auth_welcome_subtitle_main">Secure, simple, and smart.</string>
+    <string name="auth_welcome_desc">Track your expenses, set goals, and save money effortlessly.</string>
+    <string name="please_select_option">Please select an option to proceed</string>
+
+
+    <string name="release_to_cancel">Release to cancel</string>
+    <string name="slide_up_to_pause">Slide up to pause/cancel</string>
+    <string name="recording_state">Recording...</string>
+    <string name="hold_anywhere_to_record">Hold anywhere here to record</string>
+    <string name="pin_min_digits">PIN must be at least 4 digits</string>
+    <string name="export_screen_desc">Export your transaction ledger, accounts, and goal tracking data to secure offline formats.</string>
+    <string name="export_excel_subtitle">Beautiful Excel Spreadsheet</string>
+    <string name="export_excel_desc">A highly polished multi-sheet Excel ledger including dynamic summary dashboards, colored headers, account matrices, transaction history, active loans, and saving goals.</string>
+    <string name="export_csv_subtitle">Flat CSV Document</string>
+    <string name="export_csv_desc">Export all relational databases containing everything into a single comma-separated text file. Highly portable and can be restored back into Piggy Ledger anytime.</string>
+    <string name="export_json_subtitle">Legacy JSON Configuration</string>
+    <string name="export_json_desc">Save goals, streak counts, and legacy transactions as a simple machine-readable backup document.</string>
+    <string name="restore_csv_subtitle">Restore from CSV Ledger</string>
+    <string name="restore_csv_desc">Import and completely restore your relational databases including accounts, historical SMS transactions, and pending queue items from a saved CSV file.</string>
+    <string name="restore_json_subtitle">Restore from Legacy JSON</string>
+    <string name="restore_json_desc">Restore goals and basic legacy transaction files from a legacy JSON backup file.</string>
+    <string name="already_have_account">Already have an account?</string>
+    <string name="toast_transaction_added">Transaction added successfully!</string>
+    <string name="toast_savings_added">Savings added to goal!</string>
+    <string name="toast_goal_created">Savings goal created successfully!</string>
+    <string name="toast_goal_deleted">Goal deleted.</string>
+    <string name="toast_account_added">Account added successfully!</string>
+    <string name="toast_account_updated">Account updated successfully!</string>
+    <string name="toast_account_deleted">Account deleted.</string>
+    <string name="toast_loan_added">Loan recorded successfully!</string>
+    <string name="toast_loan_payment_added">Payment logged successfully!</string>
+    <string name="toast_loan_closed">Loan marked as fully paid!</string>
+    <string name="toast_loan_deleted">Loan record deleted.</string>
 </resources>

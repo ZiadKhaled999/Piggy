@@ -31,6 +31,7 @@ class StreakWidgetProvider : AppWidgetProvider() {
         val localizedContext = context.createConfigurationContext(config)
 
         val streakCount = StreakManager.getStreak(context)
+        val frozenDates = StreakManager.getFrozenDates(context)
         val piggyState = StreakManager.getPiggyState(context)
         val piggyRes = StreakManager.getPiggyResource(piggyState)
 
@@ -79,10 +80,12 @@ class StreakWidgetProvider : AppWidgetProvider() {
             for (i in 0 until 7) {
                 val dateStr = sdf.format(calendar.time)
                 val isActive = activeDates.contains(dateStr)
+                val isFrozen = frozenDates.contains(dateStr)
                 val isPast = calendar.before(todayCalendar) && dateStr != todayDateStr
                 
                 val (bgRes, dayText) = when {
                     isActive -> R.drawable.ic_streak_check to ""
+                    isFrozen -> R.drawable.ic_streak_freeze to ""
                     isPast -> R.drawable.ic_streak_x to ""
                     else -> R.drawable.bg_streak_day_future to dayLetters[i]
                 }

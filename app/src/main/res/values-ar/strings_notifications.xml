@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_reminders_name">تفكرات يومية</string>
+    <string name="channel_reminders_desc">إشعارات الاستمرارية، الأهداف، والتحفيز اليومي</string>
+
+    <string name="notif_streak_warning_title">الاستمرارية في خطر! 🥶</string>
+    <string name="notif_streak_warning_msg">فاتك يومين ورا بعض! متخليش الاستمرارية تتجمد. سجل معاملة دلوقتي عشان تلحقها!</string>
+    
+    <string name="notif_goal_title">تفكر بالهدف</string>
+    <string name="notif_goal_msg">فاضلك بس %1$s وتوصل لهدفك 🎯.</string>
+    
+    <string name="notif_motivation_title">تحفيز يومي ✨</string>
+
+    <string name="notif_auth_signin_title">نورتنا تاني!</string>
+    <string name="notif_auth_signin_msg">سجلت الدخول بنجاح في بيجي ليدجر.</string>
+    <string name="notif_auth_signout_title">سجلت خروج</string>
+    <string name="notif_auth_signout_msg">سجلت الخروج من بيجي ليدجر بأمان.</string>
+</resources>

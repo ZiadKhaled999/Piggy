@@ -1,4 +1,5 @@
 package com.oryno.piggy_ledger.ui
+import android.widget.Toast
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -82,6 +83,7 @@ fun GoalDetailScreen(
     viewModel: PiggyLedgerViewModel,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     val goals by viewModel.goals.collectAsState()
     val goal = goals.find { it.id == goalId }
     val allTransactions by viewModel.allTransactions.collectAsState()
@@ -540,6 +542,7 @@ fun GoalDetailScreen(
                         val amount = amountStr.replace("$", "").trim().toDoubleOrNull()
                         if (amount != null && amount > 0) {
                             viewModel.addTransaction(goalId, amount, note)
+                            Toast.makeText(context, context.getString(R.string.toast_savings_added), Toast.LENGTH_SHORT).show()
                             showDepositDialog = false
                         }
                     },

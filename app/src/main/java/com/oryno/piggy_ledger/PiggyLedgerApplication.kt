@@ -17,6 +17,11 @@ class PiggyLedgerApplication : Application() {
         )
         PostHogAndroid.setup(this, config)
 
+        com.revenuecat.purchases.Purchases.configure(
+            com.revenuecat.purchases.PurchasesConfiguration.Builder(this, "test_qDcFVCQgLyYkFeMmsRjUwIhgpeI").build()
+        )
+        com.revenuecat.purchases.Purchases.logLevel = com.revenuecat.purchases.LogLevel.DEBUG
+
         val clerkKey = BuildConfig.CLERK_PUBLISHABLE_KEY
         if (clerkKey.isNotBlank()) {
             try {

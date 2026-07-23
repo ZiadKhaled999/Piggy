@@ -228,6 +228,11 @@ class PiggyLedgerViewModel(
 
     fun signOut() {
         viewModelScope.launch {
+            try {
+                com.clerk.api.Clerk.auth.signOut()
+            } catch (e: Exception) {
+                android.util.Log.e("PiggyLedgerViewModel", "Clerk sign out failed", e)
+            }
             userPreferences.saveAuthentication(false, "", "", "")
             PostHog.capture("user_sign_out")
             PostHog.reset()

@@ -39,6 +39,18 @@ import com.oryno.piggy_ledger.ui.theme.PiggyLedgerTheme
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.posthog.PostHog
+import coil.compose.AsyncImage
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
 
 @Composable
 fun PiggyLedgerApp(factory: ViewModelFactory) {
@@ -49,6 +61,14 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
     val hasOnboarded by viewModel.hasOnboarded.collectAsState()
     val hasLanguageSelected by viewModel.hasLanguageSelected.collectAsState()
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
+
+    LaunchedEffect(isAuthenticated, hasLanguageSelected, hasOnboarded) {
+        if (isAuthenticated == false && hasLanguageSelected == true && hasOnboarded == true) {
+            navController.navigate(Screen.Auth) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
     PiggyLedgerTheme {
         Surface(
@@ -188,6 +208,26 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                         onBack = { navController.popBackStack() }
                     )
                 }
+
+                composable<Screen.Settings> { backStackEntry ->
+                    val screen = backStackEntry.toRoute<Screen.Settings>()
+                    val mode = remember(screen.modeName) {
+                        try {
+                            SettingsMode.valueOf(screen.modeName)
+                        } catch (e: Exception) {
+                            SettingsMode.MAIN
+                        }
+                    }
+                    LaunchedEffect(mode) {
+                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Settings", "mode" to mode.name))
+                    }
+                    SettingsScreen(
+                        viewModel = viewModel,
+                        initialMode = mode,
+                        onNavigateToPendingTransactions = { navController.navigate(Screen.PendingTransactions) },
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
             }
         }
     }
@@ -205,85 +245,185 @@ fun MainContainer(
     
     val activeOverdue = overdueLoans.filter { it.id !in dismissedAlerts }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            bottomBar = {
-                FloatingNavBar(navController = bottomNavController)
+    var isDrawerOpen by remember { mutableStateOf(false) }
+    val isRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
+    val drawerProgress by animateFloatAsState(
+        targetValue = if (isDrawerOpen) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "DrawerAnimation"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        NavyDark,
+                        Color(0xFF1E1B4B)
+                    )
+                )
+            )
+    ) {
+        // Main Content Card Layer (Layered at bottom of Box, shifted right)
+        val density = LocalDensity.current
+        val translationXPx = with(density) { (drawerProgress * 265.dp.value).dp.toPx() }
+
+        var totalDrag by remember { mutableStateOf(0f) }
+
+        Card(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(isDrawerOpen) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { totalDrag = 0f },
+                        onDragEnd = {
+                            if (isRtl) {
+                                if (totalDrag < -100f && !isDrawerOpen) {
+                                    isDrawerOpen = true
+                                } else if (totalDrag > 100f && isDrawerOpen) {
+                                    isDrawerOpen = false
+                                }
+                            } else {
+                                if (totalDrag > 100f && !isDrawerOpen) {
+                                    isDrawerOpen = true
+                                } else if (totalDrag < -100f && isDrawerOpen) {
+                                    isDrawerOpen = false
+                                }
+                            }
+                        },
+                        onDragCancel = { totalDrag = 0f },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            totalDrag += dragAmount
+                        }
+                    )
+                }
+                .graphicsLayer {
+                    scaleX = 1f - (drawerProgress * 0.18f)
+                    scaleY = 1f - (drawerProgress * 0.18f)
+                    translationX = if (isRtl) -translationXPx else translationXPx
+                    rotationY = if (isRtl) drawerProgress * 12f else -drawerProgress * 12f
+                    cameraDistance = 16f * density.density
+                    shadowElevation = (drawerProgress * 24f).coerceAtLeast(0f).dp.toPx()
+                    clip = true
+                    shape = RoundedCornerShape((drawerProgress * 28f).coerceAtLeast(0f).dp)
+                },
+            shape = RoundedCornerShape((drawerProgress * 28f).coerceAtLeast(0f).dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
+            elevation = CardDefaults.cardElevation(defaultElevation = (drawerProgress * 24f).coerceAtLeast(0f).dp)
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                Scaffold(
+                    bottomBar = {
+                        FloatingNavBar(navController = bottomNavController)
+                    }
+                ) { innerPadding ->
+                    NavHost(
+                        navController = bottomNavController,
+                        startDestination = Screen.Dashboard,
+                        modifier = Modifier.padding(innerPadding)
+                    ) {
+                        composable<Screen.Dashboard> {
+                            LaunchedEffect(Unit) {
+                                PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Dashboard"))
+                            }
+                            DashboardScreen(
+                                viewModel = viewModel,
+                                voiceViewModel = voiceViewModel,
+                                onMenuClick = { isDrawerOpen = true },
+                                onNavigateToCreateGoal = { appNavController.navigate(Screen.CreateGoal) },
+                                onNavigateToMyGoals = { bottomNavController.navigate(Screen.MyGoals) },
+                                onNavigateToLoans = { bottomNavController.navigate(Screen.Loans) },
+                                onNavigateToAccounts = { bottomNavController.navigate(Screen.Accounts) },
+                                onNavigateToAnalytics = { bottomNavController.navigate(Screen.Analytics) },
+                                onNavigateToSettingsPro = { appNavController.navigate(Screen.Settings(SettingsMode.PRO.name)) }
+                            )
+                        }
+                        
+                        composable<Screen.MyGoals> {
+                            LaunchedEffect(Unit) {
+                                PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "My Goals"))
+                            }
+                            MyGoalsScreen(
+                                viewModel = viewModel,
+                                onNavigateToGoal = { id -> appNavController.navigate(Screen.GoalDetail(id)) },
+                                onNavigateToCreateGoal = { appNavController.navigate(Screen.CreateGoal) },
+                                onBack = { bottomNavController.popBackStack() }
+                            )
+                        }
+                        
+                        composable<Screen.Loans> {
+                            LaunchedEffect(Unit) {
+                                PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Loans"))
+                            }
+                            LoansScreen(
+                                viewModel = viewModel,
+                                onBack = { bottomNavController.popBackStack() }
+                            )
+                        }
+
+                        composable<Screen.Accounts> {
+                            LaunchedEffect(Unit) {
+                                PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Accounts"))
+                            }
+                            AccountsScreen(
+                                viewModel = viewModel,
+                                onNavigateToAddAccount = { appNavController.navigate(Screen.AddAccount) },
+                                onNavigateToEditAccount = { id -> appNavController.navigate(Screen.EditAccount(id)) },
+                                onBack = { bottomNavController.popBackStack() }
+                            )
+                        }
+
+                        composable<Screen.Analytics> {
+                            LaunchedEffect(Unit) {
+                                PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Analytics"))
+                            }
+                            AnalyticsScreen(
+                                viewModel = viewModel,
+                                onBack = { bottomNavController.popBackStack() }
+                            )
+                        }
+                    }
+                }
+
+                // Overlay to intercept clicks and dismiss drawer when it is open
+                if (drawerProgress > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = { isDrawerOpen = false }
+                            )
+                    )
+                }
             }
-        ) { innerPadding ->
-            NavHost(
-                navController = bottomNavController,
-                startDestination = Screen.Dashboard,
-                modifier = Modifier.padding(innerPadding)
+        }
+
+        // Drawer Menu Layer (Rendered on top but restricted to left side, so it intercepts touches perfectly)
+        if (drawerProgress > 0f) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .fillMaxHeight()
+                    .width(265.dp)
+                    .graphicsLayer {
+                        alpha = drawerProgress
+                        translationX = (if (isRtl) 60f else -60f) * (1f - drawerProgress)
+                    }
+                    .statusBarsPadding()
+                    .padding(top = 8.dp, bottom = 24.dp, start = 20.dp, end = 20.dp)
             ) {
-                composable<Screen.Dashboard> {
-                    LaunchedEffect(Unit) {
-                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Dashboard"))
-                    }
-                    DashboardScreen(
-                        viewModel = viewModel,
-                        voiceViewModel = voiceViewModel,
-                        onNavigateToCreateGoal = { appNavController.navigate(Screen.CreateGoal) },
-                        onNavigateToMyGoals = { bottomNavController.navigate(Screen.MyGoals) },
-                        onNavigateToLoans = { bottomNavController.navigate(Screen.Loans) },
-                        onNavigateToAccounts = { bottomNavController.navigate(Screen.Accounts) },
-                        onNavigateToAnalytics = { bottomNavController.navigate(Screen.Analytics) }
-                    )
-                }
-                
-                composable<Screen.MyGoals> {
-                    LaunchedEffect(Unit) {
-                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "My Goals"))
-                    }
-                    MyGoalsScreen(
-                        viewModel = viewModel,
-                        onNavigateToGoal = { id -> appNavController.navigate(Screen.GoalDetail(id)) },
-                        onNavigateToCreateGoal = { appNavController.navigate(Screen.CreateGoal) },
-                        onBack = { bottomNavController.popBackStack() }
-                    )
-                }
-                
-                composable<Screen.Loans> {
-                    LaunchedEffect(Unit) {
-                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Loans"))
-                    }
-                    LoansScreen(
-                        viewModel = viewModel,
-                        onBack = { bottomNavController.popBackStack() }
-                    )
-                }
-
-                composable<Screen.Accounts> {
-                    LaunchedEffect(Unit) {
-                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Accounts"))
-                    }
-                    AccountsScreen(
-                        viewModel = viewModel,
-                        onNavigateToAddAccount = { appNavController.navigate(Screen.AddAccount) },
-                        onNavigateToEditAccount = { id -> appNavController.navigate(Screen.EditAccount(id)) },
-                        onBack = { bottomNavController.popBackStack() }
-                    )
-                }
-
-                composable<Screen.Analytics> {
-                    LaunchedEffect(Unit) {
-                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Analytics"))
-                    }
-                    AnalyticsScreen(
-                        viewModel = viewModel,
-                        onBack = { bottomNavController.popBackStack() }
-                    )
-                }
-                
-                composable<Screen.Settings> {
-                    LaunchedEffect(Unit) {
-                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Settings"))
-                    }
-                    SettingsScreen(
-                        viewModel = viewModel,
-                        onNavigateToPendingTransactions = { appNavController.navigate(Screen.PendingTransactions) }
-                    )
-                }
+                DrawerSettingsContent(
+                    viewModel = viewModel,
+                    appNavController = appNavController,
+                    onClose = { isDrawerOpen = false }
+                )
             }
         }
 
@@ -383,8 +523,7 @@ fun FloatingNavBar(navController: NavHostController) {
             NavItem(Screen.MyGoals, Icons.Default.Dashboard),
             NavItem(Screen.Loans, Icons.Default.AccountBalance),
             NavItem(Screen.Accounts, Icons.Default.AccountTree),
-            NavItem(Screen.Analytics, Icons.Default.PieChart),
-            NavItem(Screen.Settings, Icons.Default.Settings)
+            NavItem(Screen.Analytics, Icons.Default.PieChart)
         )
     }
     
@@ -471,3 +610,255 @@ fun NavBarItem(
         )
     }
 }
+
+@Composable
+fun DrawerSettingsContent(
+    viewModel: PiggyLedgerViewModel,
+    appNavController: NavHostController,
+    onClose: () -> Unit
+) {
+    val authUserName by viewModel.authUserName.collectAsState()
+    val authUserEmail by viewModel.authUserEmail.collectAsState()
+    val authUserPhotoUrl by viewModel.authUserPhotoUrl.collectAsState()
+
+    val userFullName = authUserName.ifBlank { "User" }
+    val userEmail = authUserEmail.ifBlank { "user@example.com" }
+
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Profile Info Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.15f))
+                        .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (authUserPhotoUrl.isNotBlank()) {
+                        AsyncImage(
+                            model = authUserPhotoUrl,
+                            contentDescription = "Profile",
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Profile",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = userFullName,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = userEmail,
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Menu Items List (left-aligned)
+            val menuItems = listOf(
+                DrawerMenuItem(
+                    title = stringResource(R.string.pending_transactions),
+                    iconRes = R.drawable.img_settings_pending_1784465160290,
+                    onClick = {
+                        onClose()
+                        appNavController.navigate(Screen.PendingTransactions)
+                    }
+                ),
+                DrawerMenuItem(
+                    title = stringResource(R.string.language),
+                    iconRes = R.drawable.img_settings_language,
+                    onClick = {
+                        onClose()
+                        appNavController.navigate(Screen.Settings(SettingsMode.LANGUAGE.name))
+                    }
+                ),
+                DrawerMenuItem(
+                    title = stringResource(R.string.give_feedback),
+                    iconRes = R.drawable.img_settings_feedback,
+                    onClick = {
+                        onClose()
+                        appNavController.navigate(Screen.Settings(SettingsMode.FEEDBACK.name))
+                    }
+                ),
+                DrawerMenuItem(
+                    title = stringResource(R.string.rate_app),
+                    iconRes = R.drawable.img_settings_rate,
+                    onClick = {
+                        onClose()
+                        appNavController.navigate(Screen.Settings(SettingsMode.RATING.name))
+                    }
+                ),
+                DrawerMenuItem(
+                    title = stringResource(R.string.backup_data),
+                    iconRes = R.drawable.img_settings_backup,
+                    onClick = {
+                        onClose()
+                        appNavController.navigate(Screen.Settings(SettingsMode.BACKUP.name))
+                    }
+                ),
+                DrawerMenuItem(
+                    title = stringResource(R.string.restore_data),
+                    iconRes = R.drawable.img_settings_restore,
+                    onClick = {
+                        onClose()
+                        appNavController.navigate(Screen.Settings(SettingsMode.RESTORE.name))
+                    }
+                ),
+                DrawerMenuItem(
+                    title = stringResource(R.string.security),
+                    iconRes = R.drawable.img_settings_security,
+                    onClick = {
+                        onClose()
+                        appNavController.navigate(Screen.Settings(SettingsMode.SECURITY.name))
+                    }
+                ),
+                DrawerMenuItem(
+                    title = stringResource(R.string.piggy_ledger_pro),
+                    iconRes = null,
+                    iconVector = Icons.Default.Star,
+                    onClick = {
+                        onClose()
+                        appNavController.navigate(Screen.Settings(SettingsMode.PRO.name))
+                    }
+                ),
+                DrawerMenuItem(
+                    title = "Share",
+                    iconRes = null,
+                    iconVector = Icons.Default.Share,
+                    onClick = {
+                        onClose()
+                        val sendIntent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            putExtra(Intent.EXTRA_TEXT, "Check out Piggy Ledger, the ultimate personal finance companion! Manage your accounts, tracking goals, and ledger easily.")
+                            type = "text/plain"
+                        }
+                        val shareIntent = Intent.createChooser(sendIntent, null)
+                        context.startActivity(shareIntent)
+                    }
+                )
+            )
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                menuItems.forEach { item ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = item.onClick
+                            )
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color.White.copy(alpha = 0.08f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (item.iconRes != null) {
+                                Image(
+                                    painter = painterResource(id = item.iconRes),
+                                    contentDescription = item.title,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else if (item.iconVector != null) {
+                                Icon(
+                                    imageVector = item.iconVector,
+                                    contentDescription = item.title,
+                                    tint = PinkPrimary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Text(
+                            text = item.title,
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
+        // Bottom section: Logout
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    onClose()
+                    viewModel.signOut()
+                }
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color.White.copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Logout,
+                    contentDescription = "Logout",
+                    tint = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Text(
+                text = "Logout",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+data class DrawerMenuItem(
+    val title: String,
+    val iconRes: Int?,
+    val iconVector: ImageVector? = null,
+    val onClick: () -> Unit
+)

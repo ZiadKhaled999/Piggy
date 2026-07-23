@@ -3,7 +3,7 @@ package com.oryno.piggy_ledger.ui
 import kotlinx.serialization.Serializable
 
 enum class SettingsMode {
-    MAIN, FEEDBACK, RATING, BACKUP, RESTORE, LANGUAGE, SECURITY
+    MAIN, FEEDBACK, RATING, BACKUP, RESTORE, LANGUAGE, SECURITY, PRO
 }
 
 sealed class Screen {
@@ -13,7 +13,7 @@ sealed class Screen {
     @Serializable data object Auth : Screen()
     @Serializable data object MainContainer : Screen()
     @Serializable data object Dashboard : Screen()
-    @Serializable data object Settings : Screen()
+    @Serializable data class Settings(val modeName: String = "MAIN") : Screen()
     @Serializable data object CreateGoal : Screen()
     @Serializable data object MyGoals : Screen()
     @Serializable data class GoalDetail(val goalId: String) : Screen()

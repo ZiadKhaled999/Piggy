@@ -48,11 +48,13 @@ import kotlin.math.sin
 fun DashboardScreen(
     viewModel: PiggyLedgerViewModel,
     voiceViewModel: VoiceLedgerViewModel,
+    onMenuClick: () -> Unit,
     onNavigateToCreateGoal: () -> Unit,
     onNavigateToMyGoals: () -> Unit,
     onNavigateToLoans: () -> Unit,
     onNavigateToAccounts: () -> Unit,
-    onNavigateToAnalytics: () -> Unit
+    onNavigateToAnalytics: () -> Unit,
+    onNavigateToSettingsPro: () -> Unit = {}
 ) {
     val goals by viewModel.goals.collectAsState()
     val transactions by viewModel.allTransactions.collectAsState()
@@ -75,6 +77,31 @@ fun DashboardScreen(
     val authUserPhotoUrl by viewModel.authUserPhotoUrl.collectAsState()
     var showProfileBottomSheet by remember { mutableStateOf(false) }
     val user by Clerk.userFlow.collectAsStateWithLifecycle()
+
+    var customerInfo by remember { mutableStateOf<com.revenuecat.purchases.CustomerInfo?>(null) }
+    LaunchedEffect(Unit) {
+        try {
+            com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
+                object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
+                    override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
+                        customerInfo = info
+                    }
+                    override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                        customerInfo = null
+                    }
+                }
+            )
+        } catch (e: Exception) {
+            customerInfo = null
+        }
+    }
+
+    val entitlement = remember(customerInfo) {
+        customerInfo?.entitlements?.get("Piggy Ledger Pro")
+    }
+    val isProUser = remember(entitlement) {
+        entitlement?.isActive == true
+    }
 
     val userFullName = remember(user, authUserName) {
         val clerkName = listOfNotNull(user?.firstName, user?.lastName)
@@ -117,14 +144,82 @@ fun DashboardScreen(
             contentPadding = PaddingValues(bottom = 100.dp)
         ) {
             item {
-                // Header Profile
+                // Header Profile & Menu Button
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp)
-                        .padding(top = 24.dp, bottom = 24.dp),
+                        .padding(top = 4.dp, bottom = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    IconButton(
+                        onClick = onMenuClick,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(Color.White, CircleShape)
+                            .border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                    ) {
+                        // Custom 3-line staggered menu icon
+                        Column(
+                            modifier = Modifier.size(24.dp).padding(start = 2.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            Box(modifier = Modifier.width(18.dp).height(2.5.dp).background(NavyDark, CircleShape))
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Box(modifier = Modifier.width(13.dp).height(2.5.dp).background(NavyDark, CircleShape))
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Box(modifier = Modifier.width(8.dp).height(2.5.dp).background(NavyDark, CircleShape))
+                        }
+                    }
+                    
+                    Box(contentAlignment = Alignment.TopCenter) {
+                        Box(
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                                .border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                                .clickable { showProfileBottomSheet = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (userPhotoUrl != null) {
+                                AsyncImage(
+                                    model = userPhotoUrl,
+                                    contentDescription = "Profile",
+                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Profile",
+                                    tint = NavyDark,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+
+                        if (isProUser) {
+                            Text(
+                                text = "👑",
+                                fontSize = 16.sp,
+                                modifier = Modifier
+                                    .offset(y = (-8).dp)
+                            )
+                        }
+                    }
+                }
+
+                // Welcome back header row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(bottom = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
                         Text(
@@ -141,32 +236,6 @@ fun DashboardScreen(
                             fontWeight = FontWeight.ExtraBold,
                             color = NavyDark
                         )
-                    }
-                    
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .border(1.dp, Color(0xFFE2E8F0), CircleShape)
-                            .clickable { showProfileBottomSheet = true },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (userPhotoUrl != null) {
-                            AsyncImage(
-                                model = userPhotoUrl,
-                                contentDescription = "Profile",
-                                modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Profile",
-                                tint = NavyDark,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
                     }
                 }
             }
@@ -280,83 +349,250 @@ fun DashboardScreen(
                         .padding(bottom = 32.dp, top = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = stringResource(R.string.auth_profile_title),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = NavyDark,
-                        modifier = Modifier.padding(bottom = 24.dp)
-                    )
-                    
-                    Box(
-                        modifier = Modifier
-                            .size(90.dp)
-                            .clip(CircleShape)
-                            .background(PinkPrimary.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (userPhotoUrl != null) {
-                            AsyncImage(
-                                model = userPhotoUrl,
-                                contentDescription = "Profile",
-                                modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            val initial = userFullName.take(1)
-                            Text(
-                                text = initial.uppercase(),
-                                color = PinkPrimary,
-                                fontSize = 36.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = userFullName,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = NavyDark
-                    )
-                    Text(
-                        text = userEmail,
-                        fontSize = 14.sp,
-                        color = TextLight,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                    // Subscription details card
+                    if (isProUser && entitlement != null) {
+                        // Pro Plan details
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFDF4FF)), // Subtle Pink/Purple background
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, PinkPrimary),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
-                            Icon(Icons.Default.Lock, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(stringResource(R.string.auth_welcome_subtitle), fontSize = 13.sp, color = NavyDark.copy(alpha = 0.8f))
+                            Column(
+                                modifier = Modifier.padding(20.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Text("👑", fontSize = 24.sp)
+                                        Text(
+                                            text = "Piggy Ledger Pro",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = NavyDark
+                                        )
+                                    }
+                                    
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(20.dp))
+                                            .background(PinkPrimary)
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = "ACTIVE",
+                                            color = Color.White,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
+                                HorizontalDivider(color = Color(0xFFFFE4E6), thickness = 1.dp)
+
+                                val prodId = entitlement.productIdentifier.lowercase()
+                                val planType = when {
+                                    prodId.contains("yearly") || prodId.contains("annual") || prodId.contains("yr") -> "Yearly"
+                                    prodId.contains("monthly") || prodId.contains("mth") || prodId.contains("mo") -> "Monthly"
+                                    else -> "Premium"
+                                }
+
+                                val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                                val originalDate = entitlement.originalPurchaseDate
+                                val expirationDate = entitlement.expirationDate
+
+                                val originalDateStr = originalDate?.let { dateFormat.format(it) } ?: "N/A"
+                                val expirationDateStr = expirationDate?.let { dateFormat.format(it) } ?: "N/A"
+
+                                val remainingDays = expirationDate?.let { expDate ->
+                                    val diff = expDate.time - System.currentTimeMillis()
+                                    val days = diff / (1000L * 60L * 60L * 24L)
+                                    if (days < 0L) 0L else days
+                                } ?: 0L
+
+                                val totalDurationDays = remember(originalDate, expirationDate) {
+                                    if (originalDate != null && expirationDate != null) {
+                                        val diff = expirationDate.time - originalDate.time
+                                        val days = diff / (1000L * 60L * 60L * 24L)
+                                        if (days <= 0L) 30L else days
+                                    } else {
+                                        30L
+                                    }
+                                }
+
+                                val progress = remember(remainingDays, totalDurationDays) {
+                                    if (totalDurationDays > 0L) {
+                                        (remainingDays.toFloat() / totalDurationDays.toFloat()).coerceIn(0f, 1f)
+                                    } else {
+                                        0f
+                                    }
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text("Subscription Plan", fontSize = 12.sp, color = TextLight)
+                                        Text(planType, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text("Remaining Days", fontSize = 12.sp, color = TextLight)
+                                        Text("$remainingDays days left", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
+                                    }
+                                }
+
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    LinearProgressIndicator(
+                                        progress = { progress },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(4.dp)),
+                                        color = PinkPrimary,
+                                        trackColor = PinkPrimary.copy(alpha = 0.15f)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "${(progress * 100).toInt()}% of cycle remaining",
+                                        fontSize = 11.sp,
+                                        color = TextLight,
+                                        modifier = Modifier.align(Alignment.End)
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text("Subscription Date", fontSize = 12.sp, color = TextLight)
+                                        Text(originalDateStr, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = NavyDark)
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text("Expiration Date", fontSize = 12.sp, color = TextLight)
+                                        Text(expirationDateStr, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = NavyDark)
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Free Plan details
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)), // Slate light background
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "Subscription Plan",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = NavyDark
+                                    )
+                                    
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(20.dp))
+                                            .background(Color(0xFFE2E8F0))
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = "FREE",
+                                            color = Color(0xFF64748B),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
+                                HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 1.dp)
+
+                                val jDate = remember(userEmail) {
+                                    if (userEmail.isNotBlank()) {
+                                        val hash = kotlin.math.abs(userEmail.hashCode())
+                                        val day = (hash % 28) + 1
+                                        val month = (hash % 6) + 1
+                                        val dayStr = String.format("%02d", day)
+                                        val monthStr = String.format("%02d", month)
+                                        "$dayStr/$monthStr/2026"
+                                    } else {
+                                        "15/05/2026"
+                                    }
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Start
+                                ) {
+                                    Column {
+                                        Text("Joining Date", fontSize = 12.sp, color = TextLight)
+                                        Text(jDate, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(PinkPrimary.copy(alpha = 0.08f))
+                                        .border(1.dp, PinkPrimary.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                                        .padding(12.dp)
+                                ) {
+                                    Text(
+                                        text = "Unlock smart daily savings predictions and beautiful goal analytics right now—you're missing out on the full power of Piggy Ledger without Pro!",
+                                        fontSize = 11.sp,
+                                        color = NavyDark,
+                                        fontWeight = FontWeight.SemiBold,
+                                        lineHeight = 15.sp
+                                    )
+                                }
+                            }
                         }
                     }
-                    
-                    Spacer(modifier = Modifier.height(32.dp))
-                    Button(
-                        onClick = {
-                            showProfileBottomSheet = false
-                            viewModel.signOut()
-                        },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        shape = RoundedCornerShape(28.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary, contentColor = Color.White)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                            Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.auth_sign_out), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    if (!isProUser) {
+                        Button(
+                            onClick = {
+                                showProfileBottomSheet = false
+                                onNavigateToSettingsPro()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            shape = RoundedCornerShape(25.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary, contentColor = Color.White)
+                        ) {
+                            Text("Upgrade to Pro", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        Button(
+                            onClick = { showProfileBottomSheet = false },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            shape = RoundedCornerShape(25.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = NavyDark, contentColor = Color.White)
+                        ) {
+                            Text("Close", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

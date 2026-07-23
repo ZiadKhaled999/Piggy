@@ -55,9 +55,11 @@ import com.oryno.piggy_ledger.ui.theme.AccentBlue
 @Composable
 fun SettingsScreen(
     viewModel: PiggyLedgerViewModel,
-    onNavigateToPendingTransactions: () -> Unit
+    initialMode: SettingsMode = SettingsMode.MAIN,
+    onNavigateToPendingTransactions: () -> Unit,
+    onBackClick: (() -> Unit)? = null
 ) {
-    var settingsMode by remember { mutableStateOf(SettingsMode.MAIN) }
+    var settingsMode by remember { mutableStateOf(initialMode) }
     val context = LocalContext.current
 
     val createDocumentLauncher = rememberLauncherForActivityResult(
@@ -129,7 +131,13 @@ fun SettingsScreen(
                 DetailSettingsView(
                     mode = settingsMode,
                     viewModel = viewModel,
-                    onBack = { settingsMode = SettingsMode.MAIN },
+                    onBack = {
+                        if (initialMode != SettingsMode.MAIN) {
+                            onBackClick?.invoke()
+                        } else {
+                            settingsMode = SettingsMode.MAIN
+                        }
+                    },
                     createDocumentLauncher = createDocumentLauncher,
                     openDocumentLauncher = openDocumentLauncher
                 )
@@ -184,6 +192,13 @@ fun SettingsMainContent(
             title = stringResource(R.string.security),
             iconRes = R.drawable.img_settings_security,
             onClick = { onModeChange(SettingsMode.SECURITY) }
+        )
+        
+        SettingsItem(
+            title = stringResource(R.string.piggy_ledger_pro),
+            iconRes = null,
+            iconVector = Icons.Default.Star,
+            onClick = { onModeChange(SettingsMode.PRO) }
         )
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -272,6 +287,7 @@ fun DetailSettingsView(
                     SettingsMode.BACKUP -> stringResource(R.string.backup_data_title)
                     SettingsMode.RESTORE -> stringResource(R.string.restore_data_title)
                     SettingsMode.SECURITY -> stringResource(R.string.security)
+                    SettingsMode.PRO -> stringResource(R.string.piggy_ledger_pro)
                     else -> ""
                 },
                 fontSize = 20.sp,
@@ -873,6 +889,9 @@ fun DetailSettingsView(
             SettingsMode.SECURITY -> {
                 SecuritySettingsView(viewModel = viewModel)
             }
+            SettingsMode.PRO -> {
+                PiggyLedgerProView()
+            }
             else -> {}
         }
     }
@@ -1234,5 +1253,68 @@ fun SettingsLanguageOption(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun PiggyLedgerProView() {
+    var isPro by remember { mutableStateOf<Boolean?>(null) }
+    var customerInfo by remember { mutableStateOf<com.revenuecat.purchases.CustomerInfo?>(null) }
+
+    LaunchedEffect(Unit) {
+        com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
+            object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
+                override fun onReceived(customerInfo: com.revenuecat.purchases.CustomerInfo) {
+                    isPro = customerInfo.entitlements["Piggy Ledger Pro"]?.isActive == true
+                }
+                override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                    isPro = false
+                }
+            }
+        )
+    }
+
+    if (isPro == null) {
+        Box(modifier = Modifier.fillMaxSize().height(200.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = PinkPrimary)
+        }
+    } else if (isPro == true) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(Icons.Default.Star, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(64.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("You are a Piggy Ledger Pro!", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Thank you for your support. All features are unlocked.", fontSize = 14.sp, color = TextLight, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            var showCustomerCenter by remember { mutableStateOf(false) }
+            
+            Button(
+                onClick = { 
+                    showCustomerCenter = true
+                },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary, contentColor = Color.White)
+            ) {
+                Text("Manage Subscription", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            }
+            
+            if (showCustomerCenter) {
+                com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter(
+                    modifier = Modifier.fillMaxSize(),
+                    onDismiss = { showCustomerCenter = false }
+                )
+            }
+        }
+    } else {
+        com.revenuecat.purchases.ui.revenuecatui.Paywall(
+            options = com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder(dismissRequest = {
+                // Handle dismiss if needed
+            }).build()
+        )
     }
 }

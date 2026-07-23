@@ -641,4 +641,6 @@
     <string name="toast_loan_payment_added">Payment logged successfully!</string>
     <string name="toast_loan_closed">Loan marked as fully paid!</string>
     <string name="toast_loan_deleted">Loan record deleted.</string>
+    <string name="piggy_ledger_pro">Piggy Ledger Pro</string>
+    <string name="piggy_ledger_pro_desc">Unlock all features with Piggy Ledger Pro.</string>
 </resources>

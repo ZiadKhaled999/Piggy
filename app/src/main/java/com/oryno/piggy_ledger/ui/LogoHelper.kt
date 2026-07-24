@@ -169,6 +169,7 @@ fun BrandLogo(
     iconColorHex: String?,
     modifier: Modifier = Modifier
 ) {
+    android.util.Log.d("BrandLogo", "Rendering logo for provider: $provider, type: $accountType")
     val config = getBrandConfig(provider, accountType)
     
     Box(

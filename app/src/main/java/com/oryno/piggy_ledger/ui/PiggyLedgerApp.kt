@@ -51,12 +51,12 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
+import android.widget.Toast
 
 @Composable
 fun PiggyLedgerApp(factory: ViewModelFactory) {
     val navController = rememberNavController()
     val viewModel: PiggyLedgerViewModel = viewModel(factory = factory)
-    val voiceViewModel: VoiceLedgerViewModel = viewModel(factory = factory)
     
     val hasOnboarded by viewModel.hasOnboarded.collectAsState()
     val hasLanguageSelected by viewModel.hasLanguageSelected.collectAsState()
@@ -148,18 +148,26 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                 }
                 
                 composable<Screen.MainContainer> {
-                    MainContainer(viewModel = viewModel, voiceViewModel = voiceViewModel, appNavController = navController)
+                    MainContainer(viewModel = viewModel, appNavController = navController)
                 }
 
                 // Sub-screens that are not part of the main tabs but need to be accessible
                 composable<Screen.CreateGoal> {
+                    val goals by viewModel.goals.collectAsState()
+                    val isPremium by viewModel.isPremium.collectAsState()
+                    val context = LocalContext.current
+
                     LaunchedEffect(Unit) {
                         PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Create Goal"))
                     }
                     CreateGoalScreen(
                         onGoalCreated = { name, amount ->
-                            viewModel.addGoal(name, amount)
-                            navController.popBackStack()
+                            if (viewModel.canAddGoal(goals.size)) {
+                                viewModel.addGoal(name, amount)
+                                navController.popBackStack()
+                            } else {
+                                Toast.makeText(context, "Upgrade to Pro to add more goals", Toast.LENGTH_SHORT).show()
+                            }
                         },
                         onBack = { navController.popBackStack() }
                     )
@@ -219,7 +227,11 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                         }
                     }
                     LaunchedEffect(mode) {
-                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Settings", "mode" to mode.name))
+                        try {
+                            PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Settings", "mode" to mode.name))
+                        } catch (e: Exception) {
+                            android.util.Log.e("PostHog", "Failed to capture screen view", e)
+                        }
                     }
                     SettingsScreen(
                         viewModel = viewModel,
@@ -236,7 +248,6 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
 @Composable
 fun MainContainer(
     viewModel: PiggyLedgerViewModel,
-    voiceViewModel: VoiceLedgerViewModel,
     appNavController: NavHostController
 ) {
     val bottomNavController = rememberNavController()
@@ -333,7 +344,6 @@ fun MainContainer(
                             }
                             DashboardScreen(
                                 viewModel = viewModel,
-                                voiceViewModel = voiceViewModel,
                                 onMenuClick = { isDrawerOpen = true },
                                 onNavigateToCreateGoal = { appNavController.navigate(Screen.CreateGoal) },
                                 onNavigateToMyGoals = { bottomNavController.navigate(Screen.MyGoals) },
@@ -696,6 +706,14 @@ fun DrawerSettingsContent(
                     }
                 ),
                 DrawerMenuItem(
+                    title = stringResource(R.string.account_identifiers),
+                    iconRes = R.drawable.img_settings_identifiers_1784901671596,
+                    onClick = {
+                        onClose()
+                        appNavController.navigate(Screen.Settings(SettingsMode.ACCOUNT_IDENTIFIERS.name))
+                    }
+                ),
+                DrawerMenuItem(
                     title = stringResource(R.string.language),
                     iconRes = R.drawable.img_settings_language,
                     onClick = {
@@ -745,8 +763,7 @@ fun DrawerSettingsContent(
                 ),
                 DrawerMenuItem(
                     title = stringResource(R.string.piggy_ledger_pro),
-                    iconRes = null,
-                    iconVector = Icons.Default.Star,
+                    iconRes = R.drawable.img_settings_pro,
                     onClick = {
                         onClose()
                         appNavController.navigate(Screen.Settings(SettingsMode.PRO.name))
@@ -754,13 +771,12 @@ fun DrawerSettingsContent(
                 ),
                 DrawerMenuItem(
                     title = "Share",
-                    iconRes = null,
-                    iconVector = Icons.Default.Share,
+                    iconRes = R.drawable.img_settings_share,
                     onClick = {
                         onClose()
                         val sendIntent = Intent().apply {
                             action = Intent.ACTION_SEND
-                            putExtra(Intent.EXTRA_TEXT, "Check out Piggy Ledger, the ultimate personal finance companion! Manage your accounts, tracking goals, and ledger easily.")
+                            putExtra(Intent.EXTRA_TEXT, "Check out Piggy Ledger! https://play.google.com/store/apps/details?id=com.oryno.piggy_ledger")
                             type = "text/plain"
                         }
                         val shareIntent = Intent.createChooser(sendIntent, null)
@@ -825,8 +841,11 @@ fun DrawerSettingsContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    onClose()
+                    appNavController.navigate(Screen.Auth) {
+                        popUpTo(0) { inclusive = true }
+                    }
                     viewModel.signOut()
+                    onClose()
                 }
                 .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,

@@ -20,6 +20,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -47,7 +50,6 @@ import kotlin.math.sin
 @Composable
 fun DashboardScreen(
     viewModel: PiggyLedgerViewModel,
-    voiceViewModel: VoiceLedgerViewModel,
     onMenuClick: () -> Unit,
     onNavigateToCreateGoal: () -> Unit,
     onNavigateToMyGoals: () -> Unit,
@@ -76,6 +78,7 @@ fun DashboardScreen(
     val authUserEmail by viewModel.authUserEmail.collectAsState()
     val authUserPhotoUrl by viewModel.authUserPhotoUrl.collectAsState()
     var showProfileBottomSheet by remember { mutableStateOf(false) }
+    val profileSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val user by Clerk.userFlow.collectAsStateWithLifecycle()
 
     var customerInfo by remember { mutableStateOf<com.revenuecat.purchases.CustomerInfo?>(null) }
@@ -123,18 +126,6 @@ fun DashboardScreen(
     val activeLoans = loans.filter { !it.isPaidOff }
     val totalLoan = activeLoans.sumOf { it.amount }
 
-    /*
-    val voiceUiState by voiceViewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-
-    LaunchedEffect(voiceUiState) {
-        if (voiceUiState is VoiceUiState.Error) {
-            Toast.makeText(context, (voiceUiState as VoiceUiState.Error).message, Toast.LENGTH_LONG).show()
-            voiceViewModel.cancelRecording() // Reset state to Idle
-        }
-    }
-    */
-
     Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF4F6F9))) {
         LazyColumn(
             modifier = Modifier
@@ -174,43 +165,12 @@ fun DashboardScreen(
                         }
                     }
                     
-                    Box(contentAlignment = Alignment.TopCenter) {
-                        Box(
-                            modifier = Modifier
-                                .padding(top = 4.dp)
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(Color.White)
-                                .border(1.dp, Color(0xFFE2E8F0), CircleShape)
-                                .clickable { showProfileBottomSheet = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (userPhotoUrl != null) {
-                                AsyncImage(
-                                    model = userPhotoUrl,
-                                    contentDescription = "Profile",
-                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = "Profile",
-                                    tint = NavyDark,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-
-                        if (isProUser) {
-                            Text(
-                                text = "👑",
-                                fontSize = 16.sp,
-                                modifier = Modifier
-                                    .offset(y = (-8).dp)
-                            )
-                        }
-                    }
+                    PremiumAvatar(
+                        imageUrl = userPhotoUrl,
+                        isPro = isProUser,
+                        size = 44.dp,
+                        onClick = { showProfileBottomSheet = true }
+                    )
                 }
 
                 // Welcome back header row
@@ -339,24 +299,85 @@ fun DashboardScreen(
         if (showProfileBottomSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showProfileBottomSheet = false },
+                sheetState = profileSheetState,
                 containerColor = Color.White,
-                dragHandle = { BottomSheetDefaults.DragHandle(color = NavyDark.copy(alpha = 0.3f)) }
+                dragHandle = { BottomSheetDefaults.DragHandle(color = NavyDark.copy(alpha = 0.2f)) }
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp)
-                        .padding(bottom = 32.dp, top = 16.dp),
+                        .padding(bottom = 40.dp, top = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Subscription details card
+                    // 2. Subscription Details Card
                     if (isProUser && entitlement != null) {
-                        // Pro Plan details
-                        Card(
+                        val originalDate = entitlement.originalPurchaseDate
+                        val latestDate = entitlement.latestPurchaseDate
+                        val expirationDate = entitlement.expirationDate
+
+                        val prodId = entitlement.productIdentifier.lowercase()
+                        val planType = when {
+                            prodId.contains("lifetime") || prodId.contains("life") || prodId.contains("lt") || expirationDate == null -> "Premium (Lifetime)"
+                            prodId.contains("yearly") || prodId.contains("annual") || prodId.contains("yr") -> "Premium (Yearly)"
+                            prodId.contains("monthly") || prodId.contains("mth") || prodId.contains("mo") -> "Premium (Monthly)"
+                            else -> "Premium"
+                        }
+
+                        val isLifetime = planType.contains("Lifetime")
+
+                        val isVeryShortCycle = remember(originalDate, latestDate, expirationDate) {
+                            val start = latestDate ?: originalDate ?: java.util.Date()
+                            val end = expirationDate
+                            end != null && (end.time - start.time < 24L * 60L * 60L * 1000L)
+                        }
+
+                        val dateFormat = remember(isVeryShortCycle) {
+                            if (isVeryShortCycle) {
+                                java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault())
+                            } else {
+                                java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                            }
+                        }
+
+                        val latestDateStr = remember(latestDate, originalDate, dateFormat) { 
+                            val d = latestDate ?: originalDate
+                            d?.let { dateFormat.format(it) } ?: "N/A" 
+                        }
+                        val expirationDateStr = remember(expirationDate, dateFormat) { expirationDate?.let { dateFormat.format(it) } ?: "N/A" }
+
+                        val remainingTimeStr = remember(expirationDate) {
+                            expirationDate?.let { expDate ->
+                                val diffMs = expDate.time - System.currentTimeMillis()
+                                when {
+                                    diffMs <= 0 -> "Expired"
+                                    diffMs >= 24L * 60L * 60L * 1000L -> "${diffMs / (24L * 60L * 60L * 1000L)} days left"
+                                    diffMs >= 60L * 60L * 1000L -> "${diffMs / (60L * 60L * 1000L)} hours left"
+                                    else -> "${diffMs / (60L * 1000L)} minutes left"
+                                }
+                            } ?: "N/A"
+                        }
+
+                        val progress = remember(latestDate, originalDate, expirationDate) {
+                            val start = latestDate ?: originalDate
+                            if (start != null && expirationDate != null) {
+                                val totalMs = expirationDate.time - start.time
+                                val remainingMs = expirationDate.time - System.currentTimeMillis()
+                                if (totalMs > 0L) {
+                                    (remainingMs.toFloat() / totalMs.toFloat()).coerceIn(0f, 1f)
+                                } else {
+                                    0f
+                                }
+                            } else {
+                                0f
+                            }
+                        }
+
+                        OutlinedCard(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFDF4FF)), // Subtle Pink/Purple background
-                            border = androidx.compose.foundation.BorderStroke(1.5.dp, PinkPrimary),
-                            shape = RoundedCornerShape(16.dp)
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF5F6)), // Light coral pink tint
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFFD1D5)),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(20.dp),
@@ -369,12 +390,17 @@ fun DashboardScreen(
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Text("👑", fontSize = 24.sp)
+                                        Icon(
+                                            imageVector = Icons.Default.Verified,
+                                            contentDescription = null,
+                                            tint = PinkPrimary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
                                         Text(
                                             text = "Piggy Ledger Pro",
-                                            fontSize = 18.sp,
+                                            fontSize = 16.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = NavyDark
                                         )
@@ -382,90 +408,65 @@ fun DashboardScreen(
                                     
                                     Box(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(20.dp))
+                                            .clip(RoundedCornerShape(12.dp))
                                             .background(PinkPrimary)
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                            .padding(horizontal = 10.dp, vertical = 4.dp)
                                     ) {
                                         Text(
                                             text = "ACTIVE",
                                             color = Color.White,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.5.sp
                                         )
                                     }
                                 }
 
-                                HorizontalDivider(color = Color(0xFFFFE4E6), thickness = 1.dp)
-
-                                val prodId = entitlement.productIdentifier.lowercase()
-                                val planType = when {
-                                    prodId.contains("yearly") || prodId.contains("annual") || prodId.contains("yr") -> "Yearly"
-                                    prodId.contains("monthly") || prodId.contains("mth") || prodId.contains("mo") -> "Monthly"
-                                    else -> "Premium"
-                                }
-
-                                val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
-                                val originalDate = entitlement.originalPurchaseDate
-                                val expirationDate = entitlement.expirationDate
-
-                                val originalDateStr = originalDate?.let { dateFormat.format(it) } ?: "N/A"
-                                val expirationDateStr = expirationDate?.let { dateFormat.format(it) } ?: "N/A"
-
-                                val remainingDays = expirationDate?.let { expDate ->
-                                    val diff = expDate.time - System.currentTimeMillis()
-                                    val days = diff / (1000L * 60L * 60L * 24L)
-                                    if (days < 0L) 0L else days
-                                } ?: 0L
-
-                                val totalDurationDays = remember(originalDate, expirationDate) {
-                                    if (originalDate != null && expirationDate != null) {
-                                        val diff = expirationDate.time - originalDate.time
-                                        val days = diff / (1000L * 60L * 60L * 24L)
-                                        if (days <= 0L) 30L else days
-                                    } else {
-                                        30L
-                                    }
-                                }
-
-                                val progress = remember(remainingDays, totalDurationDays) {
-                                    if (totalDurationDays > 0L) {
-                                        (remainingDays.toFloat() / totalDurationDays.toFloat()).coerceIn(0f, 1f)
-                                    } else {
-                                        0f
-                                    }
-                                }
+                                HorizontalDivider(color = Color(0xFFFFD1D5), thickness = 1.dp)
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Column {
-                                        Text("Subscription Plan", fontSize = 12.sp, color = TextLight)
+                                        Text("Subscription Plan", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
+                                        Spacer(modifier = Modifier.height(2.dp))
                                         Text(planType, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                                     }
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text("Remaining Days", fontSize = 12.sp, color = TextLight)
-                                        Text("$remainingDays days left", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
+                                    if (!isLifetime) {
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text("Remaining Time", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(remainingTimeStr, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
+                                        }
+                                    } else {
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text("Status", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text("Lifetime Access", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
+                                        }
                                     }
                                 }
 
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    LinearProgressIndicator(
-                                        progress = { progress },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(8.dp)
-                                            .clip(RoundedCornerShape(4.dp)),
-                                        color = PinkPrimary,
-                                        trackColor = PinkPrimary.copy(alpha = 0.15f)
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "${(progress * 100).toInt()}% of cycle remaining",
-                                        fontSize = 11.sp,
-                                        color = TextLight,
-                                        modifier = Modifier.align(Alignment.End)
-                                    )
+                                if (!isLifetime) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        LinearProgressIndicator(
+                                            progress = { progress },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(6.dp)
+                                                .clip(CircleShape),
+                                            color = PinkPrimary,
+                                            trackColor = PinkPrimary.copy(alpha = 0.12f)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "${(progress * 100).toInt()}% of billing period remaining",
+                                            fontSize = 11.sp,
+                                            color = TextLight,
+                                            modifier = Modifier.align(Alignment.End)
+                                        )
+                                    }
                                 }
 
                                 Row(
@@ -473,23 +474,27 @@ fun DashboardScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Column {
-                                        Text("Subscription Date", fontSize = 12.sp, color = TextLight)
-                                        Text(originalDateStr, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = NavyDark)
+                                        Text("Subscription Date", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(latestDateStr, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = NavyDark)
                                     }
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text("Expiration Date", fontSize = 12.sp, color = TextLight)
-                                        Text(expirationDateStr, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = NavyDark)
+                                    if (!isLifetime) {
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text("Expiration Date", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(expirationDateStr, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = NavyDark)
+                                        }
                                     }
                                 }
                             }
                         }
                     } else {
-                        // Free Plan details
-                        Card(
+                        // Standard Free Plan
+                        OutlinedCard(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)), // Slate light background
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                            shape = RoundedCornerShape(16.dp)
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE2E8F0)),
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(20.dp),
@@ -500,75 +505,79 @@ fun DashboardScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(
-                                        text = "Subscription Plan",
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = NavyDark
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.StarBorder,
+                                            contentDescription = null,
+                                            tint = Color(0xFF64748B),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            text = "Standard Membership",
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = NavyDark
+                                        )
+                                    }
                                     
                                     Box(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(20.dp))
+                                            .clip(RoundedCornerShape(12.dp))
                                             .background(Color(0xFFE2E8F0))
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                            .padding(horizontal = 10.dp, vertical = 4.dp)
                                     ) {
                                         Text(
                                             text = "FREE",
                                             color = Color(0xFF64748B),
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.5.sp
                                         )
                                     }
                                 }
 
                                 HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 1.dp)
 
-                                val jDate = remember(userEmail) {
-                                    if (userEmail.isNotBlank()) {
-                                        val hash = kotlin.math.abs(userEmail.hashCode())
-                                        val day = (hash % 28) + 1
-                                        val month = (hash % 6) + 1
-                                        val dayStr = String.format("%02d", day)
-                                        val monthStr = String.format("%02d", month)
-                                        "$dayStr/$monthStr/2026"
-                                    } else {
-                                        "15/05/2026"
-                                    }
-                                }
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.Start
-                                ) {
-                                    Column {
-                                        Text("Joining Date", fontSize = 12.sp, color = TextLight)
-                                        Text(jDate, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                                    }
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(PinkPrimary.copy(alpha = 0.08f))
-                                        .border(1.dp, PinkPrimary.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
-                                        .padding(12.dp)
-                                ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text(
-                                        text = "Unlock smart daily savings predictions and beautiful goal analytics right now—you're missing out on the full power of Piggy Ledger without Pro!",
+                                        text = "Plan Tier",
                                         fontSize = 11.sp,
+                                        color = TextLight,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        text = "Free Edition (Standard Ledger)",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = NavyDark
+                                    )
+                                }
+                                
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(
+                                        text = "Features Enabled",
+                                        fontSize = 11.sp,
+                                        color = TextLight,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        text = "✓ Basic ledger entry & local savings tracking\n✓ Offline data isolation & device security",
+                                        fontSize = 13.sp,
                                         color = NavyDark,
-                                        fontWeight = FontWeight.SemiBold,
-                                        lineHeight = 15.sp
+                                        fontWeight = FontWeight.Medium,
+                                        lineHeight = 18.sp
                                     )
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
+                    // Buttons
                     if (!isProUser) {
                         Button(
                             onClick = {
@@ -577,22 +586,48 @@ fun DashboardScreen(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp),
-                            shape = RoundedCornerShape(25.dp),
+                                .height(52.dp),
+                            shape = RoundedCornerShape(26.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary, contentColor = Color.White)
                         ) {
-                            Text("Upgrade to Pro", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Upgrade to Premium Pro", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
                     } else {
                         Button(
+                            onClick = {
+                                showProfileBottomSheet = false
+                                onNavigateToSettingsPro() // Brings up billing / customer center options
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(26.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary, contentColor = Color.White)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Manage Plan & Billing", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        }
+                        
+                        Spacer(modifier = Modifier.height(10.dp))
+                        
+                        TextButton(
                             onClick = { showProfileBottomSheet = false },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp),
-                            shape = RoundedCornerShape(25.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = NavyDark, contentColor = Color.White)
+                                .height(48.dp)
                         ) {
-                            Text("Close", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Text("Close", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextLight)
                         }
                     }
                 }
@@ -623,234 +658,6 @@ fun DashboardScreen(
                 )
             }
         }
-        
-        /*
-        // Dashboard Voice Record Button
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            com.oryno.piggy_ledger.ui.components.VoiceRecordButton(
-                onRecordStart = { voiceViewModel.startRecording() },
-                onRecordSend = { voiceViewModel.stopAndProcessRecording() },
-                onRecordCancel = { voiceViewModel.cancelRecording() }
-            )
-        }
-        */
-
-        /*
-        // Voice Loading Overlay
-        if (voiceUiState is VoiceUiState.Processing) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(enabled = false) {},
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(color = AccentBlue)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(stringResource(R.string.processing_voice), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                }
-            }
-        }
-        */
-
-        /*
-        // Voice Result Bottom Sheet
-        if (voiceUiState is VoiceUiState.Result) {
-            val resultState = voiceUiState as VoiceUiState.Result
-            var isCorrecting by remember { mutableStateOf(false) }
-            var editedText by remember { mutableStateOf(resultState.text) }
-
-            androidx.compose.ui.window.Dialog(
-                onDismissRequest = { voiceViewModel.cancelResult() },
-                properties = androidx.compose.ui.window.DialogProperties(
-                    usePlatformDefaultWidth = false,
-                    decorFitsSystemWindows = false
-                )
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.4f))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { voiceViewModel.cancelResult() }
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
-                            .background(Color.White)
-                            .navigationBarsPadding()
-                            .padding(24.dp)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) {} // Block clicks from closing dialog
-                    ) {
-                        if (isCorrecting) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Text(stringResource(R.string.correct_transaction), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                                Spacer(modifier = Modifier.height(16.dp))
-                                OutlinedTextField(
-                                    value = editedText,
-                                    onValueChange = { editedText = it },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = AccentBlue,
-                                        cursorColor = AccentBlue
-                                    )
-                                )
-                                Spacer(modifier = Modifier.height(24.dp))
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    OutlinedButton(
-                                        onClick = { isCorrecting = false; voiceViewModel.resumeCountdown() },
-                                        modifier = Modifier.weight(1f),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextLight)
-                                    ) {
-                                        Text(stringResource(R.string.cancel))
-                                    }
-                                    Button(
-                                        onClick = { 
-                                            isCorrecting = false
-                                            voiceViewModel.processTranscript(editedText)
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                        colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
-                                    ) {
-                                        Text(stringResource(R.string.re_process))
-                                    }
-                                }
-                            }
-                        } else {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                                    Text(stringResource(R.string.transaction_details), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                                    Surface(
-                                        color = AccentBlue.copy(alpha = 0.1f),
-                                        shape = CircleShape
-                                    ) {
-                                        Text(
-                                            text = "${resultState.countdown}s",
-                                            color = AccentBlue,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                        )
-                                    }
-                                }
-                                
-                                Spacer(modifier = Modifier.height(24.dp))
-                                
-                                Text(stringResource(R.string.you_said), fontSize = 14.sp, color = TextLight)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text("\"${resultState.text}\"", fontSize = 16.sp, color = TextDark, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
-                                
-                                Spacer(modifier = Modifier.height(24.dp))
-                                
-                                // Parsed info
-                                val parsed = resultState.parsed
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Column {
-                                        Text(stringResource(R.string.amount), fontSize = 12.sp, color = TextLight)
-                                        Text(
-                                            text = if (parsed.amount > 0) "$${parsed.amount}" else "Unknown",
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (!parsed.isExpense) Color(0xFF4CAF50) else Color(0xFFFF5252)
-                                        )
-                                    }
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text(stringResource(R.string.target_account_goal), fontSize = 12.sp, color = TextLight)
-                                        Box {
-                                            var targetExpanded by remember { mutableStateOf(false) }
-                                            Row(
-                                                modifier = Modifier.clickable { 
-                                                    voiceViewModel.pauseCountdown()
-                                                    targetExpanded = true 
-                                                },
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(
-                                                    text = parsed.accountName ?: parsed.goalName ?: "Select Target",
-                                                    fontSize = 16.sp,
-                                                    fontWeight = FontWeight.Medium,
-                                                    color = AccentBlue
-                                                )
-                                                Icon(Icons.Default.ArrowDropDown, contentDescription = "Select", tint = AccentBlue)
-                                            }
-                                            DropdownMenu(
-                                                expanded = targetExpanded,
-                                                onDismissRequest = { targetExpanded = false }
-                                            ) {
-                                                accounts.forEach { acc ->
-                                                    DropdownMenuItem(
-                                                        text = { Text(stringResource(R.string.account_name_format, acc.name)) },
-                                                        onClick = {
-                                                            voiceViewModel.updateTarget(accountName = acc.name, goalName = null)
-                                                            targetExpanded = false
-                                                        }
-                                                    )
-                                                }
-                                                goals.forEach { goal ->
-                                                    DropdownMenuItem(
-                                                        text = { Text(stringResource(R.string.goal_name_format, goal.name)) },
-                                                        onClick = {
-                                                            voiceViewModel.updateTarget(accountName = null, goalName = goal.name)
-                                                            targetExpanded = false
-                                                        }
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                
-                                Spacer(modifier = Modifier.height(32.dp))
-                                
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    OutlinedButton(
-                                        onClick = { voiceViewModel.cancelResult() },
-                                        modifier = Modifier.weight(1f),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF5252), containerColor = Color.Transparent)
-                                    ) {
-                                        Text(stringResource(R.string.cancel))
-                                    }
-                                    OutlinedButton(
-                                        onClick = { 
-                                            voiceViewModel.pauseCountdown()
-                                            isCorrecting = true 
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDark)
-                                    ) {
-                                        Text(stringResource(R.string.correct))
-                                    }
-                                    Button(
-                                        onClick = { voiceViewModel.confirmTransaction() },
-                                        modifier = Modifier.weight(1.5f),
-                                        colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
-                                    ) {
-                                        Text(stringResource(R.string.go_ahead))
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        */
     }
 }
 
@@ -1187,6 +994,97 @@ fun GoalsHorizontalList(goals: List<com.oryno.piggy_ledger.data.Goal>, transacti
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PremiumAvatar(
+    imageUrl: String?,
+    isPro: Boolean,
+    size: Dp = 44.dp,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(size + 14.dp)
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(Color.White)
+                .let {
+                    if (isPro) {
+                        it.border(2.5.dp, Color(0xFFFBBF24), CircleShape)
+                    } else {
+                        it.border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                    }
+                }
+                .padding(if (isPro) 3.dp else 0.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                if (imageUrl != null) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Profile",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Profile",
+                        tint = NavyDark,
+                        modifier = Modifier.size(size * 0.55f)
+                    )
+                }
+            }
+        }
+
+        if (isPro) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = (-2).dp, y = (-2).dp)
+                    .rotate(22f)
+                    .size((size * 0.45f).coerceAtLeast(18.dp))
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val w = this.size.width
+                    val h = this.size.height
+                    val path = Path().apply {
+                        moveTo(w * 0.1f, h * 0.85f)
+                        lineTo(w * 0.1f, h * 0.35f)
+                        lineTo(w * 0.35f, h * 0.6f)
+                        lineTo(w * 0.5f, h * 0.15f)
+                        lineTo(w * 0.65f, h * 0.6f)
+                        lineTo(w * 0.9f, h * 0.35f)
+                        lineTo(w * 0.9f, h * 0.85f)
+                        close()
+                    }
+                    drawPath(
+                        path = path,
+                        color = Color(0xFFFBBF24)
+                    )
+                    val radius = w * 0.1f
+                    drawCircle(color = Color(0xFFFBBF24), radius = radius, center = Offset(w * 0.1f, h * 0.35f))
+                    drawCircle(color = Color(0xFFFBBF24), radius = radius, center = Offset(w * 0.5f, h * 0.15f))
+                    drawCircle(color = Color(0xFFFBBF24), radius = radius, center = Offset(w * 0.9f, h * 0.35f))
                 }
             }
         }

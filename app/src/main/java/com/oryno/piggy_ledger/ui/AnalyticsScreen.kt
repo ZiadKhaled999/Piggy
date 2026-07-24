@@ -1,5 +1,6 @@
 package com.oryno.piggy_ledger.ui
 
+import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -102,11 +103,20 @@ fun AnalyticsScreen(
     val context = LocalContext.current
 
     // Filter states
+    val isPremium by viewModel.isPremium.collectAsState()
     var selectedPeriod by remember { mutableStateOf(TimePeriod.ALL_TIME) }
     var selectedType by remember { mutableStateOf(TxTypeFilter.EXPENSES) }
     var groupingMode by remember { mutableStateOf(GroupingMode.CATEGORY) }
     var chartType by remember { mutableStateOf(ChartType.DONUT) }
     var selectedAccountIdFilter by remember { mutableStateOf<Long?>(null) } // null = All Accounts
+
+    // Enforce limits for free users
+    LaunchedEffect(isPremium) {
+        if (!isPremium) {
+            selectedPeriod = TimePeriod.THIS_MONTH
+            chartType = ChartType.PIE
+        }
+    }
 
     // Bottom sheets state
     var showAccountBottomSheet by remember { mutableStateOf(false) }
@@ -390,7 +400,13 @@ fun AnalyticsScreen(
                             val isSelected = selectedPeriod == period
                             FilterChip(
                                 selected = isSelected,
-                                onClick = { selectedPeriod = period },
+                                onClick = { 
+                                    if (isPremium || period == TimePeriod.THIS_MONTH) {
+                                        selectedPeriod = period 
+                                    } else {
+                                        Toast.makeText(context, "Upgrade to Pro for more periods", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
                                 label = { Text(label, fontWeight = FontWeight.Bold, fontSize = 12.sp) },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = PinkPrimary,
@@ -509,7 +525,13 @@ fun AnalyticsScreen(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(if (active) PinkPrimary else Color.Transparent)
-                                        .clickable { chartType = type }
+                                        .clickable { 
+                                            if (isPremium || type == ChartType.PIE) {
+                                                chartType = type
+                                            } else {
+                                                Toast.makeText(context, "Upgrade to Pro for other charts", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
                                         .padding(horizontal = 10.dp, vertical = 6.dp)
                                 ) {
                                     Icon(

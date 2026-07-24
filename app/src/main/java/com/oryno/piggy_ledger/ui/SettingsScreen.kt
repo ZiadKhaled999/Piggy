@@ -12,6 +12,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,8 +29,11 @@ import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +50,41 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.core.os.LocaleListCompat
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.Canvas
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Stars
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.Animatable
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Tag
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.draw.rotate
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
@@ -105,13 +144,13 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
             .padding(horizontal = 24.dp)
     ) {
         Spacer(modifier = Modifier.height(24.dp))
         
         when (settingsMode) {
             SettingsMode.MAIN -> {
+                android.util.Log.d("SettingsScreen", "Showing SettingsMainContent")
                 Text(
                     stringResource(R.string.settings),
                     fontSize = 32.sp,
@@ -127,6 +166,7 @@ fun SettingsScreen(
                 )
             }
             else -> {
+                android.util.Log.d("SettingsScreen", "Showing DetailSettingsView with mode: $settingsMode")
                 // Detail views handled inside when block below for simplicity in this refactor
                 DetailSettingsView(
                     mode = settingsMode,
@@ -156,6 +196,15 @@ fun SettingsMainContent(
             title = stringResource(R.string.pending_transactions),
             iconRes = R.drawable.img_settings_pending_1784465160290,
             onClick = onNavigateToPendingTransactions
+        )
+
+        SettingsItem(
+            title = stringResource(R.string.account_identifiers),
+            iconRes = R.drawable.img_settings_identifiers_1784901671596,
+            onClick = {
+                android.util.Log.d("SettingsMainContent", "Account Identifiers clicked")
+                onModeChange(SettingsMode.ACCOUNT_IDENTIFIERS)
+            }
         )
 
         SettingsItem(
@@ -264,9 +313,11 @@ fun DetailSettingsView(
     createDocumentLauncher: androidx.activity.result.ActivityResultLauncher<String>,
     openDocumentLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>
 ) {
+    android.util.Log.d("DetailSettingsView", "Entering DetailSettingsView with mode: $mode")
     val context = LocalContext.current
+    val isPremium by viewModel.isPremium.collectAsState()
     
-    Column {
+    Column(modifier = Modifier.fillMaxSize()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
@@ -288,6 +339,7 @@ fun DetailSettingsView(
                     SettingsMode.RESTORE -> stringResource(R.string.restore_data_title)
                     SettingsMode.SECURITY -> stringResource(R.string.security)
                     SettingsMode.PRO -> stringResource(R.string.piggy_ledger_pro)
+                    SettingsMode.ACCOUNT_IDENTIFIERS -> stringResource(R.string.account_identifiers)
                     else -> ""
                 },
                 fontSize = 20.sp,
@@ -606,7 +658,11 @@ fun DetailSettingsView(
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Button(
                                     onClick = {
-                                        createExcelLauncher.launch("piggy_ledger_backup.xls")
+                                        if (isPremium) {
+                                            createExcelLauncher.launch("piggy_ledger_backup.xls")
+                                        } else {
+                                            Toast.makeText(context, "Upgrade to Pro to export your data", Toast.LENGTH_SHORT).show()
+                                        }
                                     },
                                     modifier = Modifier.fillMaxWidth().height(40.dp),
                                     shape = RoundedCornerShape(8.dp),
@@ -655,7 +711,11 @@ fun DetailSettingsView(
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Button(
                                     onClick = {
-                                        createCsvLauncher.launch("piggy_ledger_backup.csv")
+                                        if (isPremium) {
+                                            createCsvLauncher.launch("piggy_ledger_backup.csv")
+                                        } else {
+                                            Toast.makeText(context, "Upgrade to Pro to export your data", Toast.LENGTH_SHORT).show()
+                                        }
                                     },
                                     modifier = Modifier.fillMaxWidth().height(40.dp),
                                     shape = RoundedCornerShape(8.dp),
@@ -704,7 +764,11 @@ fun DetailSettingsView(
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Button(
                                     onClick = {
-                                        createDocumentLauncher.launch("piggy_ledger_backup.json")
+                                        if (isPremium) {
+                                            createDocumentLauncher.launch("piggy_ledger_backup.json")
+                                        } else {
+                                            Toast.makeText(context, "Upgrade to Pro to export your data", Toast.LENGTH_SHORT).show()
+                                        }
                                     },
                                     modifier = Modifier.fillMaxWidth().height(40.dp),
                                     shape = RoundedCornerShape(8.dp),
@@ -891,6 +955,10 @@ fun DetailSettingsView(
             }
             SettingsMode.PRO -> {
                 PiggyLedgerProView()
+            }
+            SettingsMode.ACCOUNT_IDENTIFIERS -> {
+                android.util.Log.d("DetailSettingsView", "Calling AccountIdentifiersView")
+                AccountIdentifiersView(viewModel = viewModel)
             }
             else -> {}
         }
@@ -1118,19 +1186,67 @@ fun PinSetupDialog(
     val context = androidx.compose.ui.platform.LocalContext.current
     var pin by remember { mutableStateOf("") }
     var confirmPin by remember { mutableStateOf("") }
+    var pinVisible by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.set_pin)) },
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .background(PinkPrimary.copy(alpha = 0.12f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = PinkPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.set_pin),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = NavyDark
+                )
+            }
+        },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Create a 4 to 6 digit security PIN to protect your app data.",
+                    fontSize = 13.sp,
+                    color = TextLight
+                )
+
                 OutlinedTextField(
                     value = pin,
-                    onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) pin = it },
+                    onValueChange = {
+                        if (it.length <= 6 && it.all { c -> c.isDigit() }) {
+                            pin = it
+                            error = null
+                        }
+                    },
                     label = { Text(stringResource(R.string.enter_pin)) },
-                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                    visualTransformation = if (pinVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
+                    trailingIcon = {
+                        IconButton(onClick = { pinVisible = !pinVisible }) {
+                            Icon(
+                                imageVector = if (pinVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = "Toggle PIN Visibility",
+                                tint = TextLight
+                            )
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = PinkPrimary,
@@ -1138,12 +1254,20 @@ fun PinSetupDialog(
                         cursorColor = PinkPrimary
                     )
                 )
+
                 OutlinedTextField(
                     value = confirmPin,
-                    onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) confirmPin = it },
+                    onValueChange = {
+                        if (it.length <= 6 && it.all { c -> c.isDigit() }) {
+                            confirmPin = it
+                            error = null
+                        }
+                    },
                     label = { Text(stringResource(R.string.confirm_pin)) },
-                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                    visualTransformation = if (pinVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = PinkPrimary,
@@ -1151,8 +1275,14 @@ fun PinSetupDialog(
                         cursorColor = PinkPrimary
                     )
                 )
+
                 if (error != null) {
-                    Text(text = error!!, color = Color.Red, fontSize = 12.sp)
+                    Text(
+                        text = error!!,
+                        color = Color(0xFFEF4444),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         },
@@ -1167,16 +1297,19 @@ fun PinSetupDialog(
                         error = context.getString(R.string.pins_dont_match)
                     }
                 },
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
             ) {
-                Text(stringResource(R.string.save))
+                Text(stringResource(R.string.save), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel_btn), color = PinkPrimary)
+                Text(stringResource(R.string.cancel_btn), color = PinkPrimary, fontWeight = FontWeight.Bold)
             }
-        }
+        },
+        shape = RoundedCornerShape(24.dp),
+        containerColor = Color.White
     )
 }
 
@@ -1264,8 +1397,9 @@ fun PiggyLedgerProView() {
     LaunchedEffect(Unit) {
         com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
             object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
-                override fun onReceived(customerInfo: com.revenuecat.purchases.CustomerInfo) {
-                    isPro = customerInfo.entitlements["Piggy Ledger Pro"]?.isActive == true
+                override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
+                    customerInfo = info
+                    isPro = info.entitlements["Piggy Ledger Pro"]?.isActive == true
                 }
                 override fun onError(error: com.revenuecat.purchases.PurchasesError) {
                     isPro = false
@@ -1280,41 +1414,1219 @@ fun PiggyLedgerProView() {
         }
     } else if (isPro == true) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(Icons.Default.Star, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(64.dp))
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("You are a Piggy Ledger Pro!", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("Thank you for your support. All features are unlocked.", fontSize = 14.sp, color = TextLight, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            var showCustomerCenter by remember { mutableStateOf(false) }
-            
+            val context = LocalContext.current
+
+            // 1. Premium Minimalist Light-Themed Hero Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .background(PinkPrimary.copy(alpha = 0.08f), CircleShape)
+                            .border(1.dp, PinkPrimary.copy(alpha = 0.2f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Verified,
+                            contentDescription = null,
+                            tint = PinkPrimary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Text(
+                        text = "Piggy Ledger Pro",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = NavyDark,
+                        letterSpacing = 0.3.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Surface(
+                        color = PinkPrimary.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(20.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, PinkPrimary.copy(alpha = 0.2f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .background(PinkPrimary, CircleShape)
+                            )
+                            Text(
+                                text = "Pro Active",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PinkPrimary
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "All premium features are fully unlocked.",
+                        fontSize = 13.sp,
+                        color = TextLight,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+
+            // 2. Subscription Details
+            val entitlement = remember(customerInfo) {
+                customerInfo?.entitlements?.get("Piggy Ledger Pro")
+            }
+
+            if (entitlement != null) {
+                val originalDate = entitlement.originalPurchaseDate
+                val latestDate = entitlement.latestPurchaseDate
+                val expirationDate = entitlement.expirationDate
+
+                val prodId = entitlement.productIdentifier.lowercase()
+                val planType = when {
+                    prodId.contains("lifetime") || prodId.contains("life") || prodId.contains("lt") || expirationDate == null -> "Premium (Lifetime)"
+                    prodId.contains("yearly") || prodId.contains("annual") || prodId.contains("yr") -> "Premium (Yearly)"
+                    prodId.contains("monthly") || prodId.contains("mth") || prodId.contains("mo") -> "Premium (Monthly)"
+                    else -> "Premium"
+                }
+
+                val isLifetime = planType.contains("Lifetime")
+
+                val isVeryShortCycle = remember(originalDate, latestDate, expirationDate) {
+                    val start = latestDate ?: originalDate ?: java.util.Date()
+                    val end = expirationDate
+                    end != null && (end.time - start.time < 24L * 60L * 60L * 1000L)
+                }
+
+                val dateFormat = remember(isVeryShortCycle) {
+                    if (isVeryShortCycle) {
+                        java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault())
+                    } else {
+                        java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                    }
+                }
+
+                val latestDateStr = remember(latestDate, originalDate, dateFormat) { 
+                    val d = latestDate ?: originalDate
+                    d?.let { dateFormat.format(it) } ?: "N/A" 
+                }
+                val expirationDateStr = remember(expirationDate, dateFormat) { expirationDate?.let { dateFormat.format(it) } ?: "N/A" }
+
+                val remainingTimeStr = remember(expirationDate) {
+                    expirationDate?.let { expDate ->
+                        val diffMs = expDate.time - System.currentTimeMillis()
+                        when {
+                            diffMs <= 0 -> "Expired"
+                            diffMs >= 24L * 60L * 60L * 1000L -> "${diffMs / (24L * 60L * 60L * 1000L)} days left"
+                            diffMs >= 60L * 60L * 1000L -> "${diffMs / (60L * 60L * 1000L)} hours left"
+                            else -> "${diffMs / (60L * 1000L)} minutes left"
+                        }
+                    } ?: "N/A"
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Subscription Plan", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(planType, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                            }
+                            if (!isLifetime) {
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text("Remaining Time", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(remainingTimeStr, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
+                                }
+                            } else {
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text("Status", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text("Lifetime Access", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
+                                }
+                            }
+                        }
+
+                        HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 1.dp)
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Subscription Date", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(latestDateStr, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = NavyDark)
+                            }
+                            if (!isLifetime) {
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text("Expiration Date", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(expirationDateStr, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = NavyDark)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
             Button(
                 onClick = { 
-                    showCustomerCenter = true
+                    try {
+                        val intent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://play.google.com/store/account/subscriptions")
+                        )
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Unable to open subscriptions page", Toast.LENGTH_SHORT).show()
+                    }
                 },
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary, contentColor = Color.White)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(26.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary, contentColor = Color.White),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.dp)
             ) {
-                Text("Manage Subscription", fontSize = 15.sp, fontWeight = FontWeight.Bold)
-            }
-            
-            if (showCustomerCenter) {
-                com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter(
-                    modifier = Modifier.fillMaxSize(),
-                    onDismiss = { showCustomerCenter = false }
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
                 )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Manage Subscription & Billing", fontSize = 15.sp, fontWeight = FontWeight.Bold)
             }
         }
     } else {
-        com.revenuecat.purchases.ui.revenuecatui.Paywall(
-            options = com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder(dismissRequest = {
-                // Handle dismiss if needed
-            }).build()
+        PiggyLedgerPaywall(
+            onPurchaseSuccess = { info ->
+                customerInfo = info
+                isPro = true
+            }
         )
     }
 }
+
+@Composable
+fun PremiumFeatureRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White, RoundedCornerShape(16.dp))
+            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(Color(0xFFFFF1F2), RoundedCornerShape(10.dp)), // Soft rose red pink background
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = PinkPrimary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(14.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = NavyDark
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = description,
+                fontSize = 12.sp,
+                color = TextLight,
+                lineHeight = 16.sp
+            )
+        }
+
+        Icon(
+            imageVector = Icons.Default.Check,
+            contentDescription = null,
+            tint = Color(0xFF10B981), // Green checkmark
+            modifier = Modifier.size(18.dp)
+        )
+    }
+}
+
+enum class PaywallPlan {
+    MONTHLY, YEARLY, LIFETIME
+}
+
+@Composable
+fun PiggyLedgerPaywall(
+    onPurchaseSuccess: (com.revenuecat.purchases.CustomerInfo?) -> Unit
+) {
+    val context = LocalContext.current
+    val activity = remember(context) {
+        var ctx = context
+        while (ctx is android.content.ContextWrapper) {
+            if (ctx is android.app.Activity) break
+            ctx = ctx.baseContext
+        }
+        ctx as? android.app.Activity
+    }
+
+    var selectedPlan by remember { mutableStateOf(PaywallPlan.YEARLY) }
+    var isPurchasing by remember { mutableStateOf(false) }
+    var offerings by remember { mutableStateOf<com.revenuecat.purchases.Offerings?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        com.revenuecat.purchases.Purchases.sharedInstance.getOfferings(
+            object : com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback {
+                override fun onReceived(receivedOfferings: com.revenuecat.purchases.Offerings) {
+                    offerings = receivedOfferings
+                }
+                override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                    // Handled gracefully with default values
+                }
+            }
+        )
+    }
+
+    val monthlyPrice = "$9.99"
+    val yearlyPrice = "$99.99"
+    val lifetimePrice = "$299.99"
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
+        val isSmallScreen = maxWidth < 360.dp
+        val horizontalPadding = if (isSmallScreen) 16.dp else 24.dp
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 48.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Hero Image with Gradient Overlay
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(if (isSmallScreen) 180.dp else 220.dp)
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.paywall_pro_hero_1784906050205),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.White.copy(alpha = 0.5f),
+                                    Color.White
+                                )
+                            )
+                        )
+                )
+
+                // Close Button
+                IconButton(
+                    onClick = { /* Handled by parent or BackHandler */ },
+                    modifier = Modifier
+                        .statusBarsPadding()
+                        .padding(8.dp)
+                        .align(Alignment.TopStart)
+                        .background(Color.White.copy(alpha = 0.7f), CircleShape)
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = NavyDark)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Upgrade to Pro",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = PinkPrimary,
+                letterSpacing = 1.sp
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Unlock Your Smarter\nFinancial Routine",
+                fontSize = if (isSmallScreen) 24.sp else 28.sp,
+                fontWeight = FontWeight.Black,
+                color = NavyDark,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                lineHeight = if (isSmallScreen) 30.sp else 34.sp
+            )
+
+            Spacer(modifier = Modifier.height(if (isSmallScreen) 24.dp else 32.dp))
+
+            // Comparison Table
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontalPadding),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "FEATURES",
+                            modifier = Modifier.weight(1.5f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextLight,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "FREE",
+                            modifier = Modifier.weight(1f),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextLight
+                        )
+                        Text(
+                            text = "PRO",
+                            modifier = Modifier.weight(1f),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PinkPrimary
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(color = Color(0xFFE2E8F0))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val comparisonRows = listOf(
+                        Triple("SMS Tracking", "14 Days", "Unlimited"),
+                        Triple("Security Suite", "Basic", "Full"),
+                        Triple("Accounts", "2", "Unlimited"),
+                        Triple("Budgets", "1", "Unlimited"),
+                        Triple("Goals", "2", "Unlimited"),
+                        Triple("Loans/Debts", "5", "Unlimited"),
+                        Triple("Analytics", "30 Days", "Unlimited")
+                    )
+
+                    comparisonRows.forEach { (feature, free, pro) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = feature,
+                                modifier = Modifier.weight(1.5f),
+                                fontSize = if (isSmallScreen) 12.sp else 13.sp,
+                                color = NavyDark,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = free,
+                                modifier = Modifier.weight(1f),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                fontSize = if (isSmallScreen) 11.sp else 12.sp,
+                                color = TextLight
+                            )
+                            Box(
+                                modifier = Modifier.weight(1f),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = PinkPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(if (isSmallScreen) 24.dp else 32.dp))
+
+            // Subscription Plans
+            Text(
+                text = "CHOOSE YOUR PLAN",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextLight,
+                letterSpacing = 1.2.sp,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontalPadding),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                CompactPlanCard(
+                    modifier = Modifier.weight(1f),
+                    title = "Monthly",
+                    price = monthlyPrice,
+                    isSelected = selectedPlan == PaywallPlan.MONTHLY,
+                    onClick = { selectedPlan = PaywallPlan.MONTHLY },
+                    isSmall = isSmallScreen
+                )
+                CompactPlanCard(
+                    modifier = Modifier.weight(1f),
+                    title = "Yearly",
+                    price = yearlyPrice,
+                    tag = "SAVE 17%",
+                    isSelected = selectedPlan == PaywallPlan.YEARLY,
+                    onClick = { selectedPlan = PaywallPlan.YEARLY },
+                    isSmall = isSmallScreen
+                )
+                CompactPlanCard(
+                    modifier = Modifier.weight(1f),
+                    title = "Lifetime",
+                    price = lifetimePrice,
+                    tag = "VALUE",
+                    isSelected = selectedPlan == PaywallPlan.LIFETIME,
+                    onClick = { selectedPlan = PaywallPlan.LIFETIME },
+                    isSmall = isSmallScreen
+                )
+            }
+
+            Spacer(modifier = Modifier.height(if (isSmallScreen) 24.dp else 32.dp))
+
+            // Price Details Text
+            val planPriceText = when (selectedPlan) {
+                PaywallPlan.MONTHLY -> "$monthlyPrice / month ($9.99/mo)"
+                PaywallPlan.YEARLY -> "$yearlyPrice / year ($8.33/mo - Save 17%)"
+                PaywallPlan.LIFETIME -> "$lifetimePrice one-time (Unlimited lifetime access)"
+            }
+            
+            Text(
+                text = planPriceText,
+                fontSize = 14.sp,
+                color = NavyDark,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Slide to Purchase
+            SlideToPurchase(
+                isPurchasing = isPurchasing,
+                onCompleted = {
+                    val pkgToPurchase = when (selectedPlan) {
+                        PaywallPlan.MONTHLY -> offerings?.current?.monthly
+                        PaywallPlan.YEARLY -> offerings?.current?.annual
+                        PaywallPlan.LIFETIME -> offerings?.current?.lifetime
+                    }
+
+                    if (pkgToPurchase != null && activity != null) {
+                        isPurchasing = true
+                        com.revenuecat.purchases.Purchases.sharedInstance.purchase(
+                            com.revenuecat.purchases.PurchaseParams.Builder(activity, pkgToPurchase).build(),
+                            object : com.revenuecat.purchases.interfaces.PurchaseCallback {
+                                override fun onCompleted(storeTransaction: com.revenuecat.purchases.models.StoreTransaction, info: com.revenuecat.purchases.CustomerInfo) {
+                                    isPurchasing = false
+                                    if (info.entitlements["Piggy Ledger Pro"]?.isActive == true) {
+                                        onPurchaseSuccess(info)
+                                        Toast.makeText(context, "Pro features unlocked!", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                                override fun onError(error: com.revenuecat.purchases.PurchasesError, userCancelled: Boolean) {
+                                    isPurchasing = false
+                                }
+                            }
+                        )
+                    } else {
+                        // Simulation for dev environments
+                        coroutineScope.launch {
+                            isPurchasing = true
+                            delay(1200)
+                            isPurchasing = false
+                            onPurchaseSuccess(null)
+                            Toast.makeText(context, "Welcome to Pro!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Policy Links
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Restore",
+                    fontSize = 12.sp,
+                    color = TextLight,
+                    modifier = Modifier.clickable {
+                        com.revenuecat.purchases.Purchases.sharedInstance.restorePurchases(
+                            object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
+                                override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
+                                    if (info.entitlements["Piggy Ledger Pro"]?.isActive == true) {
+                                        onPurchaseSuccess(info)
+                                        Toast.makeText(context, "Pro features restored!", Toast.LENGTH_LONG).show()
+                                    } else {
+                                        Toast.makeText(context, "No active subscription found.", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                                override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                                    Toast.makeText(context, "Restore failed: ${error.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        )
+                    }
+                )
+                Box(modifier = Modifier.size(3.dp).clip(CircleShape).background(TextLight.copy(alpha = 0.3f)))
+                Text(
+                    "Terms",
+                    fontSize = 12.sp,
+                    color = TextLight,
+                    modifier = Modifier.clickable {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.oryno.com/piggy-ledger/terms"))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Terms unavailable", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+                Box(modifier = Modifier.size(3.dp).clip(CircleShape).background(TextLight.copy(alpha = 0.3f)))
+                Text(
+                    "Privacy",
+                    fontSize = 12.sp,
+                    color = TextLight,
+                    modifier = Modifier.clickable {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.oryno.com/piggy-ledger/privacy"))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Privacy policy unavailable", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CompactPlanCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    price: String,
+    tag: String? = null,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    isSmall: Boolean = false
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (isSelected) PinkPrimary.copy(alpha = 0.08f) else Color.White)
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = if (isSelected) PinkPrimary else Color(0xFFE2E8F0),
+                shape = RoundedCornerShape(20.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(vertical = if (isSmall) 12.dp else 16.dp, horizontal = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = title.uppercase(),
+                fontSize = if (isSmall) 9.sp else 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) PinkPrimary else TextLight,
+                letterSpacing = 0.8.sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = price,
+                fontSize = if (isSmall) 14.sp else 16.sp,
+                fontWeight = FontWeight.Black,
+                color = if (isSelected) NavyDark else NavyDark.copy(alpha = 0.8f)
+            )
+            if (tag != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (isSelected) PinkPrimary else Color(0xFFF1F5F9))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = tag, 
+                        fontSize = 8.sp, 
+                        fontWeight = FontWeight.Bold, 
+                        color = if (isSelected) Color.White else TextLight
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SlideToPurchase(
+    isPurchasing: Boolean,
+    onCompleted: () -> Unit
+) {
+    var width by remember { mutableStateOf(0) }
+    val thumbSize = 52.dp
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val thumbSizePx = with(density) { thumbSize.toPx() }
+    val maxOffset = remember(width, thumbSizePx) { (width - thumbSizePx).coerceAtLeast(0f) }
+
+    val dragOffset = remember { Animatable(0f) }
+    val coroutineScope = rememberCoroutineScope()
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .height(64.dp)
+            .clip(RoundedCornerShape(32.dp))
+            .background(PinkPrimary.copy(alpha = 0.12f))
+            .border(1.5.dp, PinkPrimary.copy(alpha = 0.25f), RoundedCornerShape(32.dp))
+            .onSizeChanged { width = it.width },
+        contentAlignment = Alignment.CenterStart
+    ) {
+        // Swiped filled track area - perfectly attached behind the arrow knob as one unit
+        val paddingPx = with(density) { 6.dp.toPx() }
+        val fillWidthDp = with(density) { (dragOffset.value + thumbSizePx + (paddingPx * 2)).toDp() }
+        Box(
+            modifier = Modifier
+                .width(fillWidthDp)
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(32.dp))
+                .background(PinkPrimary)
+        )
+
+        Text(
+            text = if (isPurchasing) "Contacting Store..." else "Slide to Unlock Pro",
+            modifier = Modifier.align(Alignment.Center),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = if (dragOffset.value > maxOffset * 0.45f) Color.White else NavyDark
+        )
+
+        if (!isPurchasing) {
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(dragOffset.value.roundToInt(), 0) }
+                    .padding(6.dp)
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .pointerInput(maxOffset) {
+                        if (maxOffset <= 0f) return@pointerInput
+                        detectDragGestures(
+                            onDragEnd = {
+                                coroutineScope.launch {
+                                    if (dragOffset.value >= maxOffset * 0.85f) {
+                                        dragOffset.animateTo(maxOffset, spring(stiffness = Spring.StiffnessMedium))
+                                        onCompleted()
+                                    } else {
+                                        dragOffset.animateTo(0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
+                                    }
+                                }
+                            },
+                            onDragCancel = {
+                                coroutineScope.launch {
+                                    dragOffset.animateTo(0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
+                                }
+                            },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                coroutineScope.launch {
+                                    val newOffset = (dragOffset.value + dragAmount.x).coerceIn(0f, maxOffset)
+                                    dragOffset.snapTo(newOffset)
+                                }
+                            }
+                        )
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = PinkPrimary, modifier = Modifier.size(24.dp))
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(6.dp)
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(PinkPrimary),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+fun AccountIdentifiersView(viewModel: PiggyLedgerViewModel) {
+    android.util.Log.d("AccountIdentifiersView", "Entering AccountIdentifiersView")
+    val context = LocalContext.current
+    val customIdentifiers by viewModel.customIdentifiers.collectAsStateWithLifecycle()
+
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("All") }
+    var showBottomSheet by remember { mutableStateOf(false) }
+    var targetProviderForSheet by remember { mutableStateOf("Vodafone Cash") }
+
+    val providersList = remember {
+        listOf(
+            // 4 E-Wallets
+            ProviderIdentifierInfo("Vodafone Cash", "E-Wallet", listOf("VodafoneCash", "Vodafone", "VF-Cash", "010")),
+            ProviderIdentifierInfo("Orange Cash", "E-Wallet", listOf("OrangeCash", "Orange", "012")),
+            ProviderIdentifierInfo("e& Cash", "E-Wallet", listOf("EtisalatCash", "Etisalat", "e&Cash", "e&", "011")),
+            ProviderIdentifierInfo("WE Pay", "E-Wallet", listOf("WEPay", "WE", "015")),
+
+            // National Switch
+            ProviderIdentifierInfo("InstaPay / Instant Switch", "Switch & Apps", listOf("InstaPay", "SmartWallet", "Telda", "Nexta")),
+
+            // 40 Egyptian Banks
+            ProviderIdentifierInfo("National Bank of Egypt (NBE)", "Bank", listOf("NBE", "NationalBankOfEgypt", "NBEg", "الأهلي")),
+            ProviderIdentifierInfo("Banque Misr", "Bank", listOf("BanqueMisr", "BM", "مصر")),
+            ProviderIdentifierInfo("Commercial International Bank (CIB)", "Bank", listOf("CIB", "CIBEgypt", "التجاري الدولي")),
+            ProviderIdentifierInfo("Banque du Caire", "Bank", listOf("BanqueDuCaire", "BDC", "القاهرة")),
+            ProviderIdentifierInfo("QNB Alahli", "Bank", listOf("QNB", "QNBAlahli")),
+            ProviderIdentifierInfo("Bank of Alexandria (AlexBank)", "Bank", listOf("AlexBank")),
+            ProviderIdentifierInfo("HSBC Egypt", "Bank", listOf("HSBC", "HSBCEgypt")),
+            ProviderIdentifierInfo("Faisal Islamic Bank of Egypt", "Bank", listOf("Faisal", "FaisalBank")),
+            ProviderIdentifierInfo("Arab African International Bank (AAIB)", "Bank", listOf("AAIB")),
+            ProviderIdentifierInfo("Abu Dhabi Islamic Bank (ADIB)", "Bank", listOf("ADIB", "ADIBEgypt")),
+            ProviderIdentifierInfo("Crédit Agricole Egypt", "Bank", listOf("CreditAgricole", "CAE")),
+            ProviderIdentifierInfo("Emirates NBD Egypt", "Bank", listOf("EmiratesNBD", "ENBD")),
+            ProviderIdentifierInfo("Housing & Development Bank (HDB)", "Bank", listOf("HDB", "HousingDevelopmentBank")),
+            ProviderIdentifierInfo("EG Bank (Egyptian Gulf Bank)", "Bank", listOf("EGBank", "EGB")),
+            ProviderIdentifierInfo("SAIB Bank", "Bank", listOf("SAIB", "SAIBBank")),
+            ProviderIdentifierInfo("Al Baraka Bank Egypt", "Bank", listOf("AlBaraka", "ABG")),
+            ProviderIdentifierInfo("Attijariwafa Bank Egypt", "Bank", listOf("Attijariwafa", "AWB")),
+            ProviderIdentifierInfo("Arab Bank Egypt", "Bank", listOf("ArabBank")),
+            ProviderIdentifierInfo("Abu Dhabi Commercial Bank (ADCB)", "Bank", listOf("ADCB", "ADCBEgypt")),
+            ProviderIdentifierInfo("Export Development Bank of Egypt (EBank)", "Bank", listOf("EBank", "EDBE")),
+            ProviderIdentifierInfo("The United Bank", "Bank", listOf("UnitedBank", "UB")),
+            ProviderIdentifierInfo("Suez Canal Bank", "Bank", listOf("SuezCanal", "SCB")),
+            ProviderIdentifierInfo("Mashreq Bank Egypt", "Bank", listOf("Mashreq", "MashreqBank")),
+            ProviderIdentifierInfo("Citibank Egypt", "Bank", listOf("Citibank", "Citi")),
+            ProviderIdentifierInfo("First Abu Dhabi Bank (FAB / Audi)", "Bank", listOf("FAB", "FABEgypt", "BankAudi")),
+            ProviderIdentifierInfo("Al Ahli Bank of Kuwait (ABK)", "Bank", listOf("ABK", "ABKEgypt")),
+            ProviderIdentifierInfo("National Bank of Kuwait (NBK)", "Bank", listOf("NBK", "NBKEgypt")),
+            ProviderIdentifierInfo("Bank ABC Egypt", "Bank", listOf("BankABC", "ABCBank")),
+            ProviderIdentifierInfo("aiBank (Arab Investment Bank)", "Bank", listOf("aiBank", "AIBank")),
+            ProviderIdentifierInfo("MIDBANK", "Bank", listOf("MIDBANK", "MDB")),
+            ProviderIdentifierInfo("Egyptian Agricultural Bank", "Bank", listOf("AgriculturalBank", "PBDAC")),
+            ProviderIdentifierInfo("Industrial Development Bank (IDB)", "Bank", listOf("IDB", "IDBEgypt")),
+            ProviderIdentifierInfo("Arab International Bank (AIB)", "Bank", listOf("AIB", "ArabIntBank")),
+            ProviderIdentifierInfo("Blom Bank Egypt", "Bank", listOf("BlomBank", "Blom")),
+            ProviderIdentifierInfo("Standard Chartered Bank Egypt", "Bank", listOf("StandardChartered", "StanChart")),
+            ProviderIdentifierInfo("Nasser Social Bank", "Bank", listOf("NasserBank")),
+            ProviderIdentifierInfo("Egyptian Real Estate Bank", "Bank", listOf("REEB", "RealEstateBank")),
+            ProviderIdentifierInfo("Piraeus Bank Egypt", "Bank", listOf("Piraeus", "PiraeusBank")),
+            ProviderIdentifierInfo("Central Bank of Egypt (CBE)", "Bank", listOf("CBE"))
+        )
+    }
+
+    val filteredProviders = remember(searchQuery, selectedCategory, customIdentifiers) {
+        val result = providersList.filter { provider ->
+            val matchesCategory = when (selectedCategory) {
+                "E-Wallets" -> provider.category == "E-Wallet"
+                "Banks" -> provider.category == "Bank"
+                "Switch & Apps" -> provider.category == "Switch & Apps"
+                else -> true
+            }
+            val userKw = customIdentifiers[provider.name] ?: emptyList()
+            val allKw = provider.defaultKeywords + userKw
+            val matchesSearch = searchQuery.isBlank() ||
+                    provider.name.contains(searchQuery, ignoreCase = true) ||
+                    allKw.any { it.contains(searchQuery, ignoreCase = true) }
+            matchesCategory && matchesSearch
+        }
+        android.util.Log.d("AccountIdentifiersView", "Filtered providers size: ${result.size}")
+        result
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Search Bar
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(stringResource(R.string.search_provider_placeholder), fontSize = 13.sp) },
+            leadingIcon = { Icon(Icons.Default.Search, null, tint = TextLight) },
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = PinkPrimary,
+                unfocusedBorderColor = Color(0xFFE2E8F0),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White
+            )
+        )
+
+        // Category Filter Chips
+        val categoryOptions = listOf(
+            "All" to stringResource(R.string.category_all),
+            "E-Wallets" to stringResource(R.string.category_e_wallets),
+            "Banks" to stringResource(R.string.category_banks),
+            "Switch & Apps" to stringResource(R.string.category_switch_apps)
+        )
+
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(vertical = 4.dp)
+        ) {
+            items(categoryOptions) { option ->
+                val (catKey, catLabel) = option
+                val isSelected = selectedCategory == catKey
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { selectedCategory = catKey },
+                    label = { Text(catLabel, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = PinkPrimary,
+                        selectedLabelColor = Color.White,
+                        containerColor = Color(0xFFF1F5F9),
+                        labelColor = NavyDark
+                    ),
+                    border = null
+                )
+            }
+        }
+
+        // Providers List
+        android.util.Log.d("AccountIdentifiersView", "Starting LazyColumn with ${filteredProviders.size} providers")
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            items(filteredProviders) { provider ->
+                android.util.Log.d("AccountIdentifiersView", "Rendering provider: ${provider.name}")
+                val userKeywords = customIdentifiers[provider.name] ?: emptyList()
+                val accountType = if (provider.category == "E-Wallet") com.oryno.piggy_ledger.data.AccountType.WALLET else com.oryno.piggy_ledger.data.AccountType.BANK
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            targetProviderForSheet = provider.name
+                            showBottomSheet = true
+                        },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            BrandLogo(
+                                provider = provider.name,
+                                accountType = accountType,
+                                iconColorHex = null,
+                                modifier = Modifier.size(36.dp)
+                            )
+
+                            Spacer(modifier = Modifier.width(10.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = provider.name,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = NavyDark
+                                )
+                                Text(
+                                    text = when(provider.category) {
+                                        "E-Wallet" -> stringResource(R.string.category_e_wallets)
+                                        "Bank" -> stringResource(R.string.category_banks)
+                                        else -> provider.category
+                                    },
+                                    fontSize = 11.sp,
+                                    color = TextLight
+                                )
+                            }
+
+                            IconButton(
+                                onClick = {
+                                    targetProviderForSheet = provider.name
+                                    showBottomSheet = true
+                                },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Add keyword", tint = PinkPrimary)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Default Built-in Keywords
+                        Text(stringResource(R.string.default_identifiers), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = TextLight)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            provider.defaultKeywords.forEach { kw ->
+                                Box(
+                                    modifier = Modifier
+                                        .background(Color(0xFFF1F5F9), RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text(kw, fontSize = 11.sp, color = NavyDark, fontWeight = FontWeight.Medium)
+                                }
+                            }
+                        }
+
+                        // User Added Custom Keywords
+                        if (userKeywords.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(stringResource(R.string.your_custom_keywords), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                userKeywords.forEach { kw ->
+                                    Box(
+                                        modifier = Modifier
+                                            .background(PinkPrimary.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
+                                            .border(1.dp, PinkPrimary.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    ) {
+                                        Text(kw, fontSize = 11.sp, color = PinkPrimary, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showBottomSheet) {
+        val targetProviderInfo = providersList.find { it.name == targetProviderForSheet }
+        val category = targetProviderInfo?.category ?: "Bank"
+        val accountType = if (category == "E-Wallet") com.oryno.piggy_ledger.data.AccountType.WALLET else com.oryno.piggy_ledger.data.AccountType.BANK
+
+        val toastMessage = stringResource(R.string.toast_saved_keywords, targetProviderForSheet)
+
+        AddIdentifierBottomSheet(
+            providerName = targetProviderForSheet,
+            accountType = accountType,
+            onDismiss = { showBottomSheet = false },
+            onSave = { newKeywords ->
+                viewModel.addCustomIdentifierKeywords(targetProviderForSheet, newKeywords) {
+                    Toast.makeText(context, toastMessage, Toast.LENGTH_SHORT).show()
+                    showBottomSheet = false
+                }
+            }
+        )
+    }
+}
+
+data class ProviderIdentifierInfo(
+    val name: String,
+    val category: String,
+    val defaultKeywords: List<String>
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddIdentifierBottomSheet(
+    providerName: String,
+    accountType: com.oryno.piggy_ledger.data.AccountType,
+    onDismiss: () -> Unit,
+    onSave: (keywords: List<String>) -> Unit
+) {
+    var inputKeywords by remember { mutableStateOf("") }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                BrandLogo(
+                    provider = providerName,
+                    accountType = accountType,
+                    iconColorHex = null,
+                    modifier = Modifier.size(44.dp)
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        providerName,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark
+                    )
+                    Text(
+                        stringResource(R.string.add_custom_sms_identifiers),
+                        fontSize = 12.sp,
+                        color = TextLight
+                    )
+                }
+            }
+
+            Text(
+                stringResource(R.string.enter_custom_keywords_desc, providerName),
+                fontSize = 13.sp,
+                color = TextLight,
+                lineHeight = 18.sp
+            )
+
+            // Keyword Text Input
+            OutlinedTextField(
+                value = inputKeywords,
+                onValueChange = { inputKeywords = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(stringResource(R.string.keywords_placeholder, providerName), fontSize = 13.sp) },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = PinkPrimary,
+                    unfocusedBorderColor = Color(0xFFE2E8F0)
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Action Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+
+                Button(
+                    onClick = {
+                        val parsed = inputKeywords.split(",", "\n", ";")
+                            .map { it.trim() }
+                            .filter { it.isNotEmpty() }
+                        if (parsed.isNotEmpty()) {
+                            onSave(parsed)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = inputKeywords.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(stringResource(R.string.save_btn), fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+
+

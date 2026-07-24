@@ -78,7 +78,6 @@
     <string name="payoffs">التسديدات</string>
     <string name="savings_goals">أهداف التحويش</string>
     <string name="see_all">شوف الكل</string>
-    <string name="processing_voice">بنعالج صوتك...</string>
     <string name="correct_transaction">صحح المعاملة</string>
     <string name="re_process">عالج تاني</string>
     <string name="transaction_details">تفاصيل المعاملة</string>
@@ -513,6 +512,7 @@
     <string name="confirm_pin">تأكيد الرقم السري (PIN)</string>
     <string name="pins_dont_match">الأرقام السرية مش متطابقة</string>
     <string name="invalid_pin">رقم سري غير صحيح</string>
+    <string name="incorrect_pin">الرقم السري غير صحيح. حاول مرة أخرى.</string>
     <string name="pin_min_digits">الرقم السري لازم يكون 4 أرقام على الأقل</string>
     <string name="pending_transactions">المعاملات المعلقة</string>
     <string name="pending_transactions_desc">عرض وحل المعاملات غير الموجهة أو الغامضة من رسائل الـ SMS.</string>
@@ -527,7 +527,6 @@
     <string name="reset_app_flow_desc">الرجوع لشاشات الترحيب والتعريف واختيار اللغة.</string>
     <string name="reset_confirm_title">إعادة تهيئة التطبيق؟</string>
     <string name="reset_confirm_msg">متأكد إنك عايز تعمل إعادة تهيئة؟ ده هيسجل خروجك ويرجعك لصفحة اختيار اللغة والترحيب عشان تجربهم من الأول وجديد.</string>
-    <string name="voice_prepair_words">جهز كل الكلمات اللي عايز تقولها قبل ما تبدأ...</string>
     <string name="logs_timeline">الخط الزمني للمعاملات</string>
     <string name="add_payment">إضافة دفعة</string>
     <string name="payment_amount">مبلغ الدفعة</string>
@@ -598,4 +597,46 @@
     <string name="toast_loan_payment_added">تم تسجيل الدفعة بنجاح!</string>
     <string name="toast_loan_closed">تم إغلاق المعاملة بالكامل!</string>
     <string name="toast_loan_deleted">تم حذف المعاملة.</string>
+    <string name="pro_title">Piggy Ledger Pro</string>
+    <string name="pro_subtitle">تحكم كامل في حريتك المالية</string>
+    <string name="benefit_infinite_sheets">صفحات وحسابات وسجلات غير محدودة</string>
+    <string name="benefit_interactive_charts">رسوم بيانية تفاعلية وتحليلات مالية عميقة</string>
+    <string name="benefit_biometric_security">حماية ببصمة الإصبع وخزنة خاصة</string>
+    <string name="choose_your_plan">اختار خطتك</string>
+    <string name="yearly_membership">اشتراك سنوي</string>
+    <string name="billed_annually_format">فقط %s/شهر، تدفع سنوياً</string>
+    <string name="save_50_best_value">وفر 50٪ - أفضل قيمة</string>
+    <string name="monthly_subscription">اشتراك شهري</string>
+    <string name="billed_monthly_cancel_anytime">تدفع شهرياً، يمكنك الإلغاء في أي وقت</string>
+    <string name="lifetime_access">وصول مدى الحياة</string>
+    <string name="one_time_payment_forever">دفعة واحدة، لك للأبد</string>
+    <string name="lifetime_unlocked">مفتوح للأبد</string>
+    <string name="contacting_store">جارٍ الاتصال بالمتجر...</string>
+    <string name="swipe_to_purchase">اسحب للشراء</string>
+    <string name="pro_purchase_success">أهلاً بك في برو! ميزات بريميوم مفتوحة بالكامل.</string>
+    <string name="purchase_completed">تم الشراء بنجاح!</string>
+    <string name="purchase_failed_format">فشل الشراء: %s</string>
+    <string name="upgrade_success">تم الترقية إلى Piggy Ledger Pro بنجاح!</string>
+    <string name="restore_purchases">استعادة المشتريات</string>
+    <string name="pro_restore_success">تم استعادة المشتريات بنجاح!</string>
+    <string name="no_active_subscription">لم يتم العثور على اشتراك Piggy Ledger Pro نشط.</string>
+    <string name="restore_failed_format">فشل الاستعادة: %s</string>
+    <string name="terms_of_service">شروط الخدمة</string>
+    <string name="terms_unavailable">رابط الشروط غير متاح حالياً.</string>
+    <string name="subscription_terms_text">تتجدد الاشتراكات تلقائياً. يمكنك الإلغاء في أي وقت من إعدادات Google Play.</string>
+
+    <!-- Account Identifiers -->
+    <string name="account_identifiers">معرفات الحسابات</string>
+    <string name="search_provider_placeholder">ابحث عن بنك، محفظة، أو كلمة مفتاحية...</string>
+    <string name="category_all">الكل</string>
+    <string name="category_e_wallets">المحافظ الإلكترونية</string>
+    <string name="category_banks">البنوك</string>
+    <string name="category_switch_apps">تطبيقات التحويل والشبكات</string>
+    <string name="default_identifiers">المعرفات الافتراضية:</string>
+    <string name="your_custom_keywords">كلماتك المفتاحية المخصصة:</string>
+    <string name="add_custom_sms_identifiers">إضافة معرفات رسائل نصية مخصصة</string>
+    <string name="enter_custom_keywords_desc">أدخل أسماء مرسلي الرسائل أو الكلمات المفتاحية المرتبطة بـ %1$s (مفصولة بفاصلة).</string>
+    <string name="keywords_placeholder">مثال: %1$s, VF-Cash, 010</string>
+    <string name="save_btn">حفظ</string>
+    <string name="toast_saved_keywords">تم حفظ الكلمات المفتاحية لـ %1$s</string>
 </resources>

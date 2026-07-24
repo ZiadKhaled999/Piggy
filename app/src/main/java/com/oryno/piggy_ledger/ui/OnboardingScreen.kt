@@ -79,11 +79,16 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
     val configuration = LocalConfiguration.current
     val isSmallScreen = configuration.screenWidthDp < 360
     
-    val titleFontSize = if (isSmallScreen) 26.sp else 32.sp
-    val subtitleFontSize = if (isSmallScreen) 14.sp else 16.sp
+    val titleFontSize = if (isSmallScreen) 24.sp else 32.sp
+    val subtitleFontSize = if (isSmallScreen) 13.sp else 16.sp
+    val cardTitleFontSize = if (isSmallScreen) 14.sp else 16.sp
+    val cardDescFontSize = if (isSmallScreen) 11.sp else 12.sp
+    val emojiBoxSize = if (isSmallScreen) 42.dp else 50.dp
+    val emojiFontSize = if (isSmallScreen) 20.sp else 24.sp
     val buttonFontSize = if (isSmallScreen) 16.sp else 18.sp
-    val backButtonFontSize = if (isSmallScreen) 13.sp else 15.sp
+    val backButtonFontSize = if (isSmallScreen) 14.sp else 16.sp
     val horizontalPadding = if (isSmallScreen) 16.dp else 24.dp
+    val sectionSpacing = if (isSmallScreen) 20.dp else 28.dp
 
     var currentPage by remember { mutableIntStateOf(0) }
     var selectedIntent by remember { mutableIntStateOf(-1) }
@@ -250,7 +255,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
             .background(Color.White)
             .statusBarsPadding()
             .navigationBarsPadding()
-            .padding(horizontal = horizontalPadding, vertical = 16.dp),
+            .padding(horizontal = horizontalPadding, vertical = if (isSmallScreen) 12.dp else 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Upper Content with Crossfade Page Transition
@@ -292,10 +297,9 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
                         
-                        Spacer(modifier = Modifier.height(28.dp))
+                        Spacer(modifier = Modifier.height(sectionSpacing))
                         
                         val intents = listOf(
-                            Pair(stringResource(R.string.onboarding_personalize_intent_group), stringResource(R.string.onboarding_personalize_intent_group_desc)) to "👥",
                             Pair(stringResource(R.string.onboarding_personalize_intent_personal), stringResource(R.string.onboarding_personalize_intent_personal_desc)) to "💰",
                             Pair(stringResource(R.string.onboarding_personalize_intent_loans), stringResource(R.string.onboarding_personalize_intent_loans_desc)) to "🤝",
                             Pair(stringResource(R.string.onboarding_personalize_intent_auto), stringResource(R.string.onboarding_personalize_intent_auto_desc)) to "⚡"
@@ -308,55 +312,59 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             
                             Surface(
                                 modifier = Modifier
-                                    .fillMaxWidth(0.96f)
-                                    .padding(vertical = 8.dp)
+                                    .fillMaxWidth(if (isSmallScreen) 1f else 0.96f)
+                                    .padding(vertical = if (isSmallScreen) 6.dp else 8.dp)
                                     .clickable { selectedIntent = index }
                                     .testTag("intent_card_$index"),
                                 shape = RoundedCornerShape(20.dp),
                                 color = if (isSelected) Color(0xFFFFF1F2) else Color(0xFFF8FAFC),
                                 border = androidx.compose.foundation.BorderStroke(
-                                    width = if (isSelected) 3.dp else 2.dp,
-                                    color = if (isSelected) PinkPrimary else Color(0xFF94A3B8)
+                                    width = if (isSelected) 3.dp else 1.5.dp,
+                                    color = if (isSelected) PinkPrimary else Color(0xFFCBD5E1)
                                 ),
                                 shadowElevation = if (isSelected) 3.dp else 0.dp
                             ) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                                        .padding(horizontal = if (isSmallScreen) 12.dp else 16.dp, vertical = if (isSmallScreen) 10.dp else 14.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(50.dp)
+                                            .size(emojiBoxSize)
                                             .clip(CircleShape)
                                             .background(if (isSelected) PinkPrimary.copy(alpha = 0.15f) else Color(0xFFF1F5F9)),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = emoji,
-                                            fontSize = 24.sp
+                                            fontSize = emojiFontSize
                                         )
                                     }
                                     
-                                    Spacer(modifier = Modifier.width(14.dp))
+                                    Spacer(modifier = Modifier.width(if (isSmallScreen) 10.dp else 14.dp))
                                     
                                     Column(
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Text(
                                             text = title,
-                                            fontSize = 16.sp,
+                                            fontSize = cardTitleFontSize,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isSelected) PinkPrimary else NavyDark
+                                            color = if (isSelected) PinkPrimary else NavyDark,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
-                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Spacer(modifier = Modifier.height(2.dp))
                                         Text(
                                             text = desc,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = cardDescFontSize,
+                                            fontWeight = FontWeight.Medium,
                                             color = if (isSelected) SlateDark else TextLight,
-                                            lineHeight = 16.sp
+                                            lineHeight = if (isSmallScreen) 14.sp else 16.sp,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                     
@@ -402,7 +410,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
                         
-                        Spacer(modifier = Modifier.height(28.dp))
+                        Spacer(modifier = Modifier.height(sectionSpacing))
                         
                         val intensities = listOf(
                             Pair(stringResource(R.string.onboarding_personalize_intensity_casual), stringResource(R.string.onboarding_personalize_intensity_casual_desc)) to "🌱",
@@ -417,22 +425,22 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             
                             Surface(
                                 modifier = Modifier
-                                    .fillMaxWidth(0.96f)
-                                    .padding(vertical = 8.dp)
+                                    .fillMaxWidth(if (isSmallScreen) 1f else 0.96f)
+                                    .padding(vertical = if (isSmallScreen) 6.dp else 8.dp)
                                     .clickable { selectedIntensity = index }
                                     .testTag("intensity_card_$index"),
                                 shape = RoundedCornerShape(20.dp),
                                 color = if (isSelected) Color(0xFFFFF1F2) else Color(0xFFF8FAFC),
                                 border = androidx.compose.foundation.BorderStroke(
-                                    width = if (isSelected) 3.dp else 2.dp,
-                                    color = if (isSelected) PinkPrimary else Color(0xFF94A3B8)
+                                    width = if (isSelected) 3.dp else 1.5.dp,
+                                    color = if (isSelected) PinkPrimary else Color(0xFFCBD5E1)
                                 ),
                                 shadowElevation = if (isSelected) 3.dp else 0.dp
                             ) {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(16.dp)
+                                        .padding(if (isSmallScreen) 12.dp else 16.dp)
                                 ) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -440,33 +448,35 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(50.dp)
+                                                .size(emojiBoxSize)
                                                 .clip(CircleShape)
                                                 .background(if (isSelected) PinkPrimary.copy(alpha = 0.15f) else Color(0xFFF1F5F9)),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
                                                 text = emoji,
-                                                fontSize = 26.sp
+                                                fontSize = emojiFontSize
                                             )
                                         }
                                         
-                                        Spacer(modifier = Modifier.width(14.dp))
+                                        Spacer(modifier = Modifier.width(if (isSmallScreen) 10.dp else 14.dp))
                                         
                                         Column(
                                             modifier = Modifier.weight(1f)
                                         ) {
                                             Text(
                                                 text = title,
-                                                fontSize = 16.sp,
+                                                fontSize = cardTitleFontSize,
                                                 fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) PinkPrimary else NavyDark
+                                                color = if (isSelected) PinkPrimary else NavyDark,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
                                             val rateLabel = if (index == 0) "5% – 10%" else if (index == 1) "15% – 20%" else "30%+"
                                             Text(
                                                 text = "Saving Rate: $rateLabel",
-                                                fontSize = 11.sp,
+                                                fontSize = if (isSmallScreen) 10.sp else 11.sp,
                                                 color = if (isSelected) PinkPrimary else TextLight,
                                                 fontWeight = FontWeight.SemiBold
                                             )
@@ -482,13 +492,15 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                         )
                                     }
                                     
-                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     Text(
                                         text = desc,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = cardDescFontSize,
+                                        fontWeight = FontWeight.Medium,
                                         color = if (isSelected) SlateDark else TextLight,
-                                        lineHeight = 16.sp,
+                                        lineHeight = if (isSmallScreen) 14.sp else 16.sp,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.padding(start = 2.dp)
                                     )
                                     
@@ -516,16 +528,14 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                     }
                 } else if (pageIndex == 7) {
                     val focusName = when (selectedIntent) {
-                        0 -> stringResource(R.string.onboarding_personalize_intent_group)
-                        1 -> stringResource(R.string.onboarding_personalize_intent_personal)
-                        2 -> stringResource(R.string.onboarding_personalize_intent_loans)
+                        0 -> stringResource(R.string.onboarding_personalize_intent_personal)
+                        1 -> stringResource(R.string.onboarding_personalize_intent_loans)
                         else -> stringResource(R.string.onboarding_personalize_intent_auto)
                     }
 
                     val focusDesc = when (selectedIntent) {
-                        0 -> "Optimized for splitting deposits and coordinating reports easily."
-                        1 -> "Private vault configured to keep your core balance safe."
-                        2 -> "Tailored to track lent/borrowed cash and deadlines."
+                        0 -> "Private vault configured to keep your core balance safe."
+                        1 -> "Tailored to track lent/borrowed cash and deadlines."
                         else -> "Prepared to automatically organize incoming receipts."
                     }
 
@@ -559,9 +569,8 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
 
                     val milestoneTitle = "Your First Major Goal"
                     val milestoneDesc = when (selectedIntent) {
-                        0 -> "Invite your co-savers and deposit your first contribution!"
-                        1 -> "Create a vault and set a deposit to start your streak!"
-                        2 -> "Log your first lent/borrowed deal to see net dues."
+                        0 -> "Create a vault and set a deposit to start your streak!"
+                        1 -> "Log your first lent/borrowed deal to see net dues."
                         else -> "Complete a transfer and let our automation handle it."
                     }
 
@@ -660,8 +669,8 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             
                             Surface(
                                 modifier = Modifier
-                                    .fillMaxWidth(0.96f)
-                                    .padding(bottom = 16.dp),
+                                    .fillMaxWidth(if (isSmallScreen) 1f else 0.96f)
+                                    .padding(bottom = if (isSmallScreen) 12.dp else 16.dp),
                                 shape = RoundedCornerShape(24.dp),
                                 color = Color(0xFFF8FAFC),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
@@ -670,7 +679,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 20.dp)
+                                        .padding(horizontal = if (isSmallScreen) 12.dp else 16.dp, vertical = if (isSmallScreen) 16.dp else 20.dp)
                                 ) {
                                     steps.forEachIndexed { index, step ->
                                         if (index <= roadmapStep) {
@@ -680,12 +689,12 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .padding(bottom = if (index < steps.size - 1) 16.dp else 0.dp),
+                                                    .padding(bottom = if (index < steps.size - 1) (if (isSmallScreen) 12.dp else 16.dp) else 0.dp),
                                                 verticalAlignment = Alignment.Top
                                             ) {
                                                 Column(
                                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                                    modifier = Modifier.padding(end = 14.dp)
+                                                    modifier = Modifier.padding(end = if (isSmallScreen) 10.dp else 14.dp)
                                                 ) {
                                                     if (isSyncing) {
                                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -745,7 +754,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                                         Box(
                                                             modifier = Modifier
                                                                 .width(2.dp)
-                                                                .height(if (isSyncing) 54.dp else 54.dp)
+                                                                .height(if (isSmallScreen) 40.dp else 54.dp)
                                                                 .background(
                                                                     Brush.verticalGradient(
                                                                         colors = listOf(
@@ -792,17 +801,21 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                                     } else {
                                                         Text(
                                                             text = stepTitle,
-                                                            fontSize = 15.sp,
+                                                            fontSize = if (isSmallScreen) 14.sp else 15.sp,
                                                             fontWeight = FontWeight.Bold,
-                                                            color = NavyDark
+                                                            color = NavyDark,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
                                                         )
                                                         Spacer(modifier = Modifier.height(4.dp))
                                                         Text(
                                                             text = stepDesc,
-                                                            fontSize = 12.sp,
-                                                            fontWeight = FontWeight.SemiBold,
+                                                            fontSize = if (isSmallScreen) 11.sp else 12.sp,
+                                                            fontWeight = FontWeight.Medium,
                                                             color = TextLight,
-                                                            lineHeight = 17.sp
+                                                            lineHeight = if (isSmallScreen) 15.sp else 17.sp,
+                                                            maxLines = 2,
+                                                            overflow = TextOverflow.Ellipsis
                                                         )
                                                     }
                                                 }
@@ -858,23 +871,23 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(if (isSmallScreen) 300.dp else 380.dp)
-                                .padding(horizontal = 24.dp)
+                                .height(if (isSmallScreen) 260.dp else 380.dp)
+                                .padding(horizontal = horizontalPadding)
                                 .align(Alignment.Center),
                             contentAlignment = Alignment.BottomCenter
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(if (isSmallScreen) 16.dp else 32.dp),
+                                horizontalArrangement = Arrangement.spacedBy(if (isSmallScreen) 12.dp else 32.dp),
                                 verticalAlignment = Alignment.Bottom
                             ) {
                                 // Solo Card (Smaller)
-                                val soloHeight = if (isSmallScreen) 32.dp else 38.dp
+                                val soloHeight = if (isSmallScreen) 28.dp else 38.dp
                                 Column(
                                     modifier = Modifier
                                         .weight(0.4f)
                                         .graphicsLayer {
-                                            translationY = 60.dp.toPx() * (1f - anim1.value)
+                                            translationY = 40.dp.toPx() * (1f - anim1.value)
                                             alpha = anim1.value
                                         },
                                     horizontalAlignment = Alignment.CenterHorizontally
@@ -883,19 +896,19 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(soloHeight * anim1.value),
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = RoundedCornerShape(if (isSmallScreen) 8.dp else 12.dp),
                                         color = Color(0xFF0F172A),
                                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155)),
                                         shadowElevation = 2.dp
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
-                                            Text("x1", fontWeight = FontWeight.Bold, color = Color.White)
+                                            Text("x1", fontWeight = FontWeight.Bold, color = Color.White, fontSize = if (isSmallScreen) 12.sp else 14.sp)
                                         }
                                     }
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     Text(
                                         text = "Solo",
-                                        fontSize = 14.sp,
+                                        fontSize = if (isSmallScreen) 12.sp else 14.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = TextLight
                                     )
@@ -906,7 +919,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                     modifier = Modifier
                                         .weight(0.6f)
                                         .graphicsLayer {
-                                            translationY = 60.dp.toPx() * (1f - anim2.value)
+                                            translationY = 40.dp.toPx() * (1f - anim2.value)
                                             alpha = anim2.value
                                         },
                                     horizontalAlignment = Alignment.CenterHorizontally
@@ -915,7 +928,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height((soloHeight * 7) * anim2.value),
-                                        shape = RoundedCornerShape(16.dp),
+                                        shape = RoundedCornerShape(if (isSmallScreen) 12.dp else 16.dp),
                                         color = Color.White,
                                         border = androidx.compose.foundation.BorderStroke(2.dp, PinkPrimary),
                                         shadowElevation = 8.dp
@@ -933,24 +946,24 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                                 Text(
                                                     text = "x7",
-                                                    fontSize = if (isSmallScreen) 40.sp else 54.sp,
+                                                    fontSize = if (isSmallScreen) 34.sp else 54.sp,
                                                     fontWeight = FontWeight.Black,
                                                     color = Color.White
                                                 )
                                                 Text(
                                                     text = "FASTER",
-                                                    fontSize = if (isSmallScreen) 14.sp else 18.sp,
+                                                    fontSize = if (isSmallScreen) 12.sp else 18.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = Color.White.copy(alpha = 0.9f),
-                                                    letterSpacing = 2.sp
+                                                    letterSpacing = if (isSmallScreen) 1.sp else 2.sp
                                                 )
                                             }
                                         }
                                     }
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     Text(
                                         text = "With Piggy",
-                                        fontSize = 16.sp,
+                                        fontSize = if (isSmallScreen) 14.sp else 16.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = PinkPrimary,
                                         maxLines = 1,
@@ -1076,7 +1089,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 32.dp),
+                .padding(bottom = if (isSmallScreen) 16.dp else 32.dp),
             contentAlignment = Alignment.Center
         ) {
             // Back Button (Optional/Visible when not on first page)
@@ -1100,6 +1113,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
             ProgressNextButton(
                 currentPage = currentPage,
                 totalPages = pages.size,
+                isSmallScreen = isSmallScreen,
                 onNext = {
                     if (currentPage < pages.size - 1) {
                         if (currentPage == 3) {
@@ -1126,6 +1140,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
 fun ProgressNextButton(
     currentPage: Int,
     totalPages: Int,
+    isSmallScreen: Boolean,
     onNext: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -1140,14 +1155,14 @@ fun ProgressNextButton(
     
     Box(
         modifier = modifier
-            .size(84.dp)
+            .size(if (isSmallScreen) 74.dp else 84.dp)
             .clip(CircleShape)
             .clickable(onClick = onNext),
         contentAlignment = Alignment.Center
     ) {
         // Progress Ring with segments
-        Canvas(modifier = Modifier.size(72.dp)) {
-            val strokeWidth = 4.dp.toPx()
+        Canvas(modifier = Modifier.size(if (isSmallScreen) 62.dp else 72.dp)) {
+            val strokeWidth = (if (isSmallScreen) 3.dp else 4.dp).toPx()
             val gap = 8f // Gap between segments in degrees
             val segmentMaxSweep = (360f / totalPages) - gap
             
@@ -1162,7 +1177,7 @@ fun ProgressNextButton(
                     useCenter = false,
                     style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                 )
-
+ 
                 // Smoothly fill segments based on animated progress
                 val segmentProgress = ((animatedProgress * totalPages) - i).coerceIn(0f, 1f)
                 
@@ -1180,8 +1195,8 @@ fun ProgressNextButton(
         
         // Inner Button
         Surface(
-            modifier = Modifier.size(54.dp),
-            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.size(if (isSmallScreen) 48.dp else 54.dp),
+            shape = RoundedCornerShape(if (isSmallScreen) 16.dp else 20.dp),
             color = buttonColor,
             shadowElevation = 4.dp
         ) {
@@ -1190,7 +1205,7 @@ fun ProgressNextButton(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Next",
                     tint = Color.White,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(if (isSmallScreen) 24.dp else 28.dp)
                 )
             }
         }

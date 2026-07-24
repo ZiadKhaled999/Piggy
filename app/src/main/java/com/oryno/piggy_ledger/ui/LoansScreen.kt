@@ -291,7 +291,13 @@ fun LoansScreen(
             )
             
             Button(
-                onClick = { showAddDialog = true },
+                onClick = { 
+                    if (viewModel.canAddLoan(loans.size)) {
+                        showAddDialog = true 
+                    } else {
+                        Toast.makeText(screenContext, "Upgrade to Pro to add more loans", Toast.LENGTH_SHORT).show()
+                    }
+                },
                 modifier = Modifier.height(52.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
                 shape = RoundedCornerShape(16.dp),

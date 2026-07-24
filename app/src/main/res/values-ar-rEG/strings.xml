@@ -505,7 +505,6 @@
     <string name="no_pending_transactions">مفيش عمليات معلقة</string>
     <string name="no_pending_transactions_desc">كل عمليات رسايل الـ SMS اتوزعت وتوجهت لـ حساباتك بنجاح.</string>
     
-    <string name="voice_prepair_words">جهز كلامك كله قبل ما تبدأ...</string>
     <string name="logs_timeline">سجل الدفعات</string>
     <string name="add_payment">ضيف دفعة</string>
     <string name="payment_amount">هتدفع كام؟</string>
@@ -529,4 +528,46 @@
     <string name="toast_loan_payment_added">الدفعة اتسجلت بنجاح!</string>
     <string name="toast_loan_closed">المعاملة اتقفلت وبقت مدفوعة بالكامل!</string>
     <string name="toast_loan_deleted">المعاملة اتحذفت.</string>
-  </resources>
+    <string name="pro_title">Piggy Ledger Pro</string>
+    <string name="pro_subtitle">تحكم كامل في حريتك المالية</string>
+    <string name="benefit_infinite_sheets">صفحات وحسابات وسجلات من غير ليمت</string>
+    <string name="benefit_interactive_charts">رسوم بيانية تفاعلية وتحليلات مالية جامدة</string>
+    <string name="benefit_biometric_security">حماية بالبصمة وخزنة خاصة</string>
+    <string name="choose_your_plan">اختار باقتك</string>
+    <string name="yearly_membership">اشتراك سنوي</string>
+    <string name="billed_annually_format">فقط %s/شهر، بتتدفع مرة في السنة</string>
+    <string name="save_50_best_value">وفر 50٪ - أحسن توفير ليك</string>
+    <string name="monthly_subscription">اشتراك شهري</string>
+    <string name="billed_monthly_cancel_anytime">بتتدفع شهرياً، ممكن تلغي في أي وقت</string>
+    <string name="lifetime_access">وصول مدى الحياة</string>
+    <string name="one_time_payment_forever">دفعة واحدة، ليك للأبد</string>
+    <string name="lifetime_unlocked">مفتوح للأبد</string>
+    <string name="contacting_store">بنتصل بالمتجر...</string>
+    <string name="swipe_to_purchase">اسحب عشان تشتري</string>
+    <string name="pro_purchase_success">أهلاً بك في برو! كل ميزات البريميوم بقت معاك.</string>
+    <string name="purchase_completed">تم الشراء بنجاح!</string>
+    <string name="purchase_failed_format">فشل الشراء: %s</string>
+    <string name="upgrade_success">تم الترقية إلى Piggy Ledger Pro بنجاح!</string>
+    <string name="restore_purchases">استعادة المشتريات</string>
+    <string name="pro_restore_success">تم استعادة المشتريات بنجاح!</string>
+    <string name="no_active_subscription">مش لاقيين اشتراك Piggy Ledger Pro نشط.</string>
+    <string name="restore_failed_format">فشل الاستعادة: %s</string>
+    <string name="terms_of_service">شروط الخدمة</string>
+    <string name="terms_unavailable">رابط الشروط مش متاح حالياً.</string>
+    <string name="subscription_terms_text">الاشتراكات بتتجدد تلقائياً. ممكن تلغي في أي وقت من إعدادات متجر جوجل.</string>
+
+    <!-- Account Identifiers -->
+    <string name="account_identifiers">معرفات الحسابات والمحافظ</string>
+    <string name="search_provider_placeholder">دور على بنك، محفظة، أو كلمة...</string>
+    <string name="category_all">الكل</string>
+    <string name="category_e_wallets">المحافظ الإلكترونية</string>
+    <string name="category_banks">البنوك</string>
+    <string name="category_switch_apps">تطبيقات التحويل والشبكات</string>
+    <string name="default_identifiers">المعرفات الأساسية:</string>
+    <string name="your_custom_keywords">الكلمات اللي ضفتها:</string>
+    <string name="add_custom_sms_identifiers">إضافة معرفات رسايل مخصصة</string>
+    <string name="enter_custom_keywords_desc">اكتب أسماء المرسل أو الكلمات المفتاحية الخاصة بـ %1$s (افصل بينهم بفاصلة).</string>
+    <string name="keywords_placeholder">مثال: %1$s, VF-Cash, 010</string>
+    <string name="save_btn">حفظ</string>
+    <string name="toast_saved_keywords">اتحفظت الكلمات لـ %1$s</string>
+</resources>

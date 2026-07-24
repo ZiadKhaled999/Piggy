@@ -31,19 +31,87 @@ class PiggyLedgerViewModel(
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    val customIdentifiers: StateFlow<Map<String, List<String>>> = userPreferences.customIdentifiersJson.map { jsonStr ->
+        try {
+            json.decodeFromString<Map<String, List<String>>>(jsonStr)
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    fun addCustomIdentifierKeywords(providerName: String, keywords: List<String>, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            val currentMap = customIdentifiers.value.toMutableMap()
+            val existingKeywords = currentMap[providerName]?.toMutableList() ?: mutableListOf()
+            keywords.forEach { kw ->
+                val trimmed = kw.trim()
+                if (trimmed.isNotEmpty() && !existingKeywords.contains(trimmed)) {
+                    existingKeywords.add(trimmed)
+                }
+            }
+            currentMap[providerName] = existingKeywords
+            val jsonString = json.encodeToString(currentMap)
+            userPreferences.saveCustomIdentifiersJson(jsonString)
+
+            try {
+                PostHog.capture(
+                    event = "custom_identifier_added",
+                    properties = mapOf(
+                        "provider" to providerName,
+                        "added_keywords" to keywords.joinToString(", "),
+                        "total_keywords_for_provider" to existingKeywords.size
+                    )
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("PostHog", "Failed to capture custom identifier added", e)
+            }
+
+            // Upload identifier keywords to central repository post endpoint
+            uploadIdentifierKeywordsToPost(providerName, existingKeywords)
+
+            onComplete()
+        }
+    }
+
+    private fun uploadIdentifierKeywordsToPost(providerName: String, keywords: List<String>) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val url = java.net.URL("https://api.piggyledger.com/v1/community-identifiers")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+                conn.connectTimeout = 3000
+                conn.readTimeout = 3000
+                val payload = """{"provider":"$providerName","keywords":${json.encodeToString(keywords)}}"""
+                conn.outputStream.use { os ->
+                    os.write(payload.toByteArray(Charsets.UTF_8))
+                }
+                conn.responseCode
+                conn.disconnect()
+            } catch (e: Exception) {
+                // Silently handle offline/mock server exception
+            }
+        }
+    }
+
     fun exportData(onResult: (String) -> Unit) {
         viewModelScope.launch {
             val streakDates = com.oryno.piggy_ledger.data.StreakManager.getActionDates(context)
             val backup = repository.getFullBackup(streakDates)
             val jsonString = json.encodeToString(backup)
-            PostHog.capture(
-                event = "data_exported",
-                properties = mapOf(
-                    "total_goals" to backup.goals.size,
-                    "total_loans" to backup.loans.size,
-                    "total_transactions" to backup.transactions.size
+            try {
+                PostHog.capture(
+                    event = "data_exported",
+                    properties = mapOf(
+                        "total_goals" to backup.goals.size,
+                        "total_loans" to backup.loans.size,
+                        "total_transactions" to backup.transactions.size
+                    )
                 )
-            )
+            } catch (e: Exception) {
+                android.util.Log.e("PostHog", "Failed to capture data exported", e)
+            }
             onResult(jsonString)
         }
     }
@@ -62,17 +130,21 @@ class PiggyLedgerViewModel(
                 pendingTransactions = backup.pendingTransactions,
                 streakDates = backup.streakDates
             )
-            PostHog.capture(
-                event = "csv_data_exported",
-                properties = mapOf(
-                    "total_goals" to backup.goals.size,
-                    "total_loans" to backup.loans.size,
-                    "total_transactions" to backup.transactions.size,
-                    "total_accounts" to backup.accounts.size,
-                    "total_account_transactions" to backup.accountTransactions.size,
-                    "total_pending_transactions" to backup.pendingTransactions.size
+            try {
+                PostHog.capture(
+                    event = "csv_data_exported",
+                    properties = mapOf(
+                        "total_goals" to backup.goals.size,
+                        "total_loans" to backup.loans.size,
+                        "total_transactions" to backup.transactions.size,
+                        "total_accounts" to backup.accounts.size,
+                        "total_account_transactions" to backup.accountTransactions.size,
+                        "total_pending_transactions" to backup.pendingTransactions.size
+                    )
                 )
-            )
+            } catch (e: Exception) {
+                android.util.Log.e("PostHog", "Failed to capture csv data exported", e)
+            }
             onResult(csvString)
         }
     }
@@ -91,17 +163,21 @@ class PiggyLedgerViewModel(
                 pendingTransactions = backup.pendingTransactions,
                 streakDates = backup.streakDates
             )
-            PostHog.capture(
-                event = "excel_data_exported",
-                properties = mapOf(
-                    "total_goals" to backup.goals.size,
-                    "total_loans" to backup.loans.size,
-                    "total_transactions" to backup.transactions.size,
-                    "total_accounts" to backup.accounts.size,
-                    "total_account_transactions" to backup.accountTransactions.size,
-                    "total_pending_transactions" to backup.pendingTransactions.size
+            try {
+                PostHog.capture(
+                    event = "excel_data_exported",
+                    properties = mapOf(
+                        "total_goals" to backup.goals.size,
+                        "total_loans" to backup.loans.size,
+                        "total_transactions" to backup.transactions.size,
+                        "total_accounts" to backup.accounts.size,
+                        "total_account_transactions" to backup.accountTransactions.size,
+                        "total_pending_transactions" to backup.pendingTransactions.size
+                    )
                 )
-            )
+            } catch (e: Exception) {
+                android.util.Log.e("PostHog", "Failed to capture excel data exported", e)
+            }
             onResult(excelString)
         }
     }
@@ -115,24 +191,32 @@ class PiggyLedgerViewModel(
                 com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
                 com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
                 com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
-                PostHog.capture(
-                    event = "data_imported",
-                    properties = mapOf(
-                        "success" to true,
-                        "total_goals" to data.goals.size,
-                        "total_loans" to data.loans.size,
-                        "total_transactions" to data.transactions.size
+                try {
+                    PostHog.capture(
+                        event = "data_imported",
+                        properties = mapOf(
+                            "success" to true,
+                            "total_goals" to data.goals.size,
+                            "total_loans" to data.loans.size,
+                            "total_transactions" to data.transactions.size
+                        )
                     )
-                )
+                } catch (e: Exception) {
+                    android.util.Log.e("PostHog", "Failed to capture data imported success", e)
+                }
                 onComplete()
             } catch (e: Exception) {
-                PostHog.capture(
-                    event = "data_imported",
-                    properties = mapOf(
-                        "success" to false,
-                        "error" to (e.message ?: "Unknown error")
+                try {
+                    PostHog.capture(
+                        event = "data_imported",
+                        properties = mapOf(
+                            "success" to false,
+                            "error" to (e.message ?: "Unknown error")
+                        )
                     )
-                )
+                } catch (e: Exception) {
+                    android.util.Log.e("PostHog", "Failed to capture data imported error", e)
+                }
                 onError(e.message ?: "Unknown error during import")
             }
         }
@@ -210,9 +294,37 @@ class PiggyLedgerViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5000), false
     )
 
+    val isPremium = userPreferences.isPremium.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), false
+    )
+
     val pinLock = userPreferences.pinLock.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
     )
+
+    init {
+        checkRevenueCatPremiumStatus()
+    }
+
+    fun checkRevenueCatPremiumStatus() {
+        try {
+            com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
+                object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
+                    override fun onReceived(customerInfo: com.revenuecat.purchases.CustomerInfo) {
+                        val isProActive = customerInfo.entitlements["Piggy Ledger Pro"]?.isActive == true
+                        viewModelScope.launch {
+                            userPreferences.savePremiumStatus(isProActive)
+                        }
+                    }
+                    override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                        // Keep current cached status
+                    }
+                }
+            )
+        } catch (e: Exception) {
+            // RevenueCat not initialized yet
+        }
+    }
 
     fun signInWithGoogle(email: String, name: String, photoUrl: String) {
         viewModelScope.launch {
@@ -710,4 +822,11 @@ class PiggyLedgerViewModel(
             )
         }
     }
+
+    fun canAddAccount(currentCount: Int): Boolean = isPremium.value || currentCount < 2
+    fun canAddBudget(): Boolean = isPremium.value
+    fun canAddGoal(currentCount: Int): Boolean = isPremium.value || currentCount < 2
+    fun canAddLoan(currentCount: Int): Boolean = isPremium.value || currentCount < 2
+    fun canAccessFullAnalytics(): Boolean = isPremium.value
+    fun canExportData(): Boolean = isPremium.value
 }

@@ -84,6 +84,9 @@ fun AddAccountScreen(
     var selectedIconName by remember { mutableStateOf("AccountBalance") }
     var userCustomizedColor by remember { mutableStateOf(false) }
 
+    val accounts by viewModel.allAccounts.collectAsState()
+    val isPremium by viewModel.isPremium.collectAsState()
+
     // Bottom Sheet State
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -189,7 +192,7 @@ fun AddAccountScreen(
                 actions = {
                     Button(
                         onClick = {
-                            if (name.isNotBlank()) {
+                            if (name.isNotBlank() && viewModel.canAddAccount(accounts.size)) {
                                 val limit = creditLimit.toDoubleOrNull() ?: 0.0
                                 val available = availableCredit.toDoubleOrNull() ?: limit
                                 val initialBalance = if (type == AccountType.CARD) {
@@ -218,6 +221,8 @@ fun AddAccountScreen(
                                 )
                                 Toast.makeText(context, context.getString(R.string.toast_account_added), Toast.LENGTH_SHORT).show()
                                 onBack()
+                            } else if (name.isNotBlank()) {
+                                Toast.makeText(context, "Upgrade to Pro to add more accounts", Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier.padding(end = 8.dp),

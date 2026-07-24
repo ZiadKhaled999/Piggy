@@ -18,8 +18,8 @@ android {
     applicationId = "com.aistudio.piggyledger.vpxqwm"
     minSdk = 24
     targetSdk = 36
-    versionCode = 2
-    versionName = "3.5"
+    versionCode = 3
+    versionName = "3.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -132,6 +132,7 @@ dependencies {
   implementation(libs.posthog.android)
   // implementation(libs.play.services.location)
   implementation(libs.retrofit)
+    
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)

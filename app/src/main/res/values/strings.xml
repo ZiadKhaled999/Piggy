@@ -548,6 +548,7 @@
     <string name="confirm_pin">Confirm PIN</string>
     <string name="pins_dont_match">PINs do not match</string>
     <string name="invalid_pin">Invalid PIN</string>
+    <string name="incorrect_pin">Incorrect PIN. Please try again.</string>
 
     <!-- Pending Transactions Strings -->
     <string name="pending_transactions">Pending Transactions</string>
@@ -560,7 +561,6 @@
     <string name="no_pending_transactions">No Pending Transactions</string>
     <string name="no_pending_transactions_desc">All automatic SMS payments have been successfully routed to your accounts.</string>
     
-    <string name="voice_prepair_words">Prepair all of your words before starting...</string>
     <string name="logs_timeline">Logs Timeline</string>
     <string name="add_payment">Add Payment</string>
     <string name="payment_amount">Payment Amount</string>
@@ -579,7 +579,6 @@
     <string name="payoffs">Payoffs</string>
     <string name="savings_goals">Savings Goals</string>
     <string name="see_all">See all</string>
-    <string name="processing_voice">Processing your voice...</string>
     <string name="correct_transaction">Correct Transaction</string>
     <string name="re_process">Re-Process</string>
     <string name="transaction_details">Transaction Details</string>
@@ -603,7 +602,6 @@
     <string name="csv_restore_failed">CSV import failed: %1$s</string>
     <string name="select_csv_file">Select CSV File</string>
     <string name="close">Close</string>
-    <string name="mic_permission_required">Microphone permission is required to record voice</string>
     <string name="card_number_placeholder">e.g. 1234 5678 9012</string>
 
     <!-- Auth Screen -->
@@ -613,10 +611,6 @@
     <string name="please_select_option">Please select an option to proceed</string>
 
 
-    <string name="release_to_cancel">Release to cancel</string>
-    <string name="slide_up_to_pause">Slide up to pause/cancel</string>
-    <string name="recording_state">Recording...</string>
-    <string name="hold_anywhere_to_record">Hold anywhere here to record</string>
     <string name="pin_min_digits">PIN must be at least 4 digits</string>
     <string name="export_screen_desc">Export your transaction ledger, accounts, and goal tracking data to secure offline formats.</string>
     <string name="export_excel_subtitle">Beautiful Excel Spreadsheet</string>
@@ -643,4 +637,46 @@
     <string name="toast_loan_deleted">Loan record deleted.</string>
     <string name="piggy_ledger_pro">Piggy Ledger Pro</string>
     <string name="piggy_ledger_pro_desc">Unlock all features with Piggy Ledger Pro.</string>
+    <string name="pro_title">Piggy Ledger Pro</string>
+    <string name="pro_subtitle">Take complete control of your financial freedom</string>
+    <string name="benefit_infinite_sheets">Infinite Sheets, Accounts &amp; Ledgers</string>
+    <string name="benefit_interactive_charts">Interactive Charts &amp; Deep Financial Insights</string>
+    <string name="benefit_biometric_security">Biometric Security &amp; Private Locker Protection</string>
+    <string name="choose_your_plan">CHOOSE YOUR PLAN</string>
+    <string name="yearly_membership">Yearly Membership</string>
+    <string name="billed_annually_format">Only %s/month, billed annually</string>
+    <string name="save_50_best_value">SAVE 50%% - BEST VALUE</string>
+    <string name="monthly_subscription">Monthly Subscription</string>
+    <string name="billed_monthly_cancel_anytime">Billed monthly, cancel anytime</string>
+    <string name="lifetime_access">Lifetime Access</string>
+    <string name="one_time_payment_forever">One-time payment, forever yours</string>
+    <string name="lifetime_unlocked">LIFETIME UNLOCKED</string>
+    <string name="contacting_store">Contacting store...</string>
+    <string name="swipe_to_purchase">Swipe to purchase</string>
+    <string name="pro_purchase_success">Welcome to Pro! Premium features fully unlocked.</string>
+    <string name="purchase_completed">Purchase completed successfully!</string>
+    <string name="purchase_failed_format">Purchase failed: %s</string>
+    <string name="upgrade_success">Upgraded to Piggy Ledger Pro successfully!</string>
+    <string name="restore_purchases">Restore Purchases</string>
+    <string name="pro_restore_success">Purchases restored successfully!</string>
+    <string name="no_active_subscription">No active Piggy Ledger Pro subscription found.</string>
+    <string name="restore_failed_format">Restore failed: %s</string>
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="terms_unavailable">Terms link is currently unavailable.</string>
+    <string name="subscription_terms_text">Subscriptions automatically renew. Cancel anytime inside Google Play Settings.</string>
+
+    <!-- Account Identifiers -->
+    <string name="account_identifiers">Account Identifiers</string>
+    <string name="search_provider_placeholder">Search bank, e-wallet, or SMS keyword...</string>
+    <string name="category_all">All</string>
+    <string name="category_e_wallets">E-Wallets</string>
+    <string name="category_banks">Banks</string>
+    <string name="category_switch_apps">Switch &amp; Apps</string>
+    <string name="default_identifiers">Default Identifiers:</string>
+    <string name="your_custom_keywords">Your Custom Keywords:</string>
+    <string name="add_custom_sms_identifiers">Add Custom SMS Identifiers</string>
+    <string name="enter_custom_keywords_desc">Enter custom SMS sender names or keywords associated with %1$s (comma separated).</string>
+    <string name="keywords_placeholder">e.g. %1$s, VF-Cash, 010</string>
+    <string name="save_btn">Save</string>
+    <string name="toast_saved_keywords">Saved keywords for %1$s</string>
 </resources>

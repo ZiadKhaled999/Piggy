@@ -12,42 +12,23 @@ class SmsParsingWorker(
     workerParams: WorkerParameters
 ) : CoroutineWorker(appContext, workerParams) {
 
-    private fun convertArabicDigitsAndSymbols(input: String): String {
-        var result = input
-        val arabicDigits = charArrayOf('٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩')
-        for (i in 0..9) {
-            result = result.replace(arabicDigits[i], '0' + i)
-        }
-        result = result.replace('٫', '.')
-        return result
-    }
-
     override suspend fun doWork(): Result {
         val sender = inputData.getString("sender") ?: return Result.failure()
         val rawBody = inputData.getString("body") ?: return Result.failure()
 
-        // Normalize Eastern Arabic digits and symbols to Western format
-        val body = convertArabicDigitsAndSymbols(rawBody)
+        val parsedSms = SmsParser.parse(rawBody)
+        val amount = parsedSms.amount
+        val merchant = parsedSms.merchant
 
-        val db = PiggyLedgerDatabase.getInstance(applicationContext)
-        val dao = db.piggyLedgerDao()
-        
-        // Step 1: Parse Amount (English and Arabic currencies)
-        val amountRegex = Regex("""(?i)(?:EGP|LE|L\.E\.|USD|\$|EUR|£|ج\.م|جنيه|جنيها|جنيهًا)\s*([\d,]+(?:\.\d{1,2})?)|([\d,]+(?:\.\d{1,2})?)\s*(?:EGP|LE|L\.E\.|USD|\$|EUR|£|ج\.م|جنيه|جنيها|جنيهًا)""")
-        val amountMatch = amountRegex.find(body)
-        
-        val amountStr = amountMatch?.groups?.get(1)?.value ?: amountMatch?.groups?.get(2)?.value
-        val amount = amountStr?.replace(",", "")?.toDoubleOrNull() ?: 0.0
-        
         if (amount == 0.0) {
             // Could not parse any valid transaction amount, discard or fail
             return Result.success()
         }
 
-        // Step 2: Extract Merchant (English and Arabic prepositions)
-        val merchantRegex = Regex("""(?i)(?:at|to|from|في|لدى|من|إلى)\s+([A-Za-z0-9\s\u0600-\u06FF]+?)(?:\s+on|\s+value|\.|\d|$)""")
-        val merchantMatch = merchantRegex.find(body)
-        val merchant = merchantMatch?.groups?.get(1)?.value?.trim() ?: "Unknown SMS Merchant"
+        val db = PiggyLedgerDatabase.getInstance(applicationContext)
+        val dao = db.piggyLedgerDao()
+        val body = SmsParser.convertArabicDigitsAndSymbols(rawBody)
+
 
         // Step 3: Accounts Retrieval and Smart Matching
         val accounts = dao.getAllAccountsSync()
@@ -59,17 +40,34 @@ class SmsParsingWorker(
             hasCard || hasBank
         }
 
-        // Match accounts by bank provider or sender name
+        // Match accounts by bank provider, account name, or label against sender/SMS body
         val providerMatches = accounts.filter { account ->
-            val prov = account.provider
-            if (prov.isNullOrBlank()) false else {
+            val cleanSender = sender.replace(" ", "").replace("-", "").lowercase()
+            val cleanBody = body.lowercase()
+
+            val provMatch = account.provider?.takeIf { it.isNotBlank() }?.let { prov ->
                 val cleanProv = prov.replace(" ", "").lowercase()
-                val cleanSender = sender.replace(" ", "").replace("-", "").lowercase()
-                cleanSender.contains(cleanProv) || 
-                cleanProv.contains(cleanSender) || 
-                body.lowercase().contains(prov.lowercase()) ||
-                body.lowercase().contains(cleanProv)
-            }
+                cleanSender.contains(cleanProv) ||
+                cleanProv.contains(cleanSender) ||
+                cleanBody.contains(prov.lowercase()) ||
+                cleanBody.contains(cleanProv)
+            } ?: false
+
+            val nameMatch = account.name.takeIf { it.isNotBlank() }?.let { name ->
+                val cleanName = name.replace(" ", "").lowercase()
+                cleanSender.contains(cleanName) ||
+                cleanName.contains(cleanSender) ||
+                cleanBody.contains(name.lowercase()) ||
+                cleanBody.contains(cleanName)
+            } ?: false
+
+            val labelMatch = account.label?.takeIf { it.isNotBlank() }?.let { label ->
+                val cleanLabel = label.replace(" ", "").lowercase()
+                cleanSender.contains(cleanLabel) ||
+                cleanBody.contains(label.lowercase())
+            } ?: false
+
+            provMatch || nameMatch || labelMatch
         }
 
         // Identify the correct destination account or route to Safety Hold (Pending Queue)

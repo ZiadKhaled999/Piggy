@@ -4,58 +4,147 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
+import android.util.Log
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.oryno.piggy_ledger.data.PiggyLedgerDatabase
+import com.oryno.piggy_ledger.data.UserPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 class SmsReceiver : BroadcastReceiver() {
 
-    // Trusted senders (Gate 1)
-    private val trustedSenders = listOf("CIB", "VodafoneCash", "InstaPay", "NBE", "QNB", "BanqueMisr", "AlexBank", "HSBC", "EmiratesNBD")
+    // Default static whitelist of all 40 Egyptian banks, 4 e-wallets, and national instant payment providers
+    private val defaultProviders = listOf(
+        // 4 E-Wallets
+        "VodafoneCash", "Vodafone",
+        "OrangeCash", "Orange",
+        "EtisalatCash", "Etisalat", "e&Cash", "e&",
+        "WEPay", "WE",
+
+        // 40 Egyptian Banks & Licensed Financial Institutions
+        "NBE", "NationalBankOfEgypt", "NBEg",                 // 1. National Bank of Egypt
+        "BanqueMisr", "BM",                                    // 2. Banque Misr
+        "CIB", "CIBEgypt",                                     // 3. Commercial International Bank
+        "BanqueDuCaire", "BDC",                                // 4. Banque du Caire
+        "QNB", "QNBAlahli",                                    // 5. QNB Alahli
+        "AlexBank",                                            // 6. Bank of Alexandria
+        "HSBC", "HSBCEgypt",                                   // 7. HSBC Egypt
+        "Faisal", "FaisalBank",                                // 8. Faisal Islamic Bank of Egypt
+        "AAIB",                                                // 9. Arab African International Bank
+        "ADIB", "ADIBEgypt",                                   // 10. Abu Dhabi Islamic Bank
+        "CreditAgricole", "CAE",                               // 11. Crédit Agricole Egypt
+        "EmiratesNBD", "ENBD",                                 // 12. Emirates NBD Egypt
+        "HDB", "HousingDevelopmentBank",                       // 13. Housing & Development Bank
+        "EGBank", "EGB",                                       // 14. EG Bank (Egyptian Gulf Bank)
+        "SAIB", "SAIBBank",                                    // 15. SAIB Bank
+        "AlBaraka", "ABG",                                     // 16. Al Baraka Bank Egypt
+        "Attijariwafa", "AWB",                                 // 17. Attijariwafa Bank Egypt
+        "ArabBank",                                            // 18. Arab Bank Egypt
+        "ADCB", "ADCBEgypt",                                   // 19. Abu Dhabi Commercial Bank
+        "EBank", "EDBE",                                       // 20. Export Development Bank of Egypt
+        "UnitedBank", "UB",                                    // 21. The United Bank
+        "SuezCanal", "SCB",                                    // 22. Suez Canal Bank
+        "Mashreq", "MashreqBank",                              // 23. Mashreq Bank Egypt
+        "Citibank", "Citi",                                    // 24. Citibank Egypt
+        "FAB", "FABEgypt", "BankAudi",                         // 25. First Abu Dhabi Bank (FAB)
+        "ABK", "ABKEgypt",                                     // 26. Al Ahli Bank of Kuwait
+        "NBK", "NBKEgypt",                                     // 27. National Bank of Kuwait
+        "BankABC", "ABCBank",                                  // 28. Bank ABC Egypt
+        "aiBank", "AIBank",                                    // 29. aiBank (Arab Investment Bank)
+        "MIDBANK", "MDB",                                      // 30. MIDBANK
+        "AgriculturalBank", "EAB", "PBDAC",                    // 31. Egyptian Agricultural Bank
+        "IDB", "IDBEgypt",                                     // 32. Industrial Development Bank
+        "AIB", "ArabIntBank",                                  // 33. Arab International Bank
+        "BlomBank", "Blom",                                    // 34. Blom Bank Egypt
+        "StandardChartered", "StanChart",                      // 35. Standard Chartered Bank Egypt
+        "NasserBank",                                          // 36. Nasser Social Bank
+        "REEB", "RealEstateBank",                              // 37. Egyptian Real Estate Bank
+        "Piraeus", "PiraeusBank",                              // 38. Piraeus Bank Egypt
+        "CBE",                                                 // 39. Central Bank of Egypt
+        "InstaPay", "SmartWallet", "Telda", "Nexta"            // 40. National Instant Payment Switch (InstaPay) & Financial Apps
+    )
+
+    private fun normalize(token: String): List<String> {
+        val clean = token.trim()
+        val noSpaces = clean.replace(" ", "").replace("-", "").replace("_", "")
+        val words = clean.split(" ", "-", "_").filter { it.length >= 2 }
+        return listOf(clean, noSpaces) + words
+    }
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
             val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
-            if (messages.isEmpty()) return
+            if (messages.isNullOrEmpty()) return
 
             val message = messages[0] ?: return
             val sender = message.originatingAddress ?: return
             val body = message.messageBody ?: return
 
-            // Gate 1: Sender Verification
-            if (!trustedSenders.any { sender.contains(it, ignoreCase = true) }) {
-                return
-            }
+            Log.d("SmsReceiver", "Received SMS from: $sender, Body: $body")
 
-            // Execute Gate 2 locally in BG before queuing worker
+            val pendingResult = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
-                val db = PiggyLedgerDatabase.getInstance(context)
-                val accounts = db.piggyLedgerDao().getAllGoalsSync() // Wait, need getAllAccountsSync()
-                // I need to add getAllAccountsSync() in DAO.
-                
-                // For now, let's just queue the work and do Gate 2 there for simplicity,
-                // but specification says: "The BroadcastReceiver must check ... in < 10ms"
-                // Reading DB in BroadcastReceiver is bad practice as it blocks.
-                // We'll pass it to WorkManager and let the worker do Gate 2 and Gate 3.
-                // Specification: "Implement Gate 1 & 2 logic to filter messages in < 10ms."
-                // Since Room DB query might take longer, we should cache it or let worker do it.
-                // The spec says "Scan the SMS body against local database for card_numbers...". To do it in <10ms, we must have a fast cache or just queue it to Worker. Let's queue it.
+                try {
+                    val db = PiggyLedgerDatabase.getInstance(context)
+                    val accounts = db.piggyLedgerDao().getAllAccountsSync()
 
-                val inputData = Data.Builder()
-                    .putString("sender", sender)
-                    .putString("body", body)
-                    .build()
+                    // Gather dynamic identifiers from user's configured accounts
+                    val dynamicIdentifiers = mutableListOf<String>()
+                    accounts.forEach { account ->
+                        account.provider?.takeIf { it.isNotBlank() }?.let { dynamicIdentifiers.add(it) }
+                        account.name.takeIf { it.isNotBlank() }?.let { dynamicIdentifiers.add(it) }
+                        account.label?.takeIf { it.isNotBlank() }?.let { dynamicIdentifiers.add(it) }
+                        account.card_numbers?.takeIf { it.isNotBlank() }?.let { dynamicIdentifiers.add(it) }
+                        account.bank_account_no?.takeIf { it.isNotBlank() }?.let { dynamicIdentifiers.add(it) }
+                    }
 
-                val workRequest = OneTimeWorkRequestBuilder<SmsParsingWorker>()
-                    .setInputData(inputData)
-                    .build()
+                    // Gather user's custom keywords from UserPreferences
+                    val userPrefs = UserPreferences(context)
+                    val customJsonStr = userPrefs.customIdentifiersJson.firstOrNull() ?: "{}"
+                    val customKeywordsList = mutableListOf<String>()
+                    try {
+                        val customMap = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }.decodeFromString<Map<String, List<String>>>(customJsonStr)
+                        customMap.values.forEach { customKeywordsList.addAll(it) }
+                    } catch (e: Exception) {
+                        Log.e("SmsReceiver", "Error parsing custom keywords in SmsReceiver", e)
+                    }
 
-                WorkManager.getInstance(context).enqueue(workRequest)
+                    // Build comprehensive list of keywords to match sender against
+                    val allTrustedTokens = (defaultProviders + dynamicIdentifiers + customKeywordsList).flatMap { normalize(it) }.distinct()
+
+                    val cleanSender = sender.replace(" ", "").replace("-", "").replace("_", "")
+
+                    val isTrusted = allTrustedTokens.any { token ->
+                        cleanSender.contains(token, ignoreCase = true) ||
+                        sender.contains(token, ignoreCase = true)
+                    }
+
+                    if (isTrusted) {
+                        Log.d("SmsReceiver", "Sender $sender is verified as trusted. Queueing SmsParsingWorker...")
+                        val inputData = Data.Builder()
+                            .putString("sender", sender)
+                            .putString("body", body)
+                            .build()
+
+                        val workRequest = OneTimeWorkRequestBuilder<SmsParsingWorker>()
+                            .setInputData(inputData)
+                            .build()
+
+                        WorkManager.getInstance(context).enqueue(workRequest)
+                    } else {
+                        Log.d("SmsReceiver", "SMS from $sender ignored (not matched in trusted providers or user accounts)")
+                    }
+                } catch (e: Exception) {
+                    Log.e("SmsReceiver", "Error processing incoming SMS in receiver", e)
+                } finally {
+                    pendingResult.finish()
+                }
             }
         }
     }
 }
+

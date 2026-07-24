@@ -3,7 +3,7 @@ package com.oryno.piggy_ledger.ui
 import kotlinx.serialization.Serializable
 
 enum class SettingsMode {
-    MAIN, FEEDBACK, RATING, BACKUP, RESTORE, LANGUAGE, SECURITY, PRO
+    MAIN, FEEDBACK, RATING, BACKUP, RESTORE, LANGUAGE, SECURITY, PRO, ACCOUNT_IDENTIFIERS
 }
 
 sealed class Screen {

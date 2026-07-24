@@ -11,16 +11,24 @@ class PiggyLedgerApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         
-        val config = PostHogAndroidConfig(
-            apiKey = "phc_nkNWGafPjbnfdorkfM2L4ZsNJFo8jbz4Ybjbu9C9tPMp",
-            host = "https://us.i.posthog.com"
-        )
-        PostHogAndroid.setup(this, config)
+        try {
+            val config = PostHogAndroidConfig(
+                apiKey = BuildConfig.POSTHOG_API_KEY,
+                host = "https://us.i.posthog.com"
+            )
+            PostHogAndroid.setup(this, config)
+        } catch (e: Exception) {
+            Log.e("PiggyLedgerApp", "Failed to initialize PostHog", e)
+        }
 
-        com.revenuecat.purchases.Purchases.configure(
-            com.revenuecat.purchases.PurchasesConfiguration.Builder(this, "test_qDcFVCQgLyYkFeMmsRjUwIhgpeI").build()
-        )
-        com.revenuecat.purchases.Purchases.logLevel = com.revenuecat.purchases.LogLevel.DEBUG
+        try {
+            com.revenuecat.purchases.Purchases.configure(
+                com.revenuecat.purchases.PurchasesConfiguration.Builder(this, BuildConfig.REVENUECAT_API_KEY).build()
+            )
+            com.revenuecat.purchases.Purchases.logLevel = com.revenuecat.purchases.LogLevel.DEBUG
+        } catch (e: Exception) {
+            Log.e("PiggyLedgerApp", "Failed to initialize RevenueCat Purchases", e)
+        }
 
         val clerkKey = BuildConfig.CLERK_PUBLISHABLE_KEY
         if (clerkKey.isNotBlank()) {

@@ -16,9 +16,6 @@ class ViewModelFactory(
         if (modelClass.isAssignableFrom(PiggyLedgerViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return PiggyLedgerViewModel(repository, userPreferences, context) as T
-        } else if (modelClass.isAssignableFrom(VoiceLedgerViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return VoiceLedgerViewModel(repository, context) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

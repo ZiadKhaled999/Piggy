@@ -24,10 +24,16 @@ class UserPreferences(private val context: Context) {
         val LOCK_TIMEOUT_SECONDS = longPreferencesKey("lock_timeout_seconds")
         val LAST_EXIT_TIME = longPreferencesKey("last_exit_time")
         val IS_SCREENSHOT_PROTECTION_ENABLED = booleanPreferencesKey("is_screenshot_protection_enabled")
+        val IS_PREMIUM = booleanPreferencesKey("is_premium")
         val PIN_LOCK = stringPreferencesKey("pin_lock")
         val PERSONALIZED_INTENT = intPreferencesKey("personalized_intent")
         val PERSONALIZED_INTENSITY = intPreferencesKey("personalized_intensity")
         val SAVING_MODE = stringPreferencesKey("saving_mode")
+        val CUSTOM_IDENTIFIERS_JSON = stringPreferencesKey("custom_identifiers_json")
+    }
+
+    val customIdentifiersJson: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[CUSTOM_IDENTIFIERS_JSON] ?: "{}"
     }
 
     val personalizedIntent: Flow<Int> = context.dataStore.data.map { prefs ->
@@ -82,6 +88,10 @@ class UserPreferences(private val context: Context) {
         prefs[IS_SCREENSHOT_PROTECTION_ENABLED] ?: false
     }
 
+    val isPremium: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[IS_PREMIUM] ?: false
+    }
+
     val pinLock: Flow<String?> = context.dataStore.data.map { prefs ->
         prefs[PIN_LOCK]
     }
@@ -131,6 +141,12 @@ class UserPreferences(private val context: Context) {
         }
     }
 
+    suspend fun savePremiumStatus(isPremium: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[IS_PREMIUM] = isPremium
+        }
+    }
+
     suspend fun savePinLock(pin: String?) {
         context.dataStore.edit { prefs ->
             if (pin == null) {
@@ -146,6 +162,12 @@ class UserPreferences(private val context: Context) {
             prefs[PERSONALIZED_INTENT] = intent
             prefs[PERSONALIZED_INTENSITY] = intensity
             prefs[SAVING_MODE] = savingMode
+        }
+    }
+
+    suspend fun saveCustomIdentifiersJson(json: String) {
+        context.dataStore.edit { prefs ->
+            prefs[CUSTOM_IDENTIFIERS_JSON] = json
         }
     }
 }

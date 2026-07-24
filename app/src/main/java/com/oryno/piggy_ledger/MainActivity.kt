@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import android.view.WindowManager
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.delay
 import com.posthog.PostHog
 import kotlinx.coroutines.flow.combine
 
@@ -62,6 +63,32 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Icon
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Backspace
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import com.oryno.piggy_ledger.ui.theme.NavyDark
 
 class MainActivity : AppCompatActivity() {
 
@@ -102,67 +129,20 @@ class MainActivity : AppCompatActivity() {
     setContent {
       PiggyLedgerTheme {
         val pinLock by userPreferences.pinLock.collectAsStateWithLifecycle(null)
-        val isLocked = (isBiometricCheckComplete && !isAuthenticatedByBiometric) || (pinLock != null && !isAuthenticatedByPin)
+        val activePin = pinLock?.takeIf { it.isNotBlank() }
+        val isLocked = (isBiometricCheckComplete && !isAuthenticatedByBiometric) || (activePin != null && !isAuthenticatedByPin)
 
         if (isBiometricCheckComplete) {
             if (!isLocked) {
                 PiggyLedgerApp(factory)
             } else {
-                // Show a "Locked" screen
-                Box(
-                    modifier = Modifier.fillMaxSize().background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(32.dp)
-                    ) {
-                        Text(
-                            text = getString(R.string.security),
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PinkPrimary
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        if (pinLock != null && !isAuthenticatedByPin) {
-                            var enteredPin by remember { mutableStateOf("") }
-                            var pinError by remember { mutableStateOf(false) }
-                            
-                            OutlinedTextField(
-                                value = enteredPin,
-                                onValueChange = { 
-                                    if (it.length <= 6 && it.all { c -> c.isDigit() }) {
-                                        enteredPin = it
-                                        if (it == pinLock) {
-                                            isAuthenticatedByPin = true
-                                        }
-                                    }
-                                },
-                                label = { Text(getString(R.string.enter_pin)) },
-                                visualTransformation = PasswordVisualTransformation(),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                modifier = Modifier.fillMaxWidth(),
-                                isError = pinError,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = PinkPrimary,
-                                    focusedLabelColor = PinkPrimary,
-                                    cursorColor = PinkPrimary
-                                )
-                            )
-                        }
-                        
-                        if (!isAuthenticatedByBiometric) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            androidx.compose.material3.Button(
-                                onClick = { checkBiometricLock(userPreferences) },
-                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = PinkPrimary)
-                            ) {
-                                Text(getString(R.string.continue_btn))
-                            }
-                        }
-                    }
-                }
+                PinLockScreen(
+                    pinLock = activePin,
+                    isAuthenticatedByPin = isAuthenticatedByPin,
+                    isAuthenticatedByBiometric = isAuthenticatedByBiometric,
+                    onPinSuccess = { isAuthenticatedByPin = true },
+                    onBiometricClick = { checkBiometricLock(userPreferences) }
+                )
             }
         } else {
             // Loading state while checking preferences
@@ -229,15 +209,11 @@ class MainActivity : AppCompatActivity() {
   private fun observeSecuritySettings() {
       lifecycleScope.launch {
           userPreferences.isScreenshotProtectionEnabled.collectLatest { isEnabled ->
-              // Note: FLAG_SECURE is disabled in the streaming preview to prevent a black screen
-              // On a real physical device, this would be uncommented/active.
-              /*
               if (isEnabled) {
                   window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
               } else {
                   window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
               }
-              */
           }
       }
   }
@@ -257,15 +233,19 @@ class MainActivity : AppCompatActivity() {
               val (intent, intensity, mode) = personalization
               PersonalizationAuthData(authenticated, email, name, intent, intensity, mode)
           }.collectLatest { data ->
-              if (data.authenticated && data.email.isNotBlank()) {
-                  val props = mutableMapOf<String, Any>()
-                  if (data.name.isNotBlank()) props["name"] = data.name
-                  props["personalized_intent"] = data.intent
-                  props["personalized_intensity"] = data.intensity
-                  props["saving_mode"] = data.savingMode
-                  PostHog.identify(data.email, props)
-              } else {
-                  PostHog.reset()
+              try {
+                  if (data.authenticated && data.email.isNotBlank()) {
+                      val props = mutableMapOf<String, Any>()
+                      if (data.name.isNotBlank()) props["name"] = data.name
+                      props["personalized_intent"] = data.intent
+                      props["personalized_intensity"] = data.intensity
+                      props["saving_mode"] = data.savingMode
+                      PostHog.identify(data.email, props)
+                  } else {
+                      PostHog.reset()
+                  }
+              } catch (e: Exception) {
+                  android.util.Log.e("PostHog", "Failed to identify/reset", e)
               }
           }
       }
@@ -330,6 +310,250 @@ class MainActivity : AppCompatActivity() {
           }
       }
   }
+}
+
+@Composable
+fun PinLockScreen(
+    pinLock: String?,
+    isAuthenticatedByPin: Boolean,
+    isAuthenticatedByBiometric: Boolean,
+    onPinSuccess: () -> Unit,
+    onBiometricClick: () -> Unit
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var enteredPin by remember { mutableStateOf("") }
+    var pinError by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    val cleanPin = pinLock?.trim() ?: ""
+    val targetLength = if (cleanPin.length in 4..6) cleanPin.length else 4
+
+    fun verifyPin() {
+        val cleanEntered = enteredPin.trim()
+        if (cleanPin.isEmpty() || cleanEntered == cleanPin) {
+            onPinSuccess()
+        } else {
+            pinError = true
+            scope.launch {
+                delay(700)
+                enteredPin = ""
+                pinError = false
+            }
+        }
+    }
+
+    fun handleDigitPress(digit: String) {
+        if (enteredPin.length < 6) {
+            val newPin = enteredPin + digit
+            enteredPin = newPin
+            pinError = false
+
+            // Auto-unlock if user typed exact PIN match
+            if (cleanPin.isNotEmpty() && newPin == cleanPin) {
+                onPinSuccess()
+            }
+        }
+    }
+
+    fun handleBackspace() {
+        if (enteredPin.isNotEmpty()) {
+            enteredPin = enteredPin.dropLast(1)
+            pinError = false
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .padding(horizontal = 24.dp, vertical = 20.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(76.dp)
+                    .background(PinkPrimary.copy(alpha = 0.12f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                    tint = PinkPrimary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = context.getString(R.string.security),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = NavyDark
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = if (pinError) context.getString(R.string.incorrect_pin) else context.getString(R.string.enter_pin),
+                fontSize = 14.sp,
+                color = if (pinError) Color(0xFFEF4444) else Color(0xFF64748B),
+                fontWeight = if (pinError) FontWeight.SemiBold else FontWeight.Normal,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            val displayDots = maxOf(targetLength, enteredPin.length).coerceIn(4, 6)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                for (i in 0 until displayDots) {
+                    val isFilled = i < enteredPin.length
+                    val scale by animateFloatAsState(
+                        targetValue = if (isFilled) 1.25f else 1.0f,
+                        animationSpec = tween(durationMillis = 150),
+                        label = "dotScale"
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .size(18.dp)
+                            .scale(scale)
+                            .background(
+                                color = when {
+                                    pinError -> Color(0xFFEF4444)
+                                    isFilled -> PinkPrimary
+                                    else -> Color.Transparent
+                                },
+                                shape = CircleShape
+                            )
+                            .border(
+                                width = 2.dp,
+                                color = when {
+                                    pinError -> Color(0xFFEF4444)
+                                    isFilled -> PinkPrimary
+                                    else -> Color(0xFFCBD5E1)
+                                },
+                                shape = CircleShape
+                            )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            val keypadRows = listOf(
+                listOf("1", "2", "3"),
+                listOf("4", "5", "6"),
+                listOf("7", "8", "9"),
+                listOf("ok", "0", "backspace")
+            )
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                keypadRows.forEach { row ->
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        row.forEach { key ->
+                            when (key) {
+                                "ok" -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(68.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFF22C55E))
+                                            .clickable { verifyPin() },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "OK",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+                                "backspace" -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(68.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFF1F5F9))
+                                            .clickable { handleBackspace() },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Backspace,
+                                            contentDescription = "Backspace",
+                                            tint = NavyDark,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                }
+                                else -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(68.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFF8FAFC))
+                                            .border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                                            .clickable { handleDigitPress(key) },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = key,
+                                            fontSize = 24.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = NavyDark
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Prominent OK button below keypad
+            Button(
+                onClick = { verifyPin() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PinkPrimary,
+                    disabledContainerColor = PinkPrimary.copy(alpha = 0.4f)
+                ),
+                enabled = enteredPin.isNotEmpty()
+            ) {
+                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "OK",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+        }
+    }
 }
 
 

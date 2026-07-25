@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # If you used 'Environment Secrets', uncomment the line below and set the correct environment name
+    # environment: production
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -18,22 +20,32 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7 # Using a fixed version to bypass the corrupt wrapper in the repo
 
       - name: Generate .env file
         run: |
           echo "CLERK_PUBLISHABLE_KEY=${{ secrets.CLERK_PUBLISHABLE_KEY }}" >> .env
           echo "REVENUECAT_SDK_KEY=${{ secrets.REVENUECAT_SDK_KEY }}" >> .env
+          echo "POSTHOG_API_KEY=${{ secrets.POSTHOG_API_KEY }}" >> .env
 
       - name: Decode Keystore
         run: |
+          if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "Error: ANDROID_KEYSTORE_BASE64 is empty. Please check your GitHub Secrets."
+            exit 1
+          fi
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > app/release.keystore
 
       - name: Make Gradlew Executable
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: ./gradlew bundleRelease
+        # If the wrapper is corrupt, we use the 'gradle' command provided by setup-gradle
+        run: gradle bundleRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}

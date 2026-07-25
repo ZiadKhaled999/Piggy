@@ -1,4 +1,5 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import java.security.KeyStore
 
 plugins {
   alias(libs.plugins.android.application)
@@ -27,14 +28,37 @@ android {
   signingConfigs {
     create("release") {
       val keystoreFile = file("release.keystore")
-      val pass = System.getenv("KEYSTORE_PASSWORD")
-      val alias = System.getenv("KEY_ALIAS")
-      val keyPass = System.getenv("KEY_PASSWORD")
-      if (keystoreFile.exists() && !pass.isNullOrEmpty() && !alias.isNullOrEmpty() && !keyPass.isNullOrEmpty()) {
-        storeFile = keystoreFile
-        storePassword = pass
-        keyAlias = alias
-        keyPassword = keyPass
+      val pass = System.getenv("KEYSTORE_PASSWORD")?.trim()?.removeSurrounding("\"")?.removeSurrounding("'")
+      val alias = System.getenv("KEY_ALIAS")?.trim()?.removeSurrounding("\"")?.removeSurrounding("'")
+      val keyPass = System.getenv("KEY_PASSWORD")?.trim()?.removeSurrounding("\"")?.removeSurrounding("'")
+
+      if (keystoreFile.exists() && keystoreFile.length() > 0L && !pass.isNullOrEmpty() && !alias.isNullOrEmpty() && !keyPass.isNullOrEmpty()) {
+        val isValidKeystore = try {
+          val ks = KeyStore.getInstance(KeyStore.getDefaultType())
+          keystoreFile.inputStream().use { input ->
+            ks.load(input, pass.toCharArray())
+          }
+          ks.containsAlias(alias)
+        } catch (_: Exception) {
+          try {
+            val ks = KeyStore.getInstance("JKS")
+            keystoreFile.inputStream().use { input ->
+              ks.load(input, pass.toCharArray())
+            }
+            ks.containsAlias(alias)
+          } catch (_: Exception) {
+            false
+          }
+        }
+
+        if (isValidKeystore) {
+          storeFile = keystoreFile
+          storePassword = pass
+          keyAlias = alias
+          keyPassword = keyPass
+        } else {
+          logger.warn("WARNING: release.keystore exists but alias '$alias' or password was invalid. Falling back to debug signing.")
+        }
       }
     }
     create("debugConfig") {

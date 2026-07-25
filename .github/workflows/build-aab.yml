@@ -36,8 +36,13 @@ jobs:
       - name: Decode Keystore
         run: |
           if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > app/release.keystore
-            echo "Keystore decoded successfully."
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\r\n ' | base64 --decode > app/release.keystore
+            if [ -s app/release.keystore ]; then
+              echo "Keystore decoded successfully."
+            else
+              echo "Warning: Decoded app/release.keystore was empty. Removing file."
+              rm -f app/release.keystore
+            fi
           else
             echo "Warning: ANDROID_KEYSTORE_BASE64 secret is empty. Proceeding with fallback config."
           fi

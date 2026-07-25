@@ -28,44 +28,80 @@ android {
   signingConfigs {
     create("release") {
       val keystoreFile = file("release.keystore")
-      val pass = System.getenv("KEYSTORE_PASSWORD")?.trim()?.removeSurrounding("\"")?.removeSurrounding("'")
-      val alias = System.getenv("KEY_ALIAS")?.trim()?.removeSurrounding("\"")?.removeSurrounding("'")
-      val keyPass = System.getenv("KEY_PASSWORD")?.trim()?.removeSurrounding("\"")?.removeSurrounding("'")
+      val rawPass = System.getenv("KEYSTORE_PASSWORD")
+      val rawAlias = System.getenv("KEY_ALIAS")
+      val rawKeyPass = System.getenv("KEY_PASSWORD")
 
-      if (keystoreFile.exists() && keystoreFile.length() > 0L && !pass.isNullOrEmpty() && !alias.isNullOrEmpty() && !keyPass.isNullOrEmpty()) {
-        val isValidKeystore = try {
-          val ks = KeyStore.getInstance(KeyStore.getDefaultType())
-          keystoreFile.inputStream().use { input ->
-            ks.load(input, pass.toCharArray())
+      val pass = rawPass?.trim()?.removeSurrounding("\"")?.removeSurrounding("'")
+      val alias = rawAlias?.trim()?.removeSurrounding("\"")?.removeSurrounding("'")
+      val keyPass = rawKeyPass?.trim()?.removeSurrounding("\"")?.removeSurrounding("'")
+
+      if (keystoreFile.exists() && keystoreFile.length() > 0L) {
+        var loadedKs: KeyStore? = null
+        var usedStorePass: String? = null
+
+        val passCandidates = listOfNotNull(pass, keyPass, "android").filter { it.isNotEmpty() }.distinct()
+        for (p in passCandidates) {
+          for (type in listOf(KeyStore.getDefaultType(), "JKS", "PKCS12")) {
+            try {
+              val ks = KeyStore.getInstance(type)
+              keystoreFile.inputStream().use { input -> ks.load(input, p.toCharArray()) }
+              loadedKs = ks
+              usedStorePass = p
+              break
+            } catch (_: Exception) {}
           }
-          ks.containsAlias(alias)
-        } catch (_: Exception) {
-          try {
-            val ks = KeyStore.getInstance("JKS")
-            keystoreFile.inputStream().use { input ->
-              ks.load(input, pass.toCharArray())
-            }
-            ks.containsAlias(alias)
-          } catch (_: Exception) {
-            false
-          }
+          if (loadedKs != null) break
         }
 
-        if (isValidKeystore) {
-          storeFile = keystoreFile
-          storePassword = pass
-          keyAlias = alias
-          keyPassword = keyPass
-        } else {
-          logger.warn("WARNING: release.keystore exists but alias '$alias' or password was invalid. Falling back to debug signing.")
+        if (loadedKs != null && usedStorePass != null) {
+          val aliases = loadedKs.aliases().toList()
+          var targetAlias: String? = null
+          if (!alias.isNullOrEmpty()) {
+            targetAlias = aliases.firstOrNull { it == alias }
+              ?: aliases.firstOrNull { it.equals(alias, ignoreCase = true) }
+              ?: aliases.firstOrNull { it.trim().equals(alias.trim(), ignoreCase = true) }
+          }
+          if (targetAlias == null && aliases.isNotEmpty()) {
+            targetAlias = aliases.first()
+          }
+
+          if (targetAlias != null) {
+            val keyPassCandidates = listOfNotNull(keyPass, usedStorePass, pass).filter { it.isNotEmpty() }.distinct()
+            var usedKeyPass: String? = null
+            for (kp in keyPassCandidates) {
+              try {
+                if (loadedKs.isKeyEntry(targetAlias)) {
+                  loadedKs.getKey(targetAlias, kp.toCharArray())
+                  usedKeyPass = kp
+                  break
+                }
+              } catch (_: Exception) {}
+            }
+            if (usedKeyPass == null && keyPassCandidates.isNotEmpty()) {
+              usedKeyPass = keyPassCandidates.first()
+            }
+
+            if (usedKeyPass != null) {
+              storeFile = keystoreFile
+              storePassword = usedStorePass
+              keyAlias = targetAlias
+              keyPassword = usedKeyPass
+              logger.lifecycle("Configured release signing with keystore '${keystoreFile.name}' and alias '$targetAlias'.")
+            }
+          }
         }
       }
     }
-    create("debugConfig") {
-      storeFile = file("${rootDir}/debug.keystore")
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
+
+    val debugKs = file("${rootDir}/debug.keystore")
+    if (debugKs.exists() && debugKs.length() > 0L) {
+      create("debugConfig") {
+        storeFile = debugKs
+        storePassword = "android"
+        keyAlias = "androiddebugkey"
+        keyPassword = "android"
+      }
     }
   }
 
@@ -74,15 +110,23 @@ android {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      val releaseConfig = signingConfigs.getByName("release")
-      if (releaseConfig.storeFile != null) {
+
+      val releaseConfig = signingConfigs.findByName("release")
+      val debugConfig = signingConfigs.findByName("debugConfig")
+
+      if (releaseConfig?.storeFile != null) {
         signingConfig = releaseConfig
+      } else if (debugConfig?.storeFile != null) {
+        signingConfig = debugConfig
       } else {
-        signingConfig = signingConfigs.getByName("debugConfig")
+        signingConfig = null
       }
     }
     debug {
-      signingConfig = signingConfigs.getByName("debugConfig")
+      val debugConfig = signingConfigs.findByName("debugConfig")
+      if (debugConfig?.storeFile != null) {
+        signingConfig = debugConfig
+      }
     }
   }
   compileOptions {

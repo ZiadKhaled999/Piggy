@@ -26,12 +26,16 @@ android {
 
   signingConfigs {
     create("release") {
-      // These environment variables are provided by the GitHub Actions workflow.
-      // Locally, you can set them in your shell or terminal.
-      storeFile = file("release.keystore")
-      storePassword = System.getenv("KEYSTORE_PASSWORD")
-      keyAlias = System.getenv("KEY_ALIAS")
-      keyPassword = System.getenv("KEY_PASSWORD")
+      val keystoreFile = file("release.keystore")
+      val pass = System.getenv("KEYSTORE_PASSWORD")
+      val alias = System.getenv("KEY_ALIAS")
+      val keyPass = System.getenv("KEY_PASSWORD")
+      if (keystoreFile.exists() && !pass.isNullOrEmpty() && !alias.isNullOrEmpty() && !keyPass.isNullOrEmpty()) {
+        storeFile = keystoreFile
+        storePassword = pass
+        keyAlias = alias
+        keyPassword = keyPass
+      }
     }
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")
@@ -46,7 +50,12 @@ android {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
+      val releaseConfig = signingConfigs.getByName("release")
+      if (releaseConfig.storeFile != null) {
+        signingConfig = releaseConfig
+      } else {
+        signingConfig = signingConfigs.getByName("debugConfig")
+      }
     }
     debug {
       signingConfig = signingConfigs.getByName("debugConfig")

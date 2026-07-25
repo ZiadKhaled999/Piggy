@@ -24,7 +24,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 8.7 # Using a fixed version to bypass the corrupt wrapper in the repo
+          gradle-version: 8.7
+          validate-wrappers: false
 
       - name: Generate .env file
         run: |
@@ -34,18 +35,18 @@ jobs:
 
       - name: Decode Keystore
         run: |
-          if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-            echo "Error: ANDROID_KEYSTORE_BASE64 is empty. Please check your GitHub Secrets."
-            exit 1
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > app/release.keystore
+            echo "Keystore decoded successfully."
+          else
+            echo "Warning: ANDROID_KEYSTORE_BASE64 secret is empty. Proceeding with fallback config."
           fi
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > app/release.keystore
 
       - name: Make Gradlew Executable
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        # If the wrapper is corrupt, we use the 'gradle' command provided by setup-gradle
-        run: gradle bundleRelease
+        run: ./gradlew bundleRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}

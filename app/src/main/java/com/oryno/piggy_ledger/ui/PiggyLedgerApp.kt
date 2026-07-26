@@ -96,6 +96,20 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                             }
                         }
                     }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.White),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_app_logo),
+                            contentDescription = stringResource(R.string.piggy_ledger_logo),
+                            modifier = Modifier.size(200.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
                 }
                 
                 composable<Screen.LanguageSelection> {

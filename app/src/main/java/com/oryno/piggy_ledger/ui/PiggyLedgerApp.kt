@@ -630,6 +630,7 @@ fun DrawerSettingsContent(
     val authUserName by viewModel.authUserName.collectAsState()
     val authUserEmail by viewModel.authUserEmail.collectAsState()
     val authUserPhotoUrl by viewModel.authUserPhotoUrl.collectAsState()
+    val pendingTransactions by viewModel.allPendingTransactions.collectAsState()
 
     val userFullName = authUserName.ifBlank { "User" }
     val userEmail = authUserEmail.ifBlank { "user@example.com" }
@@ -700,6 +701,7 @@ fun DrawerSettingsContent(
                 DrawerMenuItem(
                     title = stringResource(R.string.pending_transactions),
                     iconRes = R.drawable.img_settings_pending_1784465160290,
+                    badgeCount = pendingTransactions.size,
                     onClick = {
                         onClose()
                         appNavController.navigate(Screen.PendingTransactions)
@@ -786,7 +788,7 @@ fun DrawerSettingsContent(
             )
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
                 menuItems.forEach { item ->
@@ -798,7 +800,7 @@ fun DrawerSettingsContent(
                                 indication = null,
                                 onClick = item.onClick
                             )
-                            .padding(vertical = 4.dp),
+                            .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
@@ -827,10 +829,28 @@ fun DrawerSettingsContent(
                         }
                         Text(
                             text = item.title,
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f)
                         )
+                        if (item.badgeCount > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .padding(end = 16.dp)
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .background(PinkPrimary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = item.badgeCount.toString(),
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -867,9 +887,9 @@ fun DrawerSettingsContent(
             }
             Text(
                 text = "Logout",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                color = Color.White.copy(alpha = 0.9f),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium
             )
         }
     }
@@ -877,7 +897,8 @@ fun DrawerSettingsContent(
 
 data class DrawerMenuItem(
     val title: String,
-    val iconRes: Int?,
+    val iconRes: Int? = null,
     val iconVector: ImageVector? = null,
+    val badgeCount: Int = 0,
     val onClick: () -> Unit
 )

@@ -25,7 +25,6 @@ class UserPreferences(private val context: Context) {
         val LAST_EXIT_TIME = longPreferencesKey("last_exit_time")
         val IS_SCREENSHOT_PROTECTION_ENABLED = booleanPreferencesKey("is_screenshot_protection_enabled")
         val IS_PREMIUM = booleanPreferencesKey("is_premium")
-        val PIN_LOCK = stringPreferencesKey("pin_lock")
         val PERSONALIZED_INTENT = intPreferencesKey("personalized_intent")
         val PERSONALIZED_INTENSITY = intPreferencesKey("personalized_intensity")
         val SAVING_MODE = stringPreferencesKey("saving_mode")
@@ -92,10 +91,6 @@ class UserPreferences(private val context: Context) {
         prefs[IS_PREMIUM] ?: false
     }
 
-    val pinLock: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[PIN_LOCK]
-    }
-
     suspend fun saveOnboarding(completed: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[HAS_ONBOARDED] = completed
@@ -144,16 +139,6 @@ class UserPreferences(private val context: Context) {
     suspend fun savePremiumStatus(isPremium: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[IS_PREMIUM] = isPremium
-        }
-    }
-
-    suspend fun savePinLock(pin: String?) {
-        context.dataStore.edit { prefs ->
-            if (pin == null) {
-                prefs.remove(PIN_LOCK)
-            } else {
-                prefs[PIN_LOCK] = pin
-            }
         }
     }
 

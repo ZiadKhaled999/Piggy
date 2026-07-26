@@ -88,30 +88,31 @@ interface PiggyLedgerDao {
     suspend fun insertAccountTransaction(transaction: AccountTransaction)
 
     @androidx.room.Transaction
-    suspend fun processSmsTransaction(accountId: Long, amount: Double, merchant: String, applyInstaPayFee: Boolean) {
+    suspend fun processSmsTransaction(accountId: Long, amount: Double, merchant: String, applyInstaPayFee: Boolean, isIncome: Boolean = false) {
         val account = getAccountById(accountId) ?: return
         
         var finalAmount = amount
-        if (applyInstaPayFee) {
+        if (!isIncome && applyInstaPayFee) {
             val fee = minOf(amount * 0.001, 20.0)
             finalAmount += fee
         }
-
+        val signedAmount = if (isIncome) finalAmount else -finalAmount
+        
         val newTransaction = AccountTransaction(
             account_id = accountId,
-            amount = -finalAmount, // Assuming SMS are expenses. We might need to refine this later if there are income SMS. Let's assume expense for now or as per standard.
+            amount = signedAmount,
             merchant = merchant
         )
         insertAccountTransaction(newTransaction)
         
-        val newBalance = account.current_balance - finalAmount
+        val newBalance = account.current_balance + signedAmount
         var newAvailableCredit = account.available_credit
         if (account.type == AccountType.CARD && newAvailableCredit != null) {
-            newAvailableCredit -= finalAmount
+            newAvailableCredit += signedAmount
         }
-
         updateAccount(account.copy(current_balance = newBalance, available_credit = newAvailableCredit))
     }
+
 
     @Query("DELETE FROM goals WHERE id = :id")
     suspend fun deleteGoalById(id: String)
@@ -185,14 +186,18 @@ interface PiggyLedgerDao {
     @Query("DELETE FROM pending_transactions")
     suspend fun clearPendingTransactions()
 
+
     @androidx.room.Transaction
     suspend fun resolvePendingTransaction(pendingId: Long, accountId: Long) {
         val pending = getPendingTransactionById(pendingId) ?: return
+        val isIncome = pending.amount > 0
+        val absAmount = kotlin.math.abs(pending.amount)
         processSmsTransaction(
             accountId = accountId,
-            amount = pending.amount,
+            amount = absAmount,
             merchant = pending.merchant,
-            applyInstaPayFee = getAccountById(accountId)?.insta_pay_fee == true
+            applyInstaPayFee = getAccountById(accountId)?.insta_pay_fee == true,
+            isIncome = isIncome
         )
         deletePendingTransactionById(pendingId)
     }

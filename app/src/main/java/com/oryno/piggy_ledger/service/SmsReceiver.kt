@@ -5,9 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
 import android.util.Log
-import androidx.work.Data
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
 import com.oryno.piggy_ledger.data.PiggyLedgerDatabase
 import com.oryno.piggy_ledger.data.UserPreferences
 import kotlinx.coroutines.CoroutineScope
@@ -80,9 +77,9 @@ class SmsReceiver : BroadcastReceiver() {
             val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
             if (messages.isNullOrEmpty()) return
 
-            val message = messages[0] ?: return
-            val sender = message.originatingAddress ?: return
-            val body = message.messageBody ?: return
+            val sender = messages[0]?.originatingAddress ?: return
+            val body = messages.mapNotNull { it?.messageBody }.joinToString("")
+            if (body.isBlank()) return
 
             Log.d("SmsReceiver", "Received SMS from: $sender, Body: $body")
 
@@ -124,17 +121,8 @@ class SmsReceiver : BroadcastReceiver() {
                     }
 
                     if (isTrusted) {
-                        Log.d("SmsReceiver", "Sender $sender is verified as trusted. Queueing SmsParsingWorker...")
-                        val inputData = Data.Builder()
-                            .putString("sender", sender)
-                            .putString("body", body)
-                            .build()
-
-                        val workRequest = OneTimeWorkRequestBuilder<SmsParsingWorker>()
-                            .setInputData(inputData)
-                            .build()
-
-                        WorkManager.getInstance(context).enqueue(workRequest)
+                        Log.d("SmsReceiver", "Sender $sender is verified as trusted. Processing SMS...")
+                        SmsProcessor.process(context, sender, body)
                     } else {
                         Log.d("SmsReceiver", "SMS from $sender ignored (not matched in trusted providers or user accounts)")
                     }

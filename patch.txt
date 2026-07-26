@@ -1,0 +1,25 @@
+    @androidx.room.Transaction
+    suspend fun processSmsTransaction(accountId: Long, amount: Double, merchant: String, applyInstaPayFee: Boolean, isIncome: Boolean = false) {
+        val account = getAccountById(accountId) ?: return
+        
+        var finalAmount = amount
+        if (!isIncome && applyInstaPayFee) {
+            val fee = minOf(amount * 0.001, 20.0)
+            finalAmount += fee
+        }
+        val signedAmount = if (isIncome) finalAmount else -finalAmount
+        
+        val newTransaction = AccountTransaction(
+            account_id = accountId,
+            amount = signedAmount,
+            merchant = merchant
+        )
+        insertAccountTransaction(newTransaction)
+        
+        val newBalance = account.current_balance + signedAmount
+        var newAvailableCredit = account.available_credit
+        if (account.type == AccountType.CARD && newAvailableCredit != null) {
+            newAvailableCredit += signedAmount
+        }
+        updateAccount(account.copy(current_balance = newBalance, available_credit = newAvailableCredit))
+    }

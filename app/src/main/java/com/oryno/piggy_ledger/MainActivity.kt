@@ -83,7 +83,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.Backspace
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.clip
@@ -94,7 +93,6 @@ class MainActivity : AppCompatActivity() {
 
   private var isAuthenticatedByBiometric by mutableStateOf(false)
   private var isBiometricCheckComplete by mutableStateOf(false)
-  private var isAuthenticatedByPin by mutableStateOf(false)
   private lateinit var userPreferences: UserPreferences
 
   private val requestPermissionsLauncher = registerForActivityResult(
@@ -107,6 +105,22 @@ class MainActivity : AppCompatActivity() {
     super.onCreate(savedInstanceState)
     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
     enableEdgeToEdge()
+
+    val permissionsToRequest = mutableListOf<String>()
+    if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+        permissionsToRequest.add(Manifest.permission.RECEIVE_SMS)
+    }
+    if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+        permissionsToRequest.add(Manifest.permission.READ_SMS)
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+    if (permissionsToRequest.isNotEmpty()) {
+        requestPermissionsLauncher.launch(permissionsToRequest.toTypedArray())
+    }
     
     // Schedule background notifications
     com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
@@ -128,21 +142,32 @@ class MainActivity : AppCompatActivity() {
 
     setContent {
       PiggyLedgerTheme {
-        val pinLock by userPreferences.pinLock.collectAsStateWithLifecycle(null)
-        val activePin = pinLock?.takeIf { it.isNotBlank() }
-        val isLocked = (isBiometricCheckComplete && !isAuthenticatedByBiometric) || (activePin != null && !isAuthenticatedByPin)
+        val isLocked = (isBiometricCheckComplete && !isAuthenticatedByBiometric)
 
         if (isBiometricCheckComplete) {
             if (!isLocked) {
                 PiggyLedgerApp(factory)
             } else {
-                PinLockScreen(
-                    pinLock = activePin,
-                    isAuthenticatedByPin = isAuthenticatedByPin,
-                    isAuthenticatedByBiometric = isAuthenticatedByBiometric,
-                    onPinSuccess = { isAuthenticatedByPin = true },
-                    onBiometricClick = { checkBiometricLock(userPreferences) }
-                )
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Locked",
+                            tint = PinkPrimary,
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { checkBiometricLock(userPreferences) },
+                            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+                        ) {
+                            Text("Unlock App")
+                        }
+                    }
+                }
             }
         } else {
             // Loading state while checking preferences
@@ -267,7 +292,7 @@ class MainActivity : AppCompatActivity() {
 
   override fun onResume() {
       super.onResume()
-      // Reset PIN auth if we've been gone too long
+      // Reset auth if we've been gone too long
       checkLockStatus()
   }
 
@@ -283,277 +308,26 @@ class MainActivity : AppCompatActivity() {
           val isEnabled = userPreferences.isBiometricLockEnabled.first()
           val lastExit = userPreferences.lastExitTime.first()
           val timeoutSeconds = userPreferences.lockTimeoutSeconds.first()
-          val pinLockVal = userPreferences.pinLock.first()
 
-          if (isEnabled || pinLockVal != null) {
+          if (isEnabled) {
               val currentTime = System.currentTimeMillis()
               val elapsedSeconds = (currentTime - lastExit) / 1000
 
               if (lastExit == 0L || elapsedSeconds >= timeoutSeconds) {
                   isAuthenticatedByBiometric = false
-                  isAuthenticatedByPin = false
                   isBiometricCheckComplete = false
-                  if (isEnabled) {
-                      checkBiometricLock(userPreferences)
-                  } else {
-                      isBiometricCheckComplete = true
-                  }
+                  checkBiometricLock(userPreferences)
               } else {
                   isAuthenticatedByBiometric = true
-                  isAuthenticatedByPin = true
                   isBiometricCheckComplete = true
               }
           } else {
               isAuthenticatedByBiometric = true
-              isAuthenticatedByPin = true
               isBiometricCheckComplete = true
           }
       }
   }
 }
 
-@Composable
-fun PinLockScreen(
-    pinLock: String?,
-    isAuthenticatedByPin: Boolean,
-    isAuthenticatedByBiometric: Boolean,
-    onPinSuccess: () -> Unit,
-    onBiometricClick: () -> Unit
-) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var enteredPin by remember { mutableStateOf("") }
-    var pinError by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-
-    val cleanPin = pinLock?.trim() ?: ""
-    val targetLength = if (cleanPin.length in 4..6) cleanPin.length else 4
-
-    fun verifyPin() {
-        val cleanEntered = enteredPin.trim()
-        if (cleanPin.isEmpty() || cleanEntered == cleanPin) {
-            onPinSuccess()
-        } else {
-            pinError = true
-            scope.launch {
-                delay(700)
-                enteredPin = ""
-                pinError = false
-            }
-        }
-    }
-
-    fun handleDigitPress(digit: String) {
-        if (enteredPin.length < 6) {
-            val newPin = enteredPin + digit
-            enteredPin = newPin
-            pinError = false
-
-            // Auto-unlock if user typed exact PIN match
-            if (cleanPin.isNotEmpty() && newPin == cleanPin) {
-                onPinSuccess()
-            }
-        }
-    }
-
-    fun handleBackspace() {
-        if (enteredPin.isNotEmpty()) {
-            enteredPin = enteredPin.dropLast(1)
-            pinError = false
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(horizontal = 24.dp, vertical = 20.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(76.dp)
-                    .background(PinkPrimary.copy(alpha = 0.12f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    tint = PinkPrimary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Text(
-                text = context.getString(R.string.security),
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = NavyDark
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = if (pinError) context.getString(R.string.incorrect_pin) else context.getString(R.string.enter_pin),
-                fontSize = 14.sp,
-                color = if (pinError) Color(0xFFEF4444) else Color(0xFF64748B),
-                fontWeight = if (pinError) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            val displayDots = maxOf(targetLength, enteredPin.length).coerceIn(4, 6)
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                for (i in 0 until displayDots) {
-                    val isFilled = i < enteredPin.length
-                    val scale by animateFloatAsState(
-                        targetValue = if (isFilled) 1.25f else 1.0f,
-                        animationSpec = tween(durationMillis = 150),
-                        label = "dotScale"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .size(18.dp)
-                            .scale(scale)
-                            .background(
-                                color = when {
-                                    pinError -> Color(0xFFEF4444)
-                                    isFilled -> PinkPrimary
-                                    else -> Color.Transparent
-                                },
-                                shape = CircleShape
-                            )
-                            .border(
-                                width = 2.dp,
-                                color = when {
-                                    pinError -> Color(0xFFEF4444)
-                                    isFilled -> PinkPrimary
-                                    else -> Color(0xFFCBD5E1)
-                                },
-                                shape = CircleShape
-                            )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            val keypadRows = listOf(
-                listOf("1", "2", "3"),
-                listOf("4", "5", "6"),
-                listOf("7", "8", "9"),
-                listOf("ok", "0", "backspace")
-            )
-
-            Column(
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                keypadRows.forEach { row ->
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        row.forEach { key ->
-                            when (key) {
-                                "ok" -> {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(68.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFF22C55E))
-                                            .clickable { verifyPin() },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "OK",
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-                                    }
-                                }
-                                "backspace" -> {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(68.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFFF1F5F9))
-                                            .clickable { handleBackspace() },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Backspace,
-                                            contentDescription = "Backspace",
-                                            tint = NavyDark,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-                                }
-                                else -> {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(68.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFFF8FAFC))
-                                            .border(1.dp, Color(0xFFE2E8F0), CircleShape)
-                                            .clickable { handleDigitPress(key) },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = key,
-                                            fontSize = 24.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = NavyDark
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Prominent OK button below keypad
-            Button(
-                onClick = { verifyPin() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = PinkPrimary,
-                    disabledContainerColor = PinkPrimary.copy(alpha = 0.4f)
-                ),
-                enabled = enteredPin.isNotEmpty()
-            ) {
-                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "OK",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-        }
-    }
-}
 
 

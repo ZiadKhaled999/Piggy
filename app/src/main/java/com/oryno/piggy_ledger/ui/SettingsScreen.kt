@@ -970,10 +970,8 @@ fun SecuritySettingsView(viewModel: PiggyLedgerViewModel) {
     val isBiometricEnabled by viewModel.isBiometricLockEnabled.collectAsStateWithLifecycle()
     val isScreenshotProtected by viewModel.isScreenshotProtectionEnabled.collectAsStateWithLifecycle()
     val lockTimeout by viewModel.lockTimeoutSeconds.collectAsStateWithLifecycle()
-    val pinLock by viewModel.pinLock.collectAsStateWithLifecycle()
 
     var showTimeoutDialog by remember { mutableStateOf(false) }
-    var showPinDialog by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // Hero Image
@@ -1020,20 +1018,6 @@ fun SecuritySettingsView(viewModel: PiggyLedgerViewModel) {
             checked = isScreenshotProtected,
             onCheckedChange = { viewModel.setScreenshotProtectionEnabled(it) }
         )
-
-        // PIN Lock
-        SecurityToggleItem(
-            title = stringResource(R.string.pin_lock_app),
-            description = stringResource(R.string.pin_lock_app_desc),
-            checked = pinLock != null,
-            onCheckedChange = { 
-                if (it) {
-                    showPinDialog = true
-                } else {
-                    viewModel.setPinLock(null)
-                }
-            }
-        )
     }
 
     if (showTimeoutDialog) {
@@ -1043,16 +1027,6 @@ fun SecuritySettingsView(viewModel: PiggyLedgerViewModel) {
             onSelect = { 
                 viewModel.setLockTimeout(it)
                 showTimeoutDialog = false
-            }
-        )
-    }
-
-    if (showPinDialog) {
-        PinSetupDialog(
-            onDismiss = { showPinDialog = false },
-            onConfirm = { 
-                viewModel.setPinLock(it)
-                showPinDialog = false
             }
         )
     }
@@ -1175,141 +1149,6 @@ fun TimeoutSelectorDialog(
                 Text(stringResource(R.string.cancel_btn), color = PinkPrimary)
             }
         }
-    )
-}
-
-@Composable
-fun PinSetupDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
-) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var pin by remember { mutableStateOf("") }
-    var confirmPin by remember { mutableStateOf("") }
-    var pinVisible by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .background(PinkPrimary.copy(alpha = 0.12f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = null,
-                        tint = PinkPrimary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Text(
-                    text = stringResource(R.string.set_pin),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = NavyDark
-                )
-            }
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = "Create a 4 to 6 digit security PIN to protect your app data.",
-                    fontSize = 13.sp,
-                    color = TextLight
-                )
-
-                OutlinedTextField(
-                    value = pin,
-                    onValueChange = {
-                        if (it.length <= 6 && it.all { c -> c.isDigit() }) {
-                            pin = it
-                            error = null
-                        }
-                    },
-                    label = { Text(stringResource(R.string.enter_pin)) },
-                    visualTransformation = if (pinVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
-                    trailingIcon = {
-                        IconButton(onClick = { pinVisible = !pinVisible }) {
-                            Icon(
-                                imageVector = if (pinVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = "Toggle PIN Visibility",
-                                tint = TextLight
-                            )
-                        }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PinkPrimary,
-                        focusedLabelColor = PinkPrimary,
-                        cursorColor = PinkPrimary
-                    )
-                )
-
-                OutlinedTextField(
-                    value = confirmPin,
-                    onValueChange = {
-                        if (it.length <= 6 && it.all { c -> c.isDigit() }) {
-                            confirmPin = it
-                            error = null
-                        }
-                    },
-                    label = { Text(stringResource(R.string.confirm_pin)) },
-                    visualTransformation = if (pinVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
-                    singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PinkPrimary,
-                        focusedLabelColor = PinkPrimary,
-                        cursorColor = PinkPrimary
-                    )
-                )
-
-                if (error != null) {
-                    Text(
-                        text = error!!,
-                        color = Color(0xFFEF4444),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (pin == confirmPin && pin.length >= 4) {
-                        onConfirm(pin)
-                    } else if (pin.length < 4) {
-                        error = context.getString(R.string.pin_min_digits)
-                    } else {
-                        error = context.getString(R.string.pins_dont_match)
-                    }
-                },
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
-            ) {
-                Text(stringResource(R.string.save), fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel_btn), color = PinkPrimary, fontWeight = FontWeight.Bold)
-            }
-        },
-        shape = RoundedCornerShape(24.dp),
-        containerColor = Color.White
     )
 }
 

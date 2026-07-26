@@ -298,10 +298,6 @@ class PiggyLedgerViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5000), false
     )
 
-    val pinLock = userPreferences.pinLock.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5000), null
-    )
-
     init {
         checkRevenueCatPremiumStatus()
     }
@@ -378,16 +374,6 @@ class PiggyLedgerViewModel(
             PostHog.capture(
                 event = "security_setting_changed",
                 properties = mapOf("setting" to "screenshot_protection", "enabled" to enabled)
-            )
-        }
-    }
-
-    fun setPinLock(pin: String?) {
-        viewModelScope.launch {
-            userPreferences.savePinLock(pin)
-            PostHog.capture(
-                event = "security_setting_changed",
-                properties = mapOf("setting" to "pin_lock", "enabled" to (pin != null))
             )
         }
     }

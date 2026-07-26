@@ -203,10 +203,10 @@ fun PendingTransactionItem(
                 }
                 
                 Text(
-                    text = String.format(Locale.US, "%.2f EGP", tx.amount),
+                    text = String.format(Locale.US, "%s%.2f EGP", if (tx.amount > 0) "+" else "-", Math.abs(tx.amount)),
                     fontWeight = FontWeight.Black,
                     fontSize = 18.sp,
-                    color = PinkPrimary
+                    color = if (tx.amount > 0) Color(0xFF10B981) else PinkPrimary
                 )
             }
             
@@ -302,7 +302,7 @@ fun ResolveTransactionBottomSheetContent(
         ) {
             Column {
                 Text(
-                    text = stringResource(R.string.pending_sms_prompt, transaction.amount, "EGP", transaction.sender),
+                    text = stringResource(R.string.pending_sms_prompt, Math.abs(transaction.amount), "EGP", transaction.sender),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
                     color = NavyDark,

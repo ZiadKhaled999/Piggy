@@ -1,0 +1,12 @@
+    <!-- Transaction Processed Notification -->
+    <string name="notif_tx_title_deposit">تم استلام إيداع</string>
+    <string name="notif_tx_title_withdrawal">سحب نقدي</string>
+    <string name="notif_tx_title_transfer">تحويل أموال</string>
+    <string name="notif_tx_title_purchase">عملية شراء ناجحة</string>
+    <string name="notif_tx_title_unknown">تم تسجيل معاملة</string>
+    
+    <string name="notif_tx_msg_deposit">لقد استلمت %1$.2f %2$s في حساب %3$s الخاص بك.</string>
+    <string name="notif_tx_msg_withdrawal">لقد قمت بسحب %1$.2f %2$s من حساب %3$s الخاص بك.</string>
+    <string name="notif_tx_msg_transfer">لقد قمت بتحويل %1$.2f %2$s من حساب %3$s الخاص بك.</string>
+    <string name="notif_tx_msg_purchase">لقد دفعت %1$.2f %2$s باستخدام حساب %3$s الخاص بك.</string>
+    <string name="notif_tx_msg_unknown">تم تسجيل معاملة بقيمة %1$.2f %2$s في حساب %3$s الخاص بك.</string>

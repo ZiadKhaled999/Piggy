@@ -1,6 +1,6 @@
 package com.oryno.piggy_ledger.service
 
-data class ParsedSms(val amount: Double, val merchant: String, val date: String?, val isIncome: Boolean = false)
+data class ParsedSms(val amount: Double, val merchant: String, val date: String?, val isIncome: Boolean = false, val actionType: SmsActionType = SmsActionType.UNKNOWN)
 
 object SmsParser {
     fun convertArabicDigitsAndSymbols(input: String): String {
@@ -63,6 +63,19 @@ object SmsParser {
         val incomeKeywords = listOf("استقبلت", "ايداع", "إيداع", "إضافة", "اضافة", "استرداد", "received", "credited", "refunded", "deposit", "added")
         val isIncome = incomeKeywords.any { body.contains(it, ignoreCase = true) }
 
-        return ParsedSms(amount, merchant, date, isIncome)
+        // Step 5: Detect Action Type
+        val withdrawalKeywords = listOf("سحب", "withdrawal", "cash withdrawal", "withdrawn")
+        val transferKeywords = listOf("تحويل", "transfer", "sent")
+        val purchaseKeywords = listOf("شراء", "مدفوعات", "purchase", "paid", "payment", "bought")
+        
+        val actionType = when {
+            isIncome -> SmsActionType.DEPOSIT
+            withdrawalKeywords.any { body.contains(it, ignoreCase = true) } -> SmsActionType.WITHDRAWAL
+            transferKeywords.any { body.contains(it, ignoreCase = true) } -> SmsActionType.TRANSFER_OUT
+            purchaseKeywords.any { body.contains(it, ignoreCase = true) } -> SmsActionType.PURCHASE
+            else -> SmsActionType.UNKNOWN
+        }
+
+        return ParsedSms(amount, merchant, date, isIncome, actionType)
     }
 }

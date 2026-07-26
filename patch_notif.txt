@@ -1,0 +1,44 @@
+    fun showTransactionProcessedNotification(
+        accountName: String,
+        currency: String,
+        amount: Double,
+        actionType: com.oryno.piggy_ledger.service.SmsActionType
+    ) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        
+        val titleRes = when (actionType) {
+            com.oryno.piggy_ledger.service.SmsActionType.DEPOSIT -> R.string.notif_tx_title_deposit
+            com.oryno.piggy_ledger.service.SmsActionType.WITHDRAWAL -> R.string.notif_tx_title_withdrawal
+            com.oryno.piggy_ledger.service.SmsActionType.TRANSFER_OUT -> R.string.notif_tx_title_transfer
+            com.oryno.piggy_ledger.service.SmsActionType.PURCHASE -> R.string.notif_tx_title_purchase
+            com.oryno.piggy_ledger.service.SmsActionType.UNKNOWN -> R.string.notif_tx_title_unknown
+        }
+        
+        val msgRes = when (actionType) {
+            com.oryno.piggy_ledger.service.SmsActionType.DEPOSIT -> R.string.notif_tx_msg_deposit
+            com.oryno.piggy_ledger.service.SmsActionType.WITHDRAWAL -> R.string.notif_tx_msg_withdrawal
+            com.oryno.piggy_ledger.service.SmsActionType.TRANSFER_OUT -> R.string.notif_tx_msg_transfer
+            com.oryno.piggy_ledger.service.SmsActionType.PURCHASE -> R.string.notif_tx_msg_purchase
+            com.oryno.piggy_ledger.service.SmsActionType.UNKNOWN -> R.string.notif_tx_msg_unknown
+        }
+
+        val title = context.getString(titleRes)
+        val message = context.getString(msgRes, amount, currency, accountName)
+        
+        val defaultSoundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setColor(androidx.core.content.ContextCompat.getColor(context, R.color.pink_primary))
+            .setContentIntent(getMainActivityPendingIntent())
+            .setAutoCancel(true)
+            .setSound(defaultSoundUri)
+            .setCategory(NotificationCompat.CATEGORY_EVENT)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+
+        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+    }

@@ -1,0 +1,12 @@
+    <!-- Transaction Processed Notification -->
+    <string name="notif_tx_title_deposit">Deposit Received</string>
+    <string name="notif_tx_title_withdrawal">Cash Withdrawal</string>
+    <string name="notif_tx_title_transfer">Money Transfer</string>
+    <string name="notif_tx_title_purchase">Purchase Successful</string>
+    <string name="notif_tx_title_unknown">Transaction Processed</string>
+    
+    <string name="notif_tx_msg_deposit">You have received %1$.2f %2$s to your %3$s account.</string>
+    <string name="notif_tx_msg_withdrawal">You have made a withdrawal of %1$.2f %2$s from your %3$s account.</string>
+    <string name="notif_tx_msg_transfer">You have transferred %1$.2f %2$s from your %3$s account.</string>
+    <string name="notif_tx_msg_purchase">You paid %1$.2f %2$s using your %3$s account.</string>
+    <string name="notif_tx_msg_unknown">A transaction of %1$.2f %2$s was processed on your %3$s account.</string>

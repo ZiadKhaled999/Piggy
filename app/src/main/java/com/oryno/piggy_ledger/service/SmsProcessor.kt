@@ -11,6 +11,7 @@ object SmsProcessor {
         val amount = parsedSms.amount
         val merchant = parsedSms.merchant
         val isIncome = parsedSms.isIncome
+        val actionType = parsedSms.actionType
 
         if (amount == 0.0) {
             return
@@ -68,6 +69,17 @@ object SmsProcessor {
                 applyInstaPayFee = matchedAccount.insta_pay_fee,
                 isIncome = isIncome
             )
+            
+            try {
+                com.oryno.piggy_ledger.ui.NotificationHelper(context).showTransactionProcessedNotification(
+                    accountName = matchedAccount.name,
+                    currency = "EGP",
+                    amount = amount,
+                    actionType = actionType
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("SmsProcessor", "Failed to show processed notification", e)
+            }
         } else {
             dao.insertPendingTransaction(
                 PendingTransaction(

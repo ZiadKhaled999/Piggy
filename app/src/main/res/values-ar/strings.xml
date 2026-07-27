@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="onboarding_step_1_title">سجل كل قرش</string>
-    <string name="onboarding_step_1_desc">مفيش حيرة بعد كده فلوسك راحت فين. بيجي ليدجر بيظبطلك كل حاجة.</string>
+    <string name="onboarding_step_1_desc">مفيش حيرة بعد كده فلوسك راحت فين. دفتر الحصالة بيظبطلك كل حاجة.</string>
     <string name="onboarding_step_2_title">حط أهداف كبيرة</string>
     <string name="onboarding_step_2_desc">بتحوش لسفرية أو جهاز جديد؟ حط أهداف وشوف إزاي هتوصلها.</string>
     <string name="onboarding_step_3_title">خليك مستمر</string>
@@ -47,9 +47,9 @@
     <string name="onboarding_personalize_intensity_title">اختار قوة التحويش</string>
     <string name="onboarding_personalize_intensity_subtitle">حابب تشيل قد إيه من دخلك؟</string>
     <string name="onboarding_personalize_intensity_casual">محوش على الهادي</string>
-    <string name="onboarding_personalize_intensity_casual_desc">٥٪ - ١٠٪ من الدخل. خفيف ومناسب كبداية.</string>
+    <string name="onboarding_personalize_intensity_casual_desc" formatted="false">٥٪ - ١٠٪ من الدخل. خفيف ومناسب كبداية.</string>
     <string name="onboarding_personalize_intensity_balanced">باني متوازن</string>
-    <string name="onboarding_personalize_intensity_balanced_desc">١٥٪ - ٢٠٪ من الدخل. نمو مستقر لأهداف ثابتة.</string>
+    <string name="onboarding_personalize_intensity_balanced_desc" formatted="false">١٥٪ - ٢٠٪ من الدخل. نمو مستقر لأهداف ثابتة.</string>
     <string name="onboarding_personalize_intensity_aggressive">تركيز ليزر</string>
     <string name="onboarding_personalize_intensity_aggressive_desc">٣٠٪+ من الدخل. أقصى سرعة تحويش عشان تكسر أهدافك.</string>
     
@@ -113,7 +113,7 @@
     <string name="card_number_placeholder">مثال 1234 5678 9012</string>
 
     <!-- Auth Screen -->
-    <string name="auth_welcome_title_main">بيجي ليدجر</string>
+    <string name="auth_welcome_title_main">دفتر الحصالة</string>
     <string name="auth_welcome_subtitle_main">أمان، بسيط، وذكي.</string>
     <string name="auth_welcome_desc">تابع مصاريفك، حط أهداف، وحوش فلوس من غير مجهود.</string>
     <string name="please_select_option">من فضلك اختار عشان تكمل</string>
@@ -157,9 +157,9 @@
     <string name="manage_loans">تابع الفلوس اللي سلفتها أو اللي عليك.</string>
     <string name="community_feedback">آراء المجتمع</string>
     <string name="join_community_board">انضم لصفحة الاقتراحات والآراء</string>
-    <string name="help_improve">ساعدنا نحسن بيجي ليدجر! دوس تحت عشان تزور صفحة الاقتراحات. هناك تقدر تقترح ميزات جديدة، تبلغ عن المشاكل، وتصوت للأفكار التانية.</string>
+    <string name="help_improve">ساعدنا نحسن دفتر الحصالة! دوس تحت عشان تزور صفحة الاقتراحات. هناك تقدر تقترح ميزات جديدة، تبلغ عن المشاكل، وتصوت للأفكار التانية.</string>
     <string name="rate_app_title">قيم التطبيق</string>
-    <string name="enjoying_piggy_ledger">مبسوط مع بيجي ليدجر؟ قيم تجربتك بنجوم. دعمك هو اللي بيخلينا نستمر!</string>
+    <string name="enjoying_piggy_ledger">مبسوط مع دفتر الحصالة؟ قيم تجربتك بنجوم. دعمك هو اللي بيخلينا نستمر!</string>
     <string name="backup_data_title">نسخ احتياطي للبيانات</string>
     <string name="secure_local_export">تصدير محلي آمن</string>
     <string name="save_goals_desc">احفظ أهدافك، معاملاتك، وإحصائياتك في ملف باك أب آمن.</string>
@@ -252,7 +252,7 @@
     <string name="amount_saved">تم تحويش %1$s</string>
     <string name="amount_total_extra">الإجمالي %1$s (%2$s زيادة)</string>
     <string name="growth_savings_subtitle">زود رصيد تحويشك</string>
-    <string name="piggy_ledger_logo">شعار بيجي ليدجر</string>
+    <string name="piggy_ledger_logo">شعار دفتر الحصالة</string>
     <string name="settings_icon">الإعدادات</string>
     <string name="back_icon">رجوع</string>
     <string name="feedback_illustration">صورة الآراء والاقتراحات</string>
@@ -427,12 +427,12 @@
     <string name="group_by_account">حسب الحساب</string>
     <string name="group_by_day">حسب اليوم</string>
     <string name="group_by_month">حسب الشهر</string>
-    <string name="auth_welcome_title">أهلاً بيك في بيجي ليدجر</string>
+    <string name="auth_welcome_title">أهلاً بيك في دفتر الحصالة</string>
     <string name="auth_welcome_subtitle">بيانات دفترك آمنة ومحمية</string>
     <string name="auth_clerk_desc">النسخ الاحتياطي السحابي الآمن والمزامنة على كذا جهاز بيحافظوا على حسابك محمي.</string>
     <string name="auth_continue_google">الاستمرار باستخدام جوجل</string>
     <string name="auth_choose_account">اختار حساب</string>
-    <string name="auth_to_continue">عشان تكمل لـ بيجي ليدجر</string>
+    <string name="auth_to_continue">عشان تكمل لـ دفتر الحصالة</string>
     <string name="auth_add_account">إضافة حساب آخر</string>
     <string name="auth_signing_in">جاري تسجيل الدخول بجوجل...</string>
     <string name="auth_profile_title">ملفك الشخصي</string>
@@ -491,7 +491,7 @@
     <string name="biometric_lock">قفل البصمة / الوجه</string>
     <string name="biometric_lock_desc">اطلب البصمة أو التعرف على الوجه لفتح التطبيق.</string>
     <string name="biometric_login_title">تسجيل الدخول بالبصمة</string>
-    <string name="biometric_login_subtitle">استخدم البصمة للوصول لـ بيجي ليدجر</string>
+    <string name="biometric_login_subtitle">استخدم البصمة للوصول لـ دفتر الحصالة</string>
     <string name="lock_timeout">مهلة القفل</string>
     <string name="lock_timeout_desc">الوقت المطلوب قبل قفل التطبيق بعد الخروج منه.</string>
     <string name="instant">في نفس اللحظة</string>
@@ -578,7 +578,7 @@
     <string name="export_excel_subtitle">ملف إكسيل ممتاز</string>
     <string name="export_excel_desc">دفتر إكسيل متعدد الصفحات ومنسق باحترافية، بيشمل لوحة تحكم تفاعلية، ترويسات ملونة، مصفوفة حسابات، سجل المعاملات، القروض النشطة، وأهداف التحويش.</string>
     <string name="export_csv_subtitle">ملف CSV مبسط</string>
-    <string name="export_csv_desc">تصدير كل قواعد البيانات والجداول لملف نصي واحد مفصول بفواصل. خفيف وتقدر تسترجعه بالكامل لبيجي ليدجر في أي وقت.</string>
+    <string name="export_csv_desc">تصدير كل قواعد البيانات والجداول لملف نصي واحد مفصول بفواصل. خفيف وتقدر تسترجعه بالكامل لدفتر الحصالة في أي وقت.</string>
     <string name="export_json_subtitle">نسخة JSON كلاسيكية</string>
     <string name="export_json_desc">احفظ الأهداف، السلاسل اليومية، والمعاملات في ملف باك أب منسق وبسيط.</string>
     <string name="restore_csv_subtitle">الاسترجاع من ملف CSV</string>
@@ -597,7 +597,7 @@
     <string name="toast_loan_payment_added">تم تسجيل الدفعة بنجاح!</string>
     <string name="toast_loan_closed">تم إغلاق المعاملة بالكامل!</string>
     <string name="toast_loan_deleted">تم حذف المعاملة.</string>
-    <string name="pro_title">Piggy Ledger Pro</string>
+    <string name="pro_title">دفتر الحصالة Pro</string>
     <string name="pro_subtitle">تحكم كامل في حريتك المالية</string>
     <string name="benefit_infinite_sheets">صفحات وحسابات وسجلات غير محدودة</string>
     <string name="benefit_interactive_charts">رسوم بيانية تفاعلية وتحليلات مالية عميقة</string>
@@ -616,10 +616,10 @@
     <string name="pro_purchase_success">أهلاً بك في برو! ميزات بريميوم مفتوحة بالكامل.</string>
     <string name="purchase_completed">تم الشراء بنجاح!</string>
     <string name="purchase_failed_format">فشل الشراء: %s</string>
-    <string name="upgrade_success">تم الترقية إلى Piggy Ledger Pro بنجاح!</string>
+    <string name="upgrade_success">تم الترقية إلى دفتر الحصالة Pro بنجاح!</string>
     <string name="restore_purchases">استعادة المشتريات</string>
     <string name="pro_restore_success">تم استعادة المشتريات بنجاح!</string>
-    <string name="no_active_subscription">لم يتم العثور على اشتراك Piggy Ledger Pro نشط.</string>
+    <string name="no_active_subscription">لم يتم العثور على اشتراك دفتر الحصالة Pro نشط.</string>
     <string name="restore_failed_format">فشل الاستعادة: %s</string>
     <string name="terms_of_service">شروط الخدمة</string>
     <string name="terms_unavailable">رابط الشروط غير متاح حالياً.</string>
@@ -651,4 +651,59 @@
     <string name="notif_tx_msg_transfer">لقد قمت بتحويل %1$.2f %2$s من حساب %3$s الخاص بك.</string>
     <string name="notif_tx_msg_purchase">لقد دفعت %1$.2f %2$s باستخدام حساب %3$s الخاص بك.</string>
     <string name="notif_tx_msg_unknown">تم تسجيل معاملة بقيمة %1$.2f %2$s في حساب %3$s الخاص بك.</string>
+
+    <string name="how_did_you_hear_about_us">كيف سمعت عن %1$s؟</string>
+    <string name="source_facebook">فيسبوك</string>
+    <string name="source_tiktok">تيك توك</string>
+    <string name="source_youtube">يوتيوب</string>
+    <string name="source_friend_or_family">صديق أو عائلة</string>
+    <string name="source_creator_or_influencer">صانع محتوى أو مؤثر</string>
+    <string name="source_search_engine">محرك بحث (مثل جوجل)</string>
+    <string name="source_google_play">جوجل بلاي</string>
+    <string name="source_other">غير ذلك</string>
+
+    <string name="piggy_ledger_brand">دفتر الحصالة</string>
+    <string name="onboarding_ai_thinking">جاري التفكير...</string>
+    <string name="onboarding_ai_sketching">جاري الرسم والتخطيط...</string>
+    <string name="onboarding_ai_making_plan">جاري إعداد الخطة...</string>
+    <string name="onboarding_ai_syncing">جاري المزامنة</string>
+    <string name="onboarding_saving_rate_label">معدل الادخار: %1$s</string>
+    <string name="onboarding_step_workspace_title">تم تهيئة مساحة العمل: %1$s</string>
+    <string name="onboarding_step_workspace_desc_personal">خزينة خاصة لحفظ رصيدك الأساسي بأمان.</string>
+    <string name="onboarding_step_workspace_desc_loans">مخصصة لمتابعة الأموال المعارة والمستدانة ومواعيد تسديدها.</string>
+    <string name="onboarding_step_workspace_desc_auto">جاهزة لتنظيم الإيصالات الواردة والمعاملات تلقائياً.</string>
+    <string name="onboarding_step_intensity_title">تم ضبط معدل الادخار: %1$s (%2$s)</string>
+    <string name="onboarding_step_intensity_desc_casual">عادة خفيفة ومستمرة لبناء مدخراتك دون إجهاد.</string>
+    <string name="onboarding_step_intensity_desc_balanced">الوتيرة المثالية لتحقيق أهدافك المالية الكبرى.</string>
+    <string name="onboarding_step_intensity_desc_aggressive">وضع ادخار سريع للغاية لبناء مدخراتك في وقت قياسي.</string>
+    <string name="onboarding_step_sync_title">مساعد الأتمتة</string>
+    <string name="onboarding_step_sync_desc_granted">قراءة ورصد رسائل فودافون كاش، أورنج كاش، وإشعارات البنوك تلقائياً!</string>
+    <string name="onboarding_step_sync_desc_manual">تسجيل المعاملات يدوياً. يمكنك تفعيل المزامنة التلقائية عبر الرسائل لاحقاً من الإعدادات.</string>
+    <string name="onboarding_step_milestone_title">هدفك المالي الأول</string>
+    <string name="onboarding_step_milestone_desc_personal">أنشئ خزينة وحدد مبلغ إيداع للبدء في سلسلة الادخار!</string>
+    <string name="onboarding_step_milestone_desc_loans">سجل أول معاملة إقراض أو استدانة لمتابعة صافي المبالغ المستحقة.</string>
+    <string name="onboarding_step_milestone_desc_auto">أكمل أول تحويل ودع أتمتة التطبيق تتكفل بالباقي.</string>
+    <string name="onboarding_choose_pace_title">اختر سرعتك</string>
+    <string name="onboarding_choose_pace_subtitle">حدد الكيفية والسرعة التي تريد بها تحقيق أهدافك المالية.</string>
+
+    <string name="onboarding_supercharge_title">ضاعف سرعة ادخارك</string>
+    <string name="onboarding_supercharge_subtitle">التوجيه الذكي والتلقائي يساعدك على تحقيق أهدافك أسرع بـ 7 أضعاف مقارنة بالتتبع اليدوي.</string>
+    <string name="onboarding_supercharge_solo">بمفردك</string>
+    <string name="onboarding_supercharge_faster">أسرع</string>
+    <string name="onboarding_supercharge_with_piggy">مع %1$s</string>
+
+    <string name="onboarding_relatable_header">هل تتفق مع العبارة التالية؟</string>
+    <string name="onboarding_relatable_statement_1">"كل ما أقبض، بحس إن الفلوس دي مش بتاعتي أصلاً بسبب الديون اللي عليا."</string>
+    <string name="onboarding_relatable_statement_2">"فلوسي متوزعة على حسابات كتير لدرجة إني ماببقاش عارف أنا معايا كام بالظبط وأقدر أصرف إيه."</string>
+    <string name="onboarding_relatable_statement_3">"كل ما أبدأ أحوش مبلغ، تطلعلي مصيبة فجأة ترجعني للصفر تاني."</string>
+    <string name="yes_label">نعم</string>
+    <string name="no_label">لا</string>
+
+    <string name="onboarding_step_debt_title">خطة تسديد الديون</string>
+    <string name="onboarding_step_debt_desc">سنعتمد طريقة كرة الثلج لبناء دافع معنوي وتحقيق إنجازات سريعة.</string>
+    <string name="onboarding_step_accounts_title">ربط الحسابات</string>
+    <string name="onboarding_step_accounts_desc">سنوجهك لربط جميع حساباتك المتفرقة بأمان أولاً.</string>
+    <string name="onboarding_step_emergency_title">صندوق الطوارئ</string>
+    <string name="onboarding_step_emergency_desc">هدفك الادخاري الأول سيكون بناء صندوق طوارئ لمنع الانتكاسات.</string>
+
 </resources>

@@ -265,6 +265,9 @@ class PiggyLedgerViewModel(
     val hasLanguageSelected = userPreferences.hasLanguageSelected.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
     )
+    val hasHeardAboutUs = userPreferences.hasHeardAboutUs.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), null
+    )
 
     val isAuthenticated = userPreferences.isAuthenticated.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
@@ -633,7 +636,15 @@ class PiggyLedgerViewModel(
     fun completeLanguageSelection() {
         viewModelScope.launch {
             userPreferences.saveLanguageSelected(true)
-            PostHog.capture("language_selection_completed")
+            val currentLang = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags()
+            PostHog.capture("language_selection_completed", properties = mapOf("\$set" to mapOf("language" to currentLang)))
+        }
+    }
+
+    fun completeHearAboutUs(source: String) {
+        viewModelScope.launch {
+            userPreferences.saveHeardAboutUs(true)
+            PostHog.capture("hear_about_us_answered", properties = mapOf("source" to source, "\$set" to mapOf("hear_about_us_source" to source)))
         }
     }
 

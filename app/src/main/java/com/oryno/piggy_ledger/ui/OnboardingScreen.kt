@@ -93,6 +93,11 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
     var currentPage by remember { mutableIntStateOf(0) }
     var selectedIntent by remember { mutableIntStateOf(-1) }
     var selectedIntensity by remember { mutableIntStateOf(-1) }
+
+    var relatesToLoans by remember { mutableStateOf<Boolean?>(null) }
+    var relatesToAccounts by remember { mutableStateOf<Boolean?>(null) }
+    var relatesToEmergency by remember { mutableStateOf<Boolean?>(null) }
+
     var selectedSavingMode by remember { mutableStateOf("piggy") }
     
     // Register SMS permission launcher
@@ -169,6 +174,23 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
             currentPage++
         }
     }
+
+    LaunchedEffect(currentPage) {
+        if (currentPage == 3) {
+            val hasSms = ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+            if (!hasSms) {
+                requestSmsPermissions()
+            }
+        } else if (currentPage == 4) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val hasNotif = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+                if (!hasNotif) {
+                    requestNotificationPermissions()
+                }
+            }
+        }
+    }
     
     val pages = listOf(
         OnboardingPageData(
@@ -221,6 +243,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
             title = buildAnnotatedString { append(stringResource(R.string.onboarding_personalize_intent_title)) },
             subtitle = stringResource(R.string.onboarding_personalize_intent_subtitle)
         ),
+
         OnboardingPageData(
             imageRes = R.drawable.img_piggy_hello,
             title = buildAnnotatedString { append(stringResource(R.string.onboarding_personalize_intensity_title)) },
@@ -228,13 +251,29 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
         ),
         OnboardingPageData(
             imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
             title = buildAnnotatedString { append(stringResource(R.string.onboarding_personalize_roadmap_title)) },
             subtitle = stringResource(R.string.onboarding_personalize_roadmap_subtitle)
         ),
         OnboardingPageData(
             imageRes = R.drawable.img_piggy_hello,
-            title = buildAnnotatedString { append("Choose Your Pace") },
-            subtitle = "Decide how you want to reach your financial milestones."
+            title = buildAnnotatedString { append(stringResource(R.string.onboarding_choose_pace_title)) },
+            subtitle = stringResource(R.string.onboarding_choose_pace_subtitle)
         ),
         OnboardingPageData(
             imageRes = R.drawable.img_app_logo,
@@ -255,7 +294,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
             .background(Color.White)
             .statusBarsPadding()
             .navigationBarsPadding()
-            .padding(horizontal = horizontalPadding, vertical = if (isSmallScreen) 12.dp else 16.dp),
+            .padding(horizontal = if (currentPage in 7..9) 0.dp else horizontalPadding, vertical = if (currentPage in 7..9) 6.dp else (if (isSmallScreen) 12.dp else 16.dp)),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Upper Content with Crossfade Page Transition
@@ -475,7 +514,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                             Spacer(modifier = Modifier.height(2.dp))
                                             val rateLabel = if (index == 0) "5% – 10%" else if (index == 1) "15% – 20%" else "30%+"
                                             Text(
-                                                text = "Saving Rate: $rateLabel",
+                                                text = stringResource(R.string.onboarding_saving_rate_label, rateLabel),
                                                 fontSize = if (isSmallScreen) 10.sp else 11.sp,
                                                 color = if (isSelected) PinkPrimary else TextLight,
                                                 fontWeight = FontWeight.SemiBold
@@ -526,7 +565,224 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             }
                         }
                     }
-                } else if (pageIndex == 7) {
+                
+                } else if (pageIndex in 7..9) {
+                    val cardBgColor = when (pageIndex) {
+                        7 -> Color(0xFFB38952) // Warm Amber / Burnt Ochre
+                        8 -> Color(0xFF5B78A7) // Slate Indigo / Periwinkle
+                        else -> Color(0xFF386851) // Deep Sage / Forest Green
+                    }
+                    val relatableText = when (pageIndex) {
+                        7 -> stringResource(R.string.onboarding_relatable_statement_1)
+                        8 -> stringResource(R.string.onboarding_relatable_statement_2)
+                        else -> stringResource(R.string.onboarding_relatable_statement_3)
+                    }
+                    val imageRes = when (pageIndex) {
+                        7 -> R.drawable.img_relatable_debt_1785176852844
+                        8 -> R.drawable.img_relatable_accounts_1785176864908
+                        else -> R.drawable.img_relatable_emergency_1785176876312
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalArrangement = Arrangement.SpaceBetween,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Top Bar: Navigation & Progress Step Dashes
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFF1F5F9))
+                                    .clickable { currentPage-- },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                    contentDescription = stringResource(R.string.back_btn),
+                                    tint = NavyDark,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(16.dp))
+
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                val currentStep = pageIndex - 6
+                                val totalSteps = 5
+                                for (step in 1..totalSteps) {
+                                    val isFilled = step <= currentStep + 1
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(if (isFilled) Color(0xFFE5A641) else Color(0xFFE2E8F0))
+                                    )
+                                }
+                            }
+                        }
+
+                        // Middle Content: Header Title + Card (Compact, nicely-proportioned height)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f, fill = false)
+                                .verticalScroll(rememberScrollState()),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            // Header Title
+                            Text(
+                                text = stringResource(R.string.onboarding_relatable_header),
+                                color = NavyDark,
+                                fontSize = if (isSmallScreen) 20.sp else 24.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                textAlign = TextAlign.Center,
+                                lineHeight = if (isSmallScreen) 26.sp else 30.sp,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            // Full-Width Card with Compact Height
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .background(cardBgColor)
+                                    .padding(if (isSmallScreen) 14.dp else 18.dp)
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "“",
+                                        color = Color.White.copy(alpha = 0.6f),
+                                        fontSize = if (isSmallScreen) 40.sp else 48.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        lineHeight = 24.sp,
+                                        modifier = Modifier
+                                            .align(Alignment.Start)
+                                            .offset(y = (-2).dp)
+                                    )
+
+                                    Text(
+                                        text = relatableText,
+                                        color = Color.White,
+                                        fontSize = if (isSmallScreen) 14.sp else 16.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        textAlign = TextAlign.Center,
+                                        lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    // Custom Generated Illustration with controlled height
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(if (isSmallScreen) 120.dp else 150.dp)
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(Color.White.copy(alpha = 0.15f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Image(
+                                            painter = painterResource(id = imageRes),
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+
+                        // Absolute Bottom: Choice Buttons ("No" and "Yes") Full-Width
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 4.dp, top = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    when (pageIndex) {
+                                        7 -> relatesToLoans = false
+                                        8 -> relatesToAccounts = false
+                                        9 -> relatesToEmergency = false
+                                    }
+                                    if (currentPage < pages.size - 1) currentPage++
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(54.dp),
+                                shape = RoundedCornerShape(27.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = cardBgColor,
+                                    contentColor = Color.White
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.no_label),
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    when (pageIndex) {
+                                        7 -> {
+                                            relatesToLoans = true
+                                            selectedIntent = 1
+                                        }
+                                        8 -> relatesToAccounts = true
+                                        9 -> relatesToEmergency = true
+                                    }
+                                    if (currentPage < pages.size - 1) currentPage++
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(54.dp),
+                                shape = RoundedCornerShape(27.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = cardBgColor,
+                                    contentColor = Color.White
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.yes_label),
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+} else if (pageIndex == 10) {
                     val focusName = when (selectedIntent) {
                         0 -> stringResource(R.string.onboarding_personalize_intent_personal)
                         1 -> stringResource(R.string.onboarding_personalize_intent_loans)
@@ -534,9 +790,9 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                     }
 
                     val focusDesc = when (selectedIntent) {
-                        0 -> "Private vault configured to keep your core balance safe."
-                        1 -> "Tailored to track lent/borrowed cash and deadlines."
-                        else -> "Prepared to automatically organize incoming receipts."
+                        0 -> stringResource(R.string.onboarding_step_workspace_desc_personal)
+                        1 -> stringResource(R.string.onboarding_step_workspace_desc_loans)
+                        else -> stringResource(R.string.onboarding_step_workspace_desc_auto)
                     }
 
                     val intensityName = when (selectedIntensity) {
@@ -552,34 +808,49 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                     }
 
                     val intensityDesc = when (selectedIntensity) {
-                        0 -> "A light, steady habit to build savings without strain."
-                        1 -> "The perfect pace for hitting your major milestones."
-                        else -> "High-velocity savings mode to smash buffers in record time."
+                        0 -> stringResource(R.string.onboarding_step_intensity_desc_casual)
+                        1 -> stringResource(R.string.onboarding_step_intensity_desc_balanced)
+                        else -> stringResource(R.string.onboarding_step_intensity_desc_aggressive)
                     }
 
                     val isSmsGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED ||
                             ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
                     
-                    val syncTitle = "Automation Assistant"
+                    val syncTitle = stringResource(R.string.onboarding_step_sync_title)
                     val syncDesc = if (isSmsGranted) {
-                        "Vodafone Cash, Orange Cash, and bank alert SMS parsed automatically!"
+                        stringResource(R.string.onboarding_step_sync_desc_granted)
                     } else {
-                        "Log transactions manually. Enable SMS auto-sync anytime in Settings."
+                        stringResource(R.string.onboarding_step_sync_desc_manual)
                     }
 
-                    val milestoneTitle = "Your First Major Goal"
+                    val milestoneTitle = stringResource(R.string.onboarding_step_milestone_title)
                     val milestoneDesc = when (selectedIntent) {
-                        0 -> "Create a vault and set a deposit to start your streak!"
-                        1 -> "Log your first lent/borrowed deal to see net dues."
-                        else -> "Complete a transfer and let our automation handle it."
+                        0 -> stringResource(R.string.onboarding_step_milestone_desc_personal)
+                        1 -> stringResource(R.string.onboarding_step_milestone_desc_loans)
+                        else -> stringResource(R.string.onboarding_step_milestone_desc_auto)
                     }
 
-                    val steps = listOf(
-                        Triple("Workspace Configured: $focusName", focusDesc, "👥"),
-                        Triple("Savings Rate Configured: $intensityName ($intensityValue)", intensityDesc, "📈"),
+                    val step1Title = stringResource(R.string.onboarding_step_workspace_title, focusName)
+                    val step2Title = stringResource(R.string.onboarding_step_intensity_title, intensityName, intensityValue)
+                    
+                    val stepsList = mutableListOf(
+                        Triple(step1Title, focusDesc, "👥"),
+                        Triple(step2Title, intensityDesc, "📈"),
                         Triple(syncTitle, syncDesc, if (isSmsGranted) "⚡" else "📋"),
                         Triple(milestoneTitle, milestoneDesc, "🎯")
                     )
+                    
+                    if (relatesToLoans == true) {
+                        stepsList.add(0, Triple(stringResource(R.string.onboarding_step_debt_title), stringResource(R.string.onboarding_step_debt_desc), "💸"))
+                    }
+                    if (relatesToAccounts == true) {
+                        stepsList.add(1, Triple(stringResource(R.string.onboarding_step_accounts_title), stringResource(R.string.onboarding_step_accounts_desc), "🔗"))
+                    }
+                    if (relatesToEmergency == true) {
+                        stepsList.add(Triple(stringResource(R.string.onboarding_step_emergency_title), stringResource(R.string.onboarding_step_emergency_desc), "🛡️"))
+                    }
+                    
+                    val steps = stepsList.toList()
 
                     // AI ROAMAP LOADING LOGIC
                     var roadmapStep by remember { mutableStateOf(-1) } // -1: Thinking, 0-3: Steps, 4: Done
@@ -604,11 +875,11 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             thinkingPhase = 2 // Planning
                             delay(1000)
                             
-                            for (i in 0..3) {
+                            for (i in 0 until steps.size) {
                                 roadmapStep = i
                                 delay(1200)
                             }
-                            roadmapStep = 4 // All Done
+                            roadmapStep = steps.size // All Done
                         }
                     }
 
@@ -625,9 +896,9 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                 )
                                 Spacer(modifier = Modifier.height(28.dp))
                                 val text = when(thinkingPhase) {
-                                    0 -> "Thinking..."
-                                    1 -> "Sketching..."
-                                    else -> "Making Plan..."
+                                    0 -> stringResource(R.string.onboarding_ai_thinking)
+                                    1 -> stringResource(R.string.onboarding_ai_sketching)
+                                    else -> stringResource(R.string.onboarding_ai_making_plan)
                                 }
                                 Text(
                                     text = text,
@@ -710,7 +981,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                                             }
                                                             Spacer(modifier = Modifier.height(4.dp))
                                                             Text(
-                                                                text = "syncing",
+                                                                text = stringResource(R.string.onboarding_ai_syncing),
                                                                 fontSize = 9.sp,
                                                                 fontWeight = FontWeight.Bold,
                                                                 color = PinkPrimary
@@ -826,7 +1097,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             }
                         }
                     }
-                } else if (pageIndex == 8) {
+                } else if (pageIndex == 11) {
                     val anim1 = remember { Animatable(0f) }
                     val anim2 = remember { Animatable(0f) }
                     LaunchedEffect(Unit) {
@@ -847,7 +1118,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             verticalArrangement = Arrangement.Top
                         ) {
                             Text(
-                                text = "Supercharge Savings",
+                                text = stringResource(R.string.onboarding_supercharge_title),
                                 fontSize = titleFontSize,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = NavyDark,
@@ -858,7 +1129,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             Spacer(modifier = Modifier.height(12.dp))
                             
                             Text(
-                                text = "Automated guidance helps you reach milestones up to 7 times faster than manual tracking.",
+                                text = stringResource(R.string.onboarding_supercharge_subtitle),
                                 fontSize = subtitleFontSize,
                                 color = TextLight,
                                 textAlign = TextAlign.Center,
@@ -907,7 +1178,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                     }
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "Solo",
+                                        text = stringResource(R.string.onboarding_supercharge_solo),
                                         fontSize = if (isSmallScreen) 12.sp else 14.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = TextLight
@@ -951,7 +1222,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                                     color = Color.White
                                                 )
                                                 Text(
-                                                    text = "FASTER",
+                                                    text = stringResource(R.string.onboarding_supercharge_faster),
                                                     fontSize = if (isSmallScreen) 12.sp else 18.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = Color.White.copy(alpha = 0.9f),
@@ -962,7 +1233,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                     }
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "With Piggy",
+                                        text = stringResource(R.string.onboarding_supercharge_with_piggy, stringResource(R.string.piggy_ledger_brand)),
                                         fontSize = if (isSmallScreen) 14.sp else 16.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = PinkPrimary,
@@ -1093,7 +1364,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             // Back Button (Optional/Visible when not on first page)
-            if (currentPage > 0) {
+            if (currentPage > 0 && currentPage !in 7..9) {
                 TextButton(
                     onClick = { currentPage-- },
                     modifier = Modifier
@@ -1109,29 +1380,33 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                 }
             }
 
-            // Custom Progress Button
-            ProgressNextButton(
-                currentPage = currentPage,
-                totalPages = pages.size,
-                isSmallScreen = isSmallScreen,
-                onNext = {
-                    if (currentPage < pages.size - 1) {
-                        if (currentPage == 3) {
-                            requestSmsPermissions()
-                        } else if (currentPage == 4) {
-                            requestNotificationPermissions()
-                        } else if (currentPage == 5 && selectedIntent == -1) {
-                            Toast.makeText(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT).show()
-                        } else if (currentPage == 6 && selectedIntensity == -1) {
-                            Toast.makeText(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT).show()
+
+            if (currentPage !in 7..9) {
+                // Custom Progress Button
+                ProgressNextButton(
+                    currentPage = currentPage,
+                    totalPages = pages.size,
+                    isSmallScreen = isSmallScreen,
+                    onNext = {
+                        if (currentPage < pages.size - 1) {
+                            if (currentPage == 3) {
+                                requestSmsPermissions()
+                            } else if (currentPage == 4) {
+                                requestNotificationPermissions()
+                            } else if (currentPage == 5 && selectedIntent == -1) {
+                                Toast.makeText(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT).show()
+                            } else if (currentPage == 6 && selectedIntensity == -1) {
+                                Toast.makeText(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT).show()
+                            } else {
+                                currentPage++
+                            }
                         } else {
-                            currentPage++
+                            onComplete(selectedIntent, selectedIntensity, selectedSavingMode)
                         }
-                    } else {
-                        onComplete(selectedIntent, selectedIntensity, selectedSavingMode)
                     }
-                }
-            )
+                )
+            }
+
         }
     }
 }

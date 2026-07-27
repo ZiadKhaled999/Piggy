@@ -60,6 +60,7 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
     
     val hasOnboarded by viewModel.hasOnboarded.collectAsState()
     val hasLanguageSelected by viewModel.hasLanguageSelected.collectAsState()
+    val hasHeardAboutUs by viewModel.hasHeardAboutUs.collectAsState()
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
 
     LaunchedEffect(isAuthenticated, hasLanguageSelected, hasOnboarded) {
@@ -77,9 +78,13 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
         ) {
             NavHost(navController = navController, startDestination = Screen.Splash) {
                 composable<Screen.Splash> {
-                    LaunchedEffect(hasOnboarded, hasLanguageSelected, isAuthenticated) {
+                    LaunchedEffect(hasOnboarded, hasLanguageSelected, hasHeardAboutUs, isAuthenticated) {
                         if (hasLanguageSelected == false) {
                             navController.navigate(Screen.LanguageSelection) {
+                                popUpTo(Screen.Splash) { inclusive = true }
+                            }
+                        } else if (hasHeardAboutUs == false) {
+                            navController.navigate(Screen.HearAboutUs) {
                                 popUpTo(Screen.Splash) { inclusive = true }
                             }
                         } else if (hasOnboarded == false) {
@@ -90,7 +95,7 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                             navController.navigate(Screen.Auth) {
                                 popUpTo(Screen.Splash) { inclusive = true }
                             }
-                        } else if (hasOnboarded == true && hasLanguageSelected == true && isAuthenticated == true) {
+                        } else if (hasOnboarded == true && hasLanguageSelected == true && hasHeardAboutUs == true && isAuthenticated == true) {
                             navController.navigate(Screen.MainContainer) {
                                 popUpTo(Screen.Splash) { inclusive = true }
                             }
@@ -119,7 +124,7 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                     LanguageSelectionScreen(
                         onLanguageSelected = {
                             viewModel.completeLanguageSelection()
-                            navController.navigate(Screen.Onboarding) {
+                            navController.navigate(Screen.HearAboutUs) {
                                 popUpTo(Screen.LanguageSelection) { inclusive = true }
                             }
                         },
@@ -133,6 +138,21 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                     )
                 }
                 
+
+                composable<Screen.HearAboutUs> {
+                    LaunchedEffect(Unit) {
+                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Hear About Us"))
+                    }
+                    HearAboutUsScreen(
+                        onContinue = { source ->
+                            viewModel.completeHearAboutUs(source)
+                            navController.navigate(Screen.Onboarding) {
+                                popUpTo(Screen.HearAboutUs) { inclusive = true }
+                            }
+                        }
+                    )
+                }
+
                 composable<Screen.Onboarding> {
                     LaunchedEffect(Unit) {
                         PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Onboarding"))

@@ -9,6 +9,7 @@ enum class SettingsMode {
 sealed class Screen {
     @Serializable data object Splash : Screen()
     @Serializable data object LanguageSelection : Screen()
+    @Serializable data object HearAboutUs : Screen()
     @Serializable data object Onboarding : Screen()
     @Serializable data object Auth : Screen()
     @Serializable data object MainContainer : Screen()

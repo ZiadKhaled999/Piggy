@@ -1,27 +1,57 @@
-import re
+import xml.etree.ElementTree as ET
 
-en_strings = """
-    <string name="release_to_cancel">Release to cancel</string>
-    <string name="slide_up_to_pause">Slide up to pause/cancel</string>
-    <string name="recording_state">Recording...</string>
-    <string name="hold_anywhere_to_record">Hold anywhere here to record</string>
+# English strings
+en_additions = """
+    <string name="onboarding_step_debt_title">Debt Payoff Strategy</string>
+    <string name="onboarding_step_debt_desc">We will use the Debt Snowball method to build psychological momentum and quick wins.</string>
+    <string name="onboarding_step_accounts_title">Link Accounts</string>
+    <string name="onboarding_step_accounts_desc">We will prompt you to securely link all your scattered accounts first.</string>
+    <string name="onboarding_step_emergency_title">Emergency Buffer</string>
+    <string name="onboarding_step_emergency_desc">Your first savings goal will be an emergency fund to stop the relapse cycle.</string>
 """
 
-ar_strings = """
-    <string name="release_to_cancel">سيب عشان تلغي</string>
-    <string name="slide_up_to_pause">اسحب لفوق عشان توقف/تلغي</string>
-    <string name="recording_state">بيسجل...</string>
-    <string name="hold_anywhere_to_record">دوس في أي حتة هنا عشان تسجل</string>
-"""
+with open('./app/src/main/res/values/strings.xml', 'r') as f:
+    content = f.read()
 
-def append_strings(file_path, strings):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-    content = content.replace("</resources>", strings + "</resources>")
-    with open(file_path, 'w', encoding='utf-8') as f:
+if 'onboarding_step_debt_title' not in content:
+    content = content.replace('</resources>', en_additions + '\n</resources>')
+    with open('./app/src/main/res/values/strings.xml', 'w') as f:
         f.write(content)
 
-append_strings('app/src/main/res/values/strings.xml', en_strings)
-append_strings('app/src/main/res/values-ar/strings.xml', ar_strings)
+# Arabic (Standard) strings
+ar_additions = """
+    <string name="onboarding_step_debt_title">خطة تسديد الديون</string>
+    <string name="onboarding_step_debt_desc">سنعتمد طريقة كرة الثلج لبناء دافع معنوي وتحقيق إنجازات سريعة.</string>
+    <string name="onboarding_step_accounts_title">ربط الحسابات</string>
+    <string name="onboarding_step_accounts_desc">سنوجهك لربط جميع حساباتك المتفرقة بأمان أولاً.</string>
+    <string name="onboarding_step_emergency_title">صندوق الطوارئ</string>
+    <string name="onboarding_step_emergency_desc">هدفك الادخاري الأول سيكون بناء صندوق طوارئ لمنع الانتكاسات.</string>
+"""
 
-print("Appended strings.")
+with open('./app/src/main/res/values-ar/strings.xml', 'r') as f:
+    content_ar = f.read()
+
+if 'onboarding_step_debt_title' not in content_ar:
+    content_ar = content_ar.replace('</resources>', ar_additions + '\n</resources>')
+    with open('./app/src/main/res/values-ar/strings.xml', 'w') as f:
+        f.write(content_ar)
+
+# Arabic (Egyptian) strings
+eg_additions = """
+    <string name="onboarding_step_debt_title">خطة سداد الديون</string>
+    <string name="onboarding_step_debt_desc">هنستخدم طريقة كرة الثلج عشان تبدأ بإنجازات سريعة وتشجع نفسك.</string>
+    <string name="onboarding_step_accounts_title">ربط الحسابات</string>
+    <string name="onboarding_step_accounts_desc">هنساعدك تربط كل حساباتك ومحافظك المتطورة في مكان واحد بالأول.</string>
+    <string name="onboarding_step_emergency_title">صندوق الطوارئ</string>
+    <string name="onboarding_step_emergency_desc">أول هدف تحويش ليك هيكون صندوق طوارئ عشان المصاريف المفاجئة متأثرش عليك.</string>
+"""
+
+with open('./app/src/main/res/values-ar-rEG/strings.xml', 'r') as f:
+    content_eg = f.read()
+
+if 'onboarding_step_debt_title' not in content_eg:
+    content_eg = content_eg.replace('</resources>', eg_additions + '\n</resources>')
+    with open('./app/src/main/res/values-ar-rEG/strings.xml', 'w') as f:
+        f.write(content_eg)
+
+print("Updated all strings.xml files successfully!")

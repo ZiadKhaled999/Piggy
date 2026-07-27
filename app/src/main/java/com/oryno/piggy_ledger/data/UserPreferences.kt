@@ -16,6 +16,7 @@ class UserPreferences(private val context: Context) {
     companion object {
         val HAS_ONBOARDED = booleanPreferencesKey("has_onboarded")
         val HAS_LANGUAGE_SELECTED = booleanPreferencesKey("has_language_selected")
+        val HAS_HEARD_ABOUT_US = booleanPreferencesKey("has_heard_about_us")
         val IS_AUTHENTICATED = booleanPreferencesKey("is_authenticated")
         val AUTH_USER_EMAIL = stringPreferencesKey("auth_user_email")
         val AUTH_USER_NAME = stringPreferencesKey("auth_user_name")
@@ -53,6 +54,10 @@ class UserPreferences(private val context: Context) {
     
     val hasLanguageSelected: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[HAS_LANGUAGE_SELECTED] ?: false
+    }
+
+    val hasHeardAboutUs: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[HAS_HEARD_ABOUT_US] ?: false
     }
 
     val isAuthenticated: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -100,6 +105,12 @@ class UserPreferences(private val context: Context) {
     suspend fun saveLanguageSelected(selected: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[HAS_LANGUAGE_SELECTED] = selected
+        }
+    }
+
+    suspend fun saveHeardAboutUs(completed: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[HAS_HEARD_ABOUT_US] = completed
         }
     }
 

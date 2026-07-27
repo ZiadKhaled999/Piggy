@@ -95,32 +95,10 @@ class MainActivity : AppCompatActivity() {
   private var isBiometricCheckComplete by mutableStateOf(false)
   private lateinit var userPreferences: UserPreferences
 
-  private val requestPermissionsLauncher = registerForActivityResult(
-      ActivityResultContracts.RequestMultiplePermissions()
-  ) { permissions ->
-      // Permissions granted or rejected
-  }
-
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
     enableEdgeToEdge()
-
-    val permissionsToRequest = mutableListOf<String>()
-    if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
-        permissionsToRequest.add(Manifest.permission.RECEIVE_SMS)
-    }
-    if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
-        permissionsToRequest.add(Manifest.permission.READ_SMS)
-    }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-    }
-    if (permissionsToRequest.isNotEmpty()) {
-        requestPermissionsLauncher.launch(permissionsToRequest.toTypedArray())
-    }
     
     // Schedule background notifications
     com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)

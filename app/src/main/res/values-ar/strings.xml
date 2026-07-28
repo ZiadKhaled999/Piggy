@@ -21,17 +21,22 @@
     
     <string name="onboarding_sms_title">تتبع تلقائي ذكي</string>
     <string name="onboarding_sms_subtitle">فعّل قراية الرسايل بأمان عشان تتبع المحافظ زي (فودافون كاش، أورانج كاش) لحظة بلحظة.</string>
+    <string name="onboarding_messages_header">الرسائل</string>
+    <string name="onboarding_sms_mock_sender">البنك الأهلي / فودافون كاش</string>
+    <string name="onboarding_sms_mock_body">تم استلام تحويل بمبلغ 250 ج.م بالمحفظة. الرصيد الحالي: 4,200 ج.م</string>
     <string name="onboarding_sms_btn">فعّل التتبع الآمن</string>
     <string name="onboarding_sms_skip">مش دلوقتي</string>
     <string name="onboarding_sms_granted">تتبع الرسايل اتفعّل بنجاح!</string>
     <string name="onboarding_sms_denied">تخطينا التتبع. تقدر تفعله بعدين من الإعدادات.</string>
     
-    <string name="onboarding_notif_title">تنبيهات ذكية لحظية</string>
-    <string name="onboarding_notif_subtitle">هيجيلك إشعارات لحظية بمساهمات الجروب، الإيداعات، تحقيق الأهداف، وتفكرك دايماً بميزانيتك.</string>
-    <string name="onboarding_notif_btn">فعّل التنبيهات الذكية</string>
-    <string name="onboarding_notif_skip">مش دلوقتي</string>
-    <string name="onboarding_notif_granted">التنبيهات اتفعّلت بنجاح!</string>
-    <string name="onboarding_notif_denied">تخطينا التنبيهات. تقدر تفعلها بعدين من الإعدادات.</string>
+    <string name="onboarding_notif_title">حقّق أهدافك أسرع وأسهل</string>
+    <string name="onboarding_notif_subtitle">فعّل الإشعارات حتى لا تنسى تسجيل مصاريفك. إنها أسهل طريقة لبناء عادات مالية صحية والوصول لأهدافك!</string>
+    <string name="onboarding_notif_card_title">معك ثانية لتسجيل مصاريفك؟</string>
+    <string name="onboarding_notif_card_body">خذ لحظة لتسجيل ما أنفقته – كل معاملة تسجلها تقربك أكثر من أهدافك المالية!</string>
+    <string name="onboarding_notif_btn">تفعيل الإشعارات</string>
+    <string name="onboarding_notif_skip">ليس الآن</string>
+    <string name="onboarding_notif_granted">تم تفعيل الإشعارات بنجاح!</string>
+    <string name="onboarding_notif_denied">تم تخطي الإشعارات. يمكنك تفعيلها لاحقاً من الإعدادات.</string>
     
     <string name="onboarding_personalize_intent_title">إيه تركيزك الأساسي؟</string>
     <string name="onboarding_personalize_intent_subtitle">اختار هدفك الأساسي وهنظبطلك الواجهة، الإشعارات، وطرق التحويش.</string>
@@ -705,5 +710,10 @@
     <string name="onboarding_step_accounts_desc">سنوجهك لربط جميع حساباتك المتفرقة بأمان أولاً.</string>
     <string name="onboarding_step_emergency_title">صندوق الطوارئ</string>
     <string name="onboarding_step_emergency_desc">هدفك الادخاري الأول سيكون بناء صندوق طوارئ لمنع الانتكاسات.</string>
+
+    <string name="onboarding_streak_title">الاستمرارية تبني العادة</string>
+    <string name="onboarding_streak_subtitle">لتحقيق أهدافك والسيطرة على ميزانيتك، ضع روتيناً واكتسب عادات مالية صحية. تحدَّ نفسك وسجل يومياً لبناء سلسلة إنجازاتك.</string>
+    <string name="onboarding_habit_letters">ع,ا,د,ة</string>
+    <string name="onboarding_streak_days">الخميس,الجمعة,السبت,الأحد</string>
 
 </resources>

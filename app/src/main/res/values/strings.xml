@@ -87,13 +87,18 @@
     <string name="back_btn">BACK</string>
     <string name="onboarding_sms_title">Smart Automatic Tracking</string>
     <string name="onboarding_sms_subtitle">Enable secure SMS reading to automatically parse and log incoming wallet transfers (e.g., Vodafone Cash, Orange Cash) in real-time.</string>
+    <string name="onboarding_messages_header">Messages</string>
+    <string name="onboarding_sms_mock_sender">CIB Bank / VF Cash</string>
+    <string name="onboarding_sms_mock_body">Transfer of EGP 250.00 received in your wallet. Current Balance: EGP 4,200.</string>
     <string name="onboarding_sms_btn">Enable Secure Tracking</string>
     <string name="onboarding_sms_skip">Skip for Now</string>
     <string name="onboarding_sms_granted">Secure SMS tracking enabled successfully!</string>
     <string name="onboarding_sms_denied">Secure tracking skipped. You can enable it in system settings later.</string>
-    <string name="onboarding_notif_title">Real-Time Smart Alerts</string>
-    <string name="onboarding_notif_subtitle">Get instant notifications for group contributions, wallet deposits, goals milestones, and streak reminders to keep your budget on track.</string>
-    <string name="onboarding_notif_btn">Enable Smart Alerts</string>
+    <string name="onboarding_notif_title">Hit your goal faster and easier</string>
+    <string name="onboarding_notif_subtitle">Enable notifications so you never forget to track your expenses. It’s the easiest way to build healthy money habits and crush your goals!</string>
+    <string name="onboarding_notif_card_title">Got a sec to log your expenses?</string>
+    <string name="onboarding_notif_card_body">Take a moment to log what you spent – every transaction you track brings you closer to your goal.</string>
+    <string name="onboarding_notif_btn">Enable Notifications</string>
     <string name="onboarding_notif_skip">Skip for Now</string>
     <string name="onboarding_notif_granted">Notifications enabled successfully!</string>
     <string name="onboarding_notif_denied">Notifications skipped. You can enable them in system settings later.</string>
@@ -745,5 +750,10 @@
     <string name="onboarding_step_accounts_desc">We will prompt you to securely link all your scattered accounts first.</string>
     <string name="onboarding_step_emergency_title">Emergency Buffer</string>
     <string name="onboarding_step_emergency_desc">Your first savings goal will be an emergency fund to stop the relapse cycle.</string>
+
+    <string name="onboarding_streak_title">Consistency builds habit</string>
+    <string name="onboarding_streak_subtitle">To hit your goals and master your budget, set a routine and make healthy habits. Challenge yourself and work on it every day.</string>
+    <string name="onboarding_habit_letters">H,A,B,I,T</string>
+    <string name="onboarding_streak_days">THU,FRI,SAT,SUN,MON</string>
 
 </resources>

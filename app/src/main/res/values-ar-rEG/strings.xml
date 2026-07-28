@@ -34,16 +34,21 @@
     <string name="back_btn">رجوع</string>
     <string name="onboarding_sms_title">تتبع تلقائي ذكي</string>
     <string name="onboarding_sms_subtitle">فَعَّل إذن قراية الرسائل (SMS) عشان نحسب ونسجل تحويلات المحافظ الإلكترونية اللي بتجيلك (زي فودافون كاش، أورانج كاش) تلقائيًا أول بأول.</string>
+    <string name="onboarding_messages_header">الرسائل</string>
+    <string name="onboarding_sms_mock_sender">البنك الأهلي / فودافون كاش</string>
+    <string name="onboarding_sms_mock_body">تم استلام تحويل بمبلغ 250 ج.م بالمحفظة. الرصيد الحالي: 4,200 ج.م</string>
     <string name="onboarding_sms_btn">تفعيل التتبع الآمن</string>
     <string name="onboarding_sms_skip">تخطي دلوقتي</string>
     <string name="onboarding_sms_granted">تم تفعيل التتبع الآمن بنجاح!</string>
     <string name="onboarding_sms_denied">تم تخطي التتبع الآمن. تقدر تفعله من إعدادات الموبايل في أي وقت.</string>
-    <string name="onboarding_notif_title">تنبيهات فورية ذكية</string>
-    <string name="onboarding_notif_subtitle">استقبل إشعارات أول بأول بمشاركات المجموعة، وتحويلات المحفظة، والأهداف اللي بتكملها، وفكر نفسك بالاستمرار عشان تفضل على خطتك دايماً.</string>
-    <string name="onboarding_notif_btn">تفعيل التنبيهات الذكية</string>
-    <string name="onboarding_notif_skip">تخطي دلوقتي</string>
+    <string name="onboarding_notif_title">أوصل لهدفك أسرع وأسهل</string>
+    <string name="onboarding_notif_subtitle">فعّل الإشعارات عشان متنساش تسجل مصاريفك. دي أسهل طريقة تلتزم بيها وتعمل عادات مالية صحية وتوصل لأهدافك!</string>
+    <string name="onboarding_notif_card_title">معاك ثانية تسجل مصاريفك؟</string>
+    <string name="onboarding_notif_card_body">خد ثانية سجل اللي صرفته النهاردة – كل معاملة بتسجلها بتظبط يومياتك وبيقربك من هدفك!</string>
+    <string name="onboarding_notif_btn">تفعيل الإشعارات</string>
+    <string name="onboarding_notif_skip">مش دلوقتي</string>
     <string name="onboarding_notif_granted">تم تفعيل الإشعارات بنجاح!</string>
-    <string name="onboarding_notif_denied">تم تخطي الإشعارات. تقدر تفعيلها من إعدادات الموبايل في أي وقت.</string>
+    <string name="onboarding_notif_denied">تم تخطي الإشعارات. تقدر تفعلها من إعدادات الموبايل في أي وقت.</string>
 
     <!-- Personalization Onboarding -->
     <string name="onboarding_personalize_intent_title">إيه تركيزك المالي الأساسي دلوقتي؟</string>
@@ -636,5 +641,10 @@
     <string name="onboarding_step_accounts_desc">هنساعدك تربط كل حساباتك ومحافظك المتنطورة في مكان واحد بالأول.</string>
     <string name="onboarding_step_emergency_title">صندوق الطوارئ</string>
     <string name="onboarding_step_emergency_desc">أول هدف تحويش ليك هيكون صندوق طوارئ عشان المصاريف المفاجئة متأثرش عليك.</string>
+
+    <string name="onboarding_streak_title">الاستمرارية بتعمل عادة</string>
+    <string name="onboarding_streak_subtitle">علشان توصل لأهدافك وتظبط ميزانيتك، الاستمرارية هي السر. اتحدى نفسك وسجل مصاريفك كل يوم لتسجيل سلسلة إنجازاتك.</string>
+    <string name="onboarding_habit_letters">ع,ا,د,ة</string>
+    <string name="onboarding_streak_days">الخميس,الجمعة,السبت,الأحد</string>
 
 </resources>

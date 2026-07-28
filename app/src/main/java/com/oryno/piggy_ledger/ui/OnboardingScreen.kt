@@ -1062,57 +1062,63 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            // Full-Width Card with Compact Height
+                            // Relatable Statement Sentence (Outside the Image Card)
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp),
+                                shape = RoundedCornerShape(20.dp),
+                                color = Color(0xFFF8FAFC),
+                                border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE2E8F0))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "“",
+                                        color = PinkPrimary,
+                                        fontSize = if (isSmallScreen) 28.sp else 34.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(end = 6.dp)
+                                    )
+                                    Text(
+                                        text = relatableText,
+                                        color = NavyDark,
+                                        fontSize = if (isSmallScreen) 14.sp else 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        lineHeight = if (isSmallScreen) 20.sp else 22.sp,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Card containing ONLY the Illustration Image
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(24.dp))
                                     .background(cardBgColor)
-                                    .padding(if (isSmallScreen) 14.dp else 18.dp)
+                                    .padding(if (isSmallScreen) 12.dp else 16.dp)
                             ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.fillMaxWidth()
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(if (isSmallScreen) 150.dp else 190.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(Color.White.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        text = "“",
-                                        color = Color.White.copy(alpha = 0.6f),
-                                        fontSize = if (isSmallScreen) 40.sp else 48.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        lineHeight = 24.sp,
-                                        modifier = Modifier
-                                            .align(Alignment.Start)
-                                            .offset(y = (-2).dp)
+                                    Image(
+                                        painter = painterResource(id = imageRes),
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
                                     )
-
-                                    Text(
-                                        text = relatableText,
-                                        color = Color.White,
-                                        fontSize = if (isSmallScreen) 14.sp else 16.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        textAlign = TextAlign.Center,
-                                        lineHeight = if (isSmallScreen) 20.sp else 24.sp,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                    )
-
-                                    Spacer(modifier = Modifier.height(12.dp))
-
-                                    // Custom Generated Illustration with controlled height
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(if (isSmallScreen) 120.dp else 150.dp)
-                                            .clip(RoundedCornerShape(16.dp))
-                                            .background(Color.White.copy(alpha = 0.15f)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Image(
-                                            painter = painterResource(id = imageRes),
-                                            contentDescription = null,
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                    }
                                 }
                             }
 

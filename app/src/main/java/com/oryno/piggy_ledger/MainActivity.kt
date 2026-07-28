@@ -103,6 +103,17 @@ class MainActivity : AppCompatActivity() {
     // Schedule background notifications
     com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
 
+    // Request Notification permission for Android 13+ (API 33+) if not granted
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+                if (isGranted) {
+                    com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
+                }
+            }.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
     // Update widgets so they reflect language changes or app launches
     com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(this)
     com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(this)

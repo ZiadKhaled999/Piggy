@@ -294,9 +294,9 @@ fun MainContainer(
     val isRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
     val drawerProgress by animateFloatAsState(
         targetValue = if (isDrawerOpen) 1f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow
+        animationSpec = tween(
+            durationMillis = 220,
+            easing = FastOutSlowInEasing
         ),
         label = "DrawerAnimation"
     )
@@ -357,9 +357,9 @@ fun MainContainer(
                     clip = true
                     shape = RoundedCornerShape((drawerProgress * 28f).coerceAtLeast(0f).dp)
                 },
-            shape = RoundedCornerShape((drawerProgress * 28f).coerceAtLeast(0f).dp),
+            shape = RoundedCornerShape(0.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
-            elevation = CardDefaults.cardElevation(defaultElevation = (drawerProgress * 24f).coerceAtLeast(0f).dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 Scaffold(
@@ -673,23 +673,26 @@ fun DrawerSettingsContent(
 
     Column(
         modifier = Modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .navigationBarsPadding(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Column {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Profile Info Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp),
+                    .padding(bottom = 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(52.dp)
+                        .size(48.dp)
                         .clip(CircleShape)
                         .background(Color.White.copy(alpha = 0.15f))
                         .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape),
@@ -730,11 +733,10 @@ fun DrawerSettingsContent(
                 }
             }
 
-            // Menu Items List (left-aligned)
+            // Menu Items List (clean text-only layout)
             val menuItems = listOf(
                 DrawerMenuItem(
                     title = stringResource(R.string.pending_transactions),
-                    iconRes = R.drawable.img_settings_pending_1784465160290,
                     badgeCount = pendingTransactions.size,
                     onClick = {
                         onClose()
@@ -743,7 +745,6 @@ fun DrawerSettingsContent(
                 ),
                 DrawerMenuItem(
                     title = stringResource(R.string.account_identifiers),
-                    iconRes = R.drawable.img_settings_identifiers_1784901671596,
                     onClick = {
                         onClose()
                         appNavController.navigate(Screen.Settings(SettingsMode.ACCOUNT_IDENTIFIERS.name))
@@ -751,7 +752,6 @@ fun DrawerSettingsContent(
                 ),
                 DrawerMenuItem(
                     title = stringResource(R.string.language),
-                    iconRes = R.drawable.img_settings_language,
                     onClick = {
                         onClose()
                         appNavController.navigate(Screen.Settings(SettingsMode.LANGUAGE.name))
@@ -759,7 +759,6 @@ fun DrawerSettingsContent(
                 ),
                 DrawerMenuItem(
                     title = stringResource(R.string.give_feedback),
-                    iconRes = R.drawable.img_settings_feedback,
                     onClick = {
                         onClose()
                         appNavController.navigate(Screen.Settings(SettingsMode.FEEDBACK.name))
@@ -767,7 +766,6 @@ fun DrawerSettingsContent(
                 ),
                 DrawerMenuItem(
                     title = stringResource(R.string.rate_app),
-                    iconRes = R.drawable.img_settings_rate,
                     onClick = {
                         onClose()
                         appNavController.navigate(Screen.Settings(SettingsMode.RATING.name))
@@ -775,7 +773,6 @@ fun DrawerSettingsContent(
                 ),
                 DrawerMenuItem(
                     title = stringResource(R.string.backup_data),
-                    iconRes = R.drawable.img_settings_backup,
                     onClick = {
                         onClose()
                         appNavController.navigate(Screen.Settings(SettingsMode.BACKUP.name))
@@ -783,7 +780,6 @@ fun DrawerSettingsContent(
                 ),
                 DrawerMenuItem(
                     title = stringResource(R.string.restore_data),
-                    iconRes = R.drawable.img_settings_restore,
                     onClick = {
                         onClose()
                         appNavController.navigate(Screen.Settings(SettingsMode.RESTORE.name))
@@ -791,7 +787,6 @@ fun DrawerSettingsContent(
                 ),
                 DrawerMenuItem(
                     title = stringResource(R.string.security),
-                    iconRes = R.drawable.img_settings_security,
                     onClick = {
                         onClose()
                         appNavController.navigate(Screen.Settings(SettingsMode.SECURITY.name))
@@ -799,15 +794,13 @@ fun DrawerSettingsContent(
                 ),
                 DrawerMenuItem(
                     title = stringResource(R.string.piggy_ledger_pro),
-                    iconRes = R.drawable.img_settings_pro,
                     onClick = {
                         onClose()
                         appNavController.navigate(Screen.Settings(SettingsMode.PRO.name))
                     }
                 ),
                 DrawerMenuItem(
-                    title = "Share",
-                    iconRes = R.drawable.img_settings_share,
+                    title = stringResource(R.string.share_app),
                     onClick = {
                         onClose()
                         val sendIntent = Intent().apply {
@@ -822,45 +815,25 @@ fun DrawerSettingsContent(
             )
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.verticalScroll(rememberScrollState())
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
             ) {
                 menuItems.forEach { item ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
                                 onClick = item.onClick
                             )
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            .padding(vertical = 10.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(Color.White.copy(alpha = 0.08f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (item.iconRes != null) {
-                                Image(
-                                    painter = painterResource(id = item.iconRes),
-                                    contentDescription = item.title,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else if (item.iconVector != null) {
-                                Icon(
-                                    imageVector = item.iconVector,
-                                    contentDescription = item.title,
-                                    tint = PinkPrimary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
                         Text(
                             text = item.title,
                             color = Color.White.copy(alpha = 0.9f),
@@ -871,8 +844,8 @@ fun DrawerSettingsContent(
                         if (item.badgeCount > 0) {
                             Box(
                                 modifier = Modifier
-                                    .padding(end = 16.dp)
-                                    .size(24.dp)
+                                    .padding(end = 4.dp)
+                                    .size(22.dp)
                                     .clip(CircleShape)
                                     .background(PinkPrimary),
                                 contentAlignment = Alignment.Center
@@ -880,7 +853,7 @@ fun DrawerSettingsContent(
                                 Text(
                                     text = item.badgeCount.toString(),
                                     color = Color.White,
-                                    fontSize = 12.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -890,8 +863,10 @@ fun DrawerSettingsContent(
             }
         }
 
-        // Bottom section: Logout
-        Row(
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Bottom section: Logout Button
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
@@ -900,39 +875,29 @@ fun DrawerSettingsContent(
                     }
                     viewModel.signOut()
                     onClose()
-                }
-                .padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                },
+            shape = RoundedCornerShape(14.dp),
+            color = Color.White.copy(alpha = 0.1f)
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color.White.copy(alpha = 0.08f)),
+                    .fillMaxWidth()
+                    .padding(vertical = 14.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Logout,
-                    contentDescription = "Logout",
-                    tint = Color.White.copy(alpha = 0.8f),
-                    modifier = Modifier.size(20.dp)
+                Text(
+                    text = stringResource(R.string.auth_sign_out),
+                    color = PinkPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
-            Text(
-                text = "Logout",
-                color = Color.White.copy(alpha = 0.9f),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium
-            )
         }
     }
 }
 
 data class DrawerMenuItem(
     val title: String,
-    val iconRes: Int? = null,
-    val iconVector: ImageVector? = null,
     val badgeCount: Int = 0,
     val onClick: () -> Unit
 )

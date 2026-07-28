@@ -44,5 +44,13 @@ class PiggyLedgerApplication : Application() {
         } else {
             Log.w("PiggyLedgerApp", "Clerk Publishable Key is missing.")
         }
+
+        // Initialize Notification Channels & Schedule Background Reminders
+        try {
+            com.oryno.piggy_ledger.ui.NotificationHelper(this)
+            com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
+        } catch (e: Exception) {
+            Log.e("PiggyLedgerApp", "Failed to initialize NotificationScheduler", e)
+        }
     }
 }

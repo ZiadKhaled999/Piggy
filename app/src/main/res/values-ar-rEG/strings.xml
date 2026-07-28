@@ -16,6 +16,7 @@
     <string name="backup_data">نسخة احتياطية</string>
     <string name="restore_data">ترجيع البيانات</string>
     <string name="rate_app">قيم التطبيق</string>
+    <string name="share_app">شارك التطبيق</string>
     <string name="give_feedback">قول رأيك</string>
 
     <!-- Onboarding -->
@@ -430,6 +431,9 @@
     <string name="group_by_month">بالشهر</string>
 
     <!-- Clerk Auth Screen -->
+    <string name="auth_welcome_title_main">فلوسك يا بيه</string>
+    <string name="auth_welcome_subtitle_main">أمان، بسيط، وذكي.</string>
+    <string name="auth_welcome_desc">تابع مصاريفك، حط أهداف، وحوش فلوس من غير مجهود.</string>
     <string name="auth_welcome_title">يا هلا بيك في فلوسك يا بيه!</string>
     <string name="auth_welcome_subtitle">بياناتك في الحفظ والصون</string>
     <string name="auth_clerk_desc">بياناتك وتحاويشك بتتحفظ بشكل آمن عشان متضيعش منك أبداً ومتقلقش على أي قرش.</string>

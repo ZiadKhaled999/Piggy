@@ -12,6 +12,7 @@
     <string name="backup_data">Backup Data</string>
     <string name="restore_data">Restore Data</string>
     <string name="rate_app">Rate the App</string>
+    <string name="share_app">Share App</string>
     <string name="give_feedback">Give Feedback</string>
 
     <!-- Onboarding -->

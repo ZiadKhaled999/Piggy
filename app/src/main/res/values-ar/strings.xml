@@ -141,6 +141,7 @@
     <string name="backup_data">نسخة احتياطية للبيانات</string>
     <string name="restore_data">استرجاع البيانات</string>
     <string name="rate_app">تقييم التطبيق</string>
+    <string name="share_app">مشاركة التطبيق</string>
     <string name="give_feedback">رأيك يهمنا</string>
     <string name="cancel_btn">إلغاء</string>
     <string name="security">الأمان</string>

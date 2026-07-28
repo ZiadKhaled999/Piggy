@@ -7,7 +7,6 @@ import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.data.PiggyLedgerDatabase
 import com.oryno.piggy_ledger.data.StreakManager
 import com.oryno.piggy_ledger.ui.NotificationHelper
-import java.util.Calendar
 
 class NotificationWorker(
     private val context: Context,
@@ -20,37 +19,41 @@ class NotificationWorker(
 
         when (type) {
             TYPE_STREAK -> {
-                // If they missed exactly 2 days, warn them. 
-                // Or if they missed 2 days, and haven't fixed it today.
-                val missedDays = StreakManager.getConsecutiveMissedDays(context)
-                if (missedDays == 2) {
-                     notificationHelper.showStreakWarningNotification()
+                // If user hasn't recorded an entry today, warn them to maintain streak
+                if (!StreakManager.hasActionToday(context)) {
+                    notificationHelper.showStreakWarningNotification()
                 }
             }
             TYPE_GOAL -> {
                 val db = PiggyLedgerDatabase.getInstance(context)
                 val goals = db.piggyLedgerDao().getAllGoalsSync()
                 val transactions = db.piggyLedgerDao().getAllTransactions()
-                
-                // Calculate saved amount for each goal
-                val goalsWithProgress = goals.map { goal ->
-                    val savedAmount = transactions.filter { it.goalId == goal.id }.sumOf { it.amount }
-                    Pair(goal, savedAmount)
-                }
 
-                // Find the closest goal to completion
-                val closestGoalPair = goalsWithProgress.filter { it.second < it.first.targetAmount }
-                    .minByOrNull { it.first.targetAmount - it.second }
+                if (goals.isNotEmpty()) {
+                    val goalsWithProgress = goals.map { goal ->
+                        val savedAmount = transactions.filter { it.goalId == goal.id }.sumOf { it.amount }
+                        Pair(goal, savedAmount)
+                    }
 
-                if (closestGoalPair != null) {
-                    val amountLeft = closestGoalPair.first.targetAmount - closestGoalPair.second
-                    val amountStr = String.format("$%.2f", amountLeft)
-                    notificationHelper.showGoalReminderNotification(closestGoalPair.first.name, amountStr)
+                    val closestGoalPair = goalsWithProgress.filter { it.second < it.first.targetAmount }
+                        .minByOrNull { it.first.targetAmount - it.second }
+
+                    if (closestGoalPair != null) {
+                        val amountLeft = closestGoalPair.first.targetAmount - closestGoalPair.second
+                        val amountStr = String.format("$%.2f", amountLeft)
+                        notificationHelper.showGoalReminderNotification(closestGoalPair.first.name, amountStr)
+                    } else {
+                        val firstGoal = goals.first()
+                        notificationHelper.showGoalReminderNotification(firstGoal.name, "$0.00")
+                    }
+                } else {
+                    val goalMsg = context.getString(R.string.my_goals)
+                    notificationHelper.showGoalReminderNotification(goalMsg, "")
                 }
             }
             TYPE_MOTIVATION -> {
                 val quotes = context.resources.getStringArray(R.array.streak_statements_happy)
-                val randomQuote = quotes.random()
+                val randomQuote = if (quotes.isNotEmpty()) quotes.random() else "Stay on track with Piggy Ledger! 🐷"
                 notificationHelper.showMotivationNotification(randomQuote)
             }
         }

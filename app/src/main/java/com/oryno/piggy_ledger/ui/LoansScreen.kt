@@ -295,7 +295,7 @@ fun LoansScreen(
                     if (viewModel.canAddLoan(loans.size)) {
                         showAddDialog = true 
                     } else {
-                        Toast.makeText(screenContext, "Upgrade to Pro to add more loans", Toast.LENGTH_SHORT).show()
+                        com.oryno.piggy_ledger.ui.ToastUtil.show(screenContext, "Upgrade to Pro to add more loans", Toast.LENGTH_SHORT)
                     }
                 },
                 modifier = Modifier.height(52.dp),
@@ -1077,7 +1077,7 @@ fun LoansScreen(
                                     deadline = deadlineDate
                                 )
                             )
-                            Toast.makeText(context, context.getString(R.string.toast_loan_added), Toast.LENGTH_SHORT).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_loan_added), Toast.LENGTH_SHORT)
                             showAddDialog = false
                         }
                     },
@@ -1203,7 +1203,7 @@ fun LoansScreen(
                                     val amt = payAmount.toDoubleOrNull() ?: 0.0
                                     if (amt > 0) {
                                         viewModel.addLoanPayment(selectedLoan!!.id, amt, payNote.takeIf { it.isNotBlank() })
-                                        Toast.makeText(screenContext, screenContext.getString(R.string.toast_loan_payment_added), Toast.LENGTH_SHORT).show()
+                                        com.oryno.piggy_ledger.ui.ToastUtil.show(screenContext, screenContext.getString(R.string.toast_loan_payment_added), Toast.LENGTH_SHORT)
                                         showAddPayment = false
                                     }
                                 },
@@ -1396,7 +1396,7 @@ fun LoansScreen(
                     Button(
                         onClick = {
                             viewModel.markLoanAsPaid(selectedLoan!!.id)
-                            Toast.makeText(screenContext, screenContext.getString(R.string.toast_loan_closed), Toast.LENGTH_SHORT).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(screenContext, screenContext.getString(R.string.toast_loan_closed), Toast.LENGTH_SHORT)
                             selectedLoan = null
                         },
                         modifier = Modifier
@@ -1423,7 +1423,7 @@ fun LoansScreen(
                                 Button(
                                     onClick = {
                                         viewModel.deleteLoan(selectedLoan!!.id)
-                                        Toast.makeText(screenContext, screenContext.getString(R.string.toast_loan_deleted), Toast.LENGTH_SHORT).show()
+                                        com.oryno.piggy_ledger.ui.ToastUtil.show(screenContext, screenContext.getString(R.string.toast_loan_deleted), Toast.LENGTH_SHORT)
                                         selectedLoan = null
                                         showDeleteConfirm = false
                                     },

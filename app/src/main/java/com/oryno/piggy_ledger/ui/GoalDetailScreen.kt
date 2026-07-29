@@ -542,7 +542,7 @@ fun GoalDetailScreen(
                         val amount = amountStr.replace("$", "").trim().toDoubleOrNull()
                         if (amount != null && amount > 0) {
                             viewModel.addTransaction(goalId, amount, note)
-                            Toast.makeText(context, context.getString(R.string.toast_savings_added), Toast.LENGTH_SHORT).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_savings_added), Toast.LENGTH_SHORT)
                             showDepositDialog = false
                         }
                     },

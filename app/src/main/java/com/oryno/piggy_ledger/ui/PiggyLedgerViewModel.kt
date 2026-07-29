@@ -301,6 +301,20 @@ class PiggyLedgerViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5000), false
     )
 
+    fun setPremiumStatus(isPremium: Boolean) {
+        viewModelScope.launch {
+            userPreferences.savePremiumStatus(isPremium)
+            try {
+                PostHog.capture(
+                    event = "premium_status_changed",
+                    properties = mapOf("is_premium" to isPremium)
+                )
+            } catch (e: Exception) {
+                // Ignore analytics error
+            }
+        }
+    }
+
     init {
         checkRevenueCatPremiumStatus()
     }

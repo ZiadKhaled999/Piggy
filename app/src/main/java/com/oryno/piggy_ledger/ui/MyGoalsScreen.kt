@@ -95,7 +95,7 @@ fun MyGoalsScreen(
                     IconButton(
                         onClick = {
                             clipboardManager.setText(AnnotatedString(goalToDelete?.name ?: ""))
-                            Toast.makeText(context, context.getString(R.string.copied), Toast.LENGTH_SHORT).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.copied), Toast.LENGTH_SHORT)
                         },
                         modifier = Modifier.size(32.dp)
                     ) {
@@ -150,7 +150,7 @@ fun MyGoalsScreen(
                     onClick = {
                         goalToDelete?.let {
                             viewModel.deleteGoal(it.id)
-                            Toast.makeText(context, context.getString(R.string.toast_goal_deleted), Toast.LENGTH_SHORT).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_goal_deleted), Toast.LENGTH_SHORT)
                         }
                         goalToDelete = null
                         confirmNameInput = ""

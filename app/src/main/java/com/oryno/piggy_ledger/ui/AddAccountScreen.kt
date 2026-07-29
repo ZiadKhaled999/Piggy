@@ -219,10 +219,10 @@ fun AddAccountScreen(
                                         label = accountLabel.takeIf { it.isNotBlank() }
                                     )
                                 )
-                                Toast.makeText(context, context.getString(R.string.toast_account_added), Toast.LENGTH_SHORT).show()
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_account_added), Toast.LENGTH_SHORT)
                                 onBack()
                             } else if (name.isNotBlank()) {
-                                Toast.makeText(context, "Upgrade to Pro to add more accounts", Toast.LENGTH_SHORT).show()
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Upgrade to Pro to add more accounts", Toast.LENGTH_SHORT)
                             }
                         },
                         modifier = Modifier.padding(end = 8.dp),

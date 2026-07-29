@@ -200,7 +200,7 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                                 viewModel.addGoal(name, amount)
                                 navController.popBackStack()
                             } else {
-                                Toast.makeText(context, "Upgrade to Pro to add more goals", Toast.LENGTH_SHORT).show()
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Upgrade to Pro to add more goals", Toast.LENGTH_SHORT)
                             }
                         },
                         onBack = { navController.popBackStack() }

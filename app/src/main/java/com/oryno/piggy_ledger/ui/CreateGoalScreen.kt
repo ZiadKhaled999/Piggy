@@ -239,12 +239,12 @@ fun CreateGoalScreen(
             onClick = { 
                 if (goalName.isNotBlank()) {
                     if (isOpenedBalance) {
-                        Toast.makeText(context, context.getString(R.string.toast_goal_created), Toast.LENGTH_SHORT).show()
+                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_goal_created), Toast.LENGTH_SHORT)
                         onGoalCreated(goalName, 0.0)
                     } else {
                         val amount = targetAmount.replace("$", "").trim().toDoubleOrNull()
                         if (amount != null) {
-                            Toast.makeText(context, context.getString(R.string.toast_goal_created), Toast.LENGTH_SHORT).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_goal_created), Toast.LENGTH_SHORT)
                             onGoalCreated(goalName, amount)
                         }
                     }

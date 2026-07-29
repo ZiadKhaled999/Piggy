@@ -716,5 +716,23 @@
     <string name="onboarding_streak_subtitle">لتحقيق أهدافك والسيطرة على ميزانيتك، ضع روتيناً واكتسب عادات مالية صحية. تحدَّ نفسك وسجل يومياً لبناء سلسلة إنجازاتك.</string>
     <string name="onboarding_habit_letters">ع,ا,د,ة</string>
     <string name="onboarding_streak_days">الخميس,الجمعة,السبت,الأحد</string>
+    <string name="analytics_title">التحليلات</string>
+    <string name="tab_spending">الإنفاق</string>
+    <string name="tab_revenue">الدخل</string>
+    <string name="filter_last_7_days">آخر ٧ أيام</string>
+    <string name="filter_last_30_days">آخر ٣٠ يوم</string>
+    <string name="filter_this_year">هذا العام</string>
+    <string name="filter_all_time">كل الوقت</string>
+    <string name="filter_weekly">أسبوعي</string>
+    <string name="filter_monthly">شهري</string>
+    <string name="filter_yearly">سنوي</string>
+    <string name="analytics_total">الإجمالي</string>
+    <string name="no_spending_data">لا توجد بيانات إنفاق</string>
+    <string name="no_revenue_data">لا توجد بيانات دخل</string>
+    <string name="vs_last_period">مقارنة بالفترة السابقة</string>
+    <string name="insight_spending_balanced">نفقاتك متوازنة بشكل جيد.</string>
+    <string name="insight_spending_one">معظم النفقات تأتي من %1$s.</string>
+    <string name="insight_spending_two">معظم النفقات تأتي من %1$s و %2$s.</string>
+    <string name="category_other">أخرى</string>
 
 </resources>

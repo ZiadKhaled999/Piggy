@@ -165,7 +165,7 @@ fun AddTransactionScreen(
                                     val finalMerchant = "$categoryKey|$descText"
                                     
                                     viewModel.addAccountTransaction(sourceAccountId, finalAmt, finalMerchant, "MANUAL", selectedTimestamp)
-                                    Toast.makeText(context, context.getString(R.string.toast_transaction_added), Toast.LENGTH_SHORT).show()
+                                    com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_transaction_added), Toast.LENGTH_SHORT)
                                     onDismiss()
                                 }
                             },

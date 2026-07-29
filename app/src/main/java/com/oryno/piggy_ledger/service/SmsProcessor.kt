@@ -110,7 +110,7 @@ object SmsProcessor {
                 )
 
                 val notification = androidx.core.app.NotificationCompat.Builder(context, channelId)
-                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setSmallIcon(com.oryno.piggy_ledger.R.drawable.img_app_logo)
                     .setContentTitle("New Pending Transaction")
                     .setContentText("A transaction of $amount from $merchant needs your review.")
                     .setContentIntent(pendingIntent)

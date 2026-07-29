@@ -52,6 +52,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.core.os.LocaleListCompat
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.Canvas
 import androidx.compose.material.icons.filled.Verified
@@ -110,9 +114,9 @@ fun SettingsScreen(
                     context.contentResolver.openOutputStream(it)?.use { stream ->
                         stream.write(jsonString.toByteArray())
                     }
-                    Toast.makeText(context, context.getString(R.string.export_success), Toast.LENGTH_SHORT).show()
+                    com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.export_success), Toast.LENGTH_SHORT)
                 } catch (e: Exception) {
-                    Toast.makeText(context, context.getString(R.string.export_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
+                    com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.export_failed, e.message ?: ""), Toast.LENGTH_LONG)
                 }
             }
         }
@@ -128,15 +132,15 @@ fun SettingsScreen(
                     viewModel.importData(
                         jsonString = jsonString,
                         onComplete = {
-                            Toast.makeText(context, context.getString(R.string.restore_success), Toast.LENGTH_SHORT).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.restore_success), Toast.LENGTH_SHORT)
                         },
                         onError = { error ->
-                            Toast.makeText(context, context.getString(R.string.restore_failed, error), Toast.LENGTH_LONG).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.restore_failed, error), Toast.LENGTH_LONG)
                         }
                     )
                 }
             } catch (e: Exception) {
-                Toast.makeText(context, context.getString(R.string.read_file_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
+                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.read_file_failed, e.message ?: ""), Toast.LENGTH_LONG)
             }
         }
     }
@@ -452,7 +456,7 @@ fun DetailSettingsView(
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://piggy-ledger.featureos.app"))
                             context.startActivity(intent)
                         } catch (e: Exception) {
-                            Toast.makeText(context, context.getString(R.string.browser_error), Toast.LENGTH_SHORT).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.browser_error), Toast.LENGTH_SHORT)
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -532,7 +536,7 @@ fun DetailSettingsView(
                         try {
                             context.startActivity(Intent.createChooser(intent, "Send Rating"))
                         } catch (e: Exception) {
-                            Toast.makeText(context, context.getString(R.string.email_error), Toast.LENGTH_SHORT).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.email_error), Toast.LENGTH_SHORT)
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -556,9 +560,9 @@ fun DetailSettingsView(
                                 context.contentResolver.openOutputStream(it)?.use { stream ->
                                     stream.write(csvString.toByteArray())
                                 }
-                                Toast.makeText(context, context.getString(R.string.csv_export_success), Toast.LENGTH_SHORT).show()
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.csv_export_success), Toast.LENGTH_SHORT)
                             } catch (e: Exception) {
-                                Toast.makeText(context, context.getString(R.string.csv_export_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.csv_export_failed, e.message ?: ""), Toast.LENGTH_LONG)
                             }
                         }
                     }
@@ -573,9 +577,9 @@ fun DetailSettingsView(
                                 context.contentResolver.openOutputStream(it)?.use { stream ->
                                     stream.write(excelString.toByteArray())
                                 }
-                                Toast.makeText(context, context.getString(R.string.excel_export_success), Toast.LENGTH_SHORT).show()
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.excel_export_success), Toast.LENGTH_SHORT)
                             } catch (e: Exception) {
-                                Toast.makeText(context, context.getString(R.string.excel_export_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.excel_export_failed, e.message ?: ""), Toast.LENGTH_LONG)
                             }
                         }
                     }
@@ -661,7 +665,7 @@ fun DetailSettingsView(
                                         if (isPremium) {
                                             createExcelLauncher.launch("piggy_ledger_backup.xls")
                                         } else {
-                                            Toast.makeText(context, "Upgrade to Pro to export your data", Toast.LENGTH_SHORT).show()
+                                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Upgrade to Pro to export your data", Toast.LENGTH_SHORT)
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth().height(40.dp),
@@ -714,7 +718,7 @@ fun DetailSettingsView(
                                         if (isPremium) {
                                             createCsvLauncher.launch("piggy_ledger_backup.csv")
                                         } else {
-                                            Toast.makeText(context, "Upgrade to Pro to export your data", Toast.LENGTH_SHORT).show()
+                                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Upgrade to Pro to export your data", Toast.LENGTH_SHORT)
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth().height(40.dp),
@@ -767,7 +771,7 @@ fun DetailSettingsView(
                                         if (isPremium) {
                                             createDocumentLauncher.launch("piggy_ledger_backup.json")
                                         } else {
-                                            Toast.makeText(context, "Upgrade to Pro to export your data", Toast.LENGTH_SHORT).show()
+                                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Upgrade to Pro to export your data", Toast.LENGTH_SHORT)
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth().height(40.dp),
@@ -795,15 +799,15 @@ fun DetailSettingsView(
                                 viewModel.importCSVData(
                                     csvString = csvString,
                                     onComplete = {
-                                        Toast.makeText(context, context.getString(R.string.csv_restore_success), Toast.LENGTH_SHORT).show()
+                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.csv_restore_success), Toast.LENGTH_SHORT)
                                     },
                                     onError = { error ->
-                                        Toast.makeText(context, context.getString(R.string.csv_restore_failed, error), Toast.LENGTH_LONG).show()
+                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.csv_restore_failed, error), Toast.LENGTH_LONG)
                                     }
                                 )
                             }
                         } catch (e: Exception) {
-                            Toast.makeText(context, context.getString(R.string.csv_restore_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.csv_restore_failed, e.message ?: ""), Toast.LENGTH_LONG)
                         }
                     }
                 }
@@ -954,7 +958,7 @@ fun DetailSettingsView(
                 SecuritySettingsView(viewModel = viewModel)
             }
             SettingsMode.PRO -> {
-                PiggyLedgerProView()
+                PiggyLedgerProView(viewModel = viewModel)
             }
             SettingsMode.ACCOUNT_IDENTIFIERS -> {
                 android.util.Log.d("DetailSettingsView", "Calling AccountIdentifiersView")
@@ -1229,22 +1233,37 @@ fun SettingsLanguageOption(
 }
 
 @Composable
-fun PiggyLedgerProView() {
+fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
+    val isPremiumState by viewModel.isPremium.collectAsStateWithLifecycle()
     var isPro by remember { mutableStateOf<Boolean?>(null) }
     var customerInfo by remember { mutableStateOf<com.revenuecat.purchases.CustomerInfo?>(null) }
 
+    LaunchedEffect(isPremiumState) {
+        if (isPremiumState) {
+            isPro = true
+        }
+    }
+
     LaunchedEffect(Unit) {
-        com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
-            object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
-                override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
-                    customerInfo = info
-                    isPro = info.entitlements["Piggy Ledger Pro"]?.isActive == true
+        try {
+            com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
+                object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
+                    override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
+                        customerInfo = info
+                        val active = info.entitlements["Piggy Ledger Pro"]?.isActive == true
+                        isPro = active || isPremiumState
+                        if (active) {
+                            viewModel.setPremiumStatus(true)
+                        }
+                    }
+                    override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                        isPro = isPremiumState
+                    }
                 }
-                override fun onError(error: com.revenuecat.purchases.PurchasesError) {
-                    isPro = false
-                }
-            }
-        )
+            )
+        } catch (e: Exception) {
+            isPro = isPremiumState
+        }
     }
 
     if (isPro == null) {
@@ -1462,7 +1481,7 @@ fun PiggyLedgerProView() {
                         )
                         context.startActivity(intent)
                     } catch (e: Exception) {
-                        Toast.makeText(context, "Unable to open subscriptions page", Toast.LENGTH_SHORT).show()
+                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Unable to open subscriptions page", Toast.LENGTH_SHORT)
                     }
                 },
                 modifier = Modifier
@@ -1483,6 +1502,7 @@ fun PiggyLedgerProView() {
         }
     } else {
         PiggyLedgerPaywall(
+            viewModel = viewModel,
             onPurchaseSuccess = { info ->
                 customerInfo = info
                 isPro = true
@@ -1552,6 +1572,7 @@ enum class PaywallPlan {
 
 @Composable
 fun PiggyLedgerPaywall(
+    viewModel: PiggyLedgerViewModel,
     onPurchaseSuccess: (com.revenuecat.purchases.CustomerInfo?) -> Unit
 ) {
     val context = LocalContext.current
@@ -1592,7 +1613,7 @@ fun PiggyLedgerPaywall(
             .background(Color.White)
     ) {
         val isSmallScreen = maxWidth < 360.dp
-        val horizontalPadding = if (isSmallScreen) 16.dp else 24.dp
+        val horizontalPadding = if (isSmallScreen) 16.dp else 20.dp
 
         Column(
             modifier = Modifier
@@ -1601,46 +1622,68 @@ fun PiggyLedgerPaywall(
                 .padding(bottom = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Hero Image with Gradient Overlay
+            // Clean Top Bar with Close Button (NO image header)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(if (isSmallScreen) 180.dp else 220.dp)
+                    .statusBarsPadding()
+                    .padding(horizontal = horizontalPadding, vertical = 8.dp)
             ) {
-                Image(
-                    painter = painterResource(R.drawable.paywall_pro_hero_1784906050205),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.White.copy(alpha = 0.5f),
-                                    Color.White
-                                )
-                            )
-                        )
-                )
-
-                // Close Button
-                IconButton(
-                    onClick = { /* Handled by parent or BackHandler */ },
-                    modifier = Modifier
-                        .statusBarsPadding()
-                        .padding(8.dp)
-                        .align(Alignment.TopStart)
-                        .background(Color.White.copy(alpha = 0.7f), CircleShape)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = NavyDark)
+                    Surface(
+                        shape = CircleShape,
+                        color = PinkPrimary.copy(alpha = 0.08f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, PinkPrimary.copy(alpha = 0.2f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(14.dp))
+                            Text("PRO ACCESS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
+                        }
+                    }
+
+                    IconButton(
+                        onClick = { /* Handled by parent or BackHandler */ },
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(Color(0xFFF1F5F9), CircleShape)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = NavyDark, modifier = Modifier.size(20.dp))
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Glowing Crown/Star Badge Icon
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(PinkPrimary.copy(alpha = 0.18f), PinkPrimary.copy(alpha = 0.02f))
+                        ),
+                        CircleShape
+                    )
+                    .border(1.5.dp, PinkPrimary.copy(alpha = 0.3f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = PinkPrimary,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = "Upgrade to Pro",
@@ -1650,26 +1693,27 @@ fun PiggyLedgerPaywall(
                 letterSpacing = 1.sp
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = "Unlock Your Smarter\nFinancial Routine",
-                fontSize = if (isSmallScreen) 24.sp else 28.sp,
+                fontSize = if (isSmallScreen) 22.sp else 26.sp,
                 fontWeight = FontWeight.Black,
                 color = NavyDark,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                lineHeight = if (isSmallScreen) 30.sp else 34.sp
+                lineHeight = if (isSmallScreen) 28.sp else 32.sp
             )
 
-            Spacer(modifier = Modifier.height(if (isSmallScreen) 24.dp else 32.dp))
+            Spacer(modifier = Modifier.height(if (isSmallScreen) 20.dp else 24.dp))
 
             // Comparison Table
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = horizontalPadding),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1703,9 +1747,9 @@ fun PiggyLedgerPaywall(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     HorizontalDivider(color = Color(0xFFE2E8F0))
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     val comparisonRows = listOf(
                         Triple("SMS Tracking", "14 Days", "Unlimited"),
@@ -1721,7 +1765,7 @@ fun PiggyLedgerPaywall(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -1754,69 +1798,63 @@ fun PiggyLedgerPaywall(
                 }
             }
 
-            Spacer(modifier = Modifier.height(if (isSmallScreen) 24.dp else 32.dp))
+            Spacer(modifier = Modifier.height(if (isSmallScreen) 20.dp else 24.dp))
 
-            // Subscription Plans
+            // Subscription Plans Title
             Text(
-                text = "CHOOSE YOUR PLAN",
+                text = "SELECT A PLAN",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextLight,
                 letterSpacing = 1.2.sp,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            Row(
+            // Refined & Reshaped 3 Plan Cards (Vertical Stacked Cards)
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = horizontalPadding),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                CompactPlanCard(
-                    modifier = Modifier.weight(1f),
-                    title = "Monthly",
-                    price = monthlyPrice,
-                    isSelected = selectedPlan == PaywallPlan.MONTHLY,
-                    onClick = { selectedPlan = PaywallPlan.MONTHLY },
-                    isSmall = isSmallScreen
-                )
-                CompactPlanCard(
-                    modifier = Modifier.weight(1f),
-                    title = "Yearly",
-                    price = yearlyPrice,
-                    tag = "SAVE 17%",
+                // 1. YEARLY PLAN (MOST POPULAR)
+                ReshapedPlanCard(
+                    title = "Yearly Plan",
+                    price = "$99.99 / year",
+                    subtitle = "$8.33 / month — Billed annually",
+                    tag = "MOST POPULAR • SAVE 17%",
+                    tagBgColor = PinkPrimary,
+                    tagTextColor = Color.White,
                     isSelected = selectedPlan == PaywallPlan.YEARLY,
-                    onClick = { selectedPlan = PaywallPlan.YEARLY },
-                    isSmall = isSmallScreen
+                    onClick = { selectedPlan = PaywallPlan.YEARLY }
                 )
-                CompactPlanCard(
-                    modifier = Modifier.weight(1f),
-                    title = "Lifetime",
-                    price = lifetimePrice,
-                    tag = "VALUE",
+
+                // 2. MONTHLY PLAN
+                ReshapedPlanCard(
+                    title = "Monthly Plan",
+                    price = "$9.99 / month",
+                    subtitle = "Flexible month-to-month billing",
+                    tag = "FLEXIBLE",
+                    tagBgColor = Color(0xFFF1F5F9),
+                    tagTextColor = NavyDark,
+                    isSelected = selectedPlan == PaywallPlan.MONTHLY,
+                    onClick = { selectedPlan = PaywallPlan.MONTHLY }
+                )
+
+                // 3. LIFETIME PLAN
+                ReshapedPlanCard(
+                    title = "Lifetime Access",
+                    price = "$299.99 one-time",
+                    subtitle = "Pay once, access all current & future Pro features forever",
+                    tag = "BEST VALUE",
+                    tagBgColor = Color(0xFF10B981),
+                    tagTextColor = Color.White,
                     isSelected = selectedPlan == PaywallPlan.LIFETIME,
-                    onClick = { selectedPlan = PaywallPlan.LIFETIME },
-                    isSmall = isSmallScreen
+                    onClick = { selectedPlan = PaywallPlan.LIFETIME }
                 )
             }
 
-            Spacer(modifier = Modifier.height(if (isSmallScreen) 24.dp else 32.dp))
-
-            // Price Details Text
-            val planPriceText = when (selectedPlan) {
-                PaywallPlan.MONTHLY -> "$monthlyPrice / month ($9.99/mo)"
-                PaywallPlan.YEARLY -> "$yearlyPrice / year ($8.33/mo - Save 17%)"
-                PaywallPlan.LIFETIME -> "$lifetimePrice one-time (Unlimited lifetime access)"
-            }
-            
-            Text(
-                text = planPriceText,
-                fontSize = 14.sp,
-                color = NavyDark,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Slide to Purchase
             SlideToPurchase(
@@ -1836,8 +1874,9 @@ fun PiggyLedgerPaywall(
                                 override fun onCompleted(storeTransaction: com.revenuecat.purchases.models.StoreTransaction, info: com.revenuecat.purchases.CustomerInfo) {
                                     isPurchasing = false
                                     if (info.entitlements["Piggy Ledger Pro"]?.isActive == true) {
+                                        viewModel.setPremiumStatus(true)
                                         onPurchaseSuccess(info)
-                                        Toast.makeText(context, "Pro features unlocked!", Toast.LENGTH_LONG).show()
+                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Pro features unlocked!", Toast.LENGTH_LONG)
                                     }
                                 }
                                 override fun onError(error: com.revenuecat.purchases.PurchasesError, userCancelled: Boolean) {
@@ -1846,19 +1885,20 @@ fun PiggyLedgerPaywall(
                             }
                         )
                     } else {
-                        // Simulation for dev environments
+                        // Simulation for dev environments / tests
                         coroutineScope.launch {
                             isPurchasing = true
-                            delay(1200)
+                            delay(1000)
                             isPurchasing = false
+                            viewModel.setPremiumStatus(true)
                             onPurchaseSuccess(null)
-                            Toast.makeText(context, "Welcome to Pro!", Toast.LENGTH_SHORT).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Welcome to Pro! Pro features unlocked.", Toast.LENGTH_SHORT)
                         }
                     }
                 }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Policy Links
             Row(
@@ -1866,22 +1906,24 @@ fun PiggyLedgerPaywall(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Restore",
+                    "Restore Purchases",
                     fontSize = 12.sp,
-                    color = TextLight,
+                    fontWeight = FontWeight.Bold,
+                    color = PinkPrimary,
                     modifier = Modifier.clickable {
                         com.revenuecat.purchases.Purchases.sharedInstance.restorePurchases(
                             object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
                                 override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
                                     if (info.entitlements["Piggy Ledger Pro"]?.isActive == true) {
+                                        viewModel.setPremiumStatus(true)
                                         onPurchaseSuccess(info)
-                                        Toast.makeText(context, "Pro features restored!", Toast.LENGTH_LONG).show()
+                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Pro features restored!", Toast.LENGTH_LONG)
                                     } else {
-                                        Toast.makeText(context, "No active subscription found.", Toast.LENGTH_LONG).show()
+                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "No active subscription found.", Toast.LENGTH_LONG)
                                     }
                                 }
                                 override fun onError(error: com.revenuecat.purchases.PurchasesError) {
-                                    Toast.makeText(context, "Restore failed: ${error.message}", Toast.LENGTH_LONG).show()
+                                    com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Restore failed: ${error.message}", Toast.LENGTH_LONG)
                                 }
                             }
                         )
@@ -1897,7 +1939,7 @@ fun PiggyLedgerPaywall(
                             val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.oryno.com/piggy-ledger/terms"))
                             context.startActivity(intent)
                         } catch (e: Exception) {
-                            Toast.makeText(context, "Terms unavailable", Toast.LENGTH_SHORT).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Terms unavailable", Toast.LENGTH_SHORT)
                         }
                     }
                 )
@@ -1911,7 +1953,7 @@ fun PiggyLedgerPaywall(
                             val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.oryno.com/piggy-ledger/privacy"))
                             context.startActivity(intent)
                         } catch (e: Exception) {
-                            Toast.makeText(context, "Privacy policy unavailable", Toast.LENGTH_SHORT).show()
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Privacy policy unavailable", Toast.LENGTH_SHORT)
                         }
                     }
                 )
@@ -1921,58 +1963,112 @@ fun PiggyLedgerPaywall(
 }
 
 @Composable
-fun CompactPlanCard(
-    modifier: Modifier = Modifier,
+fun ReshapedPlanCard(
     title: String,
     price: String,
+    subtitle: String,
     tag: String? = null,
+    tagBgColor: Color = PinkPrimary,
+    tagTextColor: Color = Color.White,
     isSelected: Boolean,
-    onClick: () -> Unit,
-    isSmall: Boolean = false
+    onClick: () -> Unit
 ) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) PinkPrimary.copy(alpha = 0.08f) else Color.White)
-            .border(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) PinkPrimary else Color(0xFFE2E8F0),
-                shape = RoundedCornerShape(20.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(vertical = if (isSmall) 12.dp else 16.dp, horizontal = 4.dp),
-        contentAlignment = Alignment.Center
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        color = if (isSelected) PinkPrimary.copy(alpha = 0.06f) else Color.White,
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) PinkPrimary else Color(0xFFE2E8F0)
+        ),
+        shadowElevation = if (isSelected) 2.dp else 0.dp,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = title.uppercase(),
-                fontSize = if (isSmall) 9.sp else 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (isSelected) PinkPrimary else TextLight,
-                letterSpacing = 0.8.sp
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = price,
-                fontSize = if (isSmall) 14.sp else 16.sp,
-                fontWeight = FontWeight.Black,
-                color = if (isSelected) NavyDark else NavyDark.copy(alpha = 0.8f)
-            )
-            if (tag != null) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(if (isSelected) PinkPrimary else Color(0xFFF1F5F9))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clip(CircleShape)
+                            .background(if (isSelected) PinkPrimary else Color.Transparent)
+                            .border(
+                                width = if (isSelected) 0.dp else 2.dp,
+                                color = if (isSelected) Color.Transparent else Color(0xFFCBD5E1),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    }
+
                     Text(
-                        text = tag, 
-                        fontSize = 8.sp, 
-                        fontWeight = FontWeight.Bold, 
-                        color = if (isSelected) Color.White else TextLight
+                        text = title,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark
                     )
                 }
+
+                if (tag != null) {
+                    Surface(
+                        color = if (isSelected) tagBgColor else tagBgColor.copy(alpha = 0.85f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = tag,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = tagTextColor,
+                            letterSpacing = 0.5.sp,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = subtitle,
+                        fontSize = 12.sp,
+                        color = TextLight,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = price,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Black,
+                    color = if (isSelected) PinkPrimary else NavyDark
+                )
             }
         }
     }
@@ -1983,11 +2079,17 @@ fun SlideToPurchase(
     isPurchasing: Boolean,
     onCompleted: () -> Unit
 ) {
-    var width by remember { mutableStateOf(0) }
-    val thumbSize = 52.dp
+    var widthPx by remember { mutableStateOf(0) }
     val density = androidx.compose.ui.platform.LocalDensity.current
-    val thumbSizePx = with(density) { thumbSize.toPx() }
-    val maxOffset = remember(width, thumbSizePx) { (width - thumbSizePx).coerceAtLeast(0f) }
+    val thumbWidth = 58.dp
+    val thumbHeight = 52.dp
+    val paddingDp = 6.dp
+    val thumbWidthPx = with(density) { thumbWidth.toPx() }
+    val paddingPx = with(density) { paddingDp.toPx() }
+
+    val maxOffset = remember(widthPx, thumbWidthPx, paddingPx) {
+        (widthPx - thumbWidthPx - (paddingPx * 2)).coerceAtLeast(0f)
+    }
 
     val dragOffset = remember { Animatable(0f) }
     val coroutineScope = rememberCoroutineScope()
@@ -1997,45 +2099,85 @@ fun SlideToPurchase(
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
             .height(64.dp)
-            .clip(RoundedCornerShape(32.dp))
-            .background(PinkPrimary.copy(alpha = 0.12f))
-            .border(1.5.dp, PinkPrimary.copy(alpha = 0.25f), RoundedCornerShape(32.dp))
-            .onSizeChanged { width = it.width },
+            .clip(RoundedCornerShape(16.dp))
+            .background(PinkPrimary.copy(alpha = 0.08f))
+            .border(1.5.dp, PinkPrimary.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+            .onSizeChanged { widthPx = it.width },
         contentAlignment = Alignment.CenterStart
     ) {
-        // Swiped filled track area - perfectly attached behind the arrow knob as one unit
-        val paddingPx = with(density) { 6.dp.toPx() }
-        val fillWidthDp = with(density) { (dragOffset.value + thumbSizePx + (paddingPx * 2)).toDp() }
+        // Target slot (drop zone box at the far right inside track)
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(paddingDp)
+                .size(width = thumbWidth, height = thumbHeight)
+                .clip(RoundedCornerShape(12.dp))
+                .background(PinkPrimary.copy(alpha = 0.04f))
+                .border(1.5.dp, PinkPrimary.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+        )
+
+        // Swiped filled track area - attached behind the knob as it slides
+        val fillWidthDp = with(density) { (paddingPx + dragOffset.value + thumbWidthPx).toDp() }
         Box(
             modifier = Modifier
                 .width(fillWidthDp)
                 .fillMaxHeight()
-                .clip(RoundedCornerShape(32.dp))
+                .padding(paddingDp)
+                .clip(RoundedCornerShape(12.dp))
                 .background(PinkPrimary)
         )
 
-        Text(
-            text = if (isPurchasing) "Contacting Store..." else "Slide to Unlock Pro",
-            modifier = Modifier.align(Alignment.Center),
-            fontSize = 15.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = if (dragOffset.value > maxOffset * 0.45f) Color.White else NavyDark
-        )
+        // Base text (unswiped section in NavyDark)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = if (isPurchasing) "Contacting Store..." else "Slide to Unlock Pro",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = NavyDark
+            )
+        }
 
+        // Overlay text layer clipped to swiped fill (transitions smoothly to White text)
+        Box(
+            modifier = Modifier
+                .width(fillWidthDp)
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(16.dp))
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(with(density) { widthPx.toDp() })
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (isPurchasing) "Contacting Store..." else "Slide to Unlock Pro",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White
+                )
+            }
+        }
+
+        // Thumb Knob (Squarish rounded drag handle with double chevron >>)
         if (!isPurchasing) {
             Box(
                 modifier = Modifier
-                    .offset { IntOffset(dragOffset.value.roundToInt(), 0) }
-                    .padding(6.dp)
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
+                    .offset { IntOffset((paddingPx + dragOffset.value).roundToInt(), 0) }
+                    .padding(vertical = paddingDp)
+                    .size(width = thumbWidth, height = thumbHeight)
+                    .shadow(4.dp, RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(NavyDark)
                     .pointerInput(maxOffset) {
                         if (maxOffset <= 0f) return@pointerInput
                         detectDragGestures(
                             onDragEnd = {
                                 coroutineScope.launch {
-                                    if (dragOffset.value >= maxOffset * 0.85f) {
+                                    if (dragOffset.value >= maxOffset * 0.82f) {
                                         dragOffset.animateTo(maxOffset, spring(stiffness = Spring.StiffnessMedium))
                                         onCompleted()
                                     } else {
@@ -2059,15 +2201,38 @@ fun SlideToPurchase(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = PinkPrimary, modifier = Modifier.size(24.dp))
+                // Double Chevron Icon (>>)
+                Canvas(modifier = Modifier.size(20.dp)) {
+                    val strokeWidth = 2.5.dp.toPx()
+                    val p1 = Path().apply {
+                        moveTo(size.width * 0.12f, size.height * 0.2f)
+                        lineTo(size.width * 0.45f, size.height * 0.5f)
+                        lineTo(size.width * 0.12f, size.height * 0.8f)
+                    }
+                    val p2 = Path().apply {
+                        moveTo(size.width * 0.48f, size.height * 0.2f)
+                        lineTo(size.width * 0.81f, size.height * 0.5f)
+                        lineTo(size.width * 0.48f, size.height * 0.8f)
+                    }
+                    drawPath(
+                        path = p1,
+                        color = Color.White,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                    )
+                    drawPath(
+                        path = p2,
+                        color = Color.White,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                    )
+                }
             }
         } else {
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .padding(6.dp)
-                    .size(52.dp)
-                    .clip(CircleShape)
+                    .padding(paddingDp)
+                    .size(width = thumbWidth, height = thumbHeight)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(PinkPrimary),
                 contentAlignment = Alignment.Center
             ) {
@@ -2092,10 +2257,10 @@ fun AccountIdentifiersView(viewModel: PiggyLedgerViewModel) {
     val providersList = remember {
         listOf(
             // 4 E-Wallets
-            ProviderIdentifierInfo("Vodafone Cash", "E-Wallet", listOf("VodafoneCash", "Vodafone", "VF-Cash", "010")),
-            ProviderIdentifierInfo("Orange Cash", "E-Wallet", listOf("OrangeCash", "Orange", "012")),
-            ProviderIdentifierInfo("e& Cash", "E-Wallet", listOf("EtisalatCash", "Etisalat", "e&Cash", "e&", "011")),
-            ProviderIdentifierInfo("WE Pay", "E-Wallet", listOf("WEPay", "WE", "015")),
+            ProviderIdentifierInfo("Vodafone Cash", "E-Wallet", listOf("VF-Cash")),
+            ProviderIdentifierInfo("Orange Cash", "E-Wallet", listOf("OrangeCash")),
+            ProviderIdentifierInfo("e& Cash", "E-Wallet", listOf("e&Cash")),
+            ProviderIdentifierInfo("WE Pay", "E-Wallet", listOf("WEPay")),
 
             // National Switch
             ProviderIdentifierInfo("InstaPay / Instant Switch", "Switch & Apps", listOf("InstaPay", "SmartWallet", "Telda", "Nexta")),
@@ -2345,7 +2510,7 @@ fun AccountIdentifiersView(viewModel: PiggyLedgerViewModel) {
             onDismiss = { showBottomSheet = false },
             onSave = { newKeywords ->
                 viewModel.addCustomIdentifierKeywords(targetProviderForSheet, newKeywords) {
-                    Toast.makeText(context, toastMessage, Toast.LENGTH_SHORT).show()
+                    com.oryno.piggy_ledger.ui.ToastUtil.show(context, toastMessage, Toast.LENGTH_SHORT)
                     showBottomSheet = false
                 }
             }

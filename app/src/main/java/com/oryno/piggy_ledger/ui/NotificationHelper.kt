@@ -62,7 +62,7 @@ class NotificationHelper(private val context: Context) {
         val message = context.getString(R.string.repayment_deadline_over, contactName, "$$amount")
 
         val builder = NotificationCompat.Builder(context, CHANNEL_DEADLINE_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.img_app_logo)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
@@ -82,7 +82,7 @@ class NotificationHelper(private val context: Context) {
         val message = context.getString(R.string.notif_streak_warning_msg)
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.img_app_logo)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
@@ -102,7 +102,7 @@ class NotificationHelper(private val context: Context) {
         val message = context.getString(R.string.notif_goal_msg, amountLeft)
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.img_app_logo)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
@@ -121,7 +121,7 @@ class NotificationHelper(private val context: Context) {
         val title = context.getString(R.string.notif_motivation_title)
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.img_app_logo)
             .setContentTitle(title)
             .setContentText(quote)
             .setStyle(NotificationCompat.BigTextStyle().bigText(quote))
@@ -141,7 +141,7 @@ class NotificationHelper(private val context: Context) {
         val message = context.getString(if (isSignedIn) R.string.notif_auth_signin_msg else R.string.notif_auth_signout_msg)
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.img_app_logo)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
@@ -165,7 +165,7 @@ class NotificationHelper(private val context: Context) {
         
         val titleRes = when (actionType) {
             com.oryno.piggy_ledger.service.SmsActionType.DEPOSIT -> R.string.notif_tx_title_deposit
-            com.oryno.piggy_ledger.service.SmsActionType.WITHDRAWAL -> R.string.notif_tx_title_withdrawal
+            com.oryno.piggy_ledger.service.SmsActionType.WITHDRAWAL -> R.string.notif_tx_msg_withdrawal
             com.oryno.piggy_ledger.service.SmsActionType.TRANSFER_OUT -> R.string.notif_tx_title_transfer
             com.oryno.piggy_ledger.service.SmsActionType.PURCHASE -> R.string.notif_tx_title_purchase
             com.oryno.piggy_ledger.service.SmsActionType.UNKNOWN -> R.string.notif_tx_title_unknown
@@ -185,7 +185,7 @@ class NotificationHelper(private val context: Context) {
         val defaultSoundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.img_app_logo)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))

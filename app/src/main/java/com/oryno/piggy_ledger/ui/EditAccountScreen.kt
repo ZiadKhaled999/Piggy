@@ -230,7 +230,7 @@ fun EditAccountScreen(
                                         label = accountLabel.takeIf { it.isNotBlank() }
                                     )
                                 )
-                                Toast.makeText(context, context.getString(R.string.toast_account_updated), Toast.LENGTH_SHORT).show()
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_account_updated), Toast.LENGTH_SHORT)
                                 onBack()
                             }
                         },
@@ -601,7 +601,7 @@ fun EditAccountScreen(
                     onClick = {
                         showDeleteConfirmDialog = false
                         viewModel.deleteAccount(accountId)
-                        Toast.makeText(context, context.getString(R.string.toast_account_deleted), Toast.LENGTH_SHORT).show()
+                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_account_deleted), Toast.LENGTH_SHORT)
                         onBack()
                     }
                 ) {

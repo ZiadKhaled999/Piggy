@@ -17,10 +17,10 @@ class SmsReceiver : BroadcastReceiver() {
     // Default static whitelist of all 40 Egyptian banks, 4 e-wallets, and national instant payment providers
     private val defaultProviders = listOf(
         // 4 E-Wallets
-        "VodafoneCash", "Vodafone",
-        "OrangeCash", "Orange",
-        "EtisalatCash", "Etisalat", "e&Cash", "e&",
-        "WEPay", "WE",
+        "VF-Cash",
+        "OrangeCash",
+        "e&Cash",
+        "WEPay",
 
         // 40 Egyptian Banks & Licensed Financial Institutions
         "NBE", "NationalBankOfEgypt", "NBEg",                 // 1. National Bank of Egypt

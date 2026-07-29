@@ -111,9 +111,9 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
         val smsReadGranted = permissions[Manifest.permission.READ_SMS] ?: false
         
         if (smsReceivedGranted || smsReadGranted) {
-            Toast.makeText(context, context.getString(R.string.onboarding_sms_granted), Toast.LENGTH_SHORT).show()
+            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_sms_granted), Toast.LENGTH_SHORT)
         } else {
-            Toast.makeText(context, context.getString(R.string.onboarding_sms_denied), Toast.LENGTH_SHORT).show()
+            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_sms_denied), Toast.LENGTH_SHORT)
         }
         currentPage++
     }
@@ -123,9 +123,9 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            Toast.makeText(context, context.getString(R.string.onboarding_notif_granted), Toast.LENGTH_SHORT).show()
+            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_notif_granted), Toast.LENGTH_SHORT)
         } else {
-            Toast.makeText(context, context.getString(R.string.onboarding_notif_denied), Toast.LENGTH_SHORT).show()
+            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_notif_denied), Toast.LENGTH_SHORT)
         }
         currentPage++
     }
@@ -159,7 +159,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
         if (permissionsToRequest.isNotEmpty()) {
             smsPermissionLauncher.launch(permissionsToRequest.toTypedArray())
         } else {
-            Toast.makeText(context, context.getString(R.string.onboarding_sms_granted), Toast.LENGTH_SHORT).show()
+            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_sms_granted), Toast.LENGTH_SHORT)
             currentPage++
         }
     }
@@ -169,29 +169,12 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             } else {
-                Toast.makeText(context, context.getString(R.string.onboarding_notif_granted), Toast.LENGTH_SHORT).show()
+                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_notif_granted), Toast.LENGTH_SHORT)
                 currentPage++
             }
         } else {
-            Toast.makeText(context, context.getString(R.string.onboarding_notif_granted), Toast.LENGTH_SHORT).show()
+            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_notif_granted), Toast.LENGTH_SHORT)
             currentPage++
-        }
-    }
-
-    LaunchedEffect(currentPage) {
-        if (currentPage == 3) {
-            val hasSms = ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED &&
-                    ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
-            if (!hasSms) {
-                requestSmsPermissions()
-            }
-        } else if (currentPage == 4) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val hasNotif = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-                if (!hasNotif) {
-                    requestNotificationPermissions()
-                }
-            }
         }
     }
     
@@ -228,7 +211,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
             subtitle = subtitle3
         ),
         OnboardingPageData(
-            imageRes = R.drawable.wallet_illustration_1783782766357,
+            imageRes = R.drawable.img_piggy_track,
             title = buildAnnotatedString {
                 append(stringResource(R.string.onboarding_sms_title))
             },
@@ -493,7 +476,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                         // Skip Button
                         TextButton(
                             onClick = {
-                                Toast.makeText(context, context.getString(R.string.onboarding_sms_denied), Toast.LENGTH_SHORT).show()
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_sms_denied), Toast.LENGTH_SHORT)
                                 currentPage++
                             },
                             modifier = Modifier.testTag("skip_sms_permission_button")
@@ -697,7 +680,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                         // Skip Button
                         TextButton(
                             onClick = {
-                                Toast.makeText(context, context.getString(R.string.onboarding_notif_denied), Toast.LENGTH_SHORT).show()
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_notif_denied), Toast.LENGTH_SHORT)
                                 currentPage++
                             },
                             modifier = Modifier.testTag("skip_notif_permission_button")
@@ -1890,14 +1873,10 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                     isSmallScreen = isSmallScreen,
                     onNext = {
                         if (currentPage < pages.size - 1) {
-                            if (currentPage == 3) {
-                                requestSmsPermissions()
-                            } else if (currentPage == 4) {
-                                requestNotificationPermissions()
-                            } else if (currentPage == 5 && selectedIntent == -1) {
-                                Toast.makeText(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT).show()
+                            if (currentPage == 5 && selectedIntent == -1) {
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT)
                             } else if (currentPage == 6 && selectedIntensity == -1) {
-                                Toast.makeText(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT).show()
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT)
                             } else {
                                 currentPage++
                             }

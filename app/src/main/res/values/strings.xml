@@ -756,5 +756,23 @@
     <string name="onboarding_streak_subtitle">To hit your goals and master your budget, set a routine and make healthy habits. Challenge yourself and work on it every day.</string>
     <string name="onboarding_habit_letters">H,A,B,I,T</string>
     <string name="onboarding_streak_days">THU,FRI,SAT,SUN,MON</string>
+    <string name="analytics_title">Analytics</string>
+    <string name="tab_spending">Spending</string>
+    <string name="tab_revenue">Revenue</string>
+    <string name="filter_last_7_days">Last 7 Days</string>
+    <string name="filter_last_30_days">Last 30 Days</string>
+    <string name="filter_this_year">This Year</string>
+    <string name="filter_all_time">All Time</string>
+    <string name="filter_weekly">Weekly</string>
+    <string name="filter_monthly">Monthly</string>
+    <string name="filter_yearly">Yearly</string>
+    <string name="analytics_total">Total</string>
+    <string name="no_spending_data">No spending data</string>
+    <string name="no_revenue_data">No revenue data</string>
+    <string name="vs_last_period">vs last period</string>
+    <string name="insight_spending_balanced">Your spending is well balanced.</string>
+    <string name="insight_spending_one">Most expenses come from %1$s.</string>
+    <string name="insight_spending_two">Most expenses come from %1$s and %2$s, keeping you on track.</string>
+    <string name="category_other">Other</string>
 
 </resources>

@@ -734,5 +734,5 @@
     <string name="insight_spending_one">معظم النفقات تأتي من %1$s.</string>
     <string name="insight_spending_two">معظم النفقات تأتي من %1$s و %2$s.</string>
     <string name="category_other">أخرى</string>
-
+    <string name="paywall_cta_upgrade">الترقية إلى الفئة الاحترافية</string>
 </resources>

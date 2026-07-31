@@ -650,5 +650,5 @@
     <string name="onboarding_streak_subtitle">علشان توصل لأهدافك وتظبط ميزانيتك، الاستمرارية هي السر. اتحدى نفسك وسجل مصاريفك كل يوم لتسجيل سلسلة إنجازاتك.</string>
     <string name="onboarding_habit_letters">ع,ا,د,ة</string>
     <string name="onboarding_streak_days">الخميس,الجمعة,السبت,الأحد</string>
-
+    <string name="paywall_cta_upgrade">روّق على نفسك ودوس</string>
 </resources>

@@ -78,7 +78,7 @@ val categoriesList = listOf(
 @Composable
 fun AddTransactionScreen(
     viewModel: PiggyLedgerViewModel,
-    selectedAccountId: Long?,
+    selectedAccountId: String?,
     accounts: List<Account>,
     onDismiss: () -> Unit,
     onNavigateToAddAccount: () -> Unit = {}
@@ -93,7 +93,7 @@ fun AddTransactionScreen(
     var selectedTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
     
     // Selected Account
-    var sourceAccountId by remember { mutableStateOf(selectedAccountId ?: accounts.firstOrNull()?.id ?: 0L) }
+    var sourceAccountId by remember { mutableStateOf(selectedAccountId ?: accounts.firstOrNull()?.id ?: "") }
     
     // Bottom Sheets State
     var showCategoryBottomSheet by remember { mutableStateOf(false) }
@@ -152,8 +152,11 @@ fun AddTransactionScreen(
                         
                         IconButton(
                             onClick = {
+                                try {
+                                    com.posthog.PostHog.capture(event = "button_clicked", properties = mapOf("button_name" to "Add Transaction", "screen" to "AddTransactionScreen"))
+                                } catch (e: Exception) {}
                                 val amt = txAmountStr.toDoubleOrNull()
-                                if (amt != null && amt > 0.0 && sourceAccountId != 0L) {
+                                if (amt != null && amt > 0.0 && sourceAccountId != "") {
                                     val finalAmt = if (isExpense) -amt else amt
                                     val categoryKey = if (selectedCategory != null) {
                                         selectedCategory!!.key

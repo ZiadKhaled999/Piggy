@@ -3,6 +3,7 @@ package com.oryno.piggy_ledger.ui
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -56,8 +57,11 @@ fun DashboardScreen(
     onNavigateToLoans: () -> Unit,
     onNavigateToAccounts: () -> Unit,
     onNavigateToAnalytics: () -> Unit,
-    onNavigateToSettingsPro: () -> Unit = {}
+    onNavigateToSettingsPro: () -> Unit = {},
+    onNavigateToStreak: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val streakCount = remember { com.oryno.piggy_ledger.data.StreakManager.getStreak(context) }
     val goals by viewModel.goals.collectAsState()
     val transactions by viewModel.allTransactions.collectAsState()
     val accounts by viewModel.allAccounts.collectAsState()
@@ -81,30 +85,36 @@ fun DashboardScreen(
     val profileSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val user by Clerk.userFlow.collectAsStateWithLifecycle()
 
+    val isPremiumState by viewModel.isPremium.collectAsStateWithLifecycle()
     var customerInfo by remember { mutableStateOf<com.revenuecat.purchases.CustomerInfo?>(null) }
-    LaunchedEffect(Unit) {
-        try {
-            com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
-                object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
-                    override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
-                        customerInfo = info
+    
+    LaunchedEffect(isPremiumState, showProfileBottomSheet) {
+        if (showProfileBottomSheet || customerInfo == null) {
+            try {
+                com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
+                    object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
+                        override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
+                            customerInfo = info
+                            val active = info.entitlements.all.values.any { it.isActive } || info.entitlements["Piggy Ledger Pro"]?.isActive == true
+                            if (active != isPremiumState) {
+                                viewModel.setPremiumStatus(active)
+                            }
+                        }
+                        override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                            // Optionally ignore
+                        }
                     }
-                    override fun onError(error: com.revenuecat.purchases.PurchasesError) {
-                        customerInfo = null
-                    }
-                }
-            )
-        } catch (e: Exception) {
-            customerInfo = null
+                )
+            } catch (e: Exception) {
+                // Ignore
+            }
         }
     }
 
     val entitlement = remember(customerInfo) {
-        customerInfo?.entitlements?.get("Piggy Ledger Pro")
+        customerInfo?.entitlements?.active?.values?.firstOrNull() ?: customerInfo?.entitlements?.get("Piggy Ledger Pro")
     }
-    val isProUser = remember(entitlement) {
-        entitlement?.isActive == true
-    }
+    val isProUser = isPremiumState
 
     val userFullName = remember(user, authUserName) {
         val clerkName = listOfNotNull(user?.firstName, user?.lastName)
@@ -165,12 +175,22 @@ fun DashboardScreen(
                         }
                     }
                     
-                    PremiumAvatar(
-                        imageUrl = userPhotoUrl,
-                        isPro = isProUser,
-                        size = 44.dp,
-                        onClick = { showProfileBottomSheet = true }
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        StreakBadgePill(
+                            streakCount = streakCount,
+                            onClick = onNavigateToStreak
+                        )
+
+                        PremiumAvatar(
+                            imageUrl = userPhotoUrl,
+                            isPro = isProUser,
+                            size = 44.dp,
+                            onClick = { showProfileBottomSheet = true }
+                        )
+                    }
                 }
 
                 // Welcome back header row
@@ -311,17 +331,17 @@ fun DashboardScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // 2. Subscription Details Card
-                    if (isProUser && entitlement != null) {
-                        val originalDate = entitlement.originalPurchaseDate
-                        val latestDate = entitlement.latestPurchaseDate
-                        val expirationDate = entitlement.expirationDate
+                    if (isProUser) {
+                        val originalDate = entitlement?.originalPurchaseDate
+                        val latestDate = entitlement?.latestPurchaseDate
+                        val expirationDate = entitlement?.expirationDate
 
-                        val prodId = entitlement.productIdentifier.lowercase()
+                        val prodId = entitlement?.productIdentifier?.lowercase() ?: "pro"
                         val planType = when {
-                            prodId.contains("lifetime") || prodId.contains("life") || prodId.contains("lt") || expirationDate == null -> "Premium (Lifetime)"
-                            prodId.contains("yearly") || prodId.contains("annual") || prodId.contains("yr") -> "Premium (Yearly)"
-                            prodId.contains("monthly") || prodId.contains("mth") || prodId.contains("mo") -> "Premium (Monthly)"
-                            else -> "Premium"
+                            prodId.contains("lifetime") || prodId.contains("life") || prodId.contains("lt") || expirationDate == null -> "Piggy Ledger Pro"
+                            prodId.contains("yearly") || prodId.contains("annual") || prodId.contains("yr") -> "Pro (Yearly)"
+                            prodId.contains("monthly") || prodId.contains("mth") || prodId.contains("mo") -> "Pro (Monthly)"
+                            else -> "Piggy Ledger Pro"
                         }
 
                         val isLifetime = planType.contains("Lifetime")
@@ -665,7 +685,7 @@ fun DashboardScreen(
 fun PendingTransactionDashboardCard(
     tx: com.oryno.piggy_ledger.data.PendingTransaction,
     accounts: List<com.oryno.piggy_ledger.data.Account>,
-    onResolve: (Long) -> Unit,
+    onResolve: (String) -> Unit,
     onOpenSheet: () -> Unit
 ) {
     val suggestedAccounts = remember(tx, accounts) {
@@ -1086,6 +1106,55 @@ fun PremiumAvatar(
                     drawCircle(color = Color(0xFFFBBF24), radius = radius, center = Offset(w * 0.5f, h * 0.15f))
                     drawCircle(color = Color(0xFFFBBF24), radius = radius, center = Offset(w * 0.9f, h * 0.35f))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun StreakBadgePill(
+    streakCount: Int,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(24.dp),
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, Color(0xFFFF7A00).copy(alpha = 0.3f))
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.height(40.dp)
+        ) {
+            // Flame section (opacity 0 background)
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .background(Color.Transparent)
+                    .padding(start = 10.dp, end = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.streak),
+                    contentDescription = "Streak",
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // Number section (opacity 0.5 background)
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .background(Color(0xFFFFF7ED).copy(alpha = 0.5f))
+                    .padding(start = 6.dp, end = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "$streakCount",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFFC2410C)
+                )
             }
         }
     }

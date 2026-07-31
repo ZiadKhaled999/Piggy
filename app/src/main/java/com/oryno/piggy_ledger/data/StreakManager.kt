@@ -84,6 +84,39 @@ object StreakManager {
         return getStreakAndFrozenDates(context).first
     }
 
+    fun getLongestStreak(context: Context): Int {
+        val dates = getActionDates(context)
+        if (dates.isEmpty()) return 0
+        val sortedDates = dates.sorted()
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        
+        var maxStreak = 0
+        var currentStreak = 0
+        var prevCal: Calendar? = null
+
+        for (dateStr in sortedDates) {
+            val date = try { dateFormat.parse(dateStr) } catch (e: Exception) { null } ?: continue
+            val currCal = Calendar.getInstance().apply { time = date }
+            
+            if (prevCal == null) {
+                currentStreak = 1
+            } else {
+                val diffDays = ((currCal.timeInMillis - prevCal.timeInMillis) / (24 * 60 * 60 * 1000)).toInt()
+                if (diffDays == 1) {
+                    currentStreak++
+                } else if (diffDays > 1) {
+                    currentStreak = 1
+                }
+            }
+            if (currentStreak > maxStreak) {
+                maxStreak = currentStreak
+            }
+            prevCal = currCal
+        }
+        val activeStreak = getStreak(context)
+        return maxOf(maxStreak, activeStreak)
+    }
+
     fun getFrozenDates(context: Context): Set<String> {
         return getStreakAndFrozenDates(context).second
     }

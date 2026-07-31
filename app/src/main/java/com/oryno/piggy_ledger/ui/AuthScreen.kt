@@ -26,6 +26,7 @@ import com.clerk.api.sso.OAuthProvider
 import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import kotlinx.coroutines.launch
+import com.posthog.PostHog
 
 @Composable
 fun AuthScreen(
@@ -45,6 +46,8 @@ fun AuthScreen(
                 .ifBlank { user?.firstName ?: "" }
             val photoUrl = user?.imageUrl ?: ""
             viewModel.signInWithGoogle(email, name, photoUrl)
+            viewModel.triggerCloudSync()
+            PostHog.capture(event = "user_sign_in", properties = mapOf("method" to "google", "user_id" to email))
             onAuthSuccess()
         }
     }

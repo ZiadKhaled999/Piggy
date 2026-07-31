@@ -21,7 +21,8 @@ sealed class Screen {
     @Serializable data object Loans : Screen()
     @Serializable data object Accounts : Screen()
     @Serializable data object AddAccount : Screen()
-    @Serializable data class EditAccount(val accountId: Long) : Screen()
+    @Serializable data class EditAccount(val accountId: String) : Screen()
     @Serializable data object Analytics : Screen()
     @Serializable data object PendingTransactions : Screen()
+    @Serializable data object StreakAchievements : Screen()
 }

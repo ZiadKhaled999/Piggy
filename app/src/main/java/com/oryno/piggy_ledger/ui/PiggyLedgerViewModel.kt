@@ -1,26 +1,48 @@
+
 package com.oryno.piggy_ledger.ui
 
+import kotlinx.coroutines.flow.first
+
 import androidx.lifecycle.ViewModel
+
 import androidx.lifecycle.viewModelScope
+
 import com.oryno.piggy_ledger.data.Goal
+
 import com.oryno.piggy_ledger.data.Loan
+
 import com.oryno.piggy_ledger.data.PiggyLedgerRepository
+
 import com.oryno.piggy_ledger.data.Transaction
+
 import com.oryno.piggy_ledger.data.UserPreferences
+
 import kotlinx.coroutines.flow.Flow
+
 import kotlinx.coroutines.flow.map
+
 import kotlinx.coroutines.flow.SharingStarted
+
 import kotlinx.coroutines.flow.StateFlow
+
 import kotlinx.coroutines.flow.MutableStateFlow
+
 import kotlinx.coroutines.flow.stateIn
+
 import kotlinx.coroutines.launch
+
 import kotlinx.coroutines.delay
+
 import android.content.Context
+
 import java.util.UUID
+
 import com.posthog.PostHog
 
 import kotlinx.serialization.json.Json
+
 import kotlinx.serialization.encodeToString
+
 import com.oryno.piggy_ledger.data.BackupData
 
 class PiggyLedgerViewModel(
@@ -30,6 +52,20 @@ class PiggyLedgerViewModel(
 ) : ViewModel() {
 
     private val json = Json { ignoreUnknownKeys = true }
+
+    init {
+        triggerCloudSync()
+    }
+
+    fun triggerCloudSync() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                com.oryno.piggy_ledger.service.SyncManager(context).syncAll()
+            } catch (e: Exception) {
+                android.util.Log.e("PiggyLedgerVM", "Cloud sync failed", e)
+            }
+        }
+    }
 
     val customIdentifiers: StateFlow<Map<String, List<String>>> = userPreferences.customIdentifiersJson.map { jsonStr ->
         try {
@@ -257,7 +293,6 @@ class PiggyLedgerViewModel(
         }
     }
 
-
     val hasOnboarded = userPreferences.hasOnboarded.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
     )
@@ -403,6 +438,10 @@ class PiggyLedgerViewModel(
         viewModelScope, SharingStarted.Eagerly, emptyList()
     )
 
+    val allLoanPayments: StateFlow<List<com.oryno.piggy_ledger.data.LoanPayment>> = repository.allLoanPayments.stateIn(
+        viewModelScope, SharingStarted.Eagerly, emptyList()
+    )
+
     val allAccounts: StateFlow<List<com.oryno.piggy_ledger.data.Account>> = repository.allAccounts.stateIn(
         viewModelScope, SharingStarted.Eagerly, emptyList()
     )
@@ -504,7 +543,8 @@ class PiggyLedgerViewModel(
                 val domain = getDomainForBank(providerOrName)
                 val logoUrl = "https://www.google.com/s2/favicons?sz=128&domain=$domain"
                 val initialAccount = account.copy(logo_url = logoUrl)
-                val rowId = repository.insertAccount(initialAccount)
+                repository.insertAccount(initialAccount)
+                val rowId = initialAccount.id
                 
                 // Fetch and save logo once online in background
                 viewModelScope.launch {
@@ -537,7 +577,7 @@ class PiggyLedgerViewModel(
         }
     }
 
-    fun deleteAccount(id: Long) {
+    fun deleteAccount(id: String) {
         viewModelScope.launch {
             repository.deleteAccount(id)
             PostHog.capture(
@@ -573,10 +613,10 @@ class PiggyLedgerViewModel(
         viewModelScope, SharingStarted.Eagerly, emptyList()
     )
 
-    private val _selectedAccountId = MutableStateFlow<Long?>(null)
-    val selectedAccountId: StateFlow<Long?> = _selectedAccountId
+    private val _selectedAccountId = MutableStateFlow<String?>(null)
+    val selectedAccountId: StateFlow<String?> = _selectedAccountId
 
-    fun selectAccount(accountId: Long?) {
+    fun selectAccount(accountId: String?) {
         _selectedAccountId.value = accountId
         PostHog.capture(
             event = "account_selected",
@@ -595,7 +635,7 @@ class PiggyLedgerViewModel(
         )
     }
 
-    fun addAccountTransaction(accountId: Long, amount: Double, merchant: String, source: String = "MANUAL", timestamp: Long = System.currentTimeMillis()) {
+    fun addAccountTransaction(accountId: String, amount: Double, merchant: String, source: String = "MANUAL", timestamp: Long = System.currentTimeMillis()) {
         viewModelScope.launch {
             repository.insertAccountTransaction(
                 com.oryno.piggy_ledger.data.AccountTransaction(
@@ -682,7 +722,7 @@ class PiggyLedgerViewModel(
             )
             PostHog.capture(
                 event = "goal_created",
-                properties = mapOf("goal_name" to name, "target_amount" to targetAmount)
+                properties = mapOf("goal_name" to name, "target_amount" to targetAmount, "goal_type" to "general", "deadline" to "none")
             )
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
@@ -700,9 +740,11 @@ class PiggyLedgerViewModel(
                     note = note
                 )
             )
+            val allTx = repository.getTransactionsForGoal(goalId).first()
+            val runningTotal = allTx.sumOf { it.amount }
             PostHog.capture(
                 event = "goal_transaction_added",
-                properties = mapOf("goal_id" to goalId, "amount" to amount, "note" to note)
+                properties = mapOf("goal_id" to goalId, "amount" to amount, "note" to note, "running_total" to runningTotal)
             )
             com.oryno.piggy_ledger.data.StreakManager.recordAction(context)
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
@@ -754,7 +796,7 @@ class PiggyLedgerViewModel(
         }
     }
 
-    fun deleteLoanPayment(id: Long) {
+    fun deleteLoanPayment(id: String) {
         viewModelScope.launch {
             repository.deleteLoanPayment(id)
             PostHog.capture(
@@ -811,7 +853,7 @@ class PiggyLedgerViewModel(
         viewModelScope, SharingStarted.Eagerly, emptyList()
     )
 
-    fun resolvePendingTransaction(pendingId: Long, accountId: Long) {
+    fun resolvePendingTransaction(pendingId: String, accountId: String) {
         viewModelScope.launch {
             repository.resolvePendingTransaction(pendingId, accountId)
             PostHog.capture(
@@ -824,7 +866,7 @@ class PiggyLedgerViewModel(
         }
     }
 
-    fun deletePendingTransaction(pendingId: Long) {
+    fun deletePendingTransaction(pendingId: String) {
         viewModelScope.launch {
             repository.deletePendingTransaction(pendingId)
             PostHog.capture(

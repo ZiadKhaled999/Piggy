@@ -122,7 +122,7 @@ class MainActivity : AppCompatActivity() {
 
     val database = PiggyLedgerDatabase.getInstance(applicationContext)
     
-    val repository = PiggyLedgerRepository(database.piggyLedgerDao())
+    val repository = PiggyLedgerRepository(database.piggyLedgerDao(), applicationContext)
     userPreferences = UserPreferences(applicationContext)
     val factory = ViewModelFactory(repository, userPreferences, applicationContext)
 
@@ -254,6 +254,9 @@ class MainActivity : AppCompatActivity() {
                       props["personalized_intent"] = data.intent
                       props["personalized_intensity"] = data.intensity
                       props["saving_mode"] = data.savingMode
+                      props["app_version"] = BuildConfig.VERSION_NAME
+                      props["locale"] = java.util.Locale.getDefault().toString()
+                      props["plan_type"] = "free"
                       PostHog.identify(data.email, props)
                   } else {
                       PostHog.reset()

@@ -15,7 +15,11 @@ class PiggyLedgerApplication : Application() {
             val config = PostHogAndroidConfig(
                 apiKey = BuildConfig.POSTHOG_API_KEY,
                 host = "https://us.i.posthog.com"
-            )
+            ).apply {
+                captureScreenViews = true
+                captureApplicationLifecycleEvents = true
+                sessionReplay = true
+            }
             PostHogAndroid.setup(this, config)
         } catch (e: Exception) {
             Log.e("PiggyLedgerApp", "Failed to initialize PostHog", e)

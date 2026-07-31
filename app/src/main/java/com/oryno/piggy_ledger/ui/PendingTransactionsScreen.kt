@@ -266,7 +266,7 @@ fun PendingTransactionItem(
 fun ResolveTransactionBottomSheetContent(
     transaction: PendingTransaction,
     accounts: List<Account>,
-    onAccountSelected: (Long) -> Unit,
+    onAccountSelected: (String) -> Unit,
     onClose: () -> Unit
 ) {
     Column(

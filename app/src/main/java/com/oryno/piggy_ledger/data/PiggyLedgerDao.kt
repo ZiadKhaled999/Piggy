@@ -9,6 +9,28 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PiggyLedgerDao {
+
+    @Query("SELECT * FROM goals WHERE isSynced = 0")
+    suspend fun getUnsyncedGoals(): List<Goal>
+
+    @Query("SELECT * FROM transactions WHERE isSynced = 0")
+    suspend fun getUnsyncedTransactions(): List<Transaction>
+
+    @Query("SELECT * FROM loans WHERE isSynced = 0")
+    suspend fun getUnsyncedLoans(): List<Loan>
+
+    @Query("SELECT * FROM loan_payments WHERE isSynced = 0")
+    suspend fun getUnsyncedLoanPayments(): List<LoanPayment>
+
+    @Query("SELECT * FROM accounts WHERE isSynced = 0")
+    suspend fun getUnsyncedAccounts(): List<Account>
+
+    @Query("SELECT * FROM account_transactions WHERE isSynced = 0")
+    suspend fun getUnsyncedAccountTransactions(): List<AccountTransaction>
+
+    @Query("SELECT * FROM pending_transactions WHERE isSynced = 0")
+    suspend fun getUnsyncedPendingTransactions(): List<PendingTransaction>
+
     @Query("SELECT * FROM goals ORDER BY createdAt DESC")
     fun getAllGoals(): Flow<List<Goal>>
 
@@ -42,11 +64,17 @@ interface PiggyLedgerDao {
     @Query("SELECT * FROM loan_payments WHERE loanId = :loanId ORDER BY timestamp DESC")
     fun getPaymentsForLoan(loanId: String): Flow<List<LoanPayment>>
 
+    @Query("SELECT * FROM loan_payments ORDER BY timestamp DESC")
+    fun getAllLoanPaymentsFlow(): Flow<List<LoanPayment>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLoanPayment(payment: LoanPayment)
 
+    @Query("SELECT * FROM loan_payments WHERE id = :id")
+    suspend fun getLoanPaymentById(id: String): LoanPayment?
+
     @Query("DELETE FROM loan_payments WHERE id = :id")
-    suspend fun deleteLoanPaymentById(id: Long)
+    suspend fun deleteLoanPaymentById(id: String)
 
     @Query("SELECT * FROM loan_payments")
     suspend fun getAllLoanPaymentsSync(): List<LoanPayment>
@@ -67,19 +95,19 @@ interface PiggyLedgerDao {
     fun getIncludedAccounts(): Flow<List<Account>>
 
     @Query("SELECT * FROM accounts WHERE id = :id")
-    suspend fun getAccountById(id: Long): Account?
+    suspend fun getAccountById(id: String): Account?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAccount(account: Account): Long
+    suspend fun insertAccount(account: Account)
 
     @Update
     suspend fun updateAccount(account: Account)
 
     @Query("DELETE FROM accounts WHERE id = :id")
-    suspend fun deleteAccountById(id: Long)
+    suspend fun deleteAccountById(id: String)
 
     @Query("SELECT * FROM account_transactions WHERE account_id = :accountId ORDER BY timestamp DESC")
-    fun getTransactionsForAccount(accountId: Long): Flow<List<AccountTransaction>>
+    fun getTransactionsForAccount(accountId: String): Flow<List<AccountTransaction>>
 
     @Query("SELECT * FROM account_transactions ORDER BY timestamp DESC")
     fun getAllAccountTransactions(): Flow<List<AccountTransaction>>
@@ -88,7 +116,7 @@ interface PiggyLedgerDao {
     suspend fun insertAccountTransaction(transaction: AccountTransaction)
 
     @androidx.room.Transaction
-    suspend fun processSmsTransaction(accountId: Long, amount: Double, merchant: String, applyInstaPayFee: Boolean, isIncome: Boolean = false) {
+    suspend fun processSmsTransaction(accountId: String, amount: Double, merchant: String, applyInstaPayFee: Boolean, isIncome: Boolean = false) {
         val account = getAccountById(accountId) ?: return
         
         var finalAmount = amount
@@ -175,20 +203,20 @@ interface PiggyLedgerDao {
     fun getAllPendingTransactionsFlow(): Flow<List<PendingTransaction>>
 
     @Query("SELECT * FROM pending_transactions WHERE id = :id")
-    suspend fun getPendingTransactionById(id: Long): PendingTransaction?
+    suspend fun getPendingTransactionById(id: String): PendingTransaction?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertPendingTransaction(transaction: PendingTransaction): Long
+    suspend fun insertPendingTransaction(transaction: PendingTransaction)
 
     @Query("DELETE FROM pending_transactions WHERE id = :id")
-    suspend fun deletePendingTransactionById(id: Long)
+    suspend fun deletePendingTransactionById(id: String)
 
     @Query("DELETE FROM pending_transactions")
     suspend fun clearPendingTransactions()
 
 
     @androidx.room.Transaction
-    suspend fun resolvePendingTransaction(pendingId: Long, accountId: Long) {
+    suspend fun resolvePendingTransaction(pendingId: String, accountId: String) {
         val pending = getPendingTransactionById(pendingId) ?: return
         val isIncome = pending.amount > 0
         val absAmount = kotlin.math.abs(pending.amount)

@@ -248,7 +248,7 @@ object BackupHelper {
                         if (row.size >= 5) {
                             loanPayments.add(
                                 LoanPayment(
-                                    id = row[1].toLongOrNull() ?: 0L,
+                                    id = row[1],
                                     loanId = row[2],
                                     amount = row[3].toDoubleOrNull() ?: 0.0,
                                     timestamp = row[4].toLongOrNull() ?: System.currentTimeMillis(),
@@ -261,7 +261,7 @@ object BackupHelper {
                         if (row.size >= 19) {
                             accounts.add(
                                 Account(
-                                    id = row[1].toLongOrNull() ?: 0L,
+                                    id = row[1],
                                     name = row[2],
                                     type = AccountType.valueOf(row[3]),
                                     icon_color = row[4],
@@ -288,8 +288,8 @@ object BackupHelper {
                         if (row.size >= 7) {
                             accountTransactions.add(
                                 AccountTransaction(
-                                    id = row[1].toLongOrNull() ?: 0L,
-                                    account_id = row[2].toLongOrNull() ?: 0L,
+                                    id = row[1],
+                                    account_id = row[2],
                                     amount = row[3].toDoubleOrNull() ?: 0.0,
                                     merchant = row[4],
                                     timestamp = row[5].toLongOrNull() ?: System.currentTimeMillis(),
@@ -302,7 +302,7 @@ object BackupHelper {
                         if (row.size >= 7) {
                             pendingTransactions.add(
                                 PendingTransaction(
-                                    id = row[1].toLongOrNull() ?: 0L,
+                                    id = row[1],
                                     amount = row[2].toDoubleOrNull() ?: 0.0,
                                     merchant = row[3],
                                     raw_sms_body = row[4],
@@ -528,7 +528,7 @@ object BackupHelper {
 """)
         for (a in accounts) {
             sb.append("     <Row>\n")
-            sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"Number\">${a.id}</Data></Cell>\n")
+            sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"String\">${a.id}</Data></Cell>\n")
             sb.append("       <Cell ss:StyleID=\"DataCellBold\"><Data ss:Type=\"String\">${escapeXml(a.name)}</Data></Cell>\n")
             sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"String\">${a.type.name}</Data></Cell>\n")
             sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"String\">${escapeXml(a.currency)}</Data></Cell>\n")
@@ -566,7 +566,7 @@ object BackupHelper {
         for (at in accountTransactions) {
             val accountName = accountMap[at.account_id]?.name ?: "Account #${at.account_id}"
             sb.append("     <Row>\n")
-            sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"Number\">${at.id}</Data></Cell>\n")
+            sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"String\">${at.id}</Data></Cell>\n")
             sb.append("       <Cell ss:StyleID=\"DataCellBold\"><Data ss:Type=\"String\">${escapeXml(accountName)}</Data></Cell>\n")
             sb.append("       <Cell ss:StyleID=\"DataCellNumber\"><Data ss:Type=\"Number\">${at.amount}</Data></Cell>\n")
             sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"String\">${escapeXml(at.merchant)}</Data></Cell>\n")
@@ -707,7 +707,7 @@ object BackupHelper {
 """)
         for (lp in loanPayments) {
             sb.append("     <Row>\n")
-            sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"Number\">${lp.id}</Data></Cell>\n")
+            sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"String\">${lp.id}</Data></Cell>\n")
             sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"String\">${escapeXml(lp.loanId)}</Data></Cell>\n")
             sb.append("       <Cell ss:StyleID=\"DataCellNumber\"><Data ss:Type=\"Number\">${lp.amount}</Data></Cell>\n")
             sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"String\">${escapeXml(lp.note ?: "-")}</Data></Cell>\n")
@@ -738,7 +738,7 @@ object BackupHelper {
 """)
         for (pt in pendingTransactions) {
             sb.append("     <Row>\n")
-            sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"Number\">${pt.id}</Data></Cell>\n")
+            sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"String\">${pt.id}</Data></Cell>\n")
             sb.append("       <Cell ss:StyleID=\"DataCellBold\"><Data ss:Type=\"String\">${escapeXml(pt.sender)}</Data></Cell>\n")
             sb.append("       <Cell ss:StyleID=\"DataCellNumber\"><Data ss:Type=\"Number\">${pt.amount}</Data></Cell>\n")
             sb.append("       <Cell ss:StyleID=\"DataCell\"><Data ss:Type=\"String\">${escapeXml(pt.merchant)}</Data></Cell>\n")

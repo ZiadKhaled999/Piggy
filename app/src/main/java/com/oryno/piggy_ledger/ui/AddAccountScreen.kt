@@ -192,6 +192,9 @@ fun AddAccountScreen(
                 actions = {
                     Button(
                         onClick = {
+                            try {
+                                com.posthog.PostHog.capture(event = "button_clicked", properties = mapOf("button_name" to "Create Account", "screen" to "AddAccountScreen"))
+                            } catch (e: Exception) {}
                             if (name.isNotBlank() && viewModel.canAddAccount(accounts.size)) {
                                 val limit = creditLimit.toDoubleOrNull() ?: 0.0
                                 val available = availableCredit.toDoubleOrNull() ?: limit

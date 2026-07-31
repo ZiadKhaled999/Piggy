@@ -56,13 +56,23 @@ class NotificationHelper(private val context: Context) {
         )
     }
 
+    private fun getAppLogoBitmap(): android.graphics.Bitmap? {
+        return try {
+            android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.img_app_logo)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     fun showDeadlineNotification(contactName: String, amount: Double) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val title = context.getString(R.string.deadline_title)
         val message = context.getString(R.string.repayment_deadline_over, contactName, "$$amount")
+        val logoBitmap = getAppLogoBitmap()
 
         val builder = NotificationCompat.Builder(context, CHANNEL_DEADLINE_ID)
             .setSmallIcon(R.drawable.img_app_logo)
+            .apply { if (logoBitmap != null) setLargeIcon(logoBitmap) }
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
@@ -80,9 +90,11 @@ class NotificationHelper(private val context: Context) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val title = context.getString(R.string.notif_streak_warning_title)
         val message = context.getString(R.string.notif_streak_warning_msg)
+        val logoBitmap = getAppLogoBitmap()
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
             .setSmallIcon(R.drawable.img_app_logo)
+            .apply { if (logoBitmap != null) setLargeIcon(logoBitmap) }
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
@@ -100,9 +112,11 @@ class NotificationHelper(private val context: Context) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val title = context.getString(R.string.notif_goal_title)
         val message = context.getString(R.string.notif_goal_msg, amountLeft)
+        val logoBitmap = getAppLogoBitmap()
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
             .setSmallIcon(R.drawable.img_app_logo)
+            .apply { if (logoBitmap != null) setLargeIcon(logoBitmap) }
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
@@ -119,9 +133,11 @@ class NotificationHelper(private val context: Context) {
     fun showMotivationNotification(quote: String) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val title = context.getString(R.string.notif_motivation_title)
+        val logoBitmap = getAppLogoBitmap()
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
             .setSmallIcon(R.drawable.img_app_logo)
+            .apply { if (logoBitmap != null) setLargeIcon(logoBitmap) }
             .setContentTitle(title)
             .setContentText(quote)
             .setStyle(NotificationCompat.BigTextStyle().bigText(quote))
@@ -139,13 +155,15 @@ class NotificationHelper(private val context: Context) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val title = context.getString(if (isSignedIn) R.string.notif_auth_signin_title else R.string.notif_auth_signout_title)
         val message = context.getString(if (isSignedIn) R.string.notif_auth_signin_msg else R.string.notif_auth_signout_msg)
+        val logoBitmap = getAppLogoBitmap()
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
             .setSmallIcon(R.drawable.img_app_logo)
+            .apply { if (logoBitmap != null) setLargeIcon(logoBitmap) }
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setColor(androidx.core.content.ContextCompat.getColor(context, R.color.pink_primary))
             .setContentIntent(getMainActivityPendingIntent())
             .setAutoCancel(true)
@@ -162,6 +180,7 @@ class NotificationHelper(private val context: Context) {
         actionType: com.oryno.piggy_ledger.service.SmsActionType
     ) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val logoBitmap = getAppLogoBitmap()
         
         val titleRes = when (actionType) {
             com.oryno.piggy_ledger.service.SmsActionType.DEPOSIT -> R.string.notif_tx_title_deposit
@@ -186,6 +205,7 @@ class NotificationHelper(private val context: Context) {
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
             .setSmallIcon(R.drawable.img_app_logo)
+            .apply { if (logoBitmap != null) setLargeIcon(logoBitmap) }
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))

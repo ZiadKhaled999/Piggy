@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Goal::class, Transaction::class, Loan::class, LoanPayment::class, Account::class, AccountTransaction::class, PendingTransaction::class], version = 9, exportSchema = false)
+@Database(entities = [Goal::class, Transaction::class, Loan::class, LoanPayment::class, Account::class, AccountTransaction::class, PendingTransaction::class], version = 10, exportSchema = false)
 abstract class PiggyLedgerDatabase : RoomDatabase() {
 
     companion object {

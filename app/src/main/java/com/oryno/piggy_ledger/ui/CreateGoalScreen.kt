@@ -237,6 +237,9 @@ fun CreateGoalScreen(
         
         Button(
             onClick = { 
+                try {
+                    com.posthog.PostHog.capture(event = "button_clicked", properties = mapOf("button_name" to "Create Goal", "screen" to "CreateGoalScreen"))
+                } catch (e: Exception) {}
                 if (goalName.isNotBlank()) {
                     if (isOpenedBalance) {
                         com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_goal_created), Toast.LENGTH_SHORT)

@@ -80,22 +80,29 @@ data class OnboardingPageData(
 fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    val isSmallScreen = configuration.screenWidthDp < 360
+    val screenWidth = configuration.screenWidthDp
+    val scaleFactor = (screenWidth / 360f).coerceIn(0.8f, 1.2f)
+    val isSmallScreen = screenWidth < 360
     
-    val titleFontSize = if (isSmallScreen) 24.sp else 32.sp
-    val subtitleFontSize = if (isSmallScreen) 13.sp else 16.sp
-    val cardTitleFontSize = if (isSmallScreen) 14.sp else 16.sp
-    val cardDescFontSize = if (isSmallScreen) 11.sp else 12.sp
-    val emojiBoxSize = if (isSmallScreen) 42.dp else 50.dp
-    val emojiFontSize = if (isSmallScreen) 20.sp else 24.sp
-    val buttonFontSize = if (isSmallScreen) 16.sp else 18.sp
-    val backButtonFontSize = if (isSmallScreen) 14.sp else 16.sp
-    val horizontalPadding = if (isSmallScreen) 16.dp else 24.dp
-    val sectionSpacing = if (isSmallScreen) 20.dp else 28.dp
+    val titleFontSize = (26 * scaleFactor).coerceAtLeast(22f).sp
+    val subtitleFontSize = (14 * scaleFactor).coerceAtLeast(13.5f).sp
+    val cardTitleFontSize = (15 * scaleFactor).coerceAtLeast(13f).sp
+    val cardDescFontSize = (12 * scaleFactor).coerceAtLeast(11.5f).sp
+    val emojiBoxSize = (46 * scaleFactor).dp
+    val emojiFontSize = (22 * scaleFactor).sp
+    val buttonFontSize = (17 * scaleFactor).coerceAtLeast(15f).sp
+    val backButtonFontSize = (15 * scaleFactor).coerceAtLeast(13f).sp
+    val horizontalPadding = (20 * scaleFactor).dp
+    val titleLineHeight = (32 * scaleFactor).coerceAtLeast(26f).sp
+    val subtitleLineHeight = (20 * scaleFactor).coerceAtLeast(18f).sp
+    val cardDescLineHeight = (15 * scaleFactor).sp
+    val sectionSpacing = (16 * scaleFactor).dp
 
     var currentPage by remember { mutableIntStateOf(0) }
     var selectedIntent by remember { mutableIntStateOf(-1) }
     var selectedIntensity by remember { mutableIntStateOf(-1) }
+
+    var isPlanFinished by remember { mutableStateOf(false) }
 
     var relatesToLoans by remember { mutableStateOf<Boolean?>(null) }
     var relatesToAccounts by remember { mutableStateOf<Boolean?>(null) }
@@ -435,7 +442,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             fontWeight = FontWeight.ExtraBold,
                             color = NavyDark,
                             textAlign = TextAlign.Center,
-                            lineHeight = if (isSmallScreen) 28.sp else 34.sp,
+                            lineHeight = titleLineHeight,
                             modifier = Modifier.padding(horizontal = 12.dp)
                         )
 
@@ -447,7 +454,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             fontSize = subtitleFontSize,
                             color = TextLight,
                             textAlign = TextAlign.Center,
-                            lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                            lineHeight = subtitleLineHeight,
                             modifier = Modifier.padding(horizontal = 24.dp)
                         )
 
@@ -639,7 +646,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             fontWeight = FontWeight.ExtraBold,
                             color = NavyDark,
                             textAlign = TextAlign.Center,
-                            lineHeight = if (isSmallScreen) 28.sp else 34.sp,
+                            lineHeight = titleLineHeight,
                             modifier = Modifier.padding(horizontal = 12.dp)
                         )
 
@@ -651,7 +658,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             fontSize = subtitleFontSize,
                             color = TextLight,
                             textAlign = TextAlign.Center,
-                            lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                            lineHeight = subtitleLineHeight,
                             modifier = Modifier.padding(horizontal = 24.dp)
                         )
 
@@ -707,7 +714,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             fontWeight = FontWeight.ExtraBold,
                             color = NavyDark,
                             textAlign = TextAlign.Center,
-                            lineHeight = if (isSmallScreen) 32.sp else 40.sp
+                            lineHeight = titleLineHeight
                         )
                         
                         Spacer(modifier = Modifier.height(10.dp))
@@ -717,7 +724,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             fontSize = subtitleFontSize,
                             color = TextLight,
                             textAlign = TextAlign.Center,
-                            lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                            lineHeight = subtitleLineHeight,
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
                         
@@ -786,7 +793,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                             fontSize = cardDescFontSize,
                                             fontWeight = FontWeight.Medium,
                                             color = if (isSelected) SlateDark else TextLight,
-                                            lineHeight = if (isSmallScreen) 14.sp else 16.sp,
+                                            lineHeight = cardDescLineHeight,
                                             maxLines = 2,
                                             overflow = TextOverflow.Ellipsis
                                         )
@@ -820,7 +827,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             fontWeight = FontWeight.ExtraBold,
                             color = NavyDark,
                             textAlign = TextAlign.Center,
-                            lineHeight = if (isSmallScreen) 32.sp else 40.sp
+                            lineHeight = titleLineHeight
                         )
                         
                         Spacer(modifier = Modifier.height(10.dp))
@@ -830,7 +837,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             fontSize = subtitleFontSize,
                             color = TextLight,
                             textAlign = TextAlign.Center,
-                            lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                            lineHeight = subtitleLineHeight,
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
                         
@@ -922,7 +929,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                         fontSize = cardDescFontSize,
                                         fontWeight = FontWeight.Medium,
                                         color = if (isSelected) SlateDark else TextLight,
-                                        lineHeight = if (isSmallScreen) 14.sp else 16.sp,
+                                        lineHeight = cardDescLineHeight,
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.padding(start = 2.dp)
@@ -1039,7 +1046,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                 fontSize = if (isSmallScreen) 20.sp else 24.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 textAlign = TextAlign.Center,
-                                lineHeight = if (isSmallScreen) 26.sp else 30.sp,
+                                lineHeight = titleLineHeight,
                                 modifier = Modifier.padding(horizontal = 4.dp)
                             )
 
@@ -1072,7 +1079,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                         color = NavyDark,
                                         fontSize = if (isSmallScreen) 14.sp else 15.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        lineHeight = if (isSmallScreen) 20.sp else 22.sp,
+                                        lineHeight = subtitleLineHeight,
                                         modifier = Modifier.weight(1f)
                                     )
                                 }
@@ -1190,7 +1197,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             fontWeight = FontWeight.ExtraBold,
                             color = NavyDark,
                             textAlign = TextAlign.Center,
-                            lineHeight = if (isSmallScreen) 32.sp else 40.sp,
+                            lineHeight = titleLineHeight,
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
 
@@ -1201,7 +1208,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             fontSize = subtitleFontSize,
                             color = TextLight,
                             textAlign = TextAlign.Center,
-                            lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                            lineHeight = subtitleLineHeight,
                             modifier = Modifier.padding(horizontal = 24.dp)
                         )
 
@@ -1419,6 +1426,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
 
                     LaunchedEffect(Unit) {
                         if (roadmapStep == -1) {
+                            isPlanFinished = false
                             delay(800)
                             thinkingPhase = 1 // Sketching
                             delay(800)
@@ -1430,6 +1438,9 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                 delay(1200)
                             }
                             roadmapStep = steps.size // All Done
+                            isPlanFinished = true
+                        } else if (roadmapStep >= steps.size) {
+                            isPlanFinished = true
                         }
                     }
 
@@ -1472,7 +1483,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                 fontWeight = FontWeight.ExtraBold,
                                 color = NavyDark,
                                 textAlign = TextAlign.Center,
-                                lineHeight = if (isSmallScreen) 32.sp else 40.sp
+                                lineHeight = titleLineHeight
                             )
                             
                             Spacer(modifier = Modifier.height(10.dp))
@@ -1482,7 +1493,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                 fontSize = subtitleFontSize,
                                 color = TextLight,
                                 textAlign = TextAlign.Center,
-                                lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                                lineHeight = subtitleLineHeight,
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                             
@@ -1634,7 +1645,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                                             fontSize = if (isSmallScreen) 11.sp else 12.sp,
                                                             fontWeight = FontWeight.Medium,
                                                             color = TextLight,
-                                                            lineHeight = if (isSmallScreen) 15.sp else 17.sp,
+                                                            lineHeight = cardDescLineHeight,
                                                             maxLines = 2,
                                                             overflow = TextOverflow.Ellipsis
                                                         )
@@ -1673,7 +1684,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                 fontWeight = FontWeight.ExtraBold,
                                 color = NavyDark,
                                 textAlign = TextAlign.Center,
-                                lineHeight = if (isSmallScreen) 32.sp else 40.sp
+                                lineHeight = titleLineHeight
                             )
                             
                             Spacer(modifier = Modifier.height(12.dp))
@@ -1683,7 +1694,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                 fontSize = subtitleFontSize,
                                 color = TextLight,
                                 textAlign = TextAlign.Center,
-                                lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                                lineHeight = subtitleLineHeight,
                                 modifier = Modifier.padding(horizontal = 32.dp)
                             )
                         }
@@ -1818,7 +1829,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             fontWeight = FontWeight.ExtraBold,
                             color = NavyDark,
                             textAlign = TextAlign.Center,
-                            lineHeight = if (isSmallScreen) 32.sp else 40.sp
+                            lineHeight = titleLineHeight
                         )
                         
                         Spacer(modifier = Modifier.height(if (isSmallScreen) 10.dp else 14.dp))
@@ -1828,7 +1839,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             fontSize = subtitleFontSize,
                             color = TextLight,
                             textAlign = TextAlign.Center,
-                            lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                            lineHeight = subtitleLineHeight,
                             modifier = Modifier.padding(horizontal = 12.dp)
                         )
 
@@ -1848,7 +1859,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             // Back Button (Optional/Visible when not on first page)
-            if (currentPage > 0 && currentPage !in 7..9) {
+            if (currentPage > 0 && currentPage !in 7..9 && (currentPage != 11 || isPlanFinished)) {
                 TextButton(
                     onClick = { currentPage-- },
                     modifier = Modifier
@@ -1871,7 +1882,9 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                     currentPage = currentPage,
                     totalPages = pages.size,
                     isSmallScreen = isSmallScreen,
+                    enabled = (currentPage != 11 || isPlanFinished),
                     onNext = {
+                        if (currentPage == 11 && !isPlanFinished) return@ProgressNextButton
                         if (currentPage < pages.size - 1) {
                             if (currentPage == 5 && selectedIntent == -1) {
                                 com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT)
@@ -1896,6 +1909,7 @@ fun ProgressNextButton(
     currentPage: Int,
     totalPages: Int,
     isSmallScreen: Boolean,
+    enabled: Boolean = true,
     onNext: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -1906,13 +1920,13 @@ fun ProgressNextButton(
         label = "progress_anim"
     )
     
-    val buttonColor = if (currentPage == totalPages - 1) PinkPrimary else NavyDark
+    val buttonColor = if (!enabled) Color(0xFFCBD5E1) else if (currentPage == totalPages - 1) PinkPrimary else NavyDark
     
     Box(
         modifier = modifier
             .size(if (isSmallScreen) 74.dp else 84.dp)
             .clip(CircleShape)
-            .clickable(onClick = onNext),
+            .clickable(enabled = enabled, onClick = onNext),
         contentAlignment = Alignment.Center
     ) {
         // Progress Ring with segments

@@ -49,7 +49,7 @@ import java.util.*
 fun AccountsScreen(
     viewModel: PiggyLedgerViewModel,
     onNavigateToAddAccount: () -> Unit,
-    onNavigateToEditAccount: (Long) -> Unit,
+    onNavigateToEditAccount: (String) -> Unit,
     onBack: () -> Unit
 ) {
     val accounts by viewModel.allAccounts.collectAsState()

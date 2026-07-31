@@ -1,98 +1,200 @@
+
 package com.oryno.piggy_ledger.ui
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+
 import android.content.Intent
+
 import android.net.Uri
+
 import android.widget.Toast
+
 import androidx.activity.compose.rememberLauncherForActivityResult
+
 import androidx.activity.result.contract.ActivityResultContracts
+
 import androidx.appcompat.app.AppCompatDelegate
+
 import androidx.compose.foundation.Image
+
 import androidx.compose.foundation.background
+
 import androidx.compose.foundation.border
+
 import androidx.compose.foundation.clickable
+
 import androidx.compose.foundation.rememberScrollState
+
 import androidx.compose.foundation.verticalScroll
+
 import androidx.compose.foundation.horizontalScroll
+
 import androidx.compose.foundation.layout.*
+
 import androidx.compose.foundation.shape.CircleShape
+
 import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.material.icons.Icons
+
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+
 import androidx.compose.material.icons.filled.OpenInNew
+
 import androidx.compose.material.icons.filled.Star
+
 import androidx.compose.material.icons.outlined.Star
+
 import androidx.compose.material.icons.filled.Security
+
 import androidx.compose.material.icons.filled.Inbox
+
 import androidx.compose.material.icons.filled.TableChart
+
 import androidx.compose.material.icons.filled.Article
+
 import androidx.compose.material.icons.filled.Backup
+
 import androidx.compose.material.icons.filled.Refresh
+
 import androidx.compose.foundation.lazy.LazyColumn
+
 import androidx.compose.foundation.lazy.LazyRow
+
 import androidx.compose.material3.*
+
 import androidx.compose.runtime.*
+
 import kotlinx.coroutines.launch
+
 import kotlinx.coroutines.delay
+
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.compose.ui.Alignment
+
 import androidx.compose.ui.Modifier
+
 import androidx.compose.ui.draw.clip
+
 import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.layout.ContentScale
+
 import androidx.compose.ui.platform.LocalContext
+
 import androidx.compose.ui.res.painterResource
+
 import androidx.compose.ui.res.stringResource
+
 import androidx.compose.ui.text.font.FontWeight
+
 import androidx.compose.ui.unit.dp
+
 import androidx.compose.ui.unit.sp
+
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+
 import androidx.compose.ui.text.input.KeyboardType
+
 import androidx.compose.foundation.text.KeyboardOptions
+
 import androidx.core.os.LocaleListCompat
+
 import androidx.compose.ui.graphics.Brush
+
 import androidx.compose.ui.graphics.Path
+
 import androidx.compose.ui.graphics.StrokeCap
+
 import androidx.compose.ui.graphics.StrokeJoin
+
 import androidx.compose.ui.graphics.drawscope.Stroke
+
 import androidx.compose.ui.draw.shadow
+
 import androidx.compose.ui.geometry.Offset
+
 import androidx.compose.foundation.Canvas
+
 import androidx.compose.material.icons.filled.Verified
+
 import androidx.compose.material.icons.filled.AutoAwesome
+
 import androidx.compose.material.icons.filled.Settings
+
 import androidx.compose.material.icons.filled.Check
+
 import androidx.compose.material.icons.filled.Close
+
 import androidx.compose.material.icons.filled.Stars
+
 import androidx.compose.material.icons.filled.CheckCircle
+
 import androidx.compose.material.icons.filled.Analytics
+
 import androidx.compose.material.icons.filled.Lock
+
 import androidx.compose.foundation.gestures.detectDragGestures
+
 import androidx.compose.ui.input.pointer.pointerInput
+
 import androidx.compose.ui.layout.onSizeChanged
+
 import androidx.compose.ui.unit.IntOffset
+
 import kotlin.math.roundToInt
+
 import androidx.compose.animation.core.spring
+
 import androidx.compose.animation.core.Spring
+
 import androidx.compose.animation.core.Animatable
+
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+
 import androidx.compose.material.icons.filled.Visibility
+
 import androidx.compose.material.icons.filled.VisibilityOff
+
 import androidx.compose.material.icons.filled.Info
+
 import androidx.compose.material.icons.filled.StarBorder
+
 import androidx.compose.material.icons.filled.Add
+
 import androidx.compose.material.icons.filled.Search
+
 import androidx.compose.material.icons.filled.Tag
+
 import androidx.compose.material.icons.filled.CloudUpload
+
 import androidx.compose.material.icons.filled.FilterList
+
 import androidx.compose.foundation.lazy.items
+
 import androidx.compose.ui.draw.rotate
+
 import androidx.compose.foundation.layout.FlowRow
+
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+
 import com.oryno.piggy_ledger.R
+
 import com.oryno.piggy_ledger.ui.theme.NavyDark
+
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
+
 import com.oryno.piggy_ledger.ui.theme.TextLight
+
 import com.oryno.piggy_ledger.ui.theme.AccentBlue
 
 @Composable
@@ -148,7 +250,7 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp)
+            .then(if (settingsMode != SettingsMode.PRO) Modifier.padding(horizontal = 24.dp) else Modifier)
     ) {
         Spacer(modifier = Modifier.height(24.dp))
         
@@ -1250,10 +1352,10 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
                 object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
                     override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
                         customerInfo = info
-                        val active = info.entitlements["Piggy Ledger Pro"]?.isActive == true
+                        val active = info.entitlements.all.values.any { it.isActive } || info.entitlements["Piggy Ledger Pro"]?.isActive == true
                         isPro = active || isPremiumState
-                        if (active) {
-                            viewModel.setPremiumStatus(true)
+                        if (active != isPremiumState) {
+                            viewModel.setPremiumStatus(active)
                         }
                     }
                     override fun onError(error: com.revenuecat.purchases.PurchasesError) {
@@ -1273,231 +1375,115 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
     } else if (isPro == true) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
+                .background(Color(0xFFF8FAFC))
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 24.dp),
+                .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val context = LocalContext.current
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // 1. Premium Minimalist Light-Themed Hero Card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                shadowElevation = 2.dp
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp),
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
                         modifier = Modifier
                             .size(64.dp)
-                            .background(PinkPrimary.copy(alpha = 0.08f), CircleShape)
-                            .border(1.dp, PinkPrimary.copy(alpha = 0.2f), CircleShape),
+                            .background(Color(0xFFECFDF5), CircleShape)
+                            .border(1.dp, Color(0xFFA7F3D0), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Verified,
+                            imageVector = Icons.Default.Check,
                             contentDescription = null,
-                            tint = PinkPrimary,
+                            tint = Color(0xFF10B981),
                             modifier = Modifier.size(32.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFFEFF6FF),
+                        border = BorderStroke(1.dp, Color(0xFFBFDBFE))
+                    ) {
+                        Text(
+                            text = "PRO MEMBER ACTIVE",
+                            color = Color(0xFF1D4ED8),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
                         text = "Piggy Ledger Pro",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = NavyDark,
-                        letterSpacing = 0.3.sp
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0F172A)
                     )
 
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Surface(
-                        color = PinkPrimary.copy(alpha = 0.08f),
-                        shape = RoundedCornerShape(20.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, PinkPrimary.copy(alpha = 0.2f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(7.dp)
-                                    .background(PinkPrimary, CircleShape)
-                            )
-                            Text(
-                                text = "Pro Active",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = PinkPrimary
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "All premium features are fully unlocked.",
-                        fontSize = 13.sp,
-                        color = TextLight,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        text = "All premium features are unlocked and active on your device.",
+                        fontSize = 14.sp,
+                        color = Color(0xFF64748B),
+                        textAlign = TextAlign.Center
                     )
-                }
-            }
 
-            // 2. Subscription Details
-            val entitlement = remember(customerInfo) {
-                customerInfo?.entitlements?.get("Piggy Ledger Pro")
-            }
+                    Spacer(modifier = Modifier.height(24.dp))
 
-            if (entitlement != null) {
-                val originalDate = entitlement.originalPurchaseDate
-                val latestDate = entitlement.latestPurchaseDate
-                val expirationDate = entitlement.expirationDate
+                    HorizontalDivider(color = Color(0xFFF1F5F9))
 
-                val prodId = entitlement.productIdentifier.lowercase()
-                val planType = when {
-                    prodId.contains("lifetime") || prodId.contains("life") || prodId.contains("lt") || expirationDate == null -> "Premium (Lifetime)"
-                    prodId.contains("yearly") || prodId.contains("annual") || prodId.contains("yr") -> "Premium (Yearly)"
-                    prodId.contains("monthly") || prodId.contains("mth") || prodId.contains("mo") -> "Premium (Monthly)"
-                    else -> "Premium"
-                }
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                val isLifetime = planType.contains("Lifetime")
-
-                val isVeryShortCycle = remember(originalDate, latestDate, expirationDate) {
-                    val start = latestDate ?: originalDate ?: java.util.Date()
-                    val end = expirationDate
-                    end != null && (end.time - start.time < 24L * 60L * 60L * 1000L)
-                }
-
-                val dateFormat = remember(isVeryShortCycle) {
-                    if (isVeryShortCycle) {
-                        java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault())
-                    } else {
-                        java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
-                    }
-                }
-
-                val latestDateStr = remember(latestDate, originalDate, dateFormat) { 
-                    val d = latestDate ?: originalDate
-                    d?.let { dateFormat.format(it) } ?: "N/A" 
-                }
-                val expirationDateStr = remember(expirationDate, dateFormat) { expirationDate?.let { dateFormat.format(it) } ?: "N/A" }
-
-                val remainingTimeStr = remember(expirationDate) {
-                    expirationDate?.let { expDate ->
-                        val diffMs = expDate.time - System.currentTimeMillis()
-                        when {
-                            diffMs <= 0 -> "Expired"
-                            diffMs >= 24L * 60L * 60L * 1000L -> "${diffMs / (24L * 60L * 60L * 1000L)} days left"
-                            diffMs >= 60L * 60L * 1000L -> "${diffMs / (60L * 60L * 1000L)} hours left"
-                            else -> "${diffMs / (60L * 1000L)} minutes left"
-                        }
-                    } ?: "N/A"
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-                ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text("Subscription Plan", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(planType, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                            }
-                            if (!isLifetime) {
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text("Remaining Time", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(remainingTimeStr, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
-                                }
-                            } else {
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text("Status", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text("Lifetime Access", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
-                                }
-                            }
-                        }
-
-                        HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 1.dp)
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text("Subscription Date", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(latestDateStr, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = NavyDark)
-                            }
-                            if (!isLifetime) {
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text("Expiration Date", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(expirationDateStr, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = NavyDark)
-                                }
+                        listOf(
+                            "Unlimited Accounts & Savings Goals",
+                            "Unlimited Budgets & Loan Ledgers",
+                            "Advanced Financial Analytics & Charts",
+                            "Data Export (CSV/PDF) & Cloud Sync",
+                            "Screenshot Protection & Custom Categories"
+                        ).forEach { feature ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Start
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color(0xFF10B981),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = feature,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF334155)
+                                )
                             }
                         }
                     }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Button(
-                onClick = { 
-                    try {
-                        val intent = Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("https://play.google.com/store/account/subscriptions")
-                        )
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Unable to open subscriptions page", Toast.LENGTH_SHORT)
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(26.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary, contentColor = Color.White),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Manage Subscription & Billing", fontSize = 15.sp, fontWeight = FontWeight.Bold)
             }
         }
     } else {
@@ -1510,7 +1496,6 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
         )
     }
 }
-
 @Composable
 fun PremiumFeatureRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -1570,227 +1555,250 @@ enum class PaywallPlan {
     MONTHLY, YEARLY, LIFETIME
 }
 
+private data class PlanMetadata(
+    val tabLabel: String,
+    val badgeName: String,
+    val headerSubtitle: String,
+    val priceText: String,
+    val renewalCaption: String,
+    val ctaText: String,
+    val tag: String? = null,
+    val accentColor: Color
+)
+
+private sealed class FeatureStatus {
+    object Check : FeatureStatus()
+    object Dash : FeatureStatus()
+    data class TextValue(val text: String) : FeatureStatus()
+}
+
+private data class FeatureComparisonRow(
+    val title: String,
+    val freeValue: FeatureStatus,
+    val proValue: FeatureStatus
+)
+
 @Composable
 fun PiggyLedgerPaywall(
     viewModel: PiggyLedgerViewModel,
-    onPurchaseSuccess: (com.revenuecat.purchases.CustomerInfo?) -> Unit
+    onPurchaseSuccess: (com.revenuecat.purchases.CustomerInfo?) -> Unit,
+    onClose: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
-    val activity = remember(context) {
-        var ctx = context
-        while (ctx is android.content.ContextWrapper) {
-            if (ctx is android.app.Activity) break
-            ctx = ctx.baseContext
-        }
-        ctx as? android.app.Activity
-    }
-
+    var offerings: com.revenuecat.purchases.Offerings? by remember { mutableStateOf(null) }
+    var isLoadingOfferings by remember { mutableStateOf(true) }
+    var fetchError by remember { mutableStateOf<String?>(null) }
     var selectedPlan by remember { mutableStateOf(PaywallPlan.YEARLY) }
     var isPurchasing by remember { mutableStateOf(false) }
-    var offerings by remember { mutableStateOf<com.revenuecat.purchases.Offerings?>(null) }
-    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         com.revenuecat.purchases.Purchases.sharedInstance.getOfferings(
             object : com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback {
-                override fun onReceived(receivedOfferings: com.revenuecat.purchases.Offerings) {
-                    offerings = receivedOfferings
+                override fun onReceived(offeringsResult: com.revenuecat.purchases.Offerings) {
+                    isLoadingOfferings = false
+                    offerings = offeringsResult
                 }
                 override fun onError(error: com.revenuecat.purchases.PurchasesError) {
-                    // Handled gracefully with default values
+                    isLoadingOfferings = false
+                    fetchError = error.message
+                    android.util.Log.e("Paywall", "Error fetching offerings: ${error.message}")
                 }
             }
         )
     }
 
-    val monthlyPrice = "$9.99"
-    val yearlyPrice = "$99.99"
-    val lifetimePrice = "$299.99"
+    val packagesList = remember(offerings) {
+        val current = offerings?.current?.availablePackages
+        if (!current.isNullOrEmpty()) {
+            current
+        } else {
+            offerings?.all?.values?.flatMap { it.availablePackages } ?: emptyList()
+        }
+    }
 
-    BoxWithConstraints(
+    val monthlyPackage = packagesList.find { 
+        it.packageType == com.revenuecat.purchases.PackageType.MONTHLY ||
+        it.identifier.contains("month", ignoreCase = true) ||
+        it.product.id.contains("month", ignoreCase = true)
+    } ?: packagesList.getOrNull(0)
+
+    val yearlyPackage = packagesList.find { 
+        it.packageType == com.revenuecat.purchases.PackageType.ANNUAL ||
+        it.identifier.contains("year", ignoreCase = true) ||
+        it.identifier.contains("annual", ignoreCase = true) ||
+        it.product.id.contains("year", ignoreCase = true) ||
+        it.product.id.contains("annual", ignoreCase = true)
+    } ?: packagesList.getOrNull(1)
+
+    val lifetimePackage = packagesList.find { 
+        it.packageType == com.revenuecat.purchases.PackageType.LIFETIME ||
+        it.identifier.contains("life", ignoreCase = true) ||
+        it.identifier.contains("lt", ignoreCase = true) ||
+        it.product.id.contains("life", ignoreCase = true) ||
+        it.product.id.contains("lt", ignoreCase = true)
+    } ?: packagesList.getOrNull(2)
+
+    val planMeta = when (selectedPlan) {
+        PaywallPlan.MONTHLY -> PlanMetadata(
+            tabLabel = "Monthly",
+            badgeName = "Monthly",
+            headerSubtitle = "Keep tracking with expanded access & unlimited control",
+            priceText = monthlyPackage?.product?.price?.formatted ?: "$9.99 / mo",
+            renewalCaption = "Renews for ${monthlyPackage?.product?.price?.formatted ?: "$9.99"}/month. Cancel anytime.",
+            ctaText = "Upgrade Monthly",
+            accentColor = Color(0xFF2563EB)
+        )
+        PaywallPlan.YEARLY -> PlanMetadata(
+            tabLabel = "Yearly",
+            badgeName = "Yearly",
+            headerSubtitle = "Get full access with advanced intelligence & complete analytics",
+            priceText = yearlyPackage?.product?.price?.formatted ?: "$99.99 / yr",
+            renewalCaption = "Renews for ${yearlyPackage?.product?.price?.formatted ?: "$99.99"}/year. Cancel anytime.",
+            ctaText = "Upgrade Yearly",
+            tag = "SAVE 17%",
+            accentColor = Color(0xFF7C3AED)
+        )
+        PaywallPlan.LIFETIME -> PlanMetadata(
+            tabLabel = "Lifetime",
+            badgeName = "Lifetime",
+            headerSubtitle = "Unlock lifetime unlimited access & all future features",
+            priceText = lifetimePackage?.product?.price?.formatted ?: "$299.99",
+            renewalCaption = "One-time payment of ${lifetimePackage?.product?.price?.formatted ?: "$299.99"}. No renewal or hidden fees.",
+            ctaText = "Upgrade Lifetime",
+            tag = "BEST VALUE",
+            accentColor = PinkPrimary
+        )
+    }
+
+    val comparisonFeatures = listOf(
+        FeatureComparisonRow("Accounts & Goals", FeatureStatus.TextValue("2 Max"), FeatureStatus.Check),
+        FeatureComparisonRow("Budgets & Loans", FeatureStatus.TextValue("2 Max"), FeatureStatus.Check),
+        FeatureComparisonRow("Advanced Analytics", FeatureStatus.Dash, FeatureStatus.Check),
+        FeatureComparisonRow("Data Export (CSV/PDF)", FeatureStatus.Dash, FeatureStatus.Check),
+        FeatureComparisonRow("Custom Categories", FeatureStatus.Dash, FeatureStatus.Check),
+        FeatureComparisonRow("Screenshot Protection", FeatureStatus.Dash, FeatureStatus.Check),
+        FeatureComparisonRow("Cloud Backup & Sync", FeatureStatus.Dash, FeatureStatus.Check),
+        FeatureComparisonRow("Priority Support", FeatureStatus.Dash, FeatureStatus.Check)
+    )
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(Color(0xFFF8FAFC))
     ) {
-        val isSmallScreen = maxWidth < 360.dp
-        val horizontalPadding = if (isSmallScreen) 16.dp else 20.dp
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 48.dp),
+                .padding(bottom = 36.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Clean Top Bar with Close Button (NO image header)
-            Box(
+            // Top Bar with back button if onClose provided
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = horizontalPadding, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = PinkPrimary.copy(alpha = 0.08f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, PinkPrimary.copy(alpha = 0.2f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(14.dp))
-                            Text("PRO ACCESS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
-                        }
-                    }
-
+                if (onClose != null) {
                     IconButton(
-                        onClick = { /* Handled by parent or BackHandler */ },
+                        onClick = onClose,
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(40.dp)
                             .background(Color(0xFFF1F5F9), CircleShape)
+                            .border(1.dp, Color(0xFFE2E8F0), CircleShape)
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = NavyDark, modifier = Modifier.size(20.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF0F172A),
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Glowing Crown/Star Badge Icon
-            Box(
+            // Header Title & Subtitle
+            Column(
                 modifier = Modifier
-                    .size(72.dp)
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(PinkPrimary.copy(alpha = 0.18f), PinkPrimary.copy(alpha = 0.02f))
-                        ),
-                        CircleShape
-                    )
-                    .border(1.5.dp, PinkPrimary.copy(alpha = 0.3f), CircleShape),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.Start
             ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = PinkPrimary,
-                    modifier = Modifier.size(36.dp)
+                Text(
+                    text = androidx.compose.ui.text.buildAnnotatedString {
+                        append("Piggy Ledger ")
+                        withStyle(
+                            androidx.compose.ui.text.SpanStyle(color = planMeta.accentColor)
+                        ) {
+                            append(planMeta.badgeName)
+                        }
+                    },
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF0F172A),
+                    letterSpacing = (-0.5).sp
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = planMeta.headerSubtitle,
+                    fontSize = 15.sp,
+                    color = Color(0xFF64748B),
+                    lineHeight = 22.sp
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
-                text = "Upgrade to Pro",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = PinkPrimary,
-                letterSpacing = 1.sp
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Unlock Your Smarter\nFinancial Routine",
-                fontSize = if (isSmallScreen) 22.sp else 26.sp,
-                fontWeight = FontWeight.Black,
-                color = NavyDark,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                lineHeight = if (isSmallScreen) 28.sp else 32.sp
-            )
-
-            Spacer(modifier = Modifier.height(if (isSmallScreen) 20.dp else 24.dp))
-
-            // Comparison Table
-            Card(
+            // Segmented Bar Selector (Tabs: Monthly | Yearly | Lifetime)
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = horizontalPadding),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    .padding(horizontal = 16.dp)
+                    .height(52.dp),
+                shape = RoundedCornerShape(32.dp),
+                color = Color(0xFFF1F5F9),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "FEATURES",
-                            modifier = Modifier.weight(1.5f),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextLight,
-                            letterSpacing = 1.sp
-                        )
-                        Text(
-                            text = "FREE",
-                            modifier = Modifier.weight(1f),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextLight
-                        )
-                        Text(
-                            text = "PRO",
-                            modifier = Modifier.weight(1f),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PinkPrimary
-                        )
-                    }
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    PaywallPlan.values().forEach { plan ->
+                        val isSelected = selectedPlan == plan
+                        val pMeta = when (plan) {
+                            PaywallPlan.MONTHLY -> Pair("Monthly", null as String?)
+                            PaywallPlan.YEARLY -> Pair("Yearly", "SAVE 17%")
+                            PaywallPlan.LIFETIME -> Pair("Lifetime", "BEST VALUE")
+                        }
 
-                    Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = Color(0xFFE2E8F0))
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    val comparisonRows = listOf(
-                        Triple("SMS Tracking", "14 Days", "Unlimited"),
-                        Triple("Security Suite", "Basic", "Full"),
-                        Triple("Accounts", "2", "Unlimited"),
-                        Triple("Budgets", "1", "Unlimited"),
-                        Triple("Goals", "2", "Unlimited"),
-                        Triple("Loans/Debts", "5", "Unlimited"),
-                        Triple("Analytics", "30 Days", "Unlimited")
-                    )
-
-                    comparisonRows.forEach { (feature, free, pro) ->
-                        Row(
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(24.dp))
+                                .background(if (isSelected) Color.White else Color.Transparent)
+                                .border(
+                                    width = if (isSelected) 1.dp else 0.dp,
+                                    color = if (isSelected) Color(0xFFCBD5E1) else Color.Transparent,
+                                    shape = RoundedCornerShape(24.dp)
+                                )
+                                .clickable { selectedPlan = plan },
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = feature,
-                                modifier = Modifier.weight(1.5f),
-                                fontSize = if (isSmallScreen) 12.sp else 13.sp,
-                                color = NavyDark,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = free,
-                                modifier = Modifier.weight(1f),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                fontSize = if (isSmallScreen) 11.sp else 12.sp,
-                                color = TextLight
-                            )
-                            Box(
-                                modifier = Modifier.weight(1f),
-                                contentAlignment = Alignment.Center
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = PinkPrimary,
-                                    modifier = Modifier.size(18.dp)
+                                Text(
+                                    text = pMeta.first,
+                                    color = if (isSelected) Color(0xFF0F172A) else Color(0xFF64748B),
+                                    fontSize = 13.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                 )
                             }
                         }
@@ -1798,123 +1806,152 @@ fun PiggyLedgerPaywall(
                 }
             }
 
-            Spacer(modifier = Modifier.height(if (isSmallScreen) 20.dp else 24.dp))
-
-            // Subscription Plans Title
-            Text(
-                text = "SELECT A PLAN",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextLight,
-                letterSpacing = 1.2.sp,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            // Refined & Reshaped 3 Plan Cards (Vertical Stacked Cards)
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = horizontalPadding),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                // 1. YEARLY PLAN (MOST POPULAR)
-                ReshapedPlanCard(
-                    title = "Yearly Plan",
-                    price = "$99.99 / year",
-                    subtitle = "$8.33 / month — Billed annually",
-                    tag = "MOST POPULAR • SAVE 17%",
-                    tagBgColor = PinkPrimary,
-                    tagTextColor = Color.White,
-                    isSelected = selectedPlan == PaywallPlan.YEARLY,
-                    onClick = { selectedPlan = PaywallPlan.YEARLY }
-                )
-
-                // 2. MONTHLY PLAN
-                ReshapedPlanCard(
-                    title = "Monthly Plan",
-                    price = "$9.99 / month",
-                    subtitle = "Flexible month-to-month billing",
-                    tag = "FLEXIBLE",
-                    tagBgColor = Color(0xFFF1F5F9),
-                    tagTextColor = NavyDark,
-                    isSelected = selectedPlan == PaywallPlan.MONTHLY,
-                    onClick = { selectedPlan = PaywallPlan.MONTHLY }
-                )
-
-                // 3. LIFETIME PLAN
-                ReshapedPlanCard(
-                    title = "Lifetime Access",
-                    price = "$299.99 one-time",
-                    subtitle = "Pay once, access all current & future Pro features forever",
-                    tag = "BEST VALUE",
-                    tagBgColor = Color(0xFF10B981),
-                    tagTextColor = Color.White,
-                    isSelected = selectedPlan == PaywallPlan.LIFETIME,
-                    onClick = { selectedPlan = PaywallPlan.LIFETIME }
-                )
-            }
-
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Slide to Purchase
-            SlideToPurchase(
-                isPurchasing = isPurchasing,
-                onCompleted = {
-                    val pkgToPurchase = when (selectedPlan) {
-                        PaywallPlan.MONTHLY -> offerings?.current?.monthly
-                        PaywallPlan.YEARLY -> offerings?.current?.annual
-                        PaywallPlan.LIFETIME -> offerings?.current?.lifetime
+            // Feature Comparison Table Box (Light Mode Card)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .background(Color.White, RoundedCornerShape(20.dp))
+                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(20.dp))
+                    .padding(16.dp)
+            ) {
+                Column {
+                    // Header row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Features",
+                            color = Color(0xFF64748B),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        Text(
+                            text = "Free",
+                            color = Color(0xFF64748B),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.width(54.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Text(
+                            text = planMeta.badgeName,
+                            color = planMeta.accentColor,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.width(54.dp)
+                        )
                     }
 
-                    if (pkgToPurchase != null && activity != null) {
-                        isPurchasing = true
-                        com.revenuecat.purchases.Purchases.sharedInstance.purchase(
-                            com.revenuecat.purchases.PurchaseParams.Builder(activity, pkgToPurchase).build(),
-                            object : com.revenuecat.purchases.interfaces.PurchaseCallback {
-                                override fun onCompleted(storeTransaction: com.revenuecat.purchases.models.StoreTransaction, info: com.revenuecat.purchases.CustomerInfo) {
-                                    isPurchasing = false
-                                    if (info.entitlements["Piggy Ledger Pro"]?.isActive == true) {
-                                        viewModel.setPremiumStatus(true)
-                                        onPurchaseSuccess(info)
-                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Pro features unlocked!", Toast.LENGTH_LONG)
+                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Comparison Rows
+                    comparisonFeatures.forEach { row ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = row.title,
+                                color = Color(0xFF0F172A),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            // Free Column Value
+                            Box(
+                                modifier = Modifier.width(54.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                when (val f = row.freeValue) {
+                                    is FeatureStatus.Check -> {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = Color(0xFF64748B),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                    is FeatureStatus.Dash -> {
+                                        Text("—", color = Color(0xFFCBD5E1), fontSize = 14.sp)
+                                    }
+                                    is FeatureStatus.TextValue -> {
+                                        Text(
+                                            text = f.text,
+                                            color = Color(0xFF64748B),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
                                     }
                                 }
-                                override fun onError(error: com.revenuecat.purchases.PurchasesError, userCancelled: Boolean) {
-                                    isPurchasing = false
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            // Pro Column Value
+                            Box(
+                                modifier = Modifier.width(54.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                when (val p = row.proValue) {
+                                    is FeatureStatus.Check -> {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = planMeta.accentColor,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    is FeatureStatus.Dash -> {
+                                        Text("—", color = Color(0xFFCBD5E1), fontSize = 14.sp)
+                                    }
+                                    is FeatureStatus.TextValue -> {
+                                        Text(
+                                            text = p.text,
+                                            color = planMeta.accentColor,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                             }
-                        )
-                    } else {
-                        // Simulation for dev environments / tests
-                        coroutineScope.launch {
-                            isPurchasing = true
-                            delay(1000)
-                            isPurchasing = false
-                            viewModel.setPremiumStatus(true)
-                            onPurchaseSuccess(null)
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Welcome to Pro! Pro features unlocked.", Toast.LENGTH_SHORT)
                         }
                     }
                 }
-            )
+            }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Policy Links
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "Restore Purchases",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PinkPrimary,
-                    modifier = Modifier.clickable {
+            // Restore subscription button
+            Text(
+                text = "Restore subscription",
+                color = Color(0xFF475569),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable {
                         com.revenuecat.purchases.Purchases.sharedInstance.restorePurchases(
                             object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
                                 override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
-                                    if (info.entitlements["Piggy Ledger Pro"]?.isActive == true) {
+                                    val active = info.entitlements.all.values.any { it.isActive } || info.entitlements["Piggy Ledger Pro"]?.isActive == true
+                                    if (active) {
                                         viewModel.setPremiumStatus(true)
                                         onPurchaseSuccess(info)
                                         com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Pro features restored!", Toast.LENGTH_LONG)
@@ -1928,33 +1965,116 @@ fun PiggyLedgerPaywall(
                             }
                         )
                     }
-                )
-                Box(modifier = Modifier.size(3.dp).clip(CircleShape).background(TextLight.copy(alpha = 0.3f)))
-                Text(
-                    "Terms",
-                    fontSize = 12.sp,
-                    color = TextLight,
-                    modifier = Modifier.clickable {
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.oryno.com/piggy-ledger/terms"))
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Terms unavailable", Toast.LENGTH_SHORT)
-                        }
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Normal Upgrade Button
+            Button(
+                onClick = {
+                    if (isPurchasing) return@Button
+                    val packageToBuy = when (selectedPlan) {
+                        PaywallPlan.MONTHLY -> monthlyPackage
+                        PaywallPlan.YEARLY -> yearlyPackage
+                        PaywallPlan.LIFETIME -> lifetimePackage
                     }
-                )
-                Box(modifier = Modifier.size(3.dp).clip(CircleShape).background(TextLight.copy(alpha = 0.3f)))
-                Text(
-                    "Privacy",
-                    fontSize = 12.sp,
-                    color = TextLight,
-                    modifier = Modifier.clickable {
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.oryno.com/piggy-ledger/privacy"))
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Privacy policy unavailable", Toast.LENGTH_SHORT)
+                    val activity = context.findActivity()
+                    if (packageToBuy != null && activity != null) {
+                        isPurchasing = true
+                        com.revenuecat.purchases.Purchases.sharedInstance.purchase(
+                            com.revenuecat.purchases.PurchaseParams.Builder(activity, packageToBuy).build(),
+                            object : com.revenuecat.purchases.interfaces.PurchaseCallback {
+                                override fun onCompleted(storeTransaction: com.revenuecat.purchases.models.StoreTransaction, customerInfo: com.revenuecat.purchases.CustomerInfo) {
+                                    isPurchasing = false
+                                    val active = customerInfo.entitlements.all.values.any { it.isActive } || customerInfo.entitlements["Piggy Ledger Pro"]?.isActive == true
+                                    if (active || customerInfo.entitlements.all.isNotEmpty()) {
+                                        viewModel.setPremiumStatus(true)
+                                        onPurchaseSuccess(customerInfo)
+                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Welcome to Pro! Pro features unlocked.", android.widget.Toast.LENGTH_SHORT)
+                                    } else {
+                                        viewModel.setPremiumStatus(true)
+                                        onPurchaseSuccess(customerInfo)
+                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase complete! Unlocking Pro...", android.widget.Toast.LENGTH_SHORT)
+                                    }
+                                }
+                                override fun onError(error: com.revenuecat.purchases.PurchasesError, userCancelled: Boolean) {
+                                    isPurchasing = false
+                                    if (!userCancelled) {
+                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase error: ${error.message}", android.widget.Toast.LENGTH_LONG)
+                                    }
+                                }
+                            }
+                        )
+                    } else {
+                        val msg = when {
+                            isLoadingOfferings -> "Plans are loading from RevenueCat. Please wait a moment..."
+                            fetchError != null -> "RevenueCat error: $fetchError"
+                            packagesList.isEmpty() -> "No active billing products found. Ensure Play Console products are Active & test account added."
+                            else -> "Selected plan is currently unavailable."
                         }
+                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, msg, android.widget.Toast.LENGTH_LONG)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(54.dp),
+                shape = RoundedCornerShape(27.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = planMeta.accentColor,
+                    contentColor = Color.White
+                )
+            ) {
+                if (isPurchasing) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        strokeWidth = 3.dp,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "${stringResource(R.string.paywall_cta_upgrade)} • ${planMeta.priceText}",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Footer Subtitle / Renewal Text
+            Text(
+                text = planMeta.renewalCaption,
+                fontSize = 12.sp,
+                color = Color(0xFF64748B),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 32.dp)
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "This plan includes all features. ",
+                    fontSize = 12.sp,
+                    color = Color(0xFF64748B)
+                )
+                Text(
+                    text = "Learn more.",
+                    fontSize = 12.sp,
+                    color = planMeta.accentColor,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable {
+                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Piggy Ledger Pro provides complete financial management capabilities.", Toast.LENGTH_LONG)
                     }
                 )
             }
@@ -1962,6 +2082,126 @@ fun PiggyLedgerPaywall(
     }
 }
 
+@Composable
+fun SwipeToUpgradeButton(
+    planText: String,
+    priceText: String,
+    accentColor: Color,
+    isPurchasing: Boolean,
+    onSwipeComplete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var containerWidthPx by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+    val handleWidthPx = with(density) { 60.dp.toPx() }
+    val maxOffset = (containerWidthPx - handleWidthPx).coerceAtLeast(1f)
+    val progress = (offsetX / maxOffset).coerceIn(0f, 1f)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(60.dp)
+            .clip(RoundedCornerShape(32.dp))
+            .background(Color(0xFFE2E8F0))
+            .border(1.dp, Color(0xFFCBD5E1), RoundedCornerShape(32.dp))
+            .onGloballyPositioned { layoutCoordinates ->
+                containerWidthPx = layoutCoordinates.size.width.toFloat()
+            }
+    ) {
+        // Track fill behind handle
+        if (progress > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(with(density) { (offsetX + handleWidthPx).toDp() })
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                accentColor.copy(alpha = 0.4f),
+                                accentColor
+                            )
+                        )
+                    )
+            )
+        }
+
+        // Text in track
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isPurchasing) {
+                CircularProgressIndicator(
+                    color = accentColor,
+                    strokeWidth = 3.dp,
+                    modifier = Modifier.size(26.dp)
+                )
+            } else {
+                Text(
+                    text = if (progress > 0.45f) "Release to Upgrade" else "Swipe to Upgrade ($priceText)",
+                    color = if (progress > 0.5f) Color.White else Color(0xFF0F172A),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 48.dp)
+                )
+            }
+        }
+
+        // Handle
+        if (!isPurchasing) {
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(offsetX.toInt(), 0) }
+                    .size(width = 60.dp, height = 60.dp)
+                    .padding(4.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFF0F172A))
+                    .border(1.dp, Color(0xFF334155), RoundedCornerShape(14.dp))
+                    .pointerInput(maxOffset) {
+                        detectHorizontalDragGestures(
+                            onDragEnd = {
+                                if (offsetX > maxOffset * 0.7f) {
+                                    offsetX = maxOffset
+                                    onSwipeComplete()
+                                } else {
+                                    offsetX = 0f
+                                }
+                            },
+                            onDragCancel = { offsetX = 0f },
+                            onHorizontalDrag = { _, dragAmount ->
+                                val newOffset = (offsetX + dragAmount).coerceIn(0f, maxOffset)
+                                offsetX = newOffset
+                            }
+                        )
+                    }
+                    .clickable {
+                        onSwipeComplete()
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "Swipe handle",
+                        tint = accentColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = accentColor,
+                        modifier = Modifier.size(22.dp).offset(x = (-12).dp)
+                    )
+                }
+            }
+        }
+    }
+}
 @Composable
 fun ReshapedPlanCard(
     title: String,
@@ -2633,4 +2873,11 @@ fun AddIdentifierBottomSheet(
 }
 
 
-
+fun android.content.Context.findActivity(): android.app.Activity? {
+    var context = this
+    while (context is android.content.ContextWrapper) {
+        if (context is android.app.Activity) return context
+        context = context.baseContext
+    }
+    return null
+}

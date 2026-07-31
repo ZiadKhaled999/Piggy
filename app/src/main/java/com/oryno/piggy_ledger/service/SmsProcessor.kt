@@ -109,8 +109,13 @@ object SmsProcessor {
                     context, System.currentTimeMillis().toInt(), intent, android.app.PendingIntent.FLAG_IMMUTABLE
                 )
 
+                val logoBitmap = try {
+                    android.graphics.BitmapFactory.decodeResource(context.resources, com.oryno.piggy_ledger.R.drawable.img_app_logo)
+                } catch (e: Exception) { null }
+
                 val notification = androidx.core.app.NotificationCompat.Builder(context, channelId)
                     .setSmallIcon(com.oryno.piggy_ledger.R.drawable.img_app_logo)
+                    .apply { if (logoBitmap != null) setLargeIcon(logoBitmap) }
                     .setContentTitle("New Pending Transaction")
                     .setContentText("A transaction of $amount from $merchant needs your review.")
                     .setContentIntent(pendingIntent)

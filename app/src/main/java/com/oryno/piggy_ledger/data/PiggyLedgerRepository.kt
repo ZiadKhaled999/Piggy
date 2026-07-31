@@ -1,8 +1,26 @@
 package com.oryno.piggy_ledger.data
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 
-class PiggyLedgerRepository(private val dao: PiggyLedgerDao) {
+class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context: android.content.Context) {
+
+    private fun triggerSync() {
+        val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.SyncWorker>().build()
+        androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
+            "SyncWork",
+            androidx.work.ExistingWorkPolicy.REPLACE,
+            workRequest
+        )
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                com.oryno.piggy_ledger.service.SyncManager(context).syncAll()
+            } catch (e: Exception) {
+                android.util.Log.e("PiggyLedgerRepository", "Direct sync trigger failed", e)
+            }
+        }
+    }
+
     val allGoals: Flow<List<Goal>> = dao.getAllGoals()
     val allLoans: Flow<List<Loan>> = dao.getAllLoans()
     val allTransactions: Flow<List<Transaction>> = dao.getAllTransactionsFlow()
@@ -12,29 +30,31 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao) {
     fun getGoalById(id: String) = dao.getGoalById(id)
     fun getTransactionsForGoal(id: String) = dao.getTransactionsForGoal(id)
     
-    suspend fun getAccountById(id: Long) = dao.getAccountById(id)
-    fun getTransactionsForAccount(id: Long) = dao.getTransactionsForAccount(id)
+    suspend fun getAccountById(id: String) = dao.getAccountById(id)
+    fun getTransactionsForAccount(id: String) = dao.getTransactionsForAccount(id)
     fun getAllAccountTransactions() = dao.getAllAccountTransactions()
 
-    suspend fun insertGoal(goal: Goal) = dao.insertGoal(goal)
-    suspend fun insertTransaction(transaction: Transaction) = dao.insertTransaction(transaction)
+    suspend fun insertGoal(goal: Goal) { dao.insertGoal(goal); triggerSync() }
+    suspend fun insertTransaction(transaction: Transaction) { dao.insertTransaction(transaction); triggerSync() }
     
-    suspend fun insertLoan(loan: Loan) = dao.insertLoan(loan)
+    suspend fun insertLoan(loan: Loan) { dao.insertLoan(loan); triggerSync() }
+    val allLoanPayments: Flow<List<LoanPayment>> = dao.getAllLoanPaymentsFlow()
     fun getPaymentsForLoan(loanId: String) = dao.getPaymentsForLoan(loanId)
-    suspend fun insertLoanPayment(payment: LoanPayment) = dao.insertLoanPayment(payment)
-    suspend fun deleteLoanPayment(id: Long) = dao.deleteLoanPaymentById(id)
+    suspend fun insertLoanPayment(payment: LoanPayment) { dao.insertLoanPayment(payment); triggerSync() }
+    suspend fun deleteLoanPayment(id: String) { dao.deleteLoanPaymentById(id); triggerSync() }
     
-    suspend fun insertAccount(account: Account) = dao.insertAccount(account)
-    suspend fun updateAccount(account: Account) = dao.updateAccount(account)
-    suspend fun deleteAccount(id: Long) = dao.deleteAccountById(id)
-    suspend fun insertAccountTransaction(transaction: AccountTransaction) = dao.insertAccountTransaction(transaction)
+    suspend fun insertAccount(account: Account) { dao.insertAccount(account); triggerSync() }
+    suspend fun updateAccount(account: Account) { dao.updateAccount(account); triggerSync() }
+    suspend fun deleteAccount(id: String) { dao.deleteAccountById(id); triggerSync() }
+    suspend fun insertAccountTransaction(transaction: AccountTransaction) { dao.insertAccountTransaction(transaction); triggerSync() }
     suspend fun markLoanAsPaid(id: String) {
         val loan = dao.getLoanById(id)
         if (loan != null) {
             dao.updateLoan(loan.copy(isPaidOff = true))
+            triggerSync()
         }
     }
-    suspend fun deleteLoan(id: String) = dao.deleteLoanById(id)
+    suspend fun deleteLoan(id: String) { dao.deleteLoanById(id); triggerSync() }
 
     suspend fun deleteGoal(id: String) {
         dao.deleteTransactionsForGoal(id)
@@ -94,7 +114,7 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao) {
     }
 
     val allPendingTransactions: Flow<List<PendingTransaction>> = dao.getAllPendingTransactionsFlow()
-    suspend fun insertPendingTransaction(transaction: PendingTransaction) = dao.insertPendingTransaction(transaction)
-    suspend fun deletePendingTransaction(id: Long) = dao.deletePendingTransactionById(id)
-    suspend fun resolvePendingTransaction(pendingId: Long, accountId: Long) = dao.resolvePendingTransaction(pendingId, accountId)
+    suspend fun insertPendingTransaction(transaction: PendingTransaction) { dao.insertPendingTransaction(transaction); triggerSync() }
+    suspend fun deletePendingTransaction(id: String) { dao.deletePendingTransactionById(id); triggerSync() }
+    suspend fun resolvePendingTransaction(pendingId: String, accountId: String) { dao.resolvePendingTransaction(pendingId, accountId); triggerSync() }
 }

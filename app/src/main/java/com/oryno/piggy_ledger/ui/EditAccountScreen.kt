@@ -43,7 +43,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditAccountScreen(
-    accountId: Long,
+    accountId: String,
     viewModel: PiggyLedgerViewModel,
     onBack: () -> Unit
 ) {

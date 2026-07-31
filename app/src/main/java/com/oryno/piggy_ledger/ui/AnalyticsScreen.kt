@@ -175,9 +175,13 @@ fun SpendingView(transactions: List<AccountTransaction>) {
         val rawSlices = grouped.map { (cat, txs) ->
             val amount = txs.sumOf { abs(it.amount) }
             val percentage = if (totalSpending > 0) (amount / totalSpending).toFloat() else 0f
-            val name = if (cat.startsWith("custom_")) cat.substringAfter("custom_") else cat
-            val formattedName = name.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-            SpendingSlice(formattedName, amount, percentage, Color.Gray)
+            val cleanCatKey = when {
+                cat.startsWith("custom_") -> cat.substringAfter("custom_")
+                cat.startsWith("cat_") -> cat.substringAfter("cat_")
+                else -> cat
+            }
+            val formattedName = cleanCatKey.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+            SpendingSlice(cleanCatKey, amount, percentage, Color.Gray)
         }.sortedByDescending { it.amount }
 
         val top = rawSlices.take(5).toMutableList()
@@ -272,7 +276,12 @@ fun SpendingView(transactions: List<AccountTransaction>) {
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         slices.forEach { slice ->
-                            val catName = if (slice.categoryName == "Other") stringResource(R.string.category_other) else slice.categoryName
+                            val catItem = com.oryno.piggy_ledger.ui.categoriesList.find { it.key == slice.categoryName || it.key == "cat_${slice.categoryName}" }
+                            val catName = when {
+                                slice.categoryName == "Other" -> stringResource(R.string.category_other)
+                                catItem != null -> stringResource(catItem.nameRes)
+                                else -> slice.categoryName.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+                            }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(slice.color))
                                 Spacer(Modifier.width(8.dp))
@@ -288,40 +297,6 @@ fun SpendingView(transactions: List<AccountTransaction>) {
                     }
                 }
                 
-                Spacer(Modifier.height(32.dp))
-                
-                val topCats = slices.take(2).map { 
-                    if (it.categoryName == "Other") stringResource(R.string.category_other) else it.categoryName
-                }
-                val aiText = if (topCats.size >= 2) {
-                    stringResource(R.string.insight_spending_two, topCats[0], topCats[1])
-                } else if (topCats.size == 1) {
-                    stringResource(R.string.insight_spending_one, topCats[0])
-                } else {
-                    stringResource(R.string.insight_spending_balanced)
-                }
-                
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(LightBg, RoundedCornerShape(16.dp))
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Icon(
-                        Icons.Default.AutoAwesome, 
-                        contentDescription = "AI Insight", 
-                        tint = TextSecondary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        text = aiText,
-                        fontSize = 13.sp,
-                        color = TextSecondary,
-                        lineHeight = 18.sp
-                    )
-                }
             }
         }
     }
@@ -383,34 +358,37 @@ fun DonutChart(slices: List<SpendingSlice>, total: Double) {
         )
 
         var startAngle = -90f
-        val gapAngle = 4f
+        val gapAngle = if (slices.size > 1) 12f else 0f
+        val capDegree = (strokeWidth / (2f * Math.PI.toFloat() * radius) * 360f) / 2f
 
         slices.forEachIndexed { index, slice ->
-            var sweepAngle = slice.percentage * 360f
-            if (sweepAngle > gapAngle && slices.size > 1) {
+            val origSweep = slice.percentage * 360f
+            if (slices.size > 1) {
+                val effectiveSweep = (origSweep - gapAngle - (capDegree * 2f)).coerceAtLeast(1f)
+                val effectiveStart = startAngle + (gapAngle / 2f) + capDegree
                 drawArc(
                     color = slice.color,
-                    startAngle = startAngle + gapAngle/2,
-                    sweepAngle = sweepAngle - gapAngle,
+                    startAngle = effectiveStart,
+                    sweepAngle = effectiveSweep,
                     useCenter = false,
                     topLeft = Offset(center.x - radius, center.y - radius),
                     size = Size(radius * 2, radius * 2),
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                 )
             } else {
-                 drawArc(
+                drawArc(
                     color = slice.color,
                     startAngle = startAngle,
-                    sweepAngle = sweepAngle,
+                    sweepAngle = origSweep,
                     useCenter = false,
                     topLeft = Offset(center.x - radius, center.y - radius),
                     size = Size(radius * 2, radius * 2),
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                 )
             }
             
             if (selectedIndex == index) {
-                val midAngle = startAngle + sweepAngle / 2
+                val midAngle = startAngle + origSweep / 2
                 val midAngleRad = Math.toRadians(midAngle.toDouble())
                 
                 val tooltipRadius = radius + strokeWidth
@@ -431,7 +409,11 @@ fun DonutChart(slices: List<SpendingSlice>, total: Double) {
                 
                 var rectX = tooltipX
                 if (cos(midAngleRad) < 0) rectX -= ttWidth
-                val rectY = tooltipY - ttHeight / 2
+                var rectY = tooltipY - ttHeight / 2
+                
+                // Clamp to canvas bounds
+                rectX = rectX.coerceIn(0f, size.width - ttWidth)
+                rectY = rectY.coerceIn(0f, size.height - ttHeight)
                 
                 drawRoundRect(
                     color = Color(0xFF1F2937),
@@ -454,7 +436,7 @@ fun DonutChart(slices: List<SpendingSlice>, total: Double) {
                 )
             }
 
-            startAngle += sweepAngle
+            startAngle += origSweep
         }
     }
 }
@@ -532,7 +514,54 @@ fun RevenueView(transactions: List<AccountTransaction>) {
     }
     
     val totalRevenue = bars.sumOf { it.value }
-    val totalChange = 8.3 
+    val previousTotalRevenue = remember(incomes, selectedPeriod) {
+        when (selectedPeriod) {
+            RevenuePeriod.YEARLY -> {
+                var prevSum = 0.0
+                for (i in 11 downTo 6) {
+                    val y = Calendar.getInstance().get(Calendar.YEAR) - (i / 12)
+                    val m = (Calendar.getInstance().get(Calendar.MONTH) - (i % 12) + 12) % 12
+                    val monthTxs = incomes.filter {
+                        val tCal = Calendar.getInstance().apply { timeInMillis = it.timestamp }
+                        tCal.get(Calendar.YEAR) == y && tCal.get(Calendar.MONTH) == m
+                    }
+                    prevSum += monthTxs.sumOf { it.amount }
+                }
+                prevSum
+            }
+            RevenuePeriod.MONTHLY -> {
+                var prevSum = 0.0
+                for (i in 7 downTo 4) {
+                    val start = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -(i+1)*7) }.timeInMillis
+                    val end = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -i*7) }.timeInMillis
+                    val weekTxs = incomes.filter { it.timestamp in start..end }
+                    prevSum += weekTxs.sumOf { it.amount }
+                }
+                prevSum
+            }
+            RevenuePeriod.WEEKLY -> {
+                var prevSum = 0.0
+                for (i in 13 downTo 7) {
+                    val day = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -i) }
+                    val start = day.apply {
+                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0)
+                    }.timeInMillis
+                    val end = day.apply {
+                        set(Calendar.HOUR_OF_DAY, 23); set(Calendar.MINUTE, 59); set(Calendar.SECOND, 59)
+                    }.timeInMillis
+                    val dayTxs = incomes.filter { it.timestamp in start..end }
+                    prevSum += dayTxs.sumOf { it.amount }
+                }
+                prevSum
+            }
+        }
+    }
+    
+    val totalChange = when {
+        previousTotalRevenue > 0 -> ((totalRevenue - previousTotalRevenue) / previousTotalRevenue) * 100
+        totalRevenue > 0 -> 100.0
+        else -> 0.0
+    } 
     
     val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
     val totalStr = format.format(totalRevenue).replace(".00", "")
@@ -546,11 +575,9 @@ fun RevenueView(transactions: List<AccountTransaction>) {
         Column(Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.tab_revenue), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-                
                 Row(
                     modifier = Modifier
                         .background(LightBg, RoundedCornerShape(20.dp))
@@ -582,15 +609,20 @@ fun RevenueView(transactions: List<AccountTransaction>) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(totalStr, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                 Spacer(Modifier.width(12.dp))
+                val isPositive = totalChange >= 0
+                val badgeColor = if (isPositive) BadgeGreen else Color.Red
+                val badgeIcon = if (isPositive) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward
+                val sign = if (isPositive) "+" else ""
+                
                 Row(
                     modifier = Modifier
-                        .background(BadgeGreen.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                        .background(badgeColor.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.ArrowUpward, contentDescription = null, tint = BadgeGreen, modifier = Modifier.size(12.dp))
+                    Icon(badgeIcon, contentDescription = null, tint = badgeColor, modifier = Modifier.size(12.dp))
                     Spacer(Modifier.width(2.dp))
-                    Text("+${String.format(Locale.US, "%.1f", totalChange)}%", color = BadgeGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("$sign${String.format(Locale.US, "%.1f", totalChange)}%", color = badgeColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.vs_last_period), color = TextSecondary, fontSize = 12.sp)
@@ -731,7 +763,8 @@ fun RevenueBarChart(bars: List<RevenueBar>) {
                 val ttW = ttRes.size.width + 12.dp.toPx()
                 val ttH = ttRes.size.height + 8.dp.toPx()
                 val ttX = x + barWidth/2 - ttW/2
-                val ttY = y - ttH - 8.dp.toPx()
+                var ttY = y - ttH - 8.dp.toPx()
+                if (ttY < 0f) ttY = 2.dp.toPx()
                 
                 drawRoundRect(
                     color = BarActiveColor, 

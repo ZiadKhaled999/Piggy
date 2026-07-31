@@ -251,6 +251,16 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                     )
                 }
 
+                composable<Screen.StreakAchievements> {
+                    LaunchedEffect(Unit) {
+                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Streak Achievements"))
+                    }
+                    StreakAchievementsScreen(
+                        viewModel = viewModel,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+
                 composable<Screen.Settings> { backStackEntry ->
                     val screen = backStackEntry.toRoute<Screen.Settings>()
                     val mode = remember(screen.modeName) {
@@ -384,7 +394,8 @@ fun MainContainer(
                                 onNavigateToLoans = { bottomNavController.navigate(Screen.Loans) },
                                 onNavigateToAccounts = { bottomNavController.navigate(Screen.Accounts) },
                                 onNavigateToAnalytics = { bottomNavController.navigate(Screen.Analytics) },
-                                onNavigateToSettingsPro = { appNavController.navigate(Screen.Settings(SettingsMode.PRO.name)) }
+                                onNavigateToSettingsPro = { appNavController.navigate(Screen.Settings(SettingsMode.PRO.name)) },
+                                onNavigateToStreak = { appNavController.navigate(Screen.StreakAchievements) }
                             )
                         }
                         

@@ -1,64 +1,135 @@
+
 package com.oryno.piggy_ledger.ui
 
+import java.util.Locale
+import androidx.compose.material.icons.filled.AttachMoney
+
+import androidx.compose.material.icons.filled.ReceiptLong
+
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+
+import androidx.compose.material.icons.filled.ReceiptLong
+
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+
 import android.widget.Toast
+
 import android.Manifest
+
 import android.content.pm.PackageManager
+
 import android.provider.ContactsContract
+
 import androidx.activity.compose.rememberLauncherForActivityResult
+
 import androidx.activity.result.contract.ActivityResultContracts
+
 import androidx.compose.foundation.BorderStroke
+
 import androidx.compose.foundation.background
+
 import androidx.compose.foundation.border
+
 import androidx.compose.foundation.clickable
+
 import androidx.compose.foundation.layout.*
+
 import androidx.compose.foundation.lazy.LazyColumn
+
 import androidx.compose.foundation.lazy.items
+
 import androidx.compose.foundation.rememberScrollState
+
 import androidx.compose.foundation.shape.CircleShape
+
 import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.foundation.verticalScroll
+
 import androidx.compose.foundation.text.BasicTextField
+
 import androidx.compose.foundation.text.KeyboardOptions
+
 import androidx.compose.material.icons.Icons
+
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
+
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+
 import androidx.compose.material.icons.filled.Add
+
 import androidx.compose.material.icons.filled.Check
+
 import androidx.compose.material.icons.filled.DeleteOutline
+
 import androidx.compose.material.icons.filled.HelpOutline
+
 import androidx.compose.material.icons.filled.Person
+
 import androidx.compose.material.icons.filled.PersonAdd
+
 import androidx.compose.material.icons.filled.Phone
+
 import androidx.compose.material.icons.filled.Info
+
 import androidx.compose.material.icons.filled.Search
+
 import androidx.compose.material3.*
+
 import androidx.compose.ui.res.stringResource
+
 import com.oryno.piggy_ledger.R
+
 import androidx.compose.runtime.*
+
 import androidx.compose.ui.Alignment
+
 import androidx.compose.ui.Modifier
+
 import androidx.compose.ui.draw.clip
+
 import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.platform.LocalContext
+
 import androidx.compose.ui.text.font.FontWeight
+
 import androidx.compose.ui.text.input.KeyboardType
+
 import androidx.compose.ui.text.style.TextAlign
+
 import androidx.compose.ui.text.style.TextDecoration
+
 import androidx.compose.ui.text.style.TextOverflow
+
 import androidx.compose.ui.unit.dp
+
 import androidx.compose.ui.unit.sp
+
 import androidx.core.content.ContextCompat
+
 import com.oryno.piggy_ledger.data.Loan
+
 import com.oryno.piggy_ledger.data.LoanType
+
 import com.oryno.piggy_ledger.ui.theme.PinkAccent
+
 import com.oryno.piggy_ledger.ui.theme.NavyDark
+
 import com.oryno.piggy_ledger.ui.theme.BlackAccent
+
 import androidx.compose.ui.layout.ContentScale
+
 import coil.compose.AsyncImage
+
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
+
 import com.oryno.piggy_ledger.ui.theme.TextLight
+
 import java.util.UUID
+
 import android.net.Uri
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,7 +140,14 @@ fun LoansScreen(
 ) {
     val screenContext = LocalContext.current
     val loans by viewModel.loans.collectAsState()
+    val allLoanPayments by viewModel.allLoanPayments.collectAsState()
     
+    val paymentsByLoanId = remember(allLoanPayments) { allLoanPayments.groupBy { it.loanId } }
+    fun getRemainingAmount(loan: Loan): Double {
+        val paid = paymentsByLoanId[loan.id]?.sumOf { it.amount } ?: 0.0
+        return (loan.amount - paid).coerceAtLeast(0.0)
+    }
+
     var showAddDialog by remember { mutableStateOf(false) }
     val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedLoan by remember { mutableStateOf<Loan?>(null) }
@@ -77,8 +155,8 @@ fun LoansScreen(
     val detailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    val owedToMe = loans.filter { !it.isPaidOff && it.type == LoanType.LENT }.sumOf { it.amount }
-    val iOwe = loans.filter { !it.isPaidOff && it.type == LoanType.BORROWED }.sumOf { it.amount }
+    val owedToMe = loans.filter { !it.isPaidOff && it.type == LoanType.LENT }.sumOf { getRemainingAmount(it) }
+    val iOwe = loans.filter { !it.isPaidOff && it.type == LoanType.BORROWED }.sumOf { getRemainingAmount(it) }
     val netLedger = owedToMe - iOwe
 
     var searchQuery by remember { mutableStateOf("") }
@@ -460,8 +538,9 @@ fun LoansScreen(
                                 horizontalArrangement = Arrangement.End
                             ) {
                                 Column(horizontalAlignment = Alignment.End) {
+                                    val currentAmt = if (isPaidOff) loan.amount else getRemainingAmount(loan)
                                     Text(
-                                        text = "$prefix $${String.format("%.2f", loan.amount)}", 
+                                        text = "$prefix $${String.format("%.2f", currentAmt)}", 
                                         color = if (isPaidOff) Color(0xFF64748B) else textColor, 
                                         fontWeight = FontWeight.Bold, 
                                         fontSize = 15.sp,
@@ -1106,8 +1185,17 @@ fun LoansScreen(
                 showDeleteConfirm = false
             },
             sheetState = detailSheetState,
-            containerColor = MaterialTheme.colorScheme.background,
-            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+            containerColor = Color.White,
+            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+            dragHandle = {
+                Box(
+                    modifier = Modifier
+                        .padding(vertical = 12.dp)
+                        .width(36.dp)
+                        .height(4.dp)
+                        .background(Color(0xFFE2E8F0), CircleShape)
+                )
+            }
         ) {
             if (showTimeline) {
                 // TIMELINE VIEW
@@ -1118,85 +1206,56 @@ fun LoansScreen(
                         .padding(bottom = 32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = { showTimeline = false }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = NavyDark)
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.logs_timeline), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                    }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    if (payments.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                            Text(stringResource(R.string.no_payments_yet), color = TextLight, fontSize = 16.sp)
-                        }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(payments) { payment ->
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(16.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "$${String.format("%.2f", payment.amount)}",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 16.sp,
-                                                color = NavyDark
-                                            )
-                                            if (!payment.note.isNullOrBlank()) {
-                                                Text(payment.note, fontSize = 12.sp, color = TextLight)
-                                            }
-                                        }
-                                        val sdf = java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.getDefault())
-                                        Text(sdf.format(java.util.Date(payment.timestamp)), fontSize = 11.sp, color = TextLight)
-                                        
-                                        IconButton(onClick = { viewModel.deleteLoanPayment(payment.id) }) {
-                                            Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
                     var showAddPayment by remember { mutableStateOf(false) }
+                    
                     if (showAddPayment) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = { showAddPayment = false },
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(Color(0xFFF1F5F9), CircleShape)
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = NavyDark)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(stringResource(R.string.add_payment), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark)
+                        }
+                        
+                        Spacer(modifier = Modifier.height(20.dp))
+                        
                         var payAmount by remember { mutableStateOf("") }
                         var payNote by remember { mutableStateOf("") }
                         
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             OutlinedTextField(
                                 value = payAmount,
                                 onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) payAmount = it },
                                 label = { Text(stringResource(R.string.payment_amount)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(16.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = PinkPrimary,
+                                    unfocusedBorderColor = Color(0xFFE2E8F0)
+                                ),
+                                leadingIcon = {
+                                    Text("$", fontWeight = FontWeight.Bold, color = NavyDark, modifier = Modifier.padding(start = 16.dp))
+                                }
                             )
                             OutlinedTextField(
                                 value = payNote,
                                 onValueChange = { payNote = it },
                                 label = { Text(stringResource(R.string.payment_note)) },
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(16.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = PinkPrimary,
+                                    unfocusedBorderColor = Color(0xFFE2E8F0)
+                                )
                             )
                             Button(
                                 onClick = {
@@ -1207,23 +1266,105 @@ fun LoansScreen(
                                         showAddPayment = false
                                     }
                                 },
-                                modifier = Modifier.fillMaxWidth().height(52.dp),
-                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth().height(54.dp),
+                                shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
                             ) {
-                                Text(stringResource(R.string.confirm_payment), fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.confirm_payment), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             }
                         }
                     } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick = { showTimeline = false },
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(Color(0xFFF1F5F9), CircleShape)
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = NavyDark)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(stringResource(R.string.logs_timeline), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark)
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(20.dp))
+                        
                         Button(
                             onClick = { showAddPayment = true },
                             modifier = Modifier.fillMaxWidth().height(52.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary.copy(alpha = 0.12f), contentColor = PinkPrimary),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.add_payment), fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.add_payment), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        }
+                        
+                        Spacer(modifier = Modifier.height(20.dp))
+                        
+                        if (payments.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxWidth().height(180.dp), contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(Icons.Default.ReceiptLong, contentDescription = null, tint = Color(0xFFCBD5E1), modifier = Modifier.size(48.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(stringResource(R.string.no_payments_yet), color = TextLight, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                                }
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth().heightIn(max = 380.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(payments) { payment ->
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                                        shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(16.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(44.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Color.White)
+                                                    .border(1.dp, Color(0xFFE2E8F0), CircleShape),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(Icons.Default.AttachMoney, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(22.dp))
+                                            }
+                                            Spacer(modifier = Modifier.width(14.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "$${String.format(Locale.US, "%.2f", payment.amount)}",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 16.sp,
+                                                    color = NavyDark
+                                                )
+                                                if (!payment.note.isNullOrBlank()) {
+                                                    Text(payment.note, fontSize = 13.sp, color = TextLight)
+                                                }
+                                                val sdf = java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.getDefault())
+                                                Text(sdf.format(java.util.Date(payment.timestamp)), fontSize = 11.sp, color = Color(0xFF94A3B8), modifier = Modifier.padding(top = 2.dp))
+                                            }
+                                            IconButton(onClick = { viewModel.deleteLoanPayment(payment.id) }) {
+                                                Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1232,15 +1373,11 @@ fun LoansScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
                         .padding(horizontal = 24.dp)
                         .padding(bottom = 32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Box(modifier = Modifier.width(32.dp).height(4.dp).background(Color(0xFFE5E7EB), RoundedCornerShape(2.dp)))
-                    }
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
                     val typeText = if (selectedLoan!!.type == LoanType.LENT) stringResource(R.string.owed_to_me) else stringResource(R.string.i_owe_this)
                     val typeColor = if (selectedLoan!!.type == LoanType.LENT) PinkAccent else BlackAccent
                     val prefix = if (selectedLoan!!.type == LoanType.LENT) "+" else "-"
@@ -1249,10 +1386,10 @@ fun LoansScreen(
                         color = typeColor.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text(typeText, color = typeColor, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+                        Text(typeText, color = typeColor, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp))
                     }
                     
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
                     
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1261,14 +1398,15 @@ fun LoansScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "$prefix $${String.format("%.2f", remainingAmount)}",
-                                fontSize = 36.sp,
+                                text = "$prefix $${String.format(Locale.US, "%.2f", remainingAmount)}",
+                                fontSize = 34.sp,
                                 fontWeight = FontWeight.Black,
                                 color = typeColor
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = stringResource(R.string.remaining_of_prefix, "$${String.format("%.2f", selectedLoan!!.amount)}"),
-                                fontSize = 12.sp,
+                                text = stringResource(R.string.remaining_of_prefix, "$${String.format(Locale.US, "%.2f", selectedLoan!!.amount)}"),
+                                fontSize = 13.sp,
                                 color = TextLight,
                                 fontWeight = FontWeight.Medium
                             )
@@ -1276,42 +1414,38 @@ fun LoansScreen(
                     }
                     
                     Spacer(modifier = Modifier.height(24.dp))
-
-                    Button(
-                        onClick = { showTimeline = true },
-                        modifier = Modifier.fillMaxWidth().height(44.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = typeColor.copy(alpha = 0.1f), contentColor = typeColor),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-                    ) {
-                        Text(stringResource(R.string.logs_timeline), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
                     
-                    if (!selectedLoan!!.photoUri.isNullOrBlank()) {
-                        AsyncImage(
-                            model = Uri.parse(selectedLoan!!.photoUri),
-                            contentDescription = null,
+                    Surface(
+                        onClick = { showTimeline = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    ) {
+                        Row(
                             modifier = Modifier
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(24.dp))
-                                .border(2.dp, typeColor.copy(alpha = 0.3f), RoundedCornerShape(24.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .background(typeColor.copy(alpha = 0.1f), RoundedCornerShape(20.dp)),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Icon(
-                                if (selectedLoan!!.type == LoanType.LENT) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
-                                contentDescription = null,
-                                tint = typeColor,
-                                modifier = Modifier.size(40.dp)
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(typeColor.copy(alpha = 0.12f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.ReceiptLong, contentDescription = null, tint = typeColor, modifier = Modifier.size(22.dp))
+                                }
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column {
+                                    Text(stringResource(R.string.logs_timeline), fontWeight = FontWeight.Bold, fontSize = 15.sp, color = NavyDark)
+                                    Text("${payments.size} ${if (payments.size == 1) "payment" else "payments"} recorded", fontSize = 12.sp, color = TextLight)
+                                }
+                            }
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color(0xFF94A3B8))
                         }
                     }
 
@@ -1391,34 +1525,82 @@ fun LoansScreen(
                         }
                     }
                     
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
                     
-                    Button(
-                        onClick = {
-                            viewModel.markLoanAsPaid(selectedLoan!!.id)
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(screenContext, screenContext.getString(R.string.toast_loan_closed), Toast.LENGTH_SHORT)
-                            selectedLoan = null
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = if (selectedLoan!!.type == LoanType.LENT) PinkAccent else NavyDark)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.mark_as_paid_off), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Button(
+                            onClick = {
+                                viewModel.markLoanAsPaid(selectedLoan!!.id)
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(screenContext, screenContext.getString(R.string.toast_loan_closed), Toast.LENGTH_SHORT)
+                                selectedLoan = null
+                            },
+                            modifier = Modifier
+                                .weight(2f)
+                                .height(50.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (selectedLoan!!.type == LoanType.LENT) PinkAccent else NavyDark,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                stringResource(R.string.mark_as_paid_off),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        Button(
+                            onClick = { showDeleteConfirm = true },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFFEBEE),
+                                contentColor = Color(0xFFD32F2F)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 8.dp)
+                        ) {
+                            Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = Color(0xFFD32F2F), modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                stringResource(R.string.delete_button),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFD32F2F),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                     
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
                     if (showDeleteConfirm) {
+                        Spacer(modifier = Modifier.height(12.dp))
                         Row(
-                            modifier = Modifier.fillMaxWidth().background(Color(0xFFFFEBEE), RoundedCornerShape(12.dp)).padding(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFFFEBEE), RoundedCornerShape(12.dp))
+                                .padding(12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(stringResource(R.string.delete_confirm_msg), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(
+                                stringResource(R.string.delete_confirm_msg),
+                                color = Color(0xFFD32F2F),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Row {
                                 Button(
                                     onClick = {
@@ -1433,7 +1615,7 @@ fun LoansScreen(
                                 ) {
                                     Text(stringResource(R.string.yes_btn), fontSize = 12.sp)
                                 }
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Button(
                                     onClick = { showDeleteConfirm = false },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color.White),
@@ -1444,14 +1626,6 @@ fun LoansScreen(
                                     Text(stringResource(R.string.no_btn), color = NavyDark, fontSize = 12.sp)
                                 }
                             }
-                        }
-                    } else {
-                        TextButton(
-                            onClick = { showDeleteConfirm = true }
-                        ) {
-                            Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = TextLight, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.delete_record), color = TextLight, fontWeight = FontWeight.Medium)
                         }
                     }
                 }

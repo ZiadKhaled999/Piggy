@@ -774,5 +774,5 @@
     <string name="insight_spending_one">Most expenses come from %1$s.</string>
     <string name="insight_spending_two">Most expenses come from %1$s and %2$s, keeping you on track.</string>
     <string name="category_other">Other</string>
-
+    <string name="paywall_cta_upgrade">Level Up Now</string>
 </resources>

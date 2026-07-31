@@ -84,9 +84,9 @@ class StreakWidgetProvider : AppWidgetProvider() {
                 val isPast = calendar.before(todayCalendar) && dateStr != todayDateStr
                 
                 val (bgRes, dayText) = when {
-                    isActive -> R.drawable.ic_streak_check to ""
-                    isFrozen -> R.drawable.ic_streak_freeze to ""
-                    isPast -> R.drawable.ic_streak_x to ""
+                    isActive -> R.drawable.streak to ""
+                    isFrozen -> R.drawable.streak_frozen to ""
+                    isPast -> R.drawable.streak_missed to ""
                     else -> R.drawable.bg_streak_day_future to dayLetters[i]
                 }
 

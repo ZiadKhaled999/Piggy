@@ -261,6 +261,17 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                     )
                 }
 
+                composable<Screen.AiChat> {
+                    LaunchedEffect(Unit) {
+                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "AiChat"))
+                    }
+                    val aiChatViewModel: com.oryno.piggy_ledger.ai.AiChatViewModel = viewModel(factory = factory)
+                    AiChatScreen(
+                        viewModel = aiChatViewModel,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
                 composable<Screen.Settings> { backStackEntry ->
                     val screen = backStackEntry.toRoute<Screen.Settings>()
                     val mode = remember(screen.modeName) {
@@ -374,7 +385,10 @@ fun MainContainer(
             Box(modifier = Modifier.fillMaxSize()) {
                 Scaffold(
                     bottomBar = {
-                        FloatingNavBar(navController = bottomNavController)
+                        FloatingNavBar(
+                            navController = bottomNavController,
+                            onAiClick = { appNavController.navigate(Screen.AiChat) }
+                        )
                     }
                 ) { innerPadding ->
                     NavHost(
@@ -571,7 +585,7 @@ fun DeadlineInAppAlert(
 }
 
 @Composable
-fun FloatingNavBar(navController: NavHostController) {
+fun FloatingNavBar(navController: NavHostController, onAiClick: () -> Unit = {}) {
     val items = remember {
         listOf(
             NavItem(Screen.Dashboard, Icons.Default.Home),
@@ -585,18 +599,20 @@ fun FloatingNavBar(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
-        contentAlignment = Alignment.Center
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
             modifier = Modifier
+                .weight(1f)
                 .clip(RoundedCornerShape(32.dp))
                 .background(Color(0xFF1E1E2E).copy(alpha = 0.95f)) // Dark translucent background
                 .padding(horizontal = 6.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             items.forEach { item ->
@@ -625,6 +641,15 @@ fun FloatingNavBar(navController: NavHostController) {
                     }
                 )
             }
+        }
+        
+        FloatingActionButton(
+            onClick = onAiClick,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            shape = CircleShape
+        ) {
+            Icon(Icons.Default.AutoAwesome, contentDescription = "Sovereign AI")
         }
     }
 }

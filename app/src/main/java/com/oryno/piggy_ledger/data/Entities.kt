@@ -143,6 +143,15 @@ data class AccountTransaction(
 )
 
 @Serializable
+@Entity(tableName = "ai_chat_messages")
+data class AiChatMessage(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val role: String, // "user" or "assistant"
+    val content: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+@Serializable
 data class BackupData(
     val goals: List<Goal>,
     val transactions: List<Transaction>,

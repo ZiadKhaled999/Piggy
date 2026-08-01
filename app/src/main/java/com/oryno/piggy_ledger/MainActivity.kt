@@ -124,7 +124,7 @@ class MainActivity : AppCompatActivity() {
     
     val repository = PiggyLedgerRepository(database.piggyLedgerDao(), applicationContext)
     userPreferences = UserPreferences(applicationContext)
-    val factory = ViewModelFactory(repository, userPreferences, applicationContext)
+    val factory = ViewModelFactory(repository, userPreferences, applicationContext, database)
 
     observeSecuritySettings()
     observeAuthentication()

@@ -229,4 +229,13 @@ interface PiggyLedgerDao {
         )
         deletePendingTransactionById(pendingId)
     }
+
+    @Query("SELECT * FROM ai_chat_messages ORDER BY timestamp ASC")
+    fun getAllChatMessagesFlow(): Flow<List<AiChatMessage>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertChatMessage(message: AiChatMessage)
+
+    @Query("DELETE FROM ai_chat_messages")
+    suspend fun clearChatMessages()
 }

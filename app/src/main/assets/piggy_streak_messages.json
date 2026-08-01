@@ -1,0 +1,243 @@
+{
+  "title": "Piggy Ledger Mascot Streak Messages",
+  "app": "Piggy Ledger",
+  "description": "Dynamic contextual phrases and triggers for the Piggy Mascot Streak Widget based on daily timeline, streak status, and user interaction states.",
+  "categories": [
+    {
+      "id": 1,
+      "category": "Late Night Window",
+      "time_range": "00:00 - 03:59",
+      "items": [
+        "Late night transaction?",
+        "Since you're up… check balance?",
+        "Logging from bed, [Username]?",
+        "Can't sleep, [Username]?",
+        "Start early, [Username]!"
+      ]
+    },
+    {
+      "id": 2,
+      "category": "Morning Window",
+      "time_range": "04:00 - 11:59",
+      "items": [
+        "Morning, [Username]!",
+        "[Username]! You're up!",
+        "Coffee + Piggy Ledger?",
+        "Get started early!",
+        "Log morning expenses!",
+        "Gooooood morning!"
+      ]
+    },
+    {
+      "id": 3,
+      "category": "Afternoon Window",
+      "time_range": "12:00 - 15:59",
+      "items": [
+        "Time to log expenses!",
+        "Time to check budget",
+        "[Username]! Log lunch?",
+        "Ledger time!",
+        "Log today's receipts?",
+        "Pleasseeeeee?",
+        "Any expenses, [Username]?",
+        "Log a transaction!",
+        "Got 30 seconds?",
+        "Let me see your budget!",
+        "Hey, [Username]."
+      ]
+    },
+    {
+      "id": 4,
+      "category": "Evening Window",
+      "time_range": "16:00 - 19:59",
+      "items": [
+        "Seriously, [Username].",
+        "Please log today!",
+        "Piggy's waiting!",
+        "[Username]?",
+        "Ready to balance?",
+        "[Username]! It's late!",
+        "I'm waitingggg!",
+        "Extend your streak!",
+        "It's getting late!",
+        "You ready, [Username]?"
+      ]
+    },
+    {
+      "id": 5,
+      "category": "Night Alert Window",
+      "time_range": "20:00 - 21:59",
+      "items": [
+        "[Username]…",
+        "Last chance, [Username]!",
+        "[Username]????",
+        "It's late!",
+        "Time's up, [Username]!",
+        "Don't let it break!",
+        "Time's almost up!",
+        "Where ARE your receipts?",
+        "Log! Your! Expenses!",
+        "Protect your streak!",
+        "Piggy's worried!",
+        "Save your streak!",
+        "Last chance!",
+        "Save your ledger!"
+      ]
+    },
+    {
+      "id": 6,
+      "category": "Emergency Window (T-Minus Reset)",
+      "time_range": "22:00 - 23:59",
+      "items": [
+        "[Username].",
+        "[USERNAME], PLEASE LOG??",
+        "Last chance!",
+        "Now or never!",
+        "Don't forget me!",
+        "Save your streak!",
+        "Piggy's not happy…",
+        "Piggy is watching…",
+        "1:00:00 to reset!",
+        "It's VERY late!",
+        "Bye-bye, streak??",
+        "Log expenses now!",
+        "Almost midnight!",
+        "LOG TRANSACTIONS NOW, [USERNAME]",
+        "ALMOST TOO LATE, [USERNAME]",
+        "*screams in empty ledger*",
+        "*PANIC PIGGY NOISES*"
+      ]
+    },
+    {
+      "id": 7,
+      "category": "Streak Frozen State",
+      "items": [
+        "Streak's frozen in ice!",
+        "Streak's in danger!",
+        "Unfreeze your streak!",
+        "Log a transaction today!",
+        "Save your streak!",
+        "It's so cold, [Username]…",
+        "[Username]! Unfreeze!",
+        "[Username]! Log today?",
+        "You're OUT of Streak Freezes!",
+        "[Username]! No Streak Freezes left!",
+        "Zero freezes left!",
+        "No streak freezes!"
+      ]
+    },
+    {
+      "id": 8,
+      "category": "Streak Extended / Logged Today",
+      "items": [
+        "See you tomorrow!",
+        "Ledger updated!",
+        "Great job saving!",
+        "See you again!",
+        "See you later!",
+        "Wallet balanced!",
+        "Way to go!",
+        "Piggy is proud!",
+        "Come back tomorrow!",
+        "Don't forget me tomorrow!"
+      ]
+    },
+    {
+      "id": 9,
+      "category": "Streak Broken State",
+      "items": [
+        "Nooooo! Streak broke!",
+        "Repair your streak!",
+        "Reset to 0 days...",
+        "[USERNAME] NOOOO!",
+        "WAAAAAAH!!!",
+        "Log a transaction to rebuild!"
+      ]
+    },
+    {
+      "id": 10,
+      "category": "Ghosted / Inactive State",
+      "items": [
+        "No more budgeting?",
+        "Log expenses now?",
+        "I miss you…",
+        "Betrayal!",
+        "Piggy is lonely…",
+        "Please…",
+        "Tap to revive!",
+        "Piggy dreams of savings…",
+        "Hello?",
+        "I'm waiting for your receipts…",
+        "3 seconds of logging?",
+        "Please [Username]…",
+        "???",
+        "Ignoring your budget?",
+        "Miss u [Username]…",
+        "Oh come on, [Username]",
+        "No more ledger, [Username]?",
+        "[Username]? Hello??",
+        "[Username], come baaack",
+        "Today's the day, [Username]!",
+        "Knock knock, [Username]",
+        "Wakey wakey, [Username]",
+        "Piggy needs you, [Username]",
+        "For Piggy, [Username]?",
+        "AHHH! [Username]!!!",
+        "Piggy bored. Need transactions.",
+        "No more savings, [Username]?",
+        "Ring ring, [Username]?",
+        "I'm waiting, [Username]",
+        "[ Log an expense! ]",
+        "[ I'll come back ]",
+        "Sigh, [Username]?",
+        "Where is your budget?",
+        "Ummmm, [Username]?",
+        "Still waiting, [Username]",
+        "Well well, [Username]",
+        "How about today, [Username]?",
+        "30 seconds, [Username]?",
+        "Where has the time gone?",
+        "How long now, [Username]?",
+        "H e l l o",
+        "Helloooooo",
+        "Pleaseeeee",
+        "Why am I even on your home screen…",
+        "Quick budget break?",
+        "Tap for Piggy Ledger",
+        "[Username], I need receipts…",
+        "Still scrolling, [Username]?",
+        "[Username], come back to Piggy!",
+        "It's been days, [Username]",
+        "[Username], I'm begging you…",
+        "I see you [Username]…",
+        "I'm waiting for you, [Username]…",
+        "Ignoring expenses, [Username]?"
+      ]
+    },
+    {
+      "id": 11,
+      "category": "Ghosted Duration Counters",
+      "items": [
+        "[Number] days since last transaction",
+        "[Number] days ghosted by you",
+        "[Number] days since you left Piggy",
+        "[Number] days abandoned",
+        "[Number] days without logging",
+        "[Number] days missing your budget",
+        "[Number] days waiting for you",
+        "[Number] days [Username]…",
+        "[Number] transactions you never logged",
+        "[Number] days since your first entry"
+      ]
+    },
+    {
+      "id": 12,
+      "category": "Streak Born (Fresh Start)",
+      "items": [
+        "You came back!",
+        "Great start on your budget!",
+        "Here we go!"
+      ]
+    }
+  ]
+}

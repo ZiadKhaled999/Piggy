@@ -1,6 +1,9 @@
 package com.oryno.piggy_ledger.data
 
 import android.content.Context
+import com.oryno.piggy_ledger.R
+import org.json.JSONObject
+import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -9,6 +12,14 @@ import java.util.Locale
 object StreakManager {
     private const val PREFS_NAME = "piggy_streak_prefs"
     private const val KEY_ACTION_DATES = "action_dates"
+
+    data class WidgetDisplayInfo(
+        val streakCount: Int,
+        val badgeResource: Int,
+        val backgroundResource: Int,
+        val speechMessage: String,
+        val mascotResource: Int
+    )
 
     fun recordAction(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -39,7 +50,6 @@ object StreakManager {
         val frozenDates = mutableSetOf<String>()
         val pendingFreezes = mutableSetOf<String>()
 
-        // Find the earliest date to avoid infinite loop safely
         var earliestDateStr = "9999-99-99"
         for (d in dates) {
             if (d < earliestDateStr) earliestDateStr = d
@@ -62,14 +72,12 @@ object StreakManager {
                         monthFreezes[monthStr] = freezes + 1
                         pendingFreezes.add(dateStr)
                     } else {
-                        // Streak broken
                         break
                     }
                 }
             }
 
             if (dateStr < earliestDateStr) {
-                // Traversed past the earliest known action
                 break
             }
 
@@ -144,7 +152,6 @@ object StreakManager {
             missed++
             currentDay.add(Calendar.DAY_OF_YEAR, -1)
             
-            // Limit to 100 days backwards just in case
             if (missed > 100) break
         }
         return missed
@@ -181,19 +188,179 @@ object StreakManager {
 
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         return when {
-            hour < 14 -> PiggyState.HAPPY // Morning to early afternoon
-            hour < 18 -> PiggyState.WORRIED // Late afternoon
-            else -> PiggyState.PANIC // Evening
+            hour < 14 -> PiggyState.HAPPY
+            hour < 18 -> PiggyState.WORRIED
+            else -> PiggyState.PANIC
         }
     }
 
     fun getPiggyResource(state: PiggyState): Int {
         return when (state) {
-            PiggyState.HAPPY -> com.oryno.piggy_ledger.R.drawable.ic_piggy_happy
-            PiggyState.WORRIED -> com.oryno.piggy_ledger.R.drawable.ic_piggy_worried
-            PiggyState.PANIC -> com.oryno.piggy_ledger.R.drawable.ic_piggy_panic
-            PiggyState.SUCCESS -> com.oryno.piggy_ledger.R.drawable.ic_piggy_success
-            PiggyState.LOST -> com.oryno.piggy_ledger.R.drawable.ic_piggy_lost
+            PiggyState.HAPPY -> R.drawable.ic_piggy_happy
+            PiggyState.WORRIED -> R.drawable.ic_piggy_worried
+            PiggyState.PANIC -> R.drawable.ic_piggy_panic
+            PiggyState.SUCCESS -> R.drawable.ic_piggy_success
+            PiggyState.LOST -> R.drawable.ic_piggy_lost
+        }
+    }
+
+    fun getWidgetDisplayInfo(context: Context): WidgetDisplayInfo {
+        val streak = getStreak(context)
+        val actionToday = hasActionToday(context)
+        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        val frozenDates = getFrozenDates(context)
+        val isFrozenToday = frozenDates.contains(todayStr)
+        val dates = getActionDates(context)
+        val missedDays = getConsecutiveMissedDays(context)
+
+        val cal = Calendar.getInstance()
+        val hour = cal.get(Calendar.HOUR_OF_DAY)
+        val dayOfYear = cal.get(Calendar.DAY_OF_YEAR)
+
+        val categoryId: Int
+        val badgeRes: Int
+        val bgRes: Int
+        val mascotRes: Int
+
+        when {
+            actionToday -> {
+                categoryId = 8 // Streak Extended / Logged Today
+                badgeRes = R.drawable.streak
+                bgRes = R.drawable.bg_streak_widget_success
+                mascotRes = R.drawable.ic_piggy_success
+            }
+            isFrozenToday -> {
+                categoryId = 7 // Streak Frozen State
+                badgeRes = R.drawable.streak_frozen
+                bgRes = R.drawable.bg_streak_widget_frozen
+                mascotRes = R.drawable.ic_piggy_worried
+            }
+            streak == 0 && dates.isNotEmpty() -> {
+                categoryId = if (missedDays > 3) 10 else 9 // Ghosted or Broken
+                badgeRes = R.drawable.streak_missed
+                bgRes = R.drawable.img_widget_bg_dark_1785543053480
+                mascotRes = R.drawable.ic_piggy_lost
+            }
+            dates.isEmpty() -> {
+                categoryId = 12 // Streak Born
+                badgeRes = R.drawable.streak
+                bgRes = R.drawable.img_widget_bg_cyan_1785543039542
+                mascotRes = R.drawable.ic_piggy_happy
+            }
+            else -> {
+                when (hour) {
+                    in 0..3 -> {
+                        categoryId = 1
+                        badgeRes = R.drawable.streak
+                        bgRes = R.drawable.img_widget_bg_cyan_1785543039542
+                        mascotRes = R.drawable.ic_piggy_happy
+                    }
+                    in 4..11 -> {
+                        categoryId = 2
+                        badgeRes = R.drawable.streak
+                        bgRes = R.drawable.img_widget_bg_cyan_1785543039542
+                        mascotRes = R.drawable.ic_piggy_happy
+                    }
+                    in 12..15 -> {
+                        categoryId = 3
+                        badgeRes = R.drawable.streak
+                        bgRes = R.drawable.img_widget_bg_cyan_1785543039542
+                        mascotRes = R.drawable.ic_piggy_happy
+                    }
+                    in 16..19 -> {
+                        categoryId = 4
+                        badgeRes = R.drawable.streak
+                        bgRes = R.drawable.img_widget_bg_urgent_1785543067926
+                        mascotRes = R.drawable.ic_piggy_worried
+                    }
+                    in 20..21 -> {
+                        categoryId = 5
+                        badgeRes = R.drawable.streak_missed
+                        bgRes = R.drawable.img_widget_bg_urgent_1785543067926
+                        mascotRes = R.drawable.ic_piggy_worried
+                    }
+                    else -> {
+                        categoryId = 6
+                        badgeRes = R.drawable.streak_missed
+                        bgRes = R.drawable.img_widget_bg_urgent_1785543067926
+                        mascotRes = R.drawable.ic_piggy_panic
+                    }
+                }
+            }
+        }
+
+        val rawPhrase = getRandomPhraseFromCategory(context, categoryId, seed = dayOfYear * 24 + hour)
+        val userName = getUserName(context)
+        val formattedSpeech = rawPhrase
+            .replace("[Username]", userName)
+            .replace("[USER_NAME]", userName)
+            .replace("[Number]", (if (streak > 0) streak else missedDays).toString())
+            .replace("[Course]", "Budget")
+
+        return WidgetDisplayInfo(
+            streakCount = streak,
+            badgeResource = badgeRes,
+            backgroundResource = bgRes,
+            speechMessage = formattedSpeech,
+            mascotResource = mascotRes
+        )
+    }
+
+    private fun getUserName(context: Context): String {
+        return try {
+            val userPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+            val name = userPrefs.getString("auth_user_name", "") ?: ""
+            if (name.isNotBlank()) name else "Saver"
+        } catch (e: Exception) {
+            "Saver"
+        }
+    }
+
+    private fun getRandomPhraseFromCategory(context: Context, categoryId: Int, seed: Int): String {
+        return try {
+            val inputStream: InputStream = context.assets.open("piggy_streak_messages.json")
+            val jsonString = inputStream.bufferedReader().use { it.readText() }
+            val jsonObject = JSONObject(jsonString)
+            val categoriesArray = jsonObject.getJSONArray("categories")
+
+            var itemsList = mutableListOf<String>()
+            for (i in 0 until categoriesArray.length()) {
+                val catObj = categoriesArray.getJSONObject(i)
+                if (catObj.optInt("id") == categoryId) {
+                    val itemsArr = catObj.getJSONArray("items")
+                    for (j in 0 until itemsArr.length()) {
+                        itemsList.add(itemsArr.getString(j))
+                    }
+                    break
+                }
+            }
+
+            if (itemsList.isEmpty()) {
+                getFallbackPhrase(categoryId)
+            } else {
+                val index = Math.abs(seed) % itemsList.size
+                itemsList[index]
+            }
+        } catch (e: Exception) {
+            getFallbackPhrase(categoryId)
+        }
+    }
+
+    private fun getFallbackPhrase(categoryId: Int): String {
+        return when (categoryId) {
+            1 -> "Late night transaction?"
+            2 -> "Morning! Time to log expenses."
+            3 -> "Got 30 seconds to log?"
+            4 -> "Piggy is waiting for receipts!"
+            5 -> "It's getting late! Protect your streak."
+            6 -> "LOG TRANSACTIONS NOW!"
+            7 -> "Streak's frozen in ice!"
+            8 -> "Great job keeping your ledger updated!"
+            9 -> "Oh no! Your streak broke."
+            10 -> "Piggy misses you! Log a transaction."
+            11 -> "Days without logging..."
+            12 -> "Welcome! Let's build a streak."
+            else -> "Time to log expenses!"
         }
     }
 }

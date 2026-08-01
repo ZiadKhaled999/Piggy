@@ -1,8 +1,11 @@
 -- Run this in your Supabase SQL Editor
 
+-- If you previously created tables with UUID columns, drop them or alter column types:
+-- DROP TABLE IF EXISTS pending_transactions, account_transactions, accounts, loan_payments, loans, transactions, goals CASCADE;
+
 -- 1. Create Goals table
 CREATE TABLE IF NOT EXISTS goals (
-    id UUID PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     "userId" TEXT NOT NULL,
     name TEXT NOT NULL,
     "targetAmount" DOUBLE PRECISION NOT NULL,
@@ -13,9 +16,9 @@ CREATE TABLE IF NOT EXISTS goals (
 
 -- 2. Create Transactions table
 CREATE TABLE IF NOT EXISTS transactions (
-    id UUID PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     "userId" TEXT NOT NULL,
-    "goalId" UUID NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
+    "goalId" TEXT NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
     amount DOUBLE PRECISION NOT NULL,
     note TEXT NOT NULL,
     timestamp BIGINT NOT NULL,
@@ -27,7 +30,7 @@ CREATE TABLE IF NOT EXISTS transactions (
 
 -- 3. Create Loans table
 CREATE TABLE IF NOT EXISTS loans (
-    id UUID PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     "userId" TEXT NOT NULL,
     type TEXT NOT NULL,
     amount DOUBLE PRECISION NOT NULL,
@@ -47,9 +50,9 @@ CREATE TABLE IF NOT EXISTS loans (
 
 -- 4. Create Loan Payments table
 CREATE TABLE IF NOT EXISTS loan_payments (
-    id UUID PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     "userId" TEXT NOT NULL,
-    "loanId" UUID NOT NULL REFERENCES loans(id) ON DELETE CASCADE,
+    "loanId" TEXT NOT NULL REFERENCES loans(id) ON DELETE CASCADE,
     amount DOUBLE PRECISION NOT NULL,
     timestamp BIGINT NOT NULL,
     note TEXT,
@@ -60,7 +63,7 @@ CREATE TABLE IF NOT EXISTS loan_payments (
 
 -- 5. Create Accounts table
 CREATE TABLE IF NOT EXISTS accounts (
-    id UUID PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     "userId" TEXT NOT NULL,
     name TEXT NOT NULL,
     type TEXT NOT NULL,
@@ -87,9 +90,9 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 -- 6. Create Account Transactions table
 CREATE TABLE IF NOT EXISTS account_transactions (
-    id UUID PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     "userId" TEXT NOT NULL,
-    account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     amount DOUBLE PRECISION NOT NULL,
     merchant TEXT NOT NULL,
     timestamp BIGINT NOT NULL,
@@ -101,7 +104,7 @@ CREATE TABLE IF NOT EXISTS account_transactions (
 
 -- 7. Create Pending Transactions table
 CREATE TABLE IF NOT EXISTS pending_transactions (
-    id UUID PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     "userId" TEXT NOT NULL,
     amount DOUBLE PRECISION NOT NULL,
     merchant TEXT NOT NULL,
@@ -112,7 +115,6 @@ CREATE TABLE IF NOT EXISTS pending_transactions (
     "updatedAt" BIGINT NOT NULL,
     "isSynced" BOOLEAN DEFAULT true
 );
-
 
 -- ENABLE ROW LEVEL SECURITY (RLS) FOR ALL TABLES
 ALTER TABLE goals ENABLE ROW LEVEL SECURITY;
@@ -148,3 +150,4 @@ CREATE POLICY "Enable all access for loan_payments" ON loan_payments FOR ALL USI
 CREATE POLICY "Enable all access for accounts" ON accounts FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all access for account_transactions" ON account_transactions FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all access for pending_transactions" ON pending_transactions FOR ALL USING (true) WITH CHECK (true);
+

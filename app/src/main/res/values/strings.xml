@@ -347,9 +347,9 @@
     <string name="save">Save</string>
     <string name="general_info">General Info</string>
     <string name="account_name">Account Name</string>
-    <string name="account_name_placeholder">Your legal name</string>
+    <string name="account_name_placeholder">e.g. CIB Salary, NBE Savings</string>
     <string name="account_label">Account Label</string>
-    <string name="account_label_placeholder">your purpose for this account like groceries</string>
+    <string name="account_label_placeholder">e.g. Main Account, Groceries, Pocket Money</string>
     <string name="account_type">Account Type</string>
     <string name="bank">Bank</string>
     <string name="card">Card</string>
@@ -381,10 +381,10 @@
     <string name="eg_12000">e.g. 12000</string>
     <string name="payment_due_day">Payment Due Day</string>
     <string name="eg_15">e.g. 15</string>
-    <string name="card_numbers_optional">Card Numbers (optional)</string>
-    <string name="eg_card_numbers">e.g. 4567, 1234</string>
-    <string name="bank_account_number_optional">Bank Account Number (optional)</string>
-    <string name="eg_account_number">e.g. 074130001</string>
+    <string name="card_numbers_optional">Card Last 4 Digits (optional)</string>
+    <string name="eg_card_numbers">e.g. 4567</string>
+    <string name="bank_account_number_optional">Bank Account Last 4 Digits (optional)</string>
+    <string name="eg_account_number">e.g. 3001</string>
     <string name="search_ellipsis">Search...</string>
     <string name="search_banks_ellipsis">Search banks...</string>
     <string name="select_color">Select Color</string>
@@ -395,8 +395,8 @@
     <string name="sms_settings">SMS Settings</string>
     <string name="sms_auto_link_provider">SMS messages from %1$s will be auto-linked to this account.</string>
     <string name="sms_auto_link_default">SMS messages from your chosen e-wallet provider will be auto-linked to this account.</string>
-    <string name="link_card_digits_desc">Link your card\'s last 3 or 4 digits so SMS expenses go directly to this account.</string>
-    <string name="bank_account_desc">Used when SMS shows an account number instead of card digits (e.g. InstaPay).</string>
+    <string name="link_card_digits_desc">Enter only the last 4 digits of your card so SMS expenses automatically link to this account.</string>
+    <string name="bank_account_desc">Enter only the last 4 digits of your bank account number to match SMS transactions (e.g. InstaPay).</string>
     <string name="add_instapay_fee">Add InstaPay fee automatically</string>
     <string name="instapay_fee_desc">Adds InstaPay transfer fees when an SMS only shows the principal amount.</string>
     <string name="advanced">Advanced</string>
@@ -608,7 +608,7 @@
     <string name="csv_restore_failed">CSV import failed: %1$s</string>
     <string name="select_csv_file">Select CSV File</string>
     <string name="close">Close</string>
-    <string name="card_number_placeholder">e.g. 1234 5678 9012</string>
+    <string name="card_number_placeholder">e.g. 4567</string>
 
     <!-- Auth Screen -->
     <string name="auth_welcome_title_main">Piggy Ledger</string>

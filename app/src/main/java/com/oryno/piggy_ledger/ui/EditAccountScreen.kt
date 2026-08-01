@@ -500,10 +500,16 @@ fun EditAccountScreen(
                             OutlinedTextField(
                                 value = cardNumbers,
                                 onValueChange = { cardNumbers = it },
-                                placeholder = { Text("•••• 4092", color = TextLight) },
+                                placeholder = { Text(stringResource(R.string.eg_card_numbers), color = TextLight) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = textFieldColors
+                            )
+                            Text(
+                                text = stringResource(R.string.link_card_digits_desc),
+                                fontSize = 12.sp,
+                                color = TextLight,
+                                modifier = Modifier.padding(top = 2.dp)
                             )
                         }
                     }
@@ -517,11 +523,17 @@ fun EditAccountScreen(
                         OutlinedTextField(
                             value = bankAccountNo,
                             onValueChange = { bankAccountNo = it },
-                            placeholder = { Text(stringResource(R.string.card_number_placeholder), color = TextLight) },
+                            placeholder = { Text(stringResource(R.string.eg_account_number), color = TextLight) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = textFieldColors
+                        )
+                        Text(
+                            text = stringResource(R.string.bank_account_desc),
+                            fontSize = 12.sp,
+                            color = TextLight,
+                            modifier = Modifier.padding(top = 2.dp)
                         )
                     }
                 }

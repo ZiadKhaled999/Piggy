@@ -317,9 +317,9 @@
     <string name="save">احفظ</string>
     <string name="general_info">معلومات عامة</string>
     <string name="account_name">اسم الحساب</string>
-    <string name="account_name_placeholder">اسمك القانوني بالكامل</string>
+    <string name="account_name_placeholder">مثلاً: مرتب CIB، توفير البنك الأهلي</string>
     <string name="account_label">تصنيف الحساب</string>
-    <string name="account_label_placeholder">هدف الحساب ده زي البقالة ومصروف البيت</string>
+    <string name="account_label_placeholder">مثلاً: الحساب الأساسي، مصروف البيت، شخصي</string>
     <string name="account_type">نوع الحساب</string>
     <string name="bank">بنك</string>
     <string name="card">كارت</string>
@@ -351,10 +351,10 @@
     <string name="eg_12000">مثلاً: 12000</string>
     <string name="payment_due_day">يوم الدفع</string>
     <string name="eg_15">مثلاً: 15</string>
-    <string name="card_numbers_optional">أرقام الكارت (اختياري)</string>
-    <string name="eg_card_numbers">مثلاً: 4567، 1234</string>
-    <string name="bank_account_number_optional">رقم الحساب البنكي (اختياري)</string>
-    <string name="eg_account_number">مثلاً: 074130001</string>
+    <string name="card_numbers_optional">آخر ٤ أرقام في الكارت (اختياري)</string>
+    <string name="eg_card_numbers">مثلاً: 4567</string>
+    <string name="bank_account_number_optional">آخر ٤ أرقام من رقم الحساب (اختياري)</string>
+    <string name="eg_account_number">مثلاً: 3001</string>
     <string name="search_ellipsis">بتدور على إيه؟...</string>
     <string name="search_banks_ellipsis">دور على بنك...</string>
     <string name="select_color">اختار لون</string>
@@ -365,8 +365,8 @@
     <string name="sms_settings">تظبيط رسائل الـ SMS</string>
     <string name="sms_auto_link_provider">أي رسائل SMS هتيجي من %1$s هتتربط تلقائياً بالحساب ده.</string>
     <string name="sms_auto_link_default">الرسائل اللي هتيجي من محفظتك الإلكترونية هتتربط تلقائياً بالحساب ده.</string>
-    <string name="link_card_digits_desc">اربط آخر 3 أو 4 أرقام من كارتك عشان أي مصروف يجيلك في رسالة ينزل في الحساب ده علطول.</string>
-    <string name="bank_account_desc">بنستخدم ده لما رسالة الـ SMS تعرض رقم الحساب بدل أرقام الكارت (زي انستاباي).</string>
+    <string name="link_card_digits_desc">اكتب آخر ٤ أرقام بس من كارتك عشان أي مصروف يجيلك في رسالة ينزل في الحساب ده.</string>
+    <string name="bank_account_desc">اكتب آخر ٤ أرقام بس من رقم حسابك البنكي لربط معاملات الرسائل (زي انستاباي).</string>
     <string name="add_instapay_fee">ضيف رسوم انستاباي تلقائياً</string>
     <string name="instapay_fee_desc">هنضيف رسوم تحويل انستاباي (10 جنيه) لو رسالة الـ SMS فيها المبلغ الصافي بس.</string>
     <string name="advanced">تظبيطات متقدمة</string>

@@ -327,9 +327,9 @@
     <string name="new_account">حساب جديد</string>
     <string name="general_info">معلومات عامة</string>
     <string name="account_name">اسم الحساب</string>
-    <string name="account_name_placeholder">الاسم القانوني الخاص بك</string>
+    <string name="account_name_placeholder">مثلاً مرتب سي آي بي، توفير الأهلي</string>
     <string name="account_label">تسمية الحساب</string>
-    <string name="account_label_placeholder">الغرض من هذا الحساب مثل البقالة</string>
+    <string name="account_label_placeholder">مثلاً الحساب الرئيسي، مصاريف البيت، شخصي</string>
     <string name="account_type">نوع الحساب</string>
     <string name="bank">بنك</string>
     <string name="card">كارت</string>
@@ -361,10 +361,10 @@
     <string name="eg_12000">مثلاً 12000</string>
     <string name="payment_due_day">يوم دفع المديونية</string>
     <string name="eg_15">مثلاً 15</string>
-    <string name="card_numbers_optional">أرقام الكارت (اختياري)</string>
-    <string name="eg_card_numbers">مثلاً 4567، 1234</string>
-    <string name="bank_account_number_optional">رقم الحساب البنكي (اختياري)</string>
-    <string name="eg_account_number">مثلاً 074130001</string>
+    <string name="card_numbers_optional">آخر ٤ أرقام من الكارت (اختياري)</string>
+    <string name="eg_card_numbers">مثلاً 4567</string>
+    <string name="bank_account_number_optional">آخر ٤ أرقام من الحساب البنكي (اختياري)</string>
+    <string name="eg_account_number">مثلاً 3001</string>
     <string name="search_ellipsis">بحث...</string>
     <string name="search_banks_ellipsis">البحث في البنوك...</string>
     <string name="select_color">اختار اللون</string>
@@ -375,8 +375,8 @@
     <string name="sms_settings">إعدادات رسائل الـ SMS</string>
     <string name="sms_auto_link_provider">رسائل الـ SMS الجاية من %1$s هتتربط تلقائي بالحساب ده.</string>
     <string name="sms_auto_link_default">رسائل الـ SMS الجاية من مزود المحفظة هتتربط تلقائي بالحساب ده.</string>
-    <string name="link_card_digits_desc">اربط آخر 3 أو 4 أرقام من الكارت عشان معاملات الرسايل تنزل في الحساب ده علطول.</string>
-    <string name="bank_account_desc">بيستخدم لما الرسايل بتعرض رقم الحساب بدل الكارت (مثال: إنستا باي).</string>
+    <string name="link_card_digits_desc">ادخل آخر ٤ أرقام فقط من كارتك لربط معاملات الرسائل بالحساب تلقائياً.</string>
+    <string name="bank_account_desc">ادخل آخر ٤ أرقام فقط من رقم الحساب لربط معاملات الرسائل (مثال: إنستا باي).</string>
     <string name="add_instapay_fee">إضافة رسوم إنستا باي تلقائياً</string>
     <string name="instapay_fee_desc">بيضيف رسوم تحويل إنستا باي لما رسالة الـ SMS تعرض المبلغ الأساسي بس.</string>
     <string name="advanced">خيارات متقدمة</string>

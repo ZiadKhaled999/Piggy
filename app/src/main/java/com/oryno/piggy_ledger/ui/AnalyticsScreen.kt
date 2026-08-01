@@ -310,26 +310,72 @@ fun DonutChart(slices: List<SpendingSlice>, total: Double) {
     val totalText = format.format(total).replace(".00", "")
     val totalLabel = stringResource(R.string.analytics_total)
 
+    val gapAngle = if (slices.size > 1) 3f else 0f
+    val totalGaps = if (slices.size > 1) slices.size * gapAngle else 0f
+    val availableSweep = 360f - totalGaps
+
+    val sliceAngles = remember(slices) {
+        if (slices.isEmpty()) emptyList()
+        else {
+            val count = slices.size
+            val minSweep = if (availableSweep >= count * 8f) 8f else (availableSweep / count)
+            
+            var allocatedMin = 0f
+            var largeSumPct = 0f
+            val isSmall = BooleanArray(count)
+            
+            slices.forEachIndexed { i, slice ->
+                val raw = slice.percentage * availableSweep
+                if (raw < minSweep) {
+                    isSmall[i] = true
+                    allocatedMin += minSweep
+                } else {
+                    largeSumPct += slice.percentage
+                }
+            }
+            
+            val remainingSweep = (availableSweep - allocatedMin).coerceAtLeast(0f)
+            val sweeps = FloatArray(count)
+            slices.forEachIndexed { i, slice ->
+                if (isSmall[i]) {
+                    sweeps[i] = minSweep
+                } else {
+                    sweeps[i] = if (largeSumPct > 0) (slice.percentage / largeSumPct) * remainingSweep else (remainingSweep / count)
+                }
+            }
+            
+            var currentStart = -90f
+            slices.indices.map { i ->
+                val start = currentStart
+                val sweep = sweeps[i]
+                currentStart += sweep + gapAngle
+                Pair(start, sweep)
+            }
+        }
+    }
+
     Canvas(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(slices) {
+            .pointerInput(slices, sliceAngles) {
                 detectTapGestures { offset ->
                     val center = Offset(size.width / 2f, size.height / 2f)
                     val angle = (Math.toDegrees(atan2((offset.y - center.y).toDouble(), (offset.x - center.x).toDouble())) + 360) % 360
-                    val tapAngle = (angle + 90) % 360
                     
-                    var currentStart = 0f
                     var hit = -1
-                    for (i in slices.indices) {
-                        val sweep = slices[i].percentage * 360f
-                        if (tapAngle >= currentStart && tapAngle <= currentStart + sweep) {
-                            hit = i
-                            break
+                    sliceAngles.forEachIndexed { i, (start, sweep) ->
+                        val normStart = (start % 360 + 360) % 360
+                        val normEnd = ((start + sweep) % 360 + 360) % 360
+                        
+                        val isHit = if (normStart <= normEnd) {
+                            angle >= normStart && angle <= normEnd
+                        } else {
+                            angle >= normStart || angle <= normEnd
                         }
-                        currentStart += sweep
+                        if (isHit) {
+                            hit = i
+                        }
                     }
-                    
                     selectedIndex = if (selectedIndex == hit) -1 else hit
                 }
             }
@@ -357,86 +403,67 @@ fun DonutChart(slices: List<SpendingSlice>, total: Double) {
             topLeft = Offset(center.x - subtitleResult.size.width / 2f, center.y + 4.dp.toPx())
         )
 
-        var startAngle = -90f
-        val gapAngle = if (slices.size > 1) 12f else 0f
-        val capDegree = (strokeWidth / (2f * Math.PI.toFloat() * radius) * 360f) / 2f
-
         slices.forEachIndexed { index, slice ->
-            val origSweep = slice.percentage * 360f
-            if (slices.size > 1) {
-                val effectiveSweep = (origSweep - gapAngle - (capDegree * 2f)).coerceAtLeast(1f)
-                val effectiveStart = startAngle + (gapAngle / 2f) + capDegree
-                drawArc(
-                    color = slice.color,
-                    startAngle = effectiveStart,
-                    sweepAngle = effectiveSweep,
-                    useCenter = false,
-                    topLeft = Offset(center.x - radius, center.y - radius),
-                    size = Size(radius * 2, radius * 2),
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                )
-            } else {
+            if (index < sliceAngles.size) {
+                val (startAngle, sweepAngle) = sliceAngles[index]
                 drawArc(
                     color = slice.color,
                     startAngle = startAngle,
-                    sweepAngle = origSweep,
+                    sweepAngle = sweepAngle,
                     useCenter = false,
                     topLeft = Offset(center.x - radius, center.y - radius),
                     size = Size(radius * 2, radius * 2),
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
                 )
-            }
-            
-            if (selectedIndex == index) {
-                val midAngle = startAngle + origSweep / 2
-                val midAngleRad = Math.toRadians(midAngle.toDouble())
-                
-                val tooltipRadius = radius + strokeWidth
-                val tooltipX = center.x + cos(midAngleRad).toFloat() * tooltipRadius
-                val tooltipY = center.y + sin(midAngleRad).toFloat() * tooltipRadius
-                
-                val sliceAmount = format.format(slice.amount).replace(".00", "")
-                val pct = (slice.percentage * 100).toInt()
-                val tooltipText = "    $sliceAmount ($pct%)"
-                val ttStyle = TextStyle(fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Medium)
-                val ttMeasurer = textMeasurer.measure(tooltipText, ttStyle)
-                
-                val paddingX = 8.dp.toPx()
-                val paddingY = 4.dp.toPx()
-                
-                val ttWidth = ttMeasurer.size.width + paddingX * 2
-                val ttHeight = ttMeasurer.size.height + paddingY * 2
-                
-                var rectX = tooltipX
-                if (cos(midAngleRad) < 0) rectX -= ttWidth
-                var rectY = tooltipY - ttHeight / 2
-                
-                // Clamp to canvas bounds
-                rectX = rectX.coerceIn(0f, size.width - ttWidth)
-                rectY = rectY.coerceIn(0f, size.height - ttHeight)
-                
-                drawRoundRect(
-                    color = Color(0xFF1F2937),
-                    topLeft = Offset(rectX, rectY),
-                    size = Size(ttWidth, ttHeight),
-                    cornerRadius = CornerRadius(16.dp.toPx())
-                )
-                
-                drawCircle(
-                    color = slice.color,
-                    radius = 4.dp.toPx(),
-                    center = Offset(rectX + paddingX + 8.dp.toPx(), rectY + ttHeight/2)
-                )
-                
-                drawText(
-                    textMeasurer = textMeasurer,
-                    text = tooltipText,
-                    style = ttStyle,
-                    topLeft = Offset(rectX + paddingX, rectY + paddingY)
-                )
-            }
 
-            startAngle += origSweep
+                if (selectedIndex == index) {
+                    val midAngle = startAngle + sweepAngle / 2f
+                    val midAngleRad = Math.toRadians(midAngle.toDouble())
+                    
+                    val tooltipRadius = radius + strokeWidth
+                    val tooltipX = center.x + cos(midAngleRad).toFloat() * tooltipRadius
+                    val tooltipY = center.y + sin(midAngleRad).toFloat() * tooltipRadius
+                    
+                    val sliceAmount = format.format(slice.amount).replace(".00", "")
+                    val pct = (slice.percentage * 100).toInt()
+                    val tooltipText = "    $sliceAmount ($pct%)"
+                    val ttStyle = TextStyle(fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Medium)
+                    val ttMeasurer = textMeasurer.measure(tooltipText, ttStyle)
+                    
+                    val paddingX = 8.dp.toPx()
+                    val paddingY = 4.dp.toPx()
+                    
+                    val ttWidth = ttMeasurer.size.width + paddingX * 2
+                    val ttHeight = ttMeasurer.size.height + paddingY * 2
+                    
+                    var rectX = tooltipX
+                    if (cos(midAngleRad) < 0) rectX -= ttWidth
+                    var rectY = tooltipY - ttHeight / 2
+                    
+                    rectX = rectX.coerceIn(0f, size.width - ttWidth)
+                    rectY = rectY.coerceIn(0f, size.height - ttHeight)
+                    
+                    drawRoundRect(
+                        color = Color(0xFF1F2937),
+                        topLeft = Offset(rectX, rectY),
+                        size = Size(ttWidth, ttHeight),
+                        cornerRadius = CornerRadius(16.dp.toPx())
+                    )
+                    
+                    drawCircle(
+                        color = slice.color,
+                        radius = 4.dp.toPx(),
+                        center = Offset(rectX + paddingX + 8.dp.toPx(), rectY + ttHeight/2)
+                    )
+                    
+                    drawText(
+                        textMeasurer = textMeasurer,
+                        text = tooltipText,
+                        style = ttStyle,
+                        topLeft = Offset(rectX + paddingX, rectY + paddingY)
+                    )
+                }
+            }
         }
     }
 }

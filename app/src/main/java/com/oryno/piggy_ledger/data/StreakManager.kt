@@ -33,6 +33,18 @@ object StreakManager {
         com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
     }
 
+    fun removeTodayAction(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val dates = prefs.getStringSet(KEY_ACTION_DATES, emptySet())?.toMutableSet() ?: mutableSetOf()
+        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        if (dates.remove(todayStr)) {
+            prefs.edit().putStringSet(KEY_ACTION_DATES, dates).apply()
+        }
+        // Trigger update for both widgets
+        com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+        com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+    }
+
     fun getStreakAndFrozenDates(context: Context): Pair<Int, Set<String>> {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val dates = prefs.getStringSet(KEY_ACTION_DATES, emptySet()) ?: return Pair(0, emptySet())

@@ -14,7 +14,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -53,6 +56,7 @@ fun StreakAchievementsScreen(
     val frozenDates = streakPair.second
     val longestStreak = remember(currentStreak) { StreakManager.getLongestStreak(context) }
     val hasActionToday = remember(currentStreak) { StreakManager.hasActionToday(context) }
+    var displayCalendar by remember { mutableStateOf(Calendar.getInstance()) }
 
     val composition by rememberLottieComposition(LottieCompositionSpec.Asset("streak.json"))
     val lottieProgress by animateLottieCompositionAsState(
@@ -291,21 +295,64 @@ fun StreakAchievementsScreen(
                         .fillMaxWidth()
                         .padding(20.dp)
                 ) {
-                    val currentCal = Calendar.getInstance()
                     val monthNameFormat = SimpleDateFormat("MMMM yyyy", Locale.US)
-                    val monthTitle = monthNameFormat.format(currentCal.time)
+                    val monthTitle = monthNameFormat.format(displayCalendar.time)
+
+                    val todayCal = Calendar.getInstance()
+                    val isCurrentMonth = displayCalendar.get(Calendar.YEAR) == todayCal.get(Calendar.YEAR) &&
+                            displayCalendar.get(Calendar.MONTH) == todayCal.get(Calendar.MONTH)
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = monthTitle,
-                            color = Color(0xFF0F172A),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    val nextCal = displayCalendar.clone() as Calendar
+                                    nextCal.add(Calendar.MONTH, -1)
+                                    displayCalendar = nextCal
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                    contentDescription = "Previous Month",
+                                    tint = Color(0xFF0F172A),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            Text(
+                                text = monthTitle,
+                                color = Color(0xFF0F172A),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+
+                            IconButton(
+                                onClick = {
+                                    if (!isCurrentMonth) {
+                                        val nextCal = displayCalendar.clone() as Calendar
+                                        nextCal.add(Calendar.MONTH, 1)
+                                        displayCalendar = nextCal
+                                    }
+                                },
+                                enabled = !isCurrentMonth,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    contentDescription = "Next Month",
+                                    tint = if (!isCurrentMonth) Color(0xFF0F172A) else Color(0xFFCBD5E1),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
 
                         // Legend row (Streak, Freeze, Missed)
                         Row(
@@ -316,28 +363,28 @@ fun StreakAchievementsScreen(
                                 Image(
                                     painter = painterResource(id = R.drawable.streak),
                                     contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(Modifier.width(3.dp))
-                                Text("Streak", fontSize = 10.sp, color = Color(0xFF64748B))
+                                Text("Streak", fontSize = 11.sp, color = Color(0xFF64748B))
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Image(
                                     painter = painterResource(id = R.drawable.streak_frozen),
                                     contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(Modifier.width(3.dp))
-                                Text("Freeze", fontSize = 10.sp, color = Color(0xFF64748B))
+                                Text("Freeze", fontSize = 11.sp, color = Color(0xFF64748B))
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Image(
                                     painter = painterResource(id = R.drawable.streak_missed),
                                     contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(Modifier.width(3.dp))
-                                Text("Missed", fontSize = 10.sp, color = Color(0xFF64748B))
+                                Text("Missed", fontSize = 11.sp, color = Color(0xFF64748B))
                             }
                         }
                     }
@@ -365,7 +412,7 @@ fun StreakAchievementsScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     // Month days computation
-                    val cal = Calendar.getInstance()
+                    val cal = displayCalendar.clone() as Calendar
                     cal.set(Calendar.DAY_OF_MONTH, 1)
                     val maxDays = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
                     val firstDayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
@@ -433,35 +480,35 @@ fun StreakAchievementsScreen(
                             BoxWithConstraints(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(36.dp)
+                                    .height(44.dp)
                             ) {
                                 val colWidth = maxWidth / 7
 
                                 // Background pills for streak segments (contiguous days connected)
                                 streakSegments.forEach { (startCol, endCol) ->
-                                    val pillWidth = colWidth * (endCol - startCol) + 36.dp
-                                    val startOffset = colWidth * startCol + (colWidth - 36.dp) / 2
+                                    val pillWidth = colWidth * (endCol - startCol) + 42.dp
+                                    val startOffset = colWidth * startCol + (colWidth - 42.dp) / 2
                                     Box(
                                         modifier = Modifier
                                             .offset(x = startOffset)
                                             .width(pillWidth)
-                                            .height(36.dp)
-                                            .background(Color(0xFFFFF7ED), RoundedCornerShape(18.dp))
-                                            .border(1.dp, Color(0xFFFDBA74), RoundedCornerShape(18.dp))
+                                            .height(42.dp)
+                                            .background(Color(0xFFFFF7ED), RoundedCornerShape(21.dp))
+                                            .border(1.dp, Color(0xFFFDBA74), RoundedCornerShape(21.dp))
                                     )
                                 }
 
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(36.dp)
+                                        .height(44.dp)
                                 ) {
                                     for (colIndex in 0 until 7) {
                                         val cell = rowCells[colIndex]
                                         Box(
                                             modifier = Modifier
                                                 .weight(1f)
-                                                .height(36.dp),
+                                                .height(44.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             if (cell != null) {
@@ -470,13 +517,13 @@ fun StreakAchievementsScreen(
                                                         Image(
                                                             painter = painterResource(id = R.drawable.streak),
                                                             contentDescription = "Active Streak",
-                                                            modifier = Modifier.size(22.dp)
+                                                            modifier = Modifier.size(34.dp)
                                                         )
                                                     }
                                                     cell.isFrozen -> {
                                                         Box(
                                                             modifier = Modifier
-                                                                .size(36.dp)
+                                                                .size(42.dp)
                                                                 .background(Color(0xFFF0F9FF), CircleShape)
                                                                 .border(1.dp, Color(0xFF7DD3FC), CircleShape),
                                                             contentAlignment = Alignment.Center
@@ -484,14 +531,14 @@ fun StreakAchievementsScreen(
                                                             Image(
                                                                 painter = painterResource(id = R.drawable.streak_frozen),
                                                                 contentDescription = "Frozen Streak",
-                                                                modifier = Modifier.size(22.dp)
+                                                                modifier = Modifier.size(32.dp)
                                                             )
                                                         }
                                                     }
                                                     cell.isMissed -> {
                                                         Box(
                                                             modifier = Modifier
-                                                                .size(36.dp)
+                                                                .size(42.dp)
                                                                 .background(Color(0xFFFEF2F2), CircleShape)
                                                                 .border(1.dp, Color(0xFFFCA5A5), CircleShape),
                                                             contentAlignment = Alignment.Center
@@ -499,14 +546,14 @@ fun StreakAchievementsScreen(
                                                             Image(
                                                                 painter = painterResource(id = R.drawable.streak_missed),
                                                                 contentDescription = "Missed Streak",
-                                                                modifier = Modifier.size(20.dp)
+                                                                modifier = Modifier.size(30.dp)
                                                             )
                                                         }
                                                     }
                                                     else -> {
                                                         Box(
                                                             modifier = Modifier
-                                                                .size(36.dp)
+                                                                .size(42.dp)
                                                                 .background(
                                                                     if (cell.isToday) Color(0xFFFFF7ED) else Color(0xFFF8FAFC),
                                                                     CircleShape
@@ -520,7 +567,7 @@ fun StreakAchievementsScreen(
                                                         ) {
                                                             Text(
                                                                 text = "${cell.dayNum}",
-                                                                fontSize = 11.sp,
+                                                                fontSize = 13.sp,
                                                                 fontWeight = if (cell.isToday) FontWeight.Bold else FontWeight.Medium,
                                                                 color = if (cell.isToday) Color(0xFFFF7A00) else Color(0xFF94A3B8)
                                                             )
@@ -539,36 +586,100 @@ fun StreakAchievementsScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Primary Log Action Button
-            Button(
-                onClick = {
-                    StreakManager.recordAction(context)
-                    streakPair = StreakManager.getStreakAndFrozenDates(context)
-                    Toast.makeText(context, "Streak recorded for today! 🔥", Toast.LENGTH_SHORT).show()
-                },
-                enabled = !hasActionToday,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(32.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFF7A00),
-                    disabledContainerColor = Color(0xFFE2E8F0),
-                    contentColor = Color.White,
-                    disabledContentColor = Color(0xFF94A3B8)
-                )
-            ) {
-                Icon(
-                    imageVector = if (hasActionToday) Icons.Default.Check else Icons.Default.LocalFireDepartment,
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = if (hasActionToday) "Streak Maintained Today 🎉" else "Record Today's Action 🔥",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
+            // Primary Log / Delete Action Section
+            if (hasActionToday) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(32.dp),
+                        color = Color(0xFFFFF7ED),
+                        border = BorderStroke(1.5.dp, Color(0xFFFDBA74))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 20.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = Color(0xFFFF7A00),
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "Streak Maintained Today 🎉",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF9A3412)
+                            )
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            StreakManager.removeTodayAction(context)
+                            streakPair = StreakManager.getStreakAndFrozenDates(context)
+                            Toast.makeText(context, "Today's streak removed", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(32.dp),
+                        border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFFDC2626)
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Delete Today's Streak Record",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            } else {
+                Button(
+                    onClick = {
+                        StreakManager.recordAction(context)
+                        streakPair = StreakManager.getStreakAndFrozenDates(context)
+                        Toast.makeText(context, "Streak recorded for today! 🔥", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(32.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFF7A00),
+                        contentColor = Color.White
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocalFireDepartment,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Record Today's Action 🔥",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

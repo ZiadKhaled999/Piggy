@@ -19,6 +19,15 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Comment
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import android.graphics.Bitmap
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -57,6 +66,9 @@ fun StreakAchievementsScreen(
     val longestStreak = remember(currentStreak) { StreakManager.getLongestStreak(context) }
     val hasActionToday = remember(currentStreak) { StreakManager.hasActionToday(context) }
     var displayCalendar by remember { mutableStateOf(Calendar.getInstance()) }
+
+    var showShareModal by remember { mutableStateOf(false) }
+    var streakBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     val composition by rememberLottieComposition(LottieCompositionSpec.Asset("streak.json"))
     val lottieProgress by animateLottieCompositionAsState(
@@ -209,71 +221,86 @@ fun StreakAchievementsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Longest Streak Card (Glassmorphic with horizontal gradient from left to right)
+            // Top Details & Legend Bar (Streak, Streak Freezed, Streak Missed, Longest Streak)
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White.copy(alpha = 0.95f),
-                border = BorderStroke(1.dp, Color(0xFFFED7AA).copy(alpha = 0.8f)),
-                shadowElevation = 2.dp
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                shadowElevation = 1.dp
             ) {
-                Box(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(
-                            Brush.horizontalGradient(
-                                colors = listOf(
-                                    Color(0xFFFFF7ED),
-                                    Color(0xFFFFEDD5),
-                                    Color(0xFFFED7AA).copy(alpha = 0.7f)
-                                )
-                            ),
-                            shape = RoundedCornerShape(24.dp)
-                        )
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 18.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    // Streak Active
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(id = R.drawable.streak),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "Streak",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF334155)
+                        )
+                    }
+
+                    // Streak Freezed
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(id = R.drawable.streak_frozen),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "Freezed",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF0284C7)
+                        )
+                    }
+
+                    // Streak Missed
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(id = R.drawable.streak_missed),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "Missed",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFFE11D48)
+                        )
+                    }
+
+                    // Longest Streak (Compact Top Badge)
+                    Surface(
+                        color = Color(0xFFFFF7ED),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFFDBA74))
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .background(
-                                    Color.White.copy(alpha = 0.5f),
-                                    RoundedCornerShape(18.dp)
-                                )
-                                .border(1.dp, Color(0xFFFED7AA), RoundedCornerShape(18.dp)),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.streak),
-                                contentDescription = "Longest Streak",
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(18.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Longest Streak",
-                                color = Color(0xFF9A3412),
-                                fontSize = 13.sp,
+                                text = "🏆 $longestStreak d",
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.5.sp
-                            )
-
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            Text(
-                                text = "$longestStreak days",
-                                color = Color(0xFF7C2D12),
-                                fontSize = 26.sp,
-                                fontWeight = FontWeight.Black
+                                color = Color(0xFFC2410C)
                             )
                         }
                     }
@@ -304,88 +331,51 @@ fun StreakAchievementsScreen(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
+                        IconButton(
+                            onClick = {
+                                val nextCal = displayCalendar.clone() as Calendar
+                                nextCal.add(Calendar.MONTH, -1)
+                                displayCalendar = nextCal
+                            },
+                            modifier = Modifier.size(36.dp)
                         ) {
-                            IconButton(
-                                onClick = {
-                                    val nextCal = displayCalendar.clone() as Calendar
-                                    nextCal.add(Calendar.MONTH, -1)
-                                    displayCalendar = nextCal
-                                },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                    contentDescription = "Previous Month",
-                                    tint = Color(0xFF0F172A),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-
-                            Text(
-                                text = monthTitle,
-                                color = Color(0xFF0F172A),
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 4.dp)
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                contentDescription = "Previous Month",
+                                tint = Color(0xFF0F172A),
+                                modifier = Modifier.size(22.dp)
                             )
-
-                            IconButton(
-                                onClick = {
-                                    if (!isCurrentMonth) {
-                                        val nextCal = displayCalendar.clone() as Calendar
-                                        nextCal.add(Calendar.MONTH, 1)
-                                        displayCalendar = nextCal
-                                    }
-                                },
-                                enabled = !isCurrentMonth,
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                    contentDescription = "Next Month",
-                                    tint = if (!isCurrentMonth) Color(0xFF0F172A) else Color(0xFFCBD5E1),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
                         }
 
-                        // Legend row (Streak, Freeze, Missed)
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Text(
+                            text = monthTitle,
+                            color = Color(0xFF0F172A),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+
+                        IconButton(
+                            onClick = {
+                                if (!isCurrentMonth) {
+                                    val nextCal = displayCalendar.clone() as Calendar
+                                    nextCal.add(Calendar.MONTH, 1)
+                                    displayCalendar = nextCal
+                                }
+                            },
+                            enabled = !isCurrentMonth,
+                            modifier = Modifier.size(36.dp)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.streak),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(Modifier.width(3.dp))
-                                Text("Streak", fontSize = 11.sp, color = Color(0xFF64748B))
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.streak_frozen),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(Modifier.width(3.dp))
-                                Text("Freeze", fontSize = 11.sp, color = Color(0xFF64748B))
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.streak_missed),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(Modifier.width(3.dp))
-                                Text("Missed", fontSize = 11.sp, color = Color(0xFF64748B))
-                            }
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "Next Month",
+                                tint = if (!isCurrentMonth) Color(0xFF0F172A) else Color(0xFFCBD5E1),
+                                modifier = Modifier.size(22.dp)
+                            )
                         }
                     }
 
@@ -586,99 +576,223 @@ fun StreakAchievementsScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Primary Log / Delete Action Section
-            if (hasActionToday) {
+            // Share My Streak Button
+            Button(
+                onClick = {
+                    streakBitmap = StreakShareHelper.createStreakImageBitmap(context, currentStreak)
+                    showShareModal = true
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(32.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFEC4899),
+                    contentColor = Color.White
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 2.dp
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = "Share My Streak",
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Share My Streak",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+
+    // Custom Share Preview Sheet Modal
+    if (showShareModal && streakBitmap != null) {
+        Dialog(
+            onDismissRequest = { showShareModal = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.65f))
+                    .clickable { showShareModal = false },
+                contentAlignment = Alignment.BottomCenter
+            ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(enabled = false) {},
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Surface(
+                    // Top area for centered preview image card
+                    Box(
                         modifier = Modifier
+                            .weight(1f)
                             .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(32.dp),
-                        color = Color(0xFFFFF7ED),
-                        border = BorderStroke(1.5.dp, Color(0xFFFDBA74))
+                            .padding(horizontal = 24.dp, vertical = 24.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color.White,
+                            shadowElevation = 16.dp,
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 20.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                                .fillMaxWidth(0.85f)
+                                .wrapContentHeight()
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = Color(0xFFFF7A00),
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = "Streak Maintained Today 🎉",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF9A3412)
+                            Image(
+                                bitmap = streakBitmap!!.asImageBitmap(),
+                                contentDescription = "Streak Preview",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1080f / 1280f)
+                                    .clip(RoundedCornerShape(24.dp))
                             )
                         }
                     }
 
-                    OutlinedButton(
-                        onClick = {
-                            StreakManager.removeTodayAction(context)
-                            streakPair = StreakManager.getStreakAndFrozenDates(context)
-                            Toast.makeText(context, "Today's streak removed", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(32.dp),
-                        border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFFDC2626)
-                        )
+                    // Bottom Share Sheet Card
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+                        color = Color.White
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Delete Today's Streak Record",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp, vertical = 20.dp)
+                        ) {
+                            // Header Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Share your streak",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A)
+                                )
+                                IconButton(
+                                    onClick = { showShareModal = false },
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(Color(0xFFF1F5F9), CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Close",
+                                        tint = Color(0xFF334155),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            // Action Buttons Row
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceAround,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Messages Button
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(64.dp)
+                                            .background(Color(0xFF22C55E), CircleShape)
+                                            .clickable {
+                                                StreakShareHelper.shareToMessages(context, streakBitmap!!)
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Comment,
+                                            contentDescription = "Messages",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Messages",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF475569)
+                                    )
+                                }
+
+                                // Save Image Button
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(64.dp)
+                                            .background(Color(0xFFF1F5F9), CircleShape)
+                                            .clickable {
+                                                val saved = StreakShareHelper.saveImageToGallery(context, streakBitmap!!)
+                                                if (saved) {
+                                                    Toast.makeText(context, "Saved to Gallery! 📸", Toast.LENGTH_SHORT).show()
+                                                } else {
+                                                    Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
+                                                }
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowDownward,
+                                            contentDescription = "Save Image",
+                                            tint = Color(0xFF0F172A),
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Save Image",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF475569)
+                                    )
+                                }
+
+                                // More Button
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(64.dp)
+                                            .background(Color(0xFFF1F5F9), CircleShape)
+                                            .clickable {
+                                                StreakShareHelper.shareNativeImage(context, streakBitmap!!)
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.MoreHoriz,
+                                            contentDescription = "More",
+                                            tint = Color(0xFF0F172A),
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "More",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF475569)
+                                    )
+                                }
+                            }
+                        }
                     }
-                }
-            } else {
-                Button(
-                    onClick = {
-                        StreakManager.recordAction(context)
-                        streakPair = StreakManager.getStreakAndFrozenDates(context)
-                        Toast.makeText(context, "Streak recorded for today! 🔥", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(32.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFF7A00),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocalFireDepartment,
-                        contentDescription = null,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = "Record Today's Action 🔥",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
                 }
             }
         }

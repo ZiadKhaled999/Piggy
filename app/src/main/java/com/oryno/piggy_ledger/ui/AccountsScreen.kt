@@ -416,13 +416,12 @@ fun AccountsScreen(
                                 val key = parts[0]
                                 val desc = parts.getOrNull(1) ?: ""
                                 
-                                val cat = categoriesList.find { it.key == key }
-                                val localizedCatName = if (cat != null) {
-                                    stringResource(cat.nameRes)
-                                } else if (key.startsWith("custom_")) {
-                                    key.substringAfter("custom_")
-                                } else {
-                                    key
+                                val localizedCatName = resolveCategoryDisplayName(key)
+                                val cleaned = cleanCategoryKey(key)
+                                val cat = categoriesList.find { 
+                                    it.key.equals(key, ignoreCase = true) || 
+                                    it.key.equals("cat_$cleaned", ignoreCase = true) ||
+                                    cleanCategoryKey(it.key).equals(cleaned, ignoreCase = true)
                                 }
                                 val icon = cat?.icon ?: Icons.Default.Category
                                 
@@ -877,13 +876,12 @@ fun AccountsScreen(
             val key = parts[0]
             val desc = parts.getOrNull(1) ?: ""
             
-            val cat = categoriesList.find { it.key == key }
-            val localizedCatName = if (cat != null) {
-                stringResource(cat.nameRes)
-            } else if (key.startsWith("custom_")) {
-                key.substringAfter("custom_")
-            } else {
-                key
+            val localizedCatName = resolveCategoryDisplayName(key)
+            val cleaned = cleanCategoryKey(key)
+            val cat = categoriesList.find { 
+                it.key.equals(key, ignoreCase = true) || 
+                it.key.equals("cat_$cleaned", ignoreCase = true) ||
+                cleanCategoryKey(it.key).equals(cleaned, ignoreCase = true)
             }
             val icon = cat?.icon ?: Icons.Default.Category
             
@@ -1044,7 +1042,7 @@ fun DetailRow(
 }
 
 // Category and icon matcher based on merchant keywords
-private fun getCategoryAndIconForMerchant(merchant: String): Pair<String, ImageVector> {
+fun getCategoryAndIconForMerchant(merchant: String): Pair<String, ImageVector> {
     val clean = merchant.lowercase()
     return when {
         clean.contains("uber") || clean.contains("careem") || clean.contains("taxi") || clean.contains("transport") || clean.contains("airport") -> 

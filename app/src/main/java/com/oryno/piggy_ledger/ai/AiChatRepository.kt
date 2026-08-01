@@ -13,6 +13,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
+import com.oryno.piggy_ledger.data.AiConversation
+
 class AiChatRepository(private val dao: PiggyLedgerDao) {
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true; classDiscriminator = "type" }
@@ -22,44 +24,92 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
     // You can override this if Groq is preferred or DeepSeek is preferred.
     private val apiKey: String = BuildConfig.GROQ_API_KEY
 
+    fun getAllConversations(): Flow<List<AiConversation>> {
+        return dao.getAllConversationsFlow()
+    }
+
+    suspend fun saveConversation(conversation: AiConversation) {
+        dao.insertConversation(conversation)
+    }
+
+    suspend fun updateConversationTitle(id: String, title: String) {
+        dao.updateConversationTitle(id, title)
+    }
+
+    suspend fun updateConversationPinned(id: String, isPinned: Boolean) {
+        dao.updateConversationPinned(id, isPinned)
+    }
+
+    suspend fun deleteConversation(id: String) {
+        dao.deleteConversationById(id)
+        dao.deleteChatMessagesForConversation(id)
+    }
+
+    fun getChatMessagesForConversation(conversationId: String): Flow<List<AiChatMessage>> {
+        return dao.getChatMessagesForConversationFlow(conversationId)
+    }
+
     fun getChatHistory(): Flow<List<AiChatMessage>> {
         return dao.getAllChatMessagesFlow()
     }
 
-    suspend fun saveMessage(role: String, content: String) {
-        dao.insertChatMessage(AiChatMessage(role = role, content = content))
+    suspend fun saveMessage(role: String, content: String, conversationId: String = "default") {
+        dao.insertChatMessage(AiChatMessage(conversationId = conversationId, role = role, content = content))
+    }
+
+    suspend fun clearHistoryForConversation(conversationId: String) {
+        dao.deleteChatMessagesForConversation(conversationId)
     }
 
     suspend fun clearHistory() {
         dao.clearChatMessages()
     }
 
-    suspend fun fetchContextData(): String = withContext(Dispatchers.IO) {
+    suspend fun fetchContextData(context: android.content.Context? = null): String = withContext(Dispatchers.IO) {
         return@withContext try {
             val accounts = dao.getAllAccountsSync()
             val goals = dao.getAllGoalsSync()
             val loans = dao.getAllLoansSync()
-            val recentTransactions = dao.getAllAccountTransactionsSync().take(15)
+            val recentTransactions = dao.getAllAccountTransactionsSync().take(30)
             val pending = dao.getAllPendingTransactionsSync()
             
+            // Streak Info
+            val streakInfo = if (context != null) {
+                val current = com.oryno.piggy_ledger.data.StreakManager.getStreak(context)
+                val longest = com.oryno.piggy_ledger.data.StreakManager.getLongestStreak(context)
+                val hasActionToday = com.oryno.piggy_ledger.data.StreakManager.hasActionToday(context)
+                "Active Streak: $current days (Longest: $longest days, Logged Today: $hasActionToday)"
+            } else {
+                "Streak status unavailable."
+            }
+            
+            val totalNetBalance = accounts.sumOf { it.current_balance }
+            
             val accountSummary = if (accounts.isEmpty()) "No accounts logged yet." 
-                else accounts.joinToString("\n") { "- ${it.name} (${it.type}): ${it.current_balance} ${it.currency}" }
+                else accounts.joinToString("\n") { "- ${it.name} (${it.type}): ${it.current_balance} ${it.currency} (Provider: ${it.provider ?: "N/A"})" }
                 
             val goalSummary = if (goals.isEmpty()) "No active goals set." 
                 else goals.joinToString("\n") { "- ${it.name}: Target ${it.targetAmount}" }
                 
             val loanSummary = if (loans.isEmpty()) "No active loans." 
-                else loans.joinToString("\n") { "- ${it.type.name} with ${it.contactName}: ${it.amount} (Paid: ${it.isPaidOff})" }
+                else loans.joinToString("\n") { "- ${it.type.name} with ${it.contactName}: Amount ${it.amount} (Paid Off: ${it.isPaidOff})" }
                 
             val txSummary = if (recentTransactions.isEmpty()) "No recent transactions."
-                else recentTransactions.joinToString("\n") { "- ${it.merchant}: ${it.amount} (Account ID: ${it.account_id})" }
+                else recentTransactions.joinToString("\n") { tx ->
+                    val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(tx.timestamp))
+                    "- $dateStr | ${tx.merchant}: ${tx.amount} (${tx.source})"
+                }
                 
             val pendingSummary = if (pending.isEmpty()) "None."
                 else pending.joinToString("\n") { "- ${it.merchant}: ${it.amount}" }
                 
             """
             |=== KNOWLEDGE HUB INDEX ===
+            |[MODULE 0: USER STREAK & HABIT METRICS]
+            |$streakInfo
+            |
             |[MODULE 1: ACCOUNTS & LIQUIDITY]
+            |Total Net Balance across all accounts: $totalNetBalance
             |$accountSummary
             |
             |[MODULE 2: SAVINGS & FINANCIAL GOALS]

@@ -169,19 +169,35 @@ fun SpendingView(transactions: List<AccountTransaction>) {
     val totalSpending = expenses.sumOf { abs(it.amount) }
     val slices = remember(expenses) {
         val grouped = expenses.groupBy { tx ->
-            val isParsed = tx.merchant.contains("|")
-            if (isParsed) tx.merchant.split("|", limit = 2)[0] else "Other"
+            if (tx.merchant.contains("|")) {
+                val rawCat = tx.merchant.split("|", limit = 2)[0]
+                val cleaned = cleanCategoryKey(rawCat)
+                val catItem = categoriesList.find { 
+                    it.key.equals(rawCat, ignoreCase = true) || 
+                    it.key.equals("cat_$cleaned", ignoreCase = true) ||
+                    cleanCategoryKey(it.key).equals(cleaned, ignoreCase = true)
+                }
+                catItem?.key ?: cleaned
+            } else {
+                val raw = tx.merchant.trim()
+                if (raw.startsWith("cat_", ignoreCase = true) || raw.startsWith("cat ", ignoreCase = true) || raw.startsWith("custom_", ignoreCase = true)) {
+                    val cleaned = cleanCategoryKey(raw)
+                    val catItem = categoriesList.find { 
+                        it.key.equals(raw, ignoreCase = true) || 
+                        it.key.equals("cat_$cleaned", ignoreCase = true) ||
+                        cleanCategoryKey(it.key).equals(cleaned, ignoreCase = true)
+                    }
+                    catItem?.key ?: cleaned
+                } else {
+                    val legacyCategory = getCategoryAndIconForMerchant(tx.merchant).first
+                    if (legacyCategory.isNotBlank() && legacyCategory != "Other") legacyCategory else "cat_other"
+                }
+            }
         }
-        val rawSlices = grouped.map { (cat, txs) ->
+        val rawSlices = grouped.map { (catKey, txs) ->
             val amount = txs.sumOf { abs(it.amount) }
             val percentage = if (totalSpending > 0) (amount / totalSpending).toFloat() else 0f
-            val cleanCatKey = when {
-                cat.startsWith("custom_") -> cat.substringAfter("custom_")
-                cat.startsWith("cat_") -> cat.substringAfter("cat_")
-                else -> cat
-            }
-            val formattedName = cleanCatKey.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-            SpendingSlice(cleanCatKey, amount, percentage, Color.Gray)
+            SpendingSlice(catKey, amount, percentage, Color.Gray)
         }.sortedByDescending { it.amount }
 
         val top = rawSlices.take(5).toMutableList()
@@ -276,12 +292,7 @@ fun SpendingView(transactions: List<AccountTransaction>) {
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         slices.forEach { slice ->
-                            val catItem = com.oryno.piggy_ledger.ui.categoriesList.find { it.key == slice.categoryName || it.key == "cat_${slice.categoryName}" }
-                            val catName = when {
-                                slice.categoryName == "Other" -> stringResource(R.string.category_other)
-                                catItem != null -> stringResource(catItem.nameRes)
-                                else -> slice.categoryName.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-                            }
+                            val catName = resolveCategoryDisplayName(slice.categoryName)
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(slice.color))
                                 Spacer(Modifier.width(8.dp))

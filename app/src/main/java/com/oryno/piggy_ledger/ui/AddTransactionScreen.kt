@@ -74,6 +74,48 @@ val categoriesList = listOf(
     TransactionCategory("cat_work", R.string.cat_work, Icons.Default.Business)
 )
 
+fun cleanCategoryKey(rawKey: String): String {
+    var cleaned = rawKey.trim()
+    while (cleaned.startsWith("cat_", ignoreCase = true) ||
+           cleaned.startsWith("cat ", ignoreCase = true) ||
+           cleaned.startsWith("cat-", ignoreCase = true) ||
+           cleaned.startsWith("custom_", ignoreCase = true) ||
+           cleaned.startsWith("custom ", ignoreCase = true)) {
+        cleaned = when {
+            cleaned.startsWith("cat_", ignoreCase = true) -> cleaned.substring(4)
+            cleaned.startsWith("cat ", ignoreCase = true) -> cleaned.substring(4)
+            cleaned.startsWith("cat-", ignoreCase = true) -> cleaned.substring(4)
+            cleaned.startsWith("custom_", ignoreCase = true) -> cleaned.substring(7)
+            cleaned.startsWith("custom ", ignoreCase = true) -> cleaned.substring(7)
+            else -> cleaned
+        }.trim()
+    }
+    return cleaned
+}
+
+@Composable
+fun resolveCategoryDisplayName(rawKey: String): String {
+    if (rawKey == "Other" || rawKey == "category_other_marker" || rawKey.equals("cat_other", ignoreCase = true)) {
+        return stringResource(R.string.category_other)
+    }
+    val cleaned = cleanCategoryKey(rawKey)
+    val catItem = categoriesList.find { 
+        it.key.equals(rawKey, ignoreCase = true) || 
+        it.key.equals("cat_$cleaned", ignoreCase = true) ||
+        cleanCategoryKey(it.key).equals(cleaned, ignoreCase = true)
+    }
+    return if (catItem != null) {
+        stringResource(catItem.nameRes)
+    } else {
+        cleaned.replace("_", " ")
+            .split(" ")
+            .filter { it.isNotBlank() }
+            .joinToString(" ") { word ->
+                word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+            }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionScreen(

@@ -230,6 +230,27 @@ interface PiggyLedgerDao {
         deletePendingTransactionById(pendingId)
     }
 
+    @Query("SELECT * FROM ai_conversations ORDER BY isPinned DESC, updatedAt DESC")
+    fun getAllConversationsFlow(): Flow<List<AiConversation>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertConversation(conversation: AiConversation)
+
+    @Query("UPDATE ai_conversations SET title = :title, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateConversationTitle(id: String, title: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("UPDATE ai_conversations SET isPinned = :isPinned WHERE id = :id")
+    suspend fun updateConversationPinned(id: String, isPinned: Boolean)
+
+    @Query("DELETE FROM ai_conversations WHERE id = :id")
+    suspend fun deleteConversationById(id: String)
+
+    @Query("DELETE FROM ai_chat_messages WHERE conversationId = :conversationId")
+    suspend fun deleteChatMessagesForConversation(conversationId: String)
+
+    @Query("SELECT * FROM ai_chat_messages WHERE conversationId = :conversationId ORDER BY timestamp ASC")
+    fun getChatMessagesForConversationFlow(conversationId: String): Flow<List<AiChatMessage>>
+
     @Query("SELECT * FROM ai_chat_messages ORDER BY timestamp ASC")
     fun getAllChatMessagesFlow(): Flow<List<AiChatMessage>>
 

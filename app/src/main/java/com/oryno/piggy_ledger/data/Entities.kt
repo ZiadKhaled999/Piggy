@@ -143,9 +143,20 @@ data class AccountTransaction(
 )
 
 @Serializable
+@Entity(tableName = "ai_conversations")
+data class AiConversation(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val title: String = "New Conversation",
+    val isPinned: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
+)
+
+@Serializable
 @Entity(tableName = "ai_chat_messages")
 data class AiChatMessage(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val conversationId: String = "default",
     val role: String, // "user" or "assistant"
     val content: String,
     val timestamp: Long = System.currentTimeMillis()

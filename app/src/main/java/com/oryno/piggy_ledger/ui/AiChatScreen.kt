@@ -1,5 +1,7 @@
 package com.oryno.piggy_ledger.ui
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.expandVertically
@@ -7,14 +9,15 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -22,20 +25,31 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +58,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,8 +68,14 @@ import com.oryno.piggy_ledger.ai.AiChatViewModel
 import com.oryno.piggy_ledger.ai.SovereignAiResponse
 import com.oryno.piggy_ledger.ai.UiBlock
 import com.oryno.piggy_ledger.data.AiChatMessage
+import com.oryno.piggy_ledger.data.AiConversation
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 // Minimalist Light Theme Colors
 private val AiBackground = Color(0xFFFAFAFA)
@@ -72,10 +93,17 @@ fun AiChatScreen(
     onNavigateBack: () -> Unit
 ) {
     val chatHistory by viewModel.chatHistory.collectAsStateWithLifecycle()
+    val conversations by viewModel.conversations.collectAsStateWithLifecycle()
+    val activeConversationId by viewModel.activeConversationId.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
-    var showMenu by remember { mutableStateOf(false) }
+    
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
+    val focusRequester = remember { FocusRequester() }
 
     var initialHistoryIds by remember { mutableStateOf<Set<Int>?>(null) }
     if (initialHistoryIds == null && chatHistory.isNotEmpty()) {
@@ -90,200 +118,556 @@ fun AiChatScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Piggy AI", color = AiText, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, letterSpacing = (-0.5).sp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFF6366F1).copy(alpha = 0.12f),
-                            border = BorderStroke(1.dp, Color(0xFF6366F1).copy(alpha = 0.35f))
-                        ) {
-                            Text(
-                                text = "Beta",
-                                color = Color(0xFF4F46E5),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                letterSpacing = 0.5.sp
-                            )
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                drawerContainerColor = Color(0xFFFAFAFA),
+                drawerContentColor = Color(0xFF0F172A),
+                modifier = Modifier.width(320.dp)
+            ) {
+                ChatHistoryDrawerContent(
+                    conversations = conversations,
+                    activeConversationId = activeConversationId,
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                    onSelectConversation = { id ->
+                        viewModel.selectConversation(id)
+                        coroutineScope.launch { drawerState.close() }
+                    },
+                    onNewChatClick = {
+                        viewModel.createNewConversation()
+                        coroutineScope.launch { drawerState.close() }
+                    },
+                    onDeleteConversation = { id ->
+                        viewModel.deleteConversation(id)
+                    },
+                    onTogglePinConversation = { id, pinned ->
+                        viewModel.togglePinConversation(id, pinned)
+                    },
+                    onRenameConversation = { id, title ->
+                        viewModel.renameConversation(id, title)
+                    }
+                )
+            }
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { 
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Piggy AI", color = AiText, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, letterSpacing = (-0.5).sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFF6366F1).copy(alpha = 0.12f),
+                                border = BorderStroke(1.dp, Color(0xFF6366F1).copy(alpha = 0.35f))
+                            ) {
+                                Text(
+                                    text = "Beta",
+                                    color = Color(0xFF4F46E5),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    letterSpacing = 0.5.sp
+                                )
+                            }
                         }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = AiText)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = AiText)
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false },
-                        modifier = Modifier.background(AiSurface)
+                    },
+                    navigationIcon = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
+                                Icon(Icons.Default.Menu, contentDescription = "Chat History", tint = AiText)
+                            }
+                            IconButton(onClick = onNavigateBack) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = AiText)
+                            }
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { viewModel.createNewConversation() }) {
+                            Icon(Icons.Default.Add, contentDescription = "New Chat", tint = Color(0xFF4F46E5))
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = AiBackground,
+                        titleContentColor = AiText,
+                        navigationIconContentColor = AiText
+                    )
+                )
+            },
+            containerColor = AiBackground,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = innerPadding.calculateTopPadding())
+                    .navigationBarsPadding()
+                    .imePadding()
+            ) {
+                if (chatHistory.isEmpty() && !isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
                     ) {
-                        DropdownMenuItem(
-                            text = { Text("Clear Chat", color = AiText) },
-                            onClick = {
-                                viewModel.clearChat()
-                                showMenu = false
+                        EmptyChatState(
+                            onSuggestionClick = { query ->
+                                viewModel.sendMessage(query)
                             }
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = AiBackground,
-                    scrolledContainerColor = AiBackground
-                )
-            )
-        },
-        containerColor = AiBackground
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            if (chatHistory.isEmpty()) {
-                EmptyChatState(
-                    onSuggestionClick = {
-                        viewModel.sendMessage(it)
-                    }
-                )
-            } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-                    itemsIndexed(
-                        items = chatHistory,
-                        key = { _, msg -> msg.id }
-                    ) { _, message ->
-                        val isInitial = initialHistoryIds?.contains(message.id) == true
-                        val isAnimated = animatedMessageIds.contains(message.id)
-                        ChatMessageItem(
-                            message = message,
-                            shouldStream = !isInitial && !isAnimated,
-                            onAnimationComplete = { animatedMessageIds.add(message.id) },
-                            onCtaClick = { cta -> viewModel.sendMessage(cta) }
-                        )
-                    }
-                    if (isLoading) {
-                        item {
-                            Box(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.CenterStart) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.AutoAwesome,
-                                        contentDescription = null,
-                                        tint = AiAccent,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    CircularProgressIndicator(
-                                        color = AiAccent,
-                                        modifier = Modifier.size(14.dp),
-                                        strokeWidth = 1.5.dp
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Analyzing Knowledge Hub...", color = AiDimText, fontSize = 12.sp)
-                                }
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp)
+                    ) {
+                        itemsIndexed(
+                            items = chatHistory,
+                            key = { _, msg -> msg.id }
+                        ) { _, message ->
+                            val isInitial = initialHistoryIds?.contains(message.id) == true
+                            val isAnimated = animatedMessageIds.contains(message.id)
+                            ChatMessageItem(
+                                message = message,
+                                shouldStream = !isInitial && !isAnimated,
+                                onAnimationComplete = { animatedMessageIds.add(message.id) },
+                                onCtaClick = { cta -> viewModel.sendMessage(cta) }
+                            )
+                        }
+                        if (isLoading) {
+                            item {
+                                ThinkingIndicator()
                             }
                         }
                     }
                 }
-            }
 
-            // Input Area
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(AiBackground.copy(alpha = 0.95f))
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-            ) {
-                OutlinedTextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    placeholder = { Text("Message...", color = AiDimText, fontSize = 15.sp) },
+                // Input Bar
+                Surface(
+                    color = AiSurface,
+                    border = BorderStroke(1.dp, AiBorder),
+                    shape = RoundedCornerShape(24.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(32.dp))
-                        .background(AiSurface),
-                    shape = RoundedCornerShape(32.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedBorderColor = AiBorder,
-                        unfocusedBorderColor = AiBorder,
-                        focusedTextColor = AiText,
-                        unfocusedTextColor = AiText,
-                        cursorColor = AiAccent
-                    ),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(onSend = {
-                        if (inputText.isNotBlank()) {
-                            viewModel.sendMessage(inputText)
-                            inputText = ""
-                        }
-                    }),
-                    trailingIcon = {
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextField(
+                            value = inputText,
+                            onValueChange = { inputText = it },
+                            placeholder = { Text("Ask Piggy AI anything...", color = AiDimText, fontSize = 15.sp) },
+                            modifier = Modifier.weight(1f).focusRequester(focusRequester),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedTextColor = AiText,
+                                unfocusedTextColor = AiText
+                            ),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                            keyboardActions = KeyboardActions(
+                                onSend = {
+                                    if (inputText.isNotBlank() && !isLoading) {
+                                        viewModel.sendMessage(inputText)
+                                        inputText = ""
+                                    }
+                                }
+                            )
+                        )
+
                         IconButton(
                             onClick = {
-                                if (inputText.isNotBlank()) {
+                                if (inputText.isNotBlank() && !isLoading) {
                                     viewModel.sendMessage(inputText)
                                     inputText = ""
                                 }
                             },
-                            modifier = Modifier
-                                .padding(end = 4.dp)
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(if (inputText.isNotBlank()) AiAccent else AiBorder)
+                            enabled = inputText.isNotBlank() && !isLoading
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = if (inputText.isNotBlank()) Color.White else AiDimText, modifier = Modifier.size(16.dp))
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Send",
+                                tint = if (inputText.isNotBlank() && !isLoading) AiAccent else AiDimText
+                            )
                         }
-                    },
-                    maxLines = 3,
-                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp)
-                )
+                    }
+                }
             }
         }
     }
 }
 
+data class ConversationGroup(
+    val title: String,
+    val items: List<AiConversation>
+)
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun EmptyChatState(onSuggestionClick: (String) -> Unit) {
+fun ChatHistoryDrawerContent(
+    conversations: List<AiConversation>,
+    activeConversationId: String,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onSelectConversation: (String) -> Unit,
+    onNewChatClick: () -> Unit,
+    onDeleteConversation: (String) -> Unit,
+    onTogglePinConversation: (String, Boolean) -> Unit,
+    onRenameConversation: (String, String) -> Unit
+) {
+    var conversationToRename by remember { mutableStateOf<AiConversation?>(null) }
+    var renameInputText by remember { mutableStateOf("") }
+    var menuConversationId by remember { mutableStateOf<String?>(null) }
+
+    val conversationGroups = remember(conversations, searchQuery) {
+        val filtered = if (searchQuery.isBlank()) conversations
+        else conversations.filter { it.title.contains(searchQuery, ignoreCase = true) }
+
+        val pinned = filtered.filter { it.isPinned }
+        val unpinned = filtered.filter { !it.isPinned }
+
+        val now = System.currentTimeMillis()
+        val oneDayMs = 24 * 60 * 60 * 1000L
+        val sevenDaysMs = 7 * oneDayMs
+        val thirtyDaysMs = 30 * oneDayMs
+
+        val todayItems = mutableListOf<AiConversation>()
+        val sevenDaysItems = mutableListOf<AiConversation>()
+        val thirtyDaysItems = mutableListOf<AiConversation>()
+        val olderItems = mutableListOf<AiConversation>()
+
+        unpinned.forEach { conv ->
+            val diff = now - conv.updatedAt
+            when {
+                diff < oneDayMs -> todayItems.add(conv)
+                diff < sevenDaysMs -> sevenDaysItems.add(conv)
+                diff < thirtyDaysMs -> thirtyDaysItems.add(conv)
+                else -> olderItems.add(conv)
+            }
+        }
+
+        val groups = mutableListOf<ConversationGroup>()
+        if (pinned.isNotEmpty()) groups.add(ConversationGroup("Pinned", pinned))
+        if (todayItems.isNotEmpty()) groups.add(ConversationGroup("Today", todayItems))
+        if (sevenDaysItems.isNotEmpty()) groups.add(ConversationGroup("7 Days", sevenDaysItems))
+        if (thirtyDaysItems.isNotEmpty()) groups.add(ConversationGroup("30 Days", thirtyDaysItems))
+        if (olderItems.isNotEmpty()) groups.add(ConversationGroup("Older", olderItems))
+
+        groups
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFAFAFA))
+            .padding(16.dp)
+    ) {
+        // Search bar
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color(0xFFF1F5F9),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = Color(0xFF64748B),
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                TextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    placeholder = { Text("Search chat content...", color = Color(0xFF94A3B8), fontSize = 14.sp) },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedTextColor = Color(0xFF0F172A),
+                        unfocusedTextColor = Color(0xFF0F172A)
+                    ),
+                    singleLine = true,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // "New Chat" button inside history menu
+        Surface(
+            onClick = onNewChatClick,
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFF6366F1),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "New Conversation",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        HorizontalDivider(color = Color(0xFFE2E8F0))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (conversations.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("No previous chats", color = Color(0xFF94A3B8), fontSize = 14.sp)
+            }
+        } else if (conversationGroups.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("No matching conversations", color = Color(0xFF94A3B8), fontSize = 14.sp)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                conversationGroups.forEach { group ->
+                    item(key = "header_${group.title}") {
+                        Text(
+                            text = group.title,
+                            color = Color(0xFF64748B),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start = 4.dp, top = 4.dp, bottom = 4.dp)
+                        )
+                    }
+                    items(group.items, key = { it.id }) { conv ->
+                        val isSelected = conv.id == activeConversationId
+                        val showDropdown = menuConversationId == conv.id
+
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) Color(0xFFE2E8F0) else Color.Transparent,
+                                border = if (isSelected) BorderStroke(1.dp, Color(0xFFCBD5E1)) else null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .combinedClickable(
+                                        onClick = { onSelectConversation(conv.id) },
+                                        onLongClick = { menuConversationId = conv.id }
+                                    )
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (conv.isPinned) {
+                                        Icon(
+                                            imageVector = Icons.Default.PushPin,
+                                            contentDescription = "Pinned",
+                                            tint = Color(0xFF6366F1),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
+                                    Text(
+                                        text = conv.title,
+                                        color = if (isSelected) Color(0xFF0F172A) else Color(0xFF334155),
+                                        fontSize = 14.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    IconButton(
+                                        onClick = { menuConversationId = conv.id },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.MoreVert,
+                                            contentDescription = "Options",
+                                            tint = Color(0xFF64748B),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = showDropdown,
+                                onDismissRequest = { menuConversationId = null },
+                                modifier = Modifier.background(Color.White)
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Rename", color = Color(0xFF0F172A)) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(18.dp))
+                                    },
+                                    onClick = {
+                                        menuConversationId = null
+                                        renameInputText = conv.title
+                                        conversationToRename = conv
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(if (conv.isPinned) "Unpin" else "Pin", color = Color(0xFF0F172A)) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.PushPin, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(18.dp))
+                                    },
+                                    onClick = {
+                                        menuConversationId = null
+                                        onTogglePinConversation(conv.id, conv.isPinned)
+                                    }
+                                )
+                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                                DropdownMenuItem(
+                                    text = { Text("Delete", color = Color(0xFFEF4444)) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(18.dp))
+                                    },
+                                    onClick = {
+                                        menuConversationId = null
+                                        onDeleteConversation(conv.id)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (conversationToRename != null) {
+        AlertDialog(
+            onDismissRequest = { conversationToRename = null },
+            title = { Text("Rename Conversation", fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = renameInputText,
+                    onValueChange = { renameInputText = it },
+                    singleLine = true,
+                    label = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val target = conversationToRename
+                        if (target != null && renameInputText.isNotBlank()) {
+                            onRenameConversation(target.id, renameInputText.trim())
+                        }
+                        conversationToRename = null
+                    }
+                ) {
+                    Text("Save", fontWeight = FontWeight.Bold, color = Color(0xFF6366F1))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { conversationToRename = null }) {
+                    Text("Cancel", color = Color(0xFF64748B))
+                }
+            },
+            containerColor = Color.White
+        )
+    }
+}
+
+@Composable
+fun ThinkingIndicator() {
+    val infiniteTransition = rememberInfiniteTransition()
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.AutoAwesome,
+            contentDescription = null,
+            tint = AiAccent.copy(alpha = alpha),
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = "Piggy AI is analyzing Knowledge Hub...",
+            color = AiDimText.copy(alpha = alpha),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+data class CategoryPillData(
+    val icon: String,
+    val label: String,
+    val query: String
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EmptyChatState(
+    onSuggestionClick: (String) -> Unit
+) {
     var visible by remember { mutableStateOf(false) }
-    var showInfoDialog by remember { mutableStateOf(false) }
+    var showInfoBottomSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         visible = true
     }
 
-    if (showInfoDialog) {
-        AlertDialog(
-            onDismissRequest = { showInfoDialog = false },
-            title = { Text("Piggy AI Search", fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    "Piggy AI uses client-side Knowledge Hub orchestration to securely analyze your local ledger accounts, spending history, savings goals, and SMS logs without sharing private keys.",
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showInfoDialog = false }) {
-                    Text("Got it")
-                }
-            }
-        )
+    if (showInfoBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showInfoBottomSheet = false },
+            containerColor = Color.White,
+            contentColor = Color(0xFF0F172A),
+            dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFFCBD5E1)) }
+        ) {
+            HowPiggyAiWorksSheetContent(onDismiss = { showInfoBottomSheet = false })
+        }
     }
 
     AnimatedVisibility(
@@ -294,7 +678,7 @@ fun EmptyChatState(onSuggestionClick: (String) -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 24.dp),
+                .padding(vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -325,98 +709,49 @@ fun EmptyChatState(onSuggestionClick: (String) -> Unit) {
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
-            // Mock "Ask a question" search bar trigger
-            Surface(
-                onClick = { onSuggestionClick("What is my current financial status?") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = Color(0xFFF3F4F6),
-                border = BorderStroke(1.dp, Color(0xFFE5E7EB))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Ask a question...",
-                        color = AiDimText,
-                        fontSize = 15.sp,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = null,
-                        tint = AiDimText,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+            // Row 1 Infinite Looping Slider
+            val row1Pills = remember {
+                listOf(
+                    CategoryPillData("🎤", "go-to savings goals", "What are my current savings goals progress?"),
+                    CategoryPillData("💡", "audit recent spending", "Audit my recent spending transactions"),
+                    CategoryPillData("👑", "most successful runway", "What is my current runway and budget balance?"),
+                    CategoryPillData("📈", "cash flow trends", "What are my recent cash flow trends?")
+                )
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Staggered Chip Rows (Row 1)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                CategoryPill(icon = "🎤", label = "go-to savings goals") {
-                    onSuggestionClick("What are my current savings goals progress?")
-                }
-                CategoryPill(icon = "💡", label = "audit recent spending") {
-                    onSuggestionClick("Audit my recent spending transactions")
-                }
-                CategoryPill(icon = "👑", label = "most successful runway") {
-                    onSuggestionClick("What is my current runway and budget balance?")
-                }
-            }
+            InfinitePillRow(pills = row1Pills, initialOffset = 1000, scrollSpeed = 1.0f, onSuggestionClick = onSuggestionClick)
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Staggered Chip Rows (Row 2)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                CategoryPill(icon = "💻", label = "expense shortcuts") {
-                    onSuggestionClick("How can I optimize my monthly expenses?")
-                }
-                CategoryPill(icon = "📊", label = "cash flow forecast") {
-                    onSuggestionClick("Show my cash flow forecast")
-                }
-                CategoryPill(icon = "💳", label = "loan repayment status") {
-                    onSuggestionClick("What is my loan repayment status?")
-                }
+            // Row 2 Infinite Looping Slider
+            val row2Pills = remember {
+                listOf(
+                    CategoryPillData("💻", "expense shortcuts", "How can I optimize my monthly expenses?"),
+                    CategoryPillData("📊", "cash flow forecast", "Show my cash flow forecast"),
+                    CategoryPillData("💳", "loan repayment status", "What is my loan repayment status?"),
+                    CategoryPillData("🏷️", "top spending category", "Which category do I spend the most on?")
+                )
             }
+            InfinitePillRow(pills = row2Pills, initialOffset = 3000, scrollSpeed = 0.8f, onSuggestionClick = onSuggestionClick)
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Staggered Chip Rows (Row 3)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                CategoryPill(icon = "📱", label = "review pending SMS logs") {
-                    onSuggestionClick("Are there any pending SMS transactions to review?")
-                }
-                CategoryPill(icon = "💰", label = "account balances") {
-                    onSuggestionClick("Show all my account balances")
-                }
+            // Row 3 Infinite Looping Slider
+            val row3Pills = remember {
+                listOf(
+                    CategoryPillData("📱", "review pending SMS logs", "Are there any pending SMS transactions to review?"),
+                    CategoryPillData("💰", "account balances", "Show all my account balances"),
+                    CategoryPillData("⚡", "instant pay fees summary", "Summary of instant pay fees across my accounts"),
+                    CategoryPillData("🎯", "goal milestones", "Which savings goals are closest to completion?")
+                )
             }
+            InfinitePillRow(pills = row3Pills, initialOffset = 5000, scrollSpeed = 1.2f, onSuggestionClick = onSuggestionClick)
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // Footer link
-            TextButton(onClick = { showInfoDialog = true }) {
+            TextButton(onClick = { showInfoBottomSheet = true }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Learn how Piggy AI search works",
@@ -434,6 +769,121 @@ fun EmptyChatState(onSuggestionClick: (String) -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun HowPiggyAiWorksSheetContent(onDismiss: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 16.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "How Piggy AI Works",
+                color = Color(0xFF0F172A),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = (-0.5).sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Privacy-first, client-side financial intelligence engine",
+                color = Color(0xFF64748B),
+                fontSize = 13.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+        HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 1.dp)
+        Spacer(modifier = Modifier.height(20.dp))
+
+        val sections = listOf(
+            "1. On-Device Knowledge Hub Context" to "Piggy AI constructs a real-time snapshot of your local accounts, savings goals, active loans, recent transactions, and SMS notifications directly on your device. Your raw data stays strictly inside your local Room database.",
+            "2. Streak & Habit Tracking Engine" to "Piggy AI monitors your daily financial logging streak—tracking active streak days, longest streak record, and today's activity status—delivering personalized encouragement and financial habit recommendations.",
+            "3. Privacy & Edge Security Architecture" to "No secret API keys or private banking credentials are stored in plain text or shared externally. All client-side communication utilizes secure channels exclusively to convert natural language queries into actionable ledger insights.",
+            "4. Multi-Account & E-Wallet Aggregation" to "Supports EGP e-wallets (Vodafone Cash, InstaPay), bank accounts (CIB, Bank Misr), credit cards, and cash liquidity across multiple currencies, calculating consolidated net worth automatically.",
+            "5. Offline Operation & Edge Case Handling" to "You can review previous chat histories and perform offline ledger analysis without network connectivity. Any offline transactions update seamlessly once network connection resumes.",
+            "6. Dynamic CTA Follow-Up Questions" to "Every AI response generates dynamic Next Step CTA buttons. Tapping any button immediately sends follow-up queries for deeper financial analysis."
+        )
+
+        sections.forEach { (title, description) ->
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = title,
+                    color = Color(0xFF0F172A),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = description,
+                    color = Color(0xFF334155),
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 1.dp)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+            onClick = onDismiss,
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1)),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+        ) {
+            Text(
+                text = "Got it, thanks!",
+                color = Color.White,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+fun InfinitePillRow(
+    pills: List<CategoryPillData>,
+    initialOffset: Int,
+    scrollSpeed: Float,
+    onSuggestionClick: (String) -> Unit
+) {
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialOffset)
+
+    // Gentle auto-scroll continuous slider effect
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            delay(16)
+            listState.scrollBy(scrollSpeed)
+        }
+    }
+
+    LazyRow(
+        state = listState,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        items(
+            count = Int.MAX_VALUE,
+            itemContent = { index ->
+                val pill = pills[index % pills.size]
+                CategoryPill(icon = pill.icon, label = pill.label) {
+                    onSuggestionClick(pill.query)
+                }
+            }
+        )
     }
 }
 
@@ -482,7 +932,7 @@ fun parseResponseTextAndNextSteps(rawText: String): ProcessedResponse {
         text = lines.joinToString("\n").trim()
     }
 
-    val nextStepHeaderRegex = Regex("""(?i)(###?\s*(next\s*steps?|suggested\s*next\s*steps?|actionable\s*next\s*steps?|recommended\s*next\s*steps?)|(next\s*steps?|suggested\s*next\s*steps?|actionable\s*next\s*steps?):)""")
+    val nextStepHeaderRegex = Regex("""(?i)(###?\s*(next[_\s]*steps?|suggested[_\s]*next[_\s]*steps?|actionable[_\s]*next[_\s]*steps?|recommended[_\s]*next[_\s]*steps?|recommendations|follow-up\s*questions|related\s*questions|suggested\s*questions|what\s*to\s*ask\s*next)|(next[_\s]*steps?|suggested[_\s]*next[_\s]*steps?|actionable[_\s]*next[_\s]*steps?):)""")
     
     val match = nextStepHeaderRegex.find(text)
     if (match != null) {
@@ -506,13 +956,45 @@ fun parseResponseTextAndNextSteps(rawText: String): ProcessedResponse {
             }
         }
         
-        return ProcessedResponse(
-            mainText = if (mainTextPart.isNotBlank()) mainTextPart else text,
-            nextSteps = nextStepsList
+        if (nextStepsList.isNotEmpty()) {
+            return ProcessedResponse(
+                mainText = if (mainTextPart.isNotBlank()) mainTextPart else text,
+                nextSteps = nextStepsList.take(3)
+            )
+        }
+    }
+
+    // Contextual CTA follow-up questions when explicit next steps header is not returned
+    val lowerText = text.lowercase()
+    val contextualNextSteps = when {
+        lowerText.contains("goal") || lowerText.contains("save") || lowerText.contains("target") -> listOf(
+            "What are my active savings goals progress?",
+            "How much do I need to complete my top goal?",
+            "How can I accelerate my savings rate?"
+        )
+        lowerText.contains("loan") || lowerText.contains("debt") || lowerText.contains("borrow") -> listOf(
+            "What is my loan repayment status?",
+            "How much total debt do I owe?",
+            "Audit my recent loan payments"
+        )
+        lowerText.contains("streak") || lowerText.contains("habit") -> listOf(
+            "What is my current logging streak status?",
+            "Did I log my financial activity today?",
+            "How can I maintain a 30-day logging streak?"
+        )
+        lowerText.contains("account") || lowerText.contains("balance") || lowerText.contains("cash") -> listOf(
+            "Show all my account balances summary",
+            "Which account holds my largest liquidity?",
+            "Audit my recent spending transactions"
+        )
+        else -> listOf(
+            "Audit my recent spending transactions",
+            "How can I optimize my monthly budget?",
+            "What are my top spending categories?"
         )
     }
 
-    return ProcessedResponse(mainText = text, nextSteps = emptyList())
+    return ProcessedResponse(mainText = text, nextSteps = contextualNextSteps)
 }
 
 @Composable
@@ -534,15 +1016,41 @@ fun ChatMessageItem(
     }
 
     if (message.role == "user") {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = {
+                    clipboardManager.setText(AnnotatedString(message.content))
+                    Toast.makeText(context, "Question copied to clipboard", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = "Copy question",
+                    tint = Color(0xFFF472B6),
+                    modifier = Modifier.size(15.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(4.dp))
             SelectionContainer {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp))
-                        .background(AiUserBubble)
+                        .background(Color(0xFFFFF0F5))
+                        .border(BorderStroke(1.dp, Color(0xFFF472B6).copy(alpha = 0.35f)), RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp))
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    Text(message.content, color = AiText, fontSize = 15.sp, lineHeight = 22.sp)
+                    Text(
+                        text = message.content,
+                        color = Color(0xFF881337),
+                        fontSize = 15.sp,
+                        lineHeight = 22.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }
@@ -758,7 +1266,7 @@ fun StandardQuoteBlock(quoteText: String) {
     Surface(
         shape = RoundedCornerShape(8.dp),
         color = Color(0xFFF3F4F6),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E7EB)),
+        border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
@@ -787,7 +1295,7 @@ fun RenderMarkdownTable(headers: List<String>, rows: List<List<String>>) {
     Surface(
         shape = RoundedCornerShape(10.dp),
         color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E7EB)),
+        border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
@@ -980,7 +1488,7 @@ fun KpiCard(block: UiBlock.KpiCardBlock) {
     Card(
         colors = CardDefaults.cardColors(containerColor = AiSurface),
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AiBorder),
+        border = BorderStroke(1.dp, AiBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
@@ -998,7 +1506,7 @@ fun StreakStatus(block: UiBlock.StreakStatusBlock) {
     Card(
         colors = CardDefaults.cardColors(containerColor = AiSurface),
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AiBorder),
+        border = BorderStroke(1.dp, AiBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -1038,7 +1546,7 @@ fun MetricGrid(block: UiBlock.MetricGridBlock) {
     Card(
         colors = CardDefaults.cardColors(containerColor = AiSurface),
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AiBorder),
+        border = BorderStroke(1.dp, AiBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
@@ -1071,7 +1579,7 @@ fun InteractiveChart(block: UiBlock.InteractiveChartBlock) {
     Card(
         colors = CardDefaults.cardColors(containerColor = AiSurface),
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AiBorder),
+        border = BorderStroke(1.dp, AiBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
@@ -1111,7 +1619,7 @@ fun ReflectivePoll(block: UiBlock.ReflectivePollBlock) {
     Card(
         colors = CardDefaults.cardColors(containerColor = AiSurface),
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AiBorder),
+        border = BorderStroke(1.dp, AiBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
@@ -1122,7 +1630,7 @@ fun ReflectivePoll(block: UiBlock.ReflectivePollBlock) {
                     onClick = { /* TODO */ },
                     colors = ButtonDefaults.buttonColors(containerColor = AiBackground, contentColor = AiText),
                     shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AiBorder),
+                    border = BorderStroke(1.dp, AiBorder),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp)
                 ) {
@@ -1138,7 +1646,7 @@ fun LedgerItem(block: UiBlock.LedgerItemBlock) {
     Card(
         colors = CardDefaults.cardColors(containerColor = AiSurface),
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AiBorder),
+        border = BorderStroke(1.dp, AiBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(

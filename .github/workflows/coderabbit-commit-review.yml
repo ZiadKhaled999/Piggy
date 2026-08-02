@@ -5,13 +5,13 @@ on:
   workflow_dispatch:
     inputs:
       review_mode:
-        description: 'Review Scope: full (entire repository) or commit (latest commit & affected files)'
+        description: 'Review Scope: commit (latest commit & affected files) or full (entire repository)'
         required: true
-        default: 'full'
+        default: 'commit'
         type: choice
         options:
-          - full
           - commit
+          - full
 
 jobs:
   review:
@@ -38,9 +38,8 @@ jobs:
           CODERABBIT_API_KEY: ${{ secrets.CODERABBIT_API_KEY }}
           INPUT_MODE: ${{ inputs.review_mode }}
         run: |
-          # Currently set to 'full' for the initial full repository review.
-          # Set REVIEW_MODE="commit" to review only the latest commit and affected files.
-          REVIEW_MODE="${INPUT_MODE:-full}"
+          # Default mode set to 'commit' to review only the pushed commit and affected logic/files.
+          REVIEW_MODE="${INPUT_MODE:-commit}"
 
           if [ "$REVIEW_MODE" = "full" ]; then
             echo "Executing full repository review..."

@@ -588,11 +588,11 @@ fun DeadlineInAppAlert(
 fun FloatingNavBar(navController: NavHostController, onAiClick: () -> Unit = {}) {
     val items = remember {
         listOf(
-            NavItem(Screen.Dashboard, Icons.Default.Home),
-            NavItem(Screen.MyGoals, Icons.Default.Dashboard),
-            NavItem(Screen.Loans, Icons.Default.AccountBalance),
-            NavItem(Screen.Accounts, Icons.Default.AccountTree),
-            NavItem(Screen.Analytics, Icons.Default.PieChart)
+            NavItem(Screen.Dashboard, Icons.Default.Home, R.string.nav_home),
+            NavItem(Screen.MyGoals, Icons.Default.Dashboard, R.string.nav_goals),
+            NavItem(Screen.Loans, Icons.Default.AccountBalance, R.string.nav_loans),
+            NavItem(Screen.Accounts, Icons.Default.AccountTree, R.string.accounts_title),
+            NavItem(Screen.Analytics, Icons.Default.PieChart, R.string.analytics_title)
         )
     }
     
@@ -602,15 +602,15 @@ fun FloatingNavBar(navController: NavHostController, onAiClick: () -> Unit = {})
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(bottom = 16.dp, start = 12.dp, end = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(32.dp))
-                .background(Color(0xFF1E1E2E).copy(alpha = 0.95f)) // Dark translucent background
+                .background(Color(0xFF1E1E2E).copy(alpha = 0.95f))
                 .padding(horizontal = 6.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -654,7 +654,7 @@ fun FloatingNavBar(navController: NavHostController, onAiClick: () -> Unit = {})
     }
 }
 
-data class NavItem(val screen: Screen, val icon: ImageVector)
+data class NavItem(val screen: Screen, val icon: ImageVector, val labelRes: Int)
 
 @Composable
 fun NavBarItem(
@@ -663,31 +663,43 @@ fun NavBarItem(
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val labelText = stringResource(item.labelRes)
     
-    Box(
-        modifier = Modifier
-            .size(46.dp)
-            .clip(CircleShape)
-            .then(
-                if (isSelected) {
-                    Modifier.background(PinkPrimary)
-                } else {
-                    Modifier
-                }
-            )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(24.dp),
+        color = if (isSelected) PinkPrimary else Color.Transparent,
+        contentColor = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
+        interactionSource = interactionSource,
+        modifier = Modifier.padding(horizontal = 2.dp)
     ) {
-        Icon(
-            imageVector = item.icon,
-            contentDescription = null,
-            tint = if (isSelected) Color.White else Color.White.copy(alpha = 0.5f),
-            modifier = Modifier.size(20.dp)
-        )
+        Row(
+            modifier = Modifier
+                .padding(horizontal = if (isSelected) 10.dp else 8.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = item.icon,
+                contentDescription = labelText,
+                modifier = Modifier.size(20.dp)
+            )
+            AnimatedVisibility(
+                visible = isSelected,
+                enter = fadeIn() + expandHorizontally(),
+                exit = fadeOut() + shrinkHorizontally()
+            ) {
+                Row {
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = labelText,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
     }
 }
 

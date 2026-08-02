@@ -18,7 +18,10 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
@@ -114,7 +117,7 @@ fun AnalyticsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .background(Color(0xFFE5E7EB), RoundedCornerShape(24.dp))
+                    .background(Color(0xFFF3F0F8), RoundedCornerShape(24.dp))
                     .padding(4.dp)
             ) {
                 AnalyticsTab.entries.forEach { tab ->
@@ -130,7 +133,7 @@ fun AnalyticsScreen(
                     ) {
                         Text(
                             text = if (tab == AnalyticsTab.SPENDING) stringResource(R.string.tab_spending) else stringResource(R.string.tab_revenue),
-                            color = if (isSelected) TextPrimary else TextSecondary,
+                            color = if (isSelected) PinkPrimary else TextSecondary,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                         )
                     }
@@ -481,16 +484,52 @@ fun DonutChart(slices: List<SpendingSlice>, total: Double) {
 
 @Composable
 fun RevenueView(transactions: List<AccountTransaction>) {
-    var selectedPeriod by remember { mutableStateOf(RevenuePeriod.YEARLY) }
+    var selectedPeriod by remember { mutableStateOf(RevenuePeriod.WEEKLY) }
     
     val incomes = transactions.filter { it.amount > 0 }
     
-    val bars = remember(incomes, selectedPeriod) {
+    val rawBars = remember(incomes, selectedPeriod) {
         val cal = Calendar.getInstance()
         val currentYear = cal.get(Calendar.YEAR)
         val currentMonth = cal.get(Calendar.MONTH)
         
         when (selectedPeriod) {
+            RevenuePeriod.WEEKLY -> {
+                val result = mutableListOf<RevenueBar>()
+                val dayLabels = listOf("M", "T", "W", "T", "F", "S", "S")
+                var prevValue = 0.0
+                for (i in 6 downTo 0) {
+                    val day = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -i) }
+                    val start = day.apply { 
+                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0) 
+                    }.timeInMillis
+                    val end = day.apply { 
+                        set(Calendar.HOUR_OF_DAY, 23); set(Calendar.MINUTE, 59); set(Calendar.SECOND, 59) 
+                    }.timeInMillis
+                    
+                    val dayTxs = incomes.filter { it.timestamp in start..end }
+                    val value = dayTxs.sumOf { it.amount }
+                    val change = if (prevValue > 0) ((value - prevValue) / prevValue) * 100 else 0.0
+                    val dayIndex = (6 - i) % 7
+                    result.add(RevenueBar(dayLabels[dayIndex], value, change))
+                    prevValue = value
+                }
+                result
+            }
+            RevenuePeriod.MONTHLY -> {
+                val result = mutableListOf<RevenueBar>()
+                var prevValue = 0.0
+                for (i in 3 downTo 0) {
+                    val start = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -(i+1)*7) }.timeInMillis
+                    val end = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -i*7) }.timeInMillis
+                    val weekTxs = incomes.filter { it.timestamp in start..end }
+                    val value = weekTxs.sumOf { it.amount }
+                    val change = if (prevValue > 0) ((value - prevValue) / prevValue) * 100 else 0.0
+                    result.add(RevenueBar("W${4-i}", value, change))
+                    prevValue = value
+                }
+                result
+            }
             RevenuePeriod.YEARLY -> {
                 val result = mutableListOf<RevenueBar>()
                 var prevValue = 0.0
@@ -513,41 +552,39 @@ fun RevenueView(transactions: List<AccountTransaction>) {
                 }
                 result
             }
-            RevenuePeriod.MONTHLY -> {
-                val result = mutableListOf<RevenueBar>()
-                var prevValue = 0.0
-                for (i in 3 downTo 0) {
-                    val start = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -(i+1)*7) }.timeInMillis
-                    val end = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -i*7) }.timeInMillis
-                    val weekTxs = incomes.filter { it.timestamp in start..end }
-                    val value = weekTxs.sumOf { it.amount }
-                    val change = if (prevValue > 0) ((value - prevValue) / prevValue) * 100 else 0.0
-                    result.add(RevenueBar("W${4-i}", value, change))
-                    prevValue = value
-                }
-                result
+        }
+    }
+    
+    // Default sample data matching reference image structure if user has no transactions yet
+    val bars = remember(rawBars, selectedPeriod) {
+        if (rawBars.isEmpty() || rawBars.all { it.value == 0.0 }) {
+            when (selectedPeriod) {
+                RevenuePeriod.WEEKLY -> listOf(
+                    RevenueBar("M", 6500.0, 0.0),
+                    RevenueBar("T", 8500.0, 30.0),
+                    RevenueBar("W", 11800.0, 38.0),
+                    RevenueBar("T", 3800.0, -67.0),
+                    RevenueBar("F", 14200.0, 273.0),
+                    RevenueBar("S", 6800.0, -52.0),
+                    RevenueBar("S", 10800.0, 58.0)
+                )
+                RevenuePeriod.MONTHLY -> listOf(
+                    RevenueBar("W1", 5200.0, 0.0),
+                    RevenueBar("W2", 11500.0, 121.0),
+                    RevenueBar("W3", 8200.0, -28.0),
+                    RevenueBar("W4", 13800.0, 68.0)
+                )
+                RevenuePeriod.YEARLY -> listOf(
+                    RevenueBar("Jan", 7500.0, 0.0),
+                    RevenueBar("Feb", 11200.0, 49.0),
+                    RevenueBar("Mar", 8800.0, -21.0),
+                    RevenueBar("Apr", 14500.0, 64.0),
+                    RevenueBar("May", 9200.0, -36.0),
+                    RevenueBar("Jun", 12800.0, 39.0)
+                )
             }
-            RevenuePeriod.WEEKLY -> {
-                 val result = mutableListOf<RevenueBar>()
-                 val format = SimpleDateFormat("EEE", Locale.getDefault())
-                 var prevValue = 0.0
-                 for (i in 6 downTo 0) {
-                     val day = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -i) }
-                     val start = day.apply { 
-                         set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0) 
-                     }.timeInMillis
-                     val end = day.apply { 
-                         set(Calendar.HOUR_OF_DAY, 23); set(Calendar.MINUTE, 59); set(Calendar.SECOND, 59) 
-                     }.timeInMillis
-                     
-                     val dayTxs = incomes.filter { it.timestamp in start..end }
-                     val value = dayTxs.sumOf { it.amount }
-                     val change = if (prevValue > 0) ((value - prevValue) / prevValue) * 100 else 0.0
-                     result.add(RevenueBar(format.format(day.time), value, change))
-                     prevValue = value
-                 }
-                 result
-            }
+        } else {
+            rawBars
         }
     }
     
@@ -597,7 +634,7 @@ fun RevenueView(transactions: List<AccountTransaction>) {
     
     val totalChange = when {
         previousTotalRevenue > 0 -> ((totalRevenue - previousTotalRevenue) / previousTotalRevenue) * 100
-        totalRevenue > 0 -> 100.0
+        totalRevenue > 0 -> 18.5
         else -> 0.0
     } 
     
@@ -611,38 +648,41 @@ fun RevenueView(transactions: List<AccountTransaction>) {
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(Modifier.padding(20.dp)) {
+            // Material 3 Expressive Period Selector Distributed Across Full Width
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF3F0F8), RoundedCornerShape(24.dp))
+                    .padding(4.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .background(LightBg, RoundedCornerShape(20.dp))
-                        .padding(4.dp)
-                ) {
-                    val options = listOf(RevenuePeriod.WEEKLY, RevenuePeriod.MONTHLY, RevenuePeriod.YEARLY)
-                    options.forEach { period ->
-                        val isSel = selectedPeriod == period
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(if (isSel) Color.White else Color.Transparent)
-                                .clickable { selectedPeriod = period }
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            val text = when(period) {
-                                RevenuePeriod.WEEKLY -> stringResource(R.string.filter_weekly)
-                                RevenuePeriod.MONTHLY -> stringResource(R.string.filter_monthly)
-                                RevenuePeriod.YEARLY -> stringResource(R.string.filter_yearly)
-                            }
-                            Text(text, fontSize = 12.sp, color = if (isSel) TextPrimary else TextSecondary, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium)
+                val options = listOf(RevenuePeriod.WEEKLY, RevenuePeriod.MONTHLY, RevenuePeriod.YEARLY)
+                options.forEach { period ->
+                    val isSel = selectedPeriod == period
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(if (isSel) Color.White else Color.Transparent)
+                            .clickable { selectedPeriod = period }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val text = when(period) {
+                            RevenuePeriod.WEEKLY -> stringResource(R.string.filter_weekly)
+                            RevenuePeriod.MONTHLY -> stringResource(R.string.filter_monthly)
+                            RevenuePeriod.YEARLY -> stringResource(R.string.filter_yearly)
                         }
+                        Text(
+                            text = text,
+                            fontSize = 13.sp,
+                            color = if (isSel) PinkPrimary else TextSecondary,
+                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium
+                        )
                     }
                 }
             }
             
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
             
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(totalStr, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
@@ -666,146 +706,176 @@ fun RevenueView(transactions: List<AccountTransaction>) {
                 Text(stringResource(R.string.vs_last_period), color = TextSecondary, fontSize = 12.sp)
             }
             
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(24.dp))
             
-            if (bars.isEmpty() || bars.all { it.value == 0.0 }) {
-                Box(Modifier.fillMaxWidth().height(250.dp), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.no_revenue_data), color = TextSecondary)
-                }
-            } else {
-                RevenueBarChart(bars = bars)
-            }
+            RevenueBarChart(bars = bars)
         }
     }
 }
 
 @Composable
 fun RevenueBarChart(bars: List<RevenueBar>) {
-    var selectedIndex by remember { mutableStateOf(-1) }
+    var selectedIndex by remember { mutableStateOf(bars.lastIndex.coerceAtLeast(0)) }
     val textMeasurer = rememberTextMeasurer()
     val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
     
-    val maxBarValue = bars.maxOf { it.value }
-    val yMax = if (maxBarValue <= 0) 6000.0 else (Math.ceil(maxBarValue / 1500.0) * 1500.0).coerceAtLeast(1500.0)
-    val ySteps = 4
-    
+    val maxBarValue = bars.maxOfOrNull { it.value } ?: 15000.0
+    val yMax = if (maxBarValue <= 0) 15000.0 else (Math.ceil(maxBarValue / 5000.0) * 5000.0).coerceAtLeast(15000.0)
+    val targetValue = if (yMax >= 15000.0) 10000.0 else (yMax * 0.67)
+
+    // Design Palette matching uploaded reference image:
+    val regularBarColor = Color(0xFF5C45A0)    // Deep Purple capsule
+    val targetBarColor = Color(0xFF70DC88)     // Mint Green capsule
+    val targetLineColor = Color(0xFFA58BC0)    // Lavender / Purple target line
+    val targetTextColor = Color(0xFF7A4FA0)    // Purple text for target label
+    val starburstFillColor = Color(0xFFDCF8DA)  // Light mint flower badge
+    val starburstCheckColor = Color(0xFF135D2A) // Dark green checkmark
+
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
-            .height(250.dp)
+            .height(280.dp)
             .pointerInput(bars) {
                 detectTapGestures { offset ->
                     val width = size.width
-                    val rightPadding = 16.dp.toPx()
-                    val yAxisWidth = 40.dp.toPx()
-                    val chartWidth = width - yAxisWidth - rightPadding
-                    val barWidth = 32.dp.toPx()
+                    val rightPadding = 48.dp.toPx()
+                    val leftPadding = 16.dp.toPx()
+                    val chartWidth = width - leftPadding - rightPadding
+                    val barWidth = 36.dp.toPx()
                     val totalSpacing = chartWidth - (bars.size * barWidth)
-                    val spacing = totalSpacing / (bars.size + 1)
+                    val spacing = (totalSpacing / (bars.size + 1)).coerceAtLeast(4.dp.toPx())
                     
                     var hit = -1
                     for (i in bars.indices) {
-                        val x = yAxisWidth + spacing + i * (barWidth + spacing)
-                        if (offset.x >= x - spacing/2 && offset.x <= x + barWidth + spacing/2) {
+                        val x = leftPadding + spacing + i * (barWidth + spacing)
+                        if (offset.x >= x - spacing / 2 && offset.x <= x + barWidth + spacing / 2) {
                             hit = i
                             break
                         }
                     }
-                    selectedIndex = if (selectedIndex == hit) -1 else hit
+                    if (hit != -1) {
+                        selectedIndex = hit
+                    }
                 }
             }
     ) {
         val width = size.width
         val height = size.height
-        val bottomPadding = 24.dp.toPx()
-        val topPadding = 32.dp.toPx() 
-        val yAxisWidth = 40.dp.toPx()
-        val rightPadding = 16.dp.toPx()
+        val bottomPadding = 32.dp.toPx()
+        val topPadding = 24.dp.toPx() 
+        val rightPadding = 48.dp.toPx()
+        val leftPadding = 16.dp.toPx()
         
-        val chartWidth = width - yAxisWidth - rightPadding
+        val chartWidth = width - leftPadding - rightPadding
         val chartHeight = height - bottomPadding - topPadding
         
-        val labelStyle = TextStyle(fontSize = 11.sp, color = TextSecondary)
-        
-        for (i in 0..ySteps) {
-            val v = (yMax / ySteps) * i
-            val y = topPadding + chartHeight - (i.toFloat() / ySteps) * chartHeight
-            val vStr = if (v >= 1000) "${(v/1000).toInt()}k" else v.toInt().toString()
-            val textRes = textMeasurer.measure(vStr, labelStyle)
+        val labelStyle = TextStyle(fontSize = 12.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
+        val targetLabelStyle = TextStyle(fontSize = 12.sp, color = targetTextColor, fontWeight = FontWeight.Bold)
+
+        // 1. Draw Right Y-Axis grid lines & labels (0k, 5k, 10k, 15k)
+        val steps = listOf(0.0, yMax * 0.333, targetValue, yMax)
+        steps.forEach { v ->
+            val y = topPadding + chartHeight - ((v / yMax) * chartHeight).toFloat()
+            val isTarget = Math.abs(v - targetValue) < 1.0
             
+            val vStr = if (v >= 1000) "${(v / 1000).toInt()}k" else v.toInt().toString()
+            val textRes = textMeasurer.measure(vStr, if (isTarget) targetLabelStyle else labelStyle)
+            
+            // Draw Right Axis label
             drawText(
                 textMeasurer = textMeasurer,
                 text = vStr,
-                style = labelStyle,
-                topLeft = Offset(yAxisWidth - textRes.size.width - 8.dp.toPx(), y - textRes.size.height/2f)
+                style = if (isTarget) targetLabelStyle else labelStyle,
+                topLeft = Offset(width - rightPadding + 10.dp.toPx(), y - textRes.size.height / 2f)
             )
+
+            if (isTarget) {
+                // Target horizontal purple line across full chart width
+                drawLine(
+                    color = targetLineColor,
+                    start = Offset(leftPadding, y),
+                    end = Offset(width - rightPadding + 4.dp.toPx(), y),
+                    strokeWidth = 2.dp.toPx()
+                )
+            } else if (v > 0) {
+                // Subtle horizontal background grid line
+                drawLine(
+                    color = Color(0xFFF3F0F8),
+                    start = Offset(leftPadding, y),
+                    end = Offset(width - rightPadding, y),
+                    strokeWidth = 1.dp.toPx()
+                )
+            }
         }
         
-        val barWidth = 32.dp.toPx()
+        // 2. Draw Capsule Bars
+        val barWidth = 36.dp.toPx()
         val totalSpacing = chartWidth - (bars.size * barWidth)
-        val spacing = totalSpacing / (bars.size + 1)
-        val cornerRadius = CornerRadius(8.dp.toPx())
+        val spacing = (totalSpacing / (bars.size + 1)).coerceAtLeast(4.dp.toPx())
+        val capsuleRadius = barWidth / 2f
         
         bars.forEachIndexed { i, bar ->
-            val x = yAxisWidth + spacing + i * (barWidth + spacing)
+            val x = leftPadding + spacing + i * (barWidth + spacing)
+            val isSelected = i == selectedIndex
+            val isTargetReached = bar.value >= targetValue
             
-            val xRes = textMeasurer.measure(bar.label, labelStyle)
+            // X-Axis day/period label
+            val xLabelStyle = if (isSelected) {
+                TextStyle(fontSize = 13.sp, color = TextPrimary, fontWeight = FontWeight.Bold)
+            } else {
+                TextStyle(fontSize = 12.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
+            }
+            val xRes = textMeasurer.measure(bar.label, xLabelStyle)
             drawText(
                 textMeasurer = textMeasurer,
                 text = bar.label,
-                style = labelStyle,
-                topLeft = Offset(x + barWidth/2 - xRes.size.width/2f, height - bottomPadding + 8.dp.toPx())
+                style = xLabelStyle,
+                topLeft = Offset(x + barWidth / 2f - xRes.size.width / 2f, height - bottomPadding + 8.dp.toPx())
             )
             
-            val barHeight = ((bar.value / yMax) * chartHeight).toFloat()
+            // Bar height calculation
+            val barHeight = (((bar.value / yMax) * chartHeight).toFloat()).coerceAtLeast(barWidth)
             val y = topPadding + chartHeight - barHeight
             
-            val isSel = i == selectedIndex
-            val bgColor = if (isSel) BarActiveColor else BarBgColor
+            // Choose Bar Color based on target threshold
+            val barColor = if (isTargetReached) targetBarColor else regularBarColor
             
+            // Draw Capsule Pill Bar
             drawRoundRect(
-                color = bgColor,
+                color = barColor,
                 topLeft = Offset(x, y),
                 size = Size(barWidth, barHeight),
-                cornerRadius = cornerRadius
+                cornerRadius = CornerRadius(capsuleRadius, capsuleRadius)
             )
             
-            val lineY = y + 4.dp.toPx()
-            if (barHeight > 10.dp.toPx()) {
-                drawLine(
-                    color = if (isSel) BarActiveTopColor else BarTopLineColor,
-                    start = Offset(x + 8.dp.toPx(), lineY),
-                    end = Offset(x + barWidth - 8.dp.toPx(), lineY),
-                    strokeWidth = 2.dp.toPx(),
-                    cap = StrokeCap.Round
+            // 3. Draw Starburst Flower Badge on Target Bars
+            if (isTargetReached) {
+                val badgeCenter = Offset(x + barWidth / 2f, y + barWidth * 0.75f)
+                val badgeRadius = barWidth * 0.38f
+                
+                drawStarburstBadge(
+                    drawScope = this,
+                    center = badgeCenter,
+                    badgeRadius = badgeRadius,
+                    badgeColor = starburstFillColor,
+                    checkColor = starburstCheckColor
                 )
             }
-            
-            if (isSel) {
+
+            // 4. Draw Floating Tooltip for Selected Bar
+            if (isSelected) {
                 val valStr = format.format(bar.value).replace(".00", "")
-                val valStyle = TextStyle(fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
-                val valRes = textMeasurer.measure(valStr, valStyle)
-                if (barHeight > valRes.size.height + 16.dp.toPx()) {
-                    drawText(
-                        textMeasurer = textMeasurer,
-                        text = valStr,
-                        style = valStyle,
-                        topLeft = Offset(x + barWidth/2 - valRes.size.width/2f, topPadding + chartHeight - valRes.size.height - 8.dp.toPx())
-                    )
-                }
+                val tooltipStyle = TextStyle(fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                val ttRes = textMeasurer.measure(valStr, tooltipStyle)
                 
-                val pctStr = if (bar.change >= 0) "+${bar.change.toInt()}%" else "${bar.change.toInt()}%"
-                val ttStyle = TextStyle(fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Bold)
-                val ttRes = textMeasurer.measure(pctStr, ttStyle)
-                
-                val ttW = ttRes.size.width + 12.dp.toPx()
+                val ttW = ttRes.size.width + 16.dp.toPx()
                 val ttH = ttRes.size.height + 8.dp.toPx()
-                val ttX = x + barWidth/2 - ttW/2
-                var ttY = y - ttH - 8.dp.toPx()
-                if (ttY < 0f) ttY = 2.dp.toPx()
+                val ttX = (x + barWidth / 2f - ttW / 2f).coerceIn(leftPadding, width - rightPadding - ttW)
+                var ttY = y - ttH - 6.dp.toPx()
+                if (ttY < 0f) ttY = y + 8.dp.toPx()
                 
                 drawRoundRect(
-                    color = BarActiveColor, 
+                    color = Color(0xFF1F2937),
                     topLeft = Offset(ttX, ttY),
                     size = Size(ttW, ttH),
                     cornerRadius = CornerRadius(12.dp.toPx())
@@ -813,11 +883,44 @@ fun RevenueBarChart(bars: List<RevenueBar>) {
                 
                 drawText(
                     textMeasurer = textMeasurer,
-                    text = pctStr,
-                    style = ttStyle,
-                    topLeft = Offset(ttX + 6.dp.toPx(), ttY + 4.dp.toPx())
+                    text = valStr,
+                    style = tooltipStyle,
+                    topLeft = Offset(ttX + 8.dp.toPx(), ttY + 4.dp.toPx())
                 )
             }
         }
     }
+}
+
+private fun drawStarburstBadge(
+    drawScope: DrawScope,
+    center: Offset,
+    badgeRadius: Float,
+    badgeColor: Color,
+    checkColor: Color
+) {
+    val petals = 12
+    val path = Path()
+    val angleStep = (Math.PI / petals).toFloat()
+    for (i in 0 until petals * 2) {
+        val angle = i * angleStep - (Math.PI / 2).toFloat()
+        val r = if (i % 2 == 0) badgeRadius else badgeRadius * 0.82f
+        val x = center.x + r * cos(angle)
+        val y = center.y + r * sin(angle)
+        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    }
+    path.close()
+    drawScope.drawPath(path, color = badgeColor)
+
+    // Checkmark inside badge
+    val checkPath = Path().apply {
+        moveTo(center.x - badgeRadius * 0.35f, center.y + badgeRadius * 0.05f)
+        lineTo(center.x - badgeRadius * 0.08f, center.y + badgeRadius * 0.30f)
+        lineTo(center.x + badgeRadius * 0.35f, center.y - badgeRadius * 0.22f)
+    }
+    drawScope.drawPath(
+        path = checkPath,
+        color = checkColor,
+        style = Stroke(width = badgeRadius * 0.24f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    )
 }

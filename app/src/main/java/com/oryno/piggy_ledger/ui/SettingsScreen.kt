@@ -1370,7 +1370,7 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
 
     if (isPro == null) {
         Box(modifier = Modifier.fillMaxSize().height(200.dp), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = PinkPrimary)
+            ExpressiveLoadingIndicator(size = 40.dp)
         }
     } else if (isPro == true) {
         Column(
@@ -2027,10 +2027,10 @@ fun PiggyLedgerPaywall(
                 )
             ) {
                 if (isPurchasing) {
-                    CircularProgressIndicator(
+                    ExpressiveLoadingIndicator(
+                        size = 24.dp,
                         color = Color.White,
-                        strokeWidth = 3.dp,
-                        modifier = Modifier.size(24.dp)
+                        strokeWidth = 2.5.dp
                     )
                 } else {
                     Row(
@@ -2133,10 +2133,10 @@ fun SwipeToUpgradeButton(
             contentAlignment = Alignment.Center
         ) {
             if (isPurchasing) {
-                CircularProgressIndicator(
+                ExpressiveLoadingIndicator(
+                    size = 26.dp,
                     color = accentColor,
-                    strokeWidth = 3.dp,
-                    modifier = Modifier.size(26.dp)
+                    strokeWidth = 2.5.dp
                 )
             } else {
                 Text(
@@ -2476,7 +2476,7 @@ fun SlideToPurchase(
                     .background(PinkPrimary),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                ExpressiveLoadingIndicator(size = 24.dp, color = Color.White, strokeWidth = 2.dp)
             }
         }
     }

@@ -171,7 +171,7 @@ fun AuthScreen(
                 }
             }
         } else {
-            CircularProgressIndicator(color = PinkPrimary)
+            ExpressiveLoadingIndicator(size = 40.dp)
         }
     }
 }

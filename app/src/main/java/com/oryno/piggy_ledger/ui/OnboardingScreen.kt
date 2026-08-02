@@ -1450,9 +1450,8 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(54.dp),
-                                    color = PinkPrimary,
+                                ExpressiveLoadingIndicator(
+                                    size = 54.dp,
                                     strokeWidth = 4.dp
                                 )
                                 Spacer(modifier = Modifier.height(28.dp))
@@ -1534,9 +1533,8 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                                                 modifier = Modifier.size(36.dp),
                                                                 contentAlignment = Alignment.Center
                                                             ) {
-                                                                CircularProgressIndicator(
-                                                                    modifier = Modifier.size(24.dp),
-                                                                    color = PinkPrimary,
+                                                                ExpressiveLoadingIndicator(
+                                                                    size = 28.dp,
                                                                     strokeWidth = 2.dp
                                                                 )
                                                             }

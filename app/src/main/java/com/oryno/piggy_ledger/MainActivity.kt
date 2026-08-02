@@ -41,7 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
-import androidx.compose.material3.CircularProgressIndicator
+import com.oryno.piggy_ledger.ui.ExpressiveLoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.text.font.FontWeight
@@ -161,7 +161,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             // Loading state while checking preferences
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = PinkPrimary)
+                ExpressiveLoadingIndicator(size = 42.dp)
             }
         }
       }

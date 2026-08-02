@@ -191,12 +191,26 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
                 Result.success(parsed)
             } else {
                 android.util.Log.e("AiChat", "API Error: ${response.code} - $responseBody")
-                Result.failure(Exception("API Error ${response.code}: $responseBody"))
+                val friendlyMessage = when (response.code) {
+                    401, 403 -> "Invalid API key or unauthorized access."
+                    429 -> "Rate limit exceeded. Please wait a moment."
+                    500, 502, 503 -> "AI server is temporarily unavailable."
+                    else -> "Unable to complete request (Error ${response.code})."
+                }
+                Result.failure(Exception(friendlyMessage))
             }
         } catch (e: Exception) {
             android.util.Log.e("AiChat", "Exception: ${e.message}", e)
             Result.failure(e)
         }
+    }
+
+    fun getAllAccounts(): Flow<List<com.oryno.piggy_ledger.data.Account>> {
+        return dao.getAllAccounts()
+    }
+
+    suspend fun processSmsTransaction(accountId: String, amount: Double, merchant: String, applyFee: Boolean, isIncome: Boolean) {
+        dao.processSmsTransaction(accountId, amount, merchant, applyFee, isIncome)
     }
 
     private fun extractJson(content: String): String {

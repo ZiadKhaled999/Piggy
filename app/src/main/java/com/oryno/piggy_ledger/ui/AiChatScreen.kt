@@ -1,7 +1,9 @@
 package com.oryno.piggy_ledger.ui
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.expandVertically
@@ -27,6 +29,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import android.app.Activity
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -34,11 +41,13 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
@@ -47,14 +56,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -104,6 +120,42 @@ fun AiChatScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
+
+    val context = LocalContext.current
+    val accounts by viewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
+    val prefs = remember { context.getSharedPreferences("piggy_ledger_prefs", android.content.Context.MODE_PRIVATE) }
+    var hasSeenMagicMicTooltip by remember { mutableStateOf(prefs.getBoolean("has_seen_magic_mic_tooltip", false)) }
+    var showMagicMicTooltipDialog by remember { mutableStateOf(false) }
+    var transcribedText by remember { mutableStateOf<String?>(null) }
+    var showAccountPickerForMic by remember { mutableStateOf(false) }
+    var pendingMicTransactionData by remember { mutableStateOf<Triple<Double, String, Boolean>?>(null) }
+
+    val speechRecognizerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val matches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            val spoken = matches?.firstOrNull() ?: ""
+            if (spoken.isNotBlank()) {
+                transcribedText = spoken
+            }
+        }
+    }
+
+    val handleMagicMicClick = {
+        if (!hasSeenMagicMicTooltip) {
+            showMagicMicTooltipDialog = true
+        } else {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak your transaction or request...")
+            }
+            try {
+                speechRecognizerLauncher.launch(intent)
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(context, "Speech recognition not available", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     var initialHistoryIds by remember { mutableStateOf<Set<Int>?>(null) }
     if (initialHistoryIds == null && chatHistory.isNotEmpty()) {
@@ -200,108 +252,380 @@ fun AiChatScreen(
             containerColor = AiBackground,
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = innerPadding.calculateTopPadding())
-                    .navigationBarsPadding()
-                    .imePadding()
-            ) {
-                if (chatHistory.isEmpty() && !isLoading) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                    ) {
-                        EmptyChatState(
-                            onSuggestionClick = { query ->
-                                viewModel.sendMessage(query)
-                            }
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(20.dp),
-                        contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp)
-                    ) {
-                        itemsIndexed(
-                            items = chatHistory,
-                            key = { _, msg -> msg.id }
-                        ) { _, message ->
-                            val isInitial = initialHistoryIds?.contains(message.id) == true
-                            val isAnimated = animatedMessageIds.contains(message.id)
-                            ChatMessageItem(
-                                message = message,
-                                shouldStream = !isInitial && !isAnimated,
-                                onAnimationComplete = { animatedMessageIds.add(message.id) },
-                                onCtaClick = { cta -> viewModel.sendMessage(cta) }
+            Box(modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .imePadding()
+                ) {
+                    if (chatHistory.isEmpty() && !isLoading) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                        ) {
+                            EmptyChatState(
+                                onSuggestionClick = { query ->
+                                    viewModel.sendMessage(query)
+                                }
                             )
                         }
-                        if (isLoading) {
-                            item {
-                                ThinkingIndicator()
+                    } else {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(20.dp),
+                            contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp)
+                        ) {
+                            itemsIndexed(
+                                items = chatHistory,
+                                key = { _, msg -> msg.id }
+                            ) { _, message ->
+                                val isInitial = initialHistoryIds?.contains(message.id) == true
+                                val isAnimated = animatedMessageIds.contains(message.id)
+                                ChatMessageItem(
+                                    message = message,
+                                    shouldStream = !isInitial && !isAnimated,
+                                    onAnimationComplete = { animatedMessageIds.add(message.id) },
+                                    onCtaClick = { cta -> viewModel.sendMessage(cta) }
+                                )
+                            }
+                            if (isLoading) {
+                                item {
+                                    ThinkingIndicator()
+                                }
+                            }
+                        }
+                    }
+
+                    // Material Design 3 Expressive Prompt Bar
+                    Surface(
+                        color = Color.White,
+                        shape = RoundedCornerShape(36.dp),
+                        shadowElevation = 6.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                            .navigationBarsPadding()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Middle Text Prompt Input
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                if (inputText.isEmpty()) {
+                                    Text(
+                                        text = "Ask Piggy AI...",
+                                        color = Color(0xFF475569),
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Normal
+                                    )
+                                }
+                                BasicTextField(
+                                    value = inputText,
+                                    onValueChange = { inputText = it },
+                                    textStyle = TextStyle(
+                                        color = Color(0xFF0F172A),
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Normal,
+                                        lineHeight = 22.sp
+                                    ),
+                                    maxLines = 4,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                                    keyboardActions = KeyboardActions(
+                                        onSend = {
+                                            if (inputText.isNotBlank() && !isLoading) {
+                                                viewModel.sendMessage(inputText)
+                                                inputText = ""
+                                            }
+                                        }
+                                    ),
+                                    cursorBrush = SolidColor(Color(0xFF00B0FF)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequester)
+                                )
+                            }
+
+                            // Right Microphone Icon Button
+                            IconButton(
+                                onClick = handleMagicMicClick,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Mic,
+                                    contentDescription = "Voice Input",
+                                    tint = Color(0xFF1E293B),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(4.dp))
+
+                            // Rightmost Cyan Action Pill (Waveform / Send)
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(Color(0xFF00B0FF), CircleShape)
+                                    .clip(CircleShape)
+                                    .clickable {
+                                        if (inputText.isNotBlank() && !isLoading) {
+                                            viewModel.sendMessage(inputText)
+                                            inputText = ""
+                                        } else {
+                                            handleMagicMicClick()
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (inputText.isBlank()) {
+                                    WaveformAudioIcon(barColor = Color(0xFF0F172A))
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Send,
+                                        contentDescription = "Send",
+                                        tint = Color(0xFF0F172A),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
-                // Input Bar
-                Surface(
-                    color = AiSurface,
-                    border = BorderStroke(1.dp, AiBorder),
-                    shape = RoundedCornerShape(24.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                // First-time Magic Mic Tooltip Dialog
+                if (showMagicMicTooltipDialog) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.65f))
+                            .clickable(enabled = false) {},
+                        contentAlignment = Alignment.BottomCenter
                     ) {
-                        TextField(
-                            value = inputText,
-                            onValueChange = { inputText = it },
-                            placeholder = { Text("Ask Piggy AI anything...", color = AiDimText, fontSize = 15.sp) },
-                            modifier = Modifier.weight(1f).focusRequester(focusRequester),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                disabledContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                focusedTextColor = AiText,
-                                unfocusedTextColor = AiText
-                            ),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                            keyboardActions = KeyboardActions(
-                                onSend = {
-                                    if (inputText.isNotBlank() && !isLoading) {
-                                        viewModel.sendMessage(inputText)
-                                        inputText = ""
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = AiSurface),
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp)
+                                .padding(bottom = 80.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.Mic, contentDescription = null, tint = Color(0xFF6366F1), modifier = Modifier.size(28.dp))
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text("Magic Mic", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = AiText)
+                                    }
+                                    IconButton(onClick = {
+                                        prefs.edit().putBoolean("has_seen_magic_mic_tooltip", true).apply()
+                                        hasSeenMagicMicTooltip = true
+                                        showMagicMicTooltipDialog = false
+                                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak your transaction...")
+                                        }
+                                        try { speechRecognizerLauncher.launch(intent) } catch (e: Exception) {}
+                                    }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Close", tint = AiDimText)
                                     }
                                 }
-                            )
-                        )
-
-                        IconButton(
-                            onClick = {
-                                if (inputText.isNotBlank() && !isLoading) {
-                                    viewModel.sendMessage(inputText)
-                                    inputText = ""
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    "Speak naturally to instantly log expenses, income, or transfers!\n\nJust say: 'I paid 350 EGP for groceries using CIB' or 'Got 15000 EGP salary'. Magic Mic will parse and log it automatically.",
+                                    color = AiDimText,
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = {
+                                        prefs.edit().putBoolean("has_seen_magic_mic_tooltip", true).apply()
+                                        hasSeenMagicMicTooltip = true
+                                        showMagicMicTooltipDialog = false
+                                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak your transaction...")
+                                        }
+                                        try { speechRecognizerLauncher.launch(intent) } catch (e: Exception) {}
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Got it, Start Magic Mic", color = Color.White, fontWeight = FontWeight.SemiBold)
                                 }
-                            },
-                            enabled = inputText.isNotBlank() && !isLoading
+                            }
+                        }
+                    }
+                }
+
+                // Transcription Bottom Sheet (Edit and Confirm)
+                if (transcribedText != null) {
+                    ModalBottomSheet(
+                        onDismissRequest = { transcribedText = null },
+                        containerColor = AiSurface
+                    ) {
+                        var editableText by remember(transcribedText) { mutableStateOf(transcribedText ?: "") }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp)
+                                .navigationBarsPadding()
                         ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Send,
-                                contentDescription = "Send",
-                                tint = if (inputText.isNotBlank() && !isLoading) AiAccent else AiDimText
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Mic, contentDescription = null, tint = Color(0xFF6366F1), modifier = Modifier.size(24.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Magic Mic Transcription", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = AiText)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("Review and edit your spoken text before confirming:", fontSize = 13.sp, color = AiDimText)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = editableText,
+                                onValueChange = { editableText = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color(0xFF6366F1),
+                                    unfocusedBorderColor = AiBorder,
+                                    focusedTextColor = AiText,
+                                    unfocusedTextColor = AiText
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                minLines = 3
                             )
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = {},
+                                    modifier = Modifier.weight(1f),
+                                    border = BorderStroke(1.dp, Color(0xFF6366F1)),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFF6366F1), modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Edit", color = Color(0xFF6366F1), fontWeight = FontWeight.SemiBold)
+                                }
+
+                                Button(
+                                    onClick = {
+                                        val text = editableText.trim()
+                                        if (text.isNotBlank()) {
+                                            val isIncome = text.contains("salary", true) || text.contains("got", true) || text.contains("income", true) || text.contains("received", true) || text.contains("earned", true) || text.contains("deposit", true)
+                                            val amountRegex = Regex("""\d+(\.\d+)?""")
+                                            val match = amountRegex.find(text)
+                                            val amount = match?.value?.toDoubleOrNull() ?: 0.0
+                                            val merchant = text.take(50)
+
+                                            if (accounts.size == 1) {
+                                                val accId = accounts.first().id
+                                                viewModel.processMagicMicTransaction(accId, amount, merchant, isIncome, context)
+                                                transcribedText = null
+                                            } else if (accounts.isNotEmpty()) {
+                                                pendingMicTransactionData = Triple(amount, merchant, isIncome)
+                                                showAccountPickerForMic = true
+                                                transcribedText = null
+                                            } else {
+                                                android.widget.Toast.makeText(context, "Please create an account first!", android.widget.Toast.LENGTH_SHORT).show()
+                                                transcribedText = null
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1)),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Confirm", color = Color.White, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                    }
+                }
+
+                // Account Picker Bottom Sheet (if multiple accounts)
+                if (showAccountPickerForMic && pendingMicTransactionData != null) {
+                    val (amount, merchant, isIncome) = pendingMicTransactionData!!
+                    ModalBottomSheet(
+                        onDismissRequest = { showAccountPickerForMic = false; pendingMicTransactionData = null },
+                        containerColor = AiSurface
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp)
+                                .navigationBarsPadding()
+                        ) {
+                            Text("Select Preferred Account", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = AiText)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("You have multiple accounts. Choose which account to log this transaction into:", fontSize = 13.sp, color = AiDimText)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.heightIn(max = 300.dp)
+                            ) {
+                                items(accounts) { acc ->
+                                    Card(
+                                        colors = CardDefaults.cardColors(containerColor = AiBackground),
+                                        border = BorderStroke(1.dp, AiBorder),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                viewModel.processMagicMicTransaction(acc.id, amount, merchant, isIncome, context)
+                                                showAccountPickerForMic = false
+                                                pendingMicTransactionData = null
+                                            }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column {
+                                                Text(acc.name, fontWeight = FontWeight.Bold, color = AiText, fontSize = 16.sp)
+                                                val accNo = acc.bank_account_no ?: acc.card_numbers ?: ""
+                                                if (accNo.isNotBlank()) {
+                                                    Text(accNo, color = AiDimText, fontSize = 12.sp)
+                                                }
+                                            }
+                                            Text("${acc.current_balance} EGP", fontWeight = FontWeight.SemiBold, color = Color(0xFF6366F1))
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
                     }
                 }
@@ -610,31 +934,16 @@ fun ChatHistoryDrawerContent(
 
 @Composable
 fun ThinkingIndicator() {
-    val infiniteTransition = rememberInfiniteTransition()
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        )
-    )
-
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Default.AutoAwesome,
-            contentDescription = null,
-            tint = AiAccent.copy(alpha = alpha),
-            modifier = Modifier.size(20.dp)
-        )
+        ExpressiveLoadingIndicator(size = 28.dp)
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = "Piggy AI is analyzing Knowledge Hub...",
-            color = AiDimText.copy(alpha = alpha),
+            color = AiDimText,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium
         )
@@ -801,12 +1110,9 @@ fun HowPiggyAiWorksSheetContent(onDismiss: () -> Unit) {
         Spacer(modifier = Modifier.height(20.dp))
 
         val sections = listOf(
-            "1. On-Device Knowledge Hub Context" to "Piggy AI constructs a real-time snapshot of your local accounts, savings goals, active loans, recent transactions, and SMS notifications directly on your device. Your raw data stays strictly inside your local Room database.",
-            "2. Streak & Habit Tracking Engine" to "Piggy AI monitors your daily financial logging streak—tracking active streak days, longest streak record, and today's activity status—delivering personalized encouragement and financial habit recommendations.",
-            "3. Privacy & Edge Security Architecture" to "No secret API keys or private banking credentials are stored in plain text or shared externally. All client-side communication utilizes secure channels exclusively to convert natural language queries into actionable ledger insights.",
-            "4. Multi-Account & E-Wallet Aggregation" to "Supports EGP e-wallets (Vodafone Cash, InstaPay), bank accounts (CIB, Bank Misr), credit cards, and cash liquidity across multiple currencies, calculating consolidated net worth automatically.",
-            "5. Offline Operation & Edge Case Handling" to "You can review previous chat histories and perform offline ledger analysis without network connectivity. Any offline transactions update seamlessly once network connection resumes.",
-            "6. Dynamic CTA Follow-Up Questions" to "Every AI response generates dynamic Next Step CTA buttons. Tapping any button immediately sends follow-up queries for deeper financial analysis."
+            "1. On-Device Context" to "Piggy AI securely accesses your local accounts, transactions, and savings goals directly on your device.",
+            "2. Smart Habit Engine" to "Tracks your daily financial logging streak and provides personalized recommendations.",
+            "3. Privacy & Offline Ready" to "Your financial data stays private on your device with secure local storage and full offline capability."
         )
 
         sections.forEach { (title, description) ->
@@ -1017,36 +1323,37 @@ fun ChatMessageItem(
 
     if (message.role == "user") {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Bottom
         ) {
             IconButton(
                 onClick = {
                     clipboardManager.setText(AnnotatedString(message.content))
                     Toast.makeText(context, "Question copied to clipboard", Toast.LENGTH_SHORT).show()
                 },
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(28.dp).padding(bottom = 4.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.ContentCopy,
                     contentDescription = "Copy question",
-                    tint = Color(0xFFF472B6),
-                    modifier = Modifier.size(15.dp)
+                    tint = AiDimText,
+                    modifier = Modifier.size(14.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(6.dp))
             SelectionContainer {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp))
-                        .background(Color(0xFFFFF0F5))
-                        .border(BorderStroke(1.dp, Color(0xFFF472B6).copy(alpha = 0.35f)), RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp))
+                        .background(Color(0xFF1E293B))
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Text(
                         text = message.content,
-                        color = Color(0xFF881337),
+                        color = Color.White,
                         fontSize = 15.sp,
                         lineHeight = 22.sp,
                         fontWeight = FontWeight.Medium
@@ -1055,13 +1362,31 @@ fun ChatMessageItem(
             }
         }
     } else {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-            Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = null,
-                tint = AiAccent,
-                modifier = Modifier.size(20.dp).padding(top = 2.dp)
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(Color(0xFF8B5CF6), Color(0xFF3B82F6), Color(0xFF10B981))
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
             Spacer(modifier = Modifier.width(12.dp))
             
             Column(modifier = Modifier.weight(1f)) {
@@ -1102,59 +1427,70 @@ fun ChatMessageItem(
                     mainAnswerText.take(charCount)
                 }
 
-                // Wrap text response in SelectionContainer for manual highlight & copy
-                SelectionContainer {
-                    Column {
-                        if (displayedText.isNotBlank()) {
-                            FormattedMarkdownText(displayedText)
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-
-                        // Render UI Blocks
-                        decodedResponse?.uiBlocks?.forEach { block ->
-                            when (block) {
-                                is UiBlock.KpiCardBlock -> KpiCard(block)
-                                is UiBlock.StreakStatusBlock -> StreakStatus(block)
-                                is UiBlock.MetricGridBlock -> MetricGrid(block)
-                                is UiBlock.InteractiveChartBlock -> InteractiveChart(block)
-                                is UiBlock.ReflectivePollBlock -> ReflectivePoll(block)
-                                is UiBlock.LedgerItemBlock -> LedgerItem(block)
-                                is UiBlock.ActionBannerBlock -> ActionBanner(block)
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
-                    }
-                }
-
-                // Action row with Copy button
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 2.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    color = Color(0xFFF8FAFC),
+                    shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    IconButton(
-                        onClick = {
-                            val textToCopy = mainAnswerText.ifBlank { message.content }
-                            clipboardManager.setText(AnnotatedString(textToCopy))
-                            isCopied = true
-                            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier.size(28.dp)
+                    Column(
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        Icon(
-                            imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
-                            contentDescription = "Copy response",
-                            tint = if (isCopied) Color(0xFF10B981) else AiDimText,
-                            modifier = Modifier.size(15.dp)
-                        )
+                        // Wrap text response in SelectionContainer for manual highlight & copy
+                        SelectionContainer {
+                            Column {
+                                if (displayedText.isNotBlank()) {
+                                    FormattedMarkdownText(displayedText)
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                }
+
+                                // Render UI Blocks
+                                decodedResponse?.uiBlocks?.forEach { block ->
+                                    when (block) {
+                                        is UiBlock.KpiCardBlock -> KpiCard(block)
+                                        is UiBlock.StreakStatusBlock -> StreakStatus(block)
+                                        is UiBlock.MetricGridBlock -> MetricGrid(block)
+                                        is UiBlock.InteractiveChartBlock -> InteractiveChart(block)
+                                        is UiBlock.ReflectivePollBlock -> ReflectivePoll(block)
+                                        is UiBlock.LedgerItemBlock -> LedgerItem(block)
+                                        is UiBlock.ActionBannerBlock -> ActionBanner(block)
+                                    }
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                }
+                            }
+                        }
+
+                        // Action row with Copy button inside card footer
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    val textToCopy = mainAnswerText.ifBlank { message.content }
+                                    clipboardManager.setText(AnnotatedString(textToCopy))
+                                    isCopied = true
+                                    Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
+                                    contentDescription = "Copy response",
+                                    tint = if (isCopied) Color(0xFF10B981) else AiDimText,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                            }
+                        }
                     }
                 }
 
-                // Render Next Steps as CTA pill buttons outside response area
+                // Render Next Steps as CTA pill buttons outside response card
                 if (nextStepsList.isNotEmpty() && charCount >= mainAnswerText.length) {
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
@@ -1162,33 +1498,33 @@ fun ChatMessageItem(
                         nextStepsList.forEach { stepText ->
                             Surface(
                                 onClick = { onCtaClick(stepText) },
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color(0xFFF3F4F6),
-                                border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color(0xFFEEF2FF),
+                                border = BorderStroke(1.dp, Color(0xFFC7D2FE)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.AutoAwesome,
                                         contentDescription = null,
                                         tint = Color(0xFF6366F1),
-                                        modifier = Modifier.size(15.dp)
+                                        modifier = Modifier.size(16.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(10.dp))
                                     Text(
                                         text = stepText,
-                                        color = AiText,
+                                        color = Color(0xFF312E81),
                                         fontSize = 13.sp,
-                                        fontWeight = FontWeight.Medium,
+                                        fontWeight = FontWeight.SemiBold,
                                         modifier = Modifier.weight(1f)
                                     )
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                         contentDescription = null,
-                                        tint = AiDimText,
+                                        tint = Color(0xFF6366F1),
                                         modifier = Modifier.size(14.dp)
                                     )
                                 }
@@ -1208,18 +1544,42 @@ fun FormattedMarkdownText(text: String) {
         blocks.forEach { block ->
             when (block) {
                 is MarkdownBlock.Header -> {
-                    val fontSize = when (block.level) {
-                        1 -> 21.sp
-                        2 -> 19.sp
-                        else -> 17.sp
+                    val isWarning = block.text.contains("No connection", ignoreCase = true) || block.text.contains("⚠️", ignoreCase = true)
+                    if (isWarning || block.level == 1) {
+                        Surface(
+                            color = Color(0xFFFEF2F2),
+                            border = BorderStroke(1.5.dp, Color(0xFFFCA5A5)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = block.text,
+                                    color = Color(0xFFDC2626),
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = (-0.5).sp
+                                )
+                            }
+                        }
+                    } else {
+                        val fontSize = when (block.level) {
+                            2 -> 19.sp
+                            else -> 17.sp
+                        }
+                        Text(
+                            text = parseAnnotatedString(block.text),
+                            color = AiText,
+                            fontSize = fontSize,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+                        )
                     }
-                    Text(
-                        text = parseAnnotatedString(block.text),
-                        color = AiText,
-                        fontSize = fontSize,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
-                    )
                 }
                 is MarkdownBlock.BulletItem -> {
                     Row(
@@ -1470,15 +1830,39 @@ fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
 
 private fun parseAnnotatedString(text: String): androidx.compose.ui.text.AnnotatedString {
     return buildAnnotatedString {
-        val parts = text.split("**")
-        for (i in parts.indices) {
-            if (i % 2 == 1) {
-                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                    append(parts[i])
+        val cleanText = text
+        if (cleanText.contains("<mark>") && cleanText.contains("</mark>")) {
+            val markParts = cleanText.split("<mark>", "</mark>")
+            for (i in markParts.indices) {
+                if (i % 2 == 1) {
+                    withStyle(
+                        style = SpanStyle(
+                            background = Color(0xFFFEF08A),
+                            color = Color(0xFF854D0E),
+                            fontWeight = FontWeight.Bold
+                        )
+                    ) {
+                        append(markParts[i])
+                    }
+                } else {
+                    appendBoldParts(markParts[i])
                 }
-            } else {
+            }
+        } else {
+            appendBoldParts(cleanText)
+        }
+    }
+}
+
+private fun androidx.compose.ui.text.AnnotatedString.Builder.appendBoldParts(text: String) {
+    val parts = text.split("**")
+    for (i in parts.indices) {
+        if (i % 2 == 1) {
+            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
                 append(parts[i])
             }
+        } else {
+            append(parts[i])
         }
     }
 }
@@ -1693,6 +2077,102 @@ fun ActionBanner(block: UiBlock.ActionBannerBlock) {
                 contentDescription = "Action", 
                 tint = AiSurface, 
                 modifier = Modifier.scale(scaleX = -1f, scaleY = 1f).size(20.dp)
+            )
+        }
+    }
+}
+
+enum class GeometricShapeType {
+    SparkleStar,
+    OctagramStar,
+    Hexagon
+}
+
+@Composable
+fun RotatingGeometricShape(
+    modifier: Modifier = Modifier,
+    shapeType: GeometricShapeType = GeometricShapeType.SparkleStar,
+    colors: List<Color> = listOf(Color(0xFF8B5CF6), Color(0xFF3B82F6), Color(0xFF10B981), Color(0xFFF59E0B)),
+    rotationDurationMs: Int = 8000
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "geometric_rotation")
+    val angle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = rotationDurationMs, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "angle"
+    )
+
+    val brush = Brush.sweepGradient(colors)
+
+    Canvas(modifier = modifier.rotate(angle)) {
+        val w = size.width
+        val h = size.height
+        val cx = w / 2f
+        val cy = h / 2f
+        val radius = kotlin.math.min(w, h) / 2f
+
+        when (shapeType) {
+            GeometricShapeType.SparkleStar -> {
+                val path = Path().apply {
+                    moveTo(cx, cy - radius)
+                    quadraticTo(cx, cy, cx + radius, cy)
+                    quadraticTo(cx, cy, cx, cy + radius)
+                    quadraticTo(cx, cy, cx - radius, cy)
+                    quadraticTo(cx, cy, cx, cy - radius)
+                    close()
+                }
+                drawPath(path = path, brush = brush)
+            }
+            GeometricShapeType.OctagramStar -> {
+                val path = Path()
+                val numPoints = 8
+                val innerRadius = radius * 0.45f
+                for (i in 0 until numPoints * 2) {
+                    val r = if (i % 2 == 0) radius else innerRadius
+                    val a = (i * Math.PI / numPoints).toFloat()
+                    val x = cx + r * kotlin.math.cos(a)
+                    val y = cy + r * kotlin.math.sin(a)
+                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                path.close()
+                drawPath(path = path, brush = brush, style = Stroke(width = 2.5.dp.toPx()))
+            }
+            GeometricShapeType.Hexagon -> {
+                val path = Path()
+                for (i in 0 until 6) {
+                    val a = (i * Math.PI / 3).toFloat()
+                    val x = cx + radius * kotlin.math.cos(a)
+                    val y = cy + radius * kotlin.math.sin(a)
+                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                path.close()
+                drawPath(path = path, brush = brush, style = Stroke(width = 2.dp.toPx()))
+            }
+        }
+    }
+}
+
+@Composable
+fun WaveformAudioIcon(
+    modifier: Modifier = Modifier,
+    barColor: Color = Color(0xFF0F172A)
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val heights = listOf(10.dp, 18.dp, 12.dp, 16.dp)
+        heights.forEach { h ->
+            Box(
+                modifier = Modifier
+                    .width(3.5.dp)
+                    .height(h)
+                    .background(barColor, RoundedCornerShape(2.dp))
             )
         }
     }

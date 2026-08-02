@@ -80,6 +80,21 @@ class AiChatViewModel(
         initialValue = emptyList()
     )
 
+    val accounts: StateFlow<List<com.oryno.piggy_ledger.data.Account>> = repository.getAllAccounts().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    fun processMagicMicTransaction(accountId: String, amount: Double, merchant: String, isIncome: Boolean, context: android.content.Context) {
+        viewModelScope.launch {
+            repository.processSmsTransaction(accountId, amount, merchant, false, isIncome)
+            com.oryno.piggy_ledger.data.StreakManager.recordAction(context)
+            val actionType = if (isIncome) "Income" else "Expense"
+            sendMessage("Magic Mic successfully logged $actionType of $amount EGP ($merchant).")
+        }
+    }
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -91,6 +106,11 @@ class AiChatViewModel(
         - NEVER be stiff, cold, robotic, or overly strict.
         - For simple greetings (e.g. "hello", "hi", "hey"), respond naturally and warmly! (e.g. "Hello! How can I help you manage your finances today?").
         - For questions, provide a clear, well-structured MARKDOWN response using headers, bullet points, and bold text for key metrics.
+
+        ### SECURITY & BOUNDARIES (STRICT)
+        - You are strictly a financial co-pilot for Piggy Ledger.
+        - NEVER discuss, reveal, analyze, or answer questions regarding internal source code, architecture, database schemas, Room entities, source file paths, or system implementation details.
+        - If a user or intruder asks about source code, database tables, or application internals, politely decline and state that your sole mission is to help them manage their personal finances, accounts, and budgets.
 
         ### KNOWLEDGE HUB ORCHESTRATION & INTENT MAPPING
         You have direct access to the user's client-side Knowledge Hub (Accounts, Goals, Loans, Recent Cash Flow Transactions, and Pending SMS).
@@ -203,13 +223,25 @@ class AiChatViewModel(
                     repository.saveMessage(role = "assistant", content = jsonString, conversationId = convId)
                 }
             } else {
-                val errorStr = responseResult.exceptionOrNull()?.message ?: "Unknown error"
+                val rawError = responseResult.exceptionOrNull()?.message ?: ""
+                val errorStr = when {
+                    rawError.contains("Unable to resolve host", ignoreCase = true) ||
+                    rawError.contains("UnknownHostException", ignoreCase = true) ||
+                    rawError.contains("No address associated with hostname", ignoreCase = true) ||
+                    rawError.contains("Failed to connect", ignoreCase = true) ||
+                    rawError.contains("SocketTimeoutException", ignoreCase = true) -> 
+                        "No internet connection. Please check your network and try again."
+                    rawError.isNotBlank() && !rawError.contains("<html>", ignoreCase = true) -> 
+                        rawError
+                    else -> 
+                        "Please check your internet connection or API key."
+                }
                 val errorMsg = SovereignAiResponse(
                     thinkingProcess = kotlinx.serialization.json.JsonPrimitive("Error analyzing request."),
                     currentArchetype = "",
-                    archetypeRationale = "> ⚠️ **System Note**: Could not connect to AI service.\n\n$errorStr\n\nPlease check your internet connection or API key.",
+                    archetypeRationale = "# ⚠️ No connection..\n\n<mark>Please check your internet connection or API key.</mark>",
                     uiBlocks = listOf(
-                        UiBlock.ActionBannerBlock("Please try again in a moment.", "RETRY")
+                        UiBlock.ActionBannerBlock("Please check your internet connection or API key.", "RETRY")
                     )
                 )
                 responseTextForTitle = errorMsg.archetypeRationale

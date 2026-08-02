@@ -555,38 +555,7 @@ fun RevenueView(transactions: List<AccountTransaction>) {
         }
     }
     
-    // Default sample data matching reference image structure if user has no transactions yet
-    val bars = remember(rawBars, selectedPeriod) {
-        if (rawBars.isEmpty() || rawBars.all { it.value == 0.0 }) {
-            when (selectedPeriod) {
-                RevenuePeriod.WEEKLY -> listOf(
-                    RevenueBar("M", 6500.0, 0.0),
-                    RevenueBar("T", 8500.0, 30.0),
-                    RevenueBar("W", 11800.0, 38.0),
-                    RevenueBar("T", 3800.0, -67.0),
-                    RevenueBar("F", 14200.0, 273.0),
-                    RevenueBar("S", 6800.0, -52.0),
-                    RevenueBar("S", 10800.0, 58.0)
-                )
-                RevenuePeriod.MONTHLY -> listOf(
-                    RevenueBar("W1", 5200.0, 0.0),
-                    RevenueBar("W2", 11500.0, 121.0),
-                    RevenueBar("W3", 8200.0, -28.0),
-                    RevenueBar("W4", 13800.0, 68.0)
-                )
-                RevenuePeriod.YEARLY -> listOf(
-                    RevenueBar("Jan", 7500.0, 0.0),
-                    RevenueBar("Feb", 11200.0, 49.0),
-                    RevenueBar("Mar", 8800.0, -21.0),
-                    RevenueBar("Apr", 14500.0, 64.0),
-                    RevenueBar("May", 9200.0, -36.0),
-                    RevenueBar("Jun", 12800.0, 39.0)
-                )
-            }
-        } else {
-            rawBars
-        }
-    }
+    val bars = rawBars
     
     val totalRevenue = bars.sumOf { it.value }
     val previousTotalRevenue = remember(incomes, selectedPeriod) {
@@ -634,7 +603,6 @@ fun RevenueView(transactions: List<AccountTransaction>) {
     
     val totalChange = when {
         previousTotalRevenue > 0 -> ((totalRevenue - previousTotalRevenue) / previousTotalRevenue) * 100
-        totalRevenue > 0 -> 18.5
         else -> 0.0
     } 
     

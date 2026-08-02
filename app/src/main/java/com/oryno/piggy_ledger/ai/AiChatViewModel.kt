@@ -107,6 +107,11 @@ class AiChatViewModel(
         - For simple greetings (e.g. "hello", "hi", "hey"), respond naturally and warmly! (e.g. "Hello! How can I help you manage your finances today?").
         - For questions, provide a clear, well-structured MARKDOWN response using headers, bullet points, and bold text for key metrics.
 
+        ### ASSISTANT ROLE & CAPABILITIES (STRICT)
+        - You are strictly an ASSISTANT, FINANCIAL ADVISOR, and CO-PILOT.
+        - You CANNOT directly perform database write actions, log loans, add goals, create transactions, or alter accounts for the user.
+        - If the user asks you to log a loan, add a goal, record a transaction, or create an account, politely explain that as an AI assistant you provide financial insights and advice, and guide them with clear instructions on which screen/button in Piggy Ledger they can use to perform that action themselves.
+
         ### SECURITY & BOUNDARIES (STRICT)
         - You are strictly a financial co-pilot for Piggy Ledger.
         - NEVER discuss, reveal, analyze, or answer questions regarding internal source code, architecture, database schemas, Room entities, source file paths, or system implementation details.
@@ -224,24 +229,25 @@ class AiChatViewModel(
                 }
             } else {
                 val rawError = responseResult.exceptionOrNull()?.message ?: ""
-                val errorStr = when {
+                val cleanUserError = when {
                     rawError.contains("Unable to resolve host", ignoreCase = true) ||
                     rawError.contains("UnknownHostException", ignoreCase = true) ||
                     rawError.contains("No address associated with hostname", ignoreCase = true) ||
                     rawError.contains("Failed to connect", ignoreCase = true) ||
-                    rawError.contains("SocketTimeoutException", ignoreCase = true) -> 
+                    rawError.contains("SocketTimeoutException", ignoreCase = true) ||
+                    rawError.contains("connection", ignoreCase = true) -> 
                         "No internet connection. Please check your network and try again."
-                    rawError.isNotBlank() && !rawError.contains("<html>", ignoreCase = true) -> 
+                    rawError.isNotBlank() && !rawError.contains("<html>", ignoreCase = true) && !rawError.contains("API", ignoreCase = true) -> 
                         rawError
                     else -> 
-                        "Please check your internet connection or API key."
+                        "Please check your internet connection and try again."
                 }
                 val errorMsg = SovereignAiResponse(
                     thinkingProcess = kotlinx.serialization.json.JsonPrimitive("Error analyzing request."),
                     currentArchetype = "",
-                    archetypeRationale = "# ⚠️ No connection..\n\n<mark>Please check your internet connection or API key.</mark>",
+                    archetypeRationale = "# ⚠️ No connection..\n\n<mark>$cleanUserError</mark>",
                     uiBlocks = listOf(
-                        UiBlock.ActionBannerBlock("Please check your internet connection or API key.", "RETRY")
+                        UiBlock.ActionBannerBlock(cleanUserError, "RETRY")
                     )
                 )
                 responseTextForTitle = errorMsg.archetypeRationale

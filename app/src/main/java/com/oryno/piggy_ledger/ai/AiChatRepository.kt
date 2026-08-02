@@ -192,10 +192,10 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
             } else {
                 android.util.Log.e("AiChat", "API Error: ${response.code} - $responseBody")
                 val friendlyMessage = when (response.code) {
-                    401, 403 -> "Invalid API key or unauthorized access."
-                    429 -> "Rate limit exceeded. Please wait a moment."
-                    500, 502, 503 -> "AI server is temporarily unavailable."
-                    else -> "Unable to complete request (Error ${response.code})."
+                    401, 403 -> "Service temporarily unavailable. Please try again later."
+                    429 -> "Service is busy right now. Please wait a moment and try again."
+                    500, 502, 503 -> "Service is temporarily unavailable. Please try again later."
+                    else -> "Unable to complete request. Please check your connection and try again."
                 }
                 Result.failure(Exception(friendlyMessage))
             }

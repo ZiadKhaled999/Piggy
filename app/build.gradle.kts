@@ -190,6 +190,7 @@ dependencies {
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.clerk.android.ui)
   implementation(libs.lottie.compose)
+  implementation(libs.markdown.renderer.m3)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
   implementation(libs.androidx.navigation.compose)
   implementation(libs.androidx.room.ktx)

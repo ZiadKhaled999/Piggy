@@ -58,6 +58,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.m3.markdownColor
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
@@ -122,40 +124,6 @@ fun AiChatScreen(
     val focusRequester = remember { FocusRequester() }
 
     val context = LocalContext.current
-    val accounts by viewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
-    val prefs = remember { context.getSharedPreferences("piggy_ledger_prefs", android.content.Context.MODE_PRIVATE) }
-    var hasSeenMagicMicTooltip by remember { mutableStateOf(prefs.getBoolean("has_seen_magic_mic_tooltip", false)) }
-    var showMagicMicTooltipDialog by remember { mutableStateOf(false) }
-    var transcribedText by remember { mutableStateOf<String?>(null) }
-    var showAccountPickerForMic by remember { mutableStateOf(false) }
-    var pendingMicTransactionData by remember { mutableStateOf<Triple<Double, String, Boolean>?>(null) }
-
-    val speechRecognizerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val matches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            val spoken = matches?.firstOrNull() ?: ""
-            if (spoken.isNotBlank()) {
-                transcribedText = spoken
-            }
-        }
-    }
-
-    val handleMagicMicClick = {
-        if (!hasSeenMagicMicTooltip) {
-            showMagicMicTooltipDialog = true
-        } else {
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak your transaction or request...")
-            }
-            try {
-                speechRecognizerLauncher.launch(intent)
-            } catch (e: Exception) {
-                android.widget.Toast.makeText(context, "Speech recognition not available", android.widget.Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
 
     var initialHistoryIds by remember { mutableStateOf<Set<Int>?>(null) }
     if (initialHistoryIds == null && chatHistory.isNotEmpty()) {
@@ -358,274 +326,30 @@ fun AiChatScreen(
                                 )
                             }
 
-                            // Right Microphone Icon Button
-                            IconButton(
-                                onClick = handleMagicMicClick,
-                                modifier = Modifier.size(40.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Mic,
-                                    contentDescription = "Voice Input",
-                                    tint = Color(0xFF1E293B),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(4.dp))
-
-                            // Rightmost Cyan Action Pill (Waveform / Send)
+                            // Rightmost Cyan Action Pill (Send Button)
                             Box(
                                 modifier = Modifier
                                     .size(48.dp)
-                                    .background(Color(0xFF00B0FF), CircleShape)
+                                    .background(
+                                        if (inputText.isNotBlank() && !isLoading) Color(0xFF00B0FF) else Color(0xFFE2E8F0),
+                                        CircleShape
+                                    )
                                     .clip(CircleShape)
                                     .clickable {
                                         if (inputText.isNotBlank() && !isLoading) {
                                             viewModel.sendMessage(inputText)
                                             inputText = ""
-                                        } else {
-                                            handleMagicMicClick()
                                         }
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (inputText.isBlank()) {
-                                    WaveformAudioIcon(barColor = Color(0xFF0F172A))
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.Send,
-                                        contentDescription = "Send",
-                                        tint = Color(0xFF0F172A),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // First-time Magic Mic Tooltip Dialog
-                if (showMagicMicTooltipDialog) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.65f))
-                            .clickable(enabled = false) {},
-                        contentAlignment = Alignment.BottomCenter
-                    ) {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = AiSurface),
-                            shape = RoundedCornerShape(20.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp)
-                                .padding(bottom = 80.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(20.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.Mic, contentDescription = null, tint = Color(0xFF6366F1), modifier = Modifier.size(28.dp))
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Text("Magic Mic", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = AiText)
-                                    }
-                                    IconButton(onClick = {
-                                        prefs.edit().putBoolean("has_seen_magic_mic_tooltip", true).apply()
-                                        hasSeenMagicMicTooltip = true
-                                        showMagicMicTooltipDialog = false
-                                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak your transaction...")
-                                        }
-                                        try { speechRecognizerLauncher.launch(intent) } catch (e: Exception) {}
-                                    }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Close", tint = AiDimText)
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    "Speak naturally to instantly log expenses, income, or transfers!\n\nJust say: 'I paid 350 EGP for groceries using CIB' or 'Got 15000 EGP salary'. Magic Mic will parse and log it automatically.",
-                                    color = AiDimText,
-                                    fontSize = 14.sp,
-                                    lineHeight = 20.sp
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Send,
+                                    contentDescription = "Send",
+                                    tint = if (inputText.isNotBlank() && !isLoading) Color(0xFF0F172A) else Color(0xFF94A3B8),
+                                    modifier = Modifier.size(20.dp)
                                 )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = {
-                                        prefs.edit().putBoolean("has_seen_magic_mic_tooltip", true).apply()
-                                        hasSeenMagicMicTooltip = true
-                                        showMagicMicTooltipDialog = false
-                                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak your transaction...")
-                                        }
-                                        try { speechRecognizerLauncher.launch(intent) } catch (e: Exception) {}
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1)),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("Got it, Start Magic Mic", color = Color.White, fontWeight = FontWeight.SemiBold)
-                                }
                             }
-                        }
-                    }
-                }
-
-                // Transcription Bottom Sheet (Edit and Confirm)
-                if (transcribedText != null) {
-                    ModalBottomSheet(
-                        onDismissRequest = { transcribedText = null },
-                        containerColor = AiSurface
-                    ) {
-                        var editableText by remember(transcribedText) { mutableStateOf(transcribedText ?: "") }
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp)
-                                .navigationBarsPadding()
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Mic, contentDescription = null, tint = Color(0xFF6366F1), modifier = Modifier.size(24.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Magic Mic Transcription", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = AiText)
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text("Review and edit your spoken text before confirming:", fontSize = 13.sp, color = AiDimText)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            OutlinedTextField(
-                                value = editableText,
-                                onValueChange = { editableText = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color(0xFF6366F1),
-                                    unfocusedBorderColor = AiBorder,
-                                    focusedTextColor = AiText,
-                                    unfocusedTextColor = AiText
-                                ),
-                                shape = RoundedCornerShape(12.dp),
-                                minLines = 3
-                            )
-                            Spacer(modifier = Modifier.height(20.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                OutlinedButton(
-                                    onClick = {},
-                                    modifier = Modifier.weight(1f),
-                                    border = BorderStroke(1.dp, Color(0xFF6366F1)),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFF6366F1), modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Edit", color = Color(0xFF6366F1), fontWeight = FontWeight.SemiBold)
-                                }
-
-                                Button(
-                                    onClick = {
-                                        val text = editableText.trim()
-                                        if (text.isNotBlank()) {
-                                            val isIncome = text.contains("salary", true) || text.contains("got", true) || text.contains("income", true) || text.contains("received", true) || text.contains("earned", true) || text.contains("deposit", true)
-                                            val amountRegex = Regex("""\d+(\.\d+)?""")
-                                            val match = amountRegex.find(text)
-                                            val amount = match?.value?.toDoubleOrNull() ?: 0.0
-                                            val merchant = text.take(50)
-
-                                            if (accounts.size == 1) {
-                                                val accId = accounts.first().id
-                                                viewModel.processMagicMicTransaction(accId, amount, merchant, isIncome, context)
-                                                transcribedText = null
-                                            } else if (accounts.isNotEmpty()) {
-                                                pendingMicTransactionData = Triple(amount, merchant, isIncome)
-                                                showAccountPickerForMic = true
-                                                transcribedText = null
-                                            } else {
-                                                android.widget.Toast.makeText(context, "Please create an account first!", android.widget.Toast.LENGTH_SHORT).show()
-                                                transcribedText = null
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1)),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Confirm", color = Color.White, fontWeight = FontWeight.SemiBold)
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                        }
-                    }
-                }
-
-                // Account Picker Bottom Sheet (if multiple accounts)
-                if (showAccountPickerForMic && pendingMicTransactionData != null) {
-                    val (amount, merchant, isIncome) = pendingMicTransactionData!!
-                    ModalBottomSheet(
-                        onDismissRequest = { showAccountPickerForMic = false; pendingMicTransactionData = null },
-                        containerColor = AiSurface
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp)
-                                .navigationBarsPadding()
-                        ) {
-                            Text("Select Preferred Account", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = AiText)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("You have multiple accounts. Choose which account to log this transaction into:", fontSize = 13.sp, color = AiDimText)
-                            Spacer(modifier = Modifier.height(16.dp))
-                            LazyColumn(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.heightIn(max = 300.dp)
-                            ) {
-                                items(accounts) { acc ->
-                                    Card(
-                                        colors = CardDefaults.cardColors(containerColor = AiBackground),
-                                        border = BorderStroke(1.dp, AiBorder),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                viewModel.processMagicMicTransaction(acc.id, amount, merchant, isIncome, context)
-                                                showAccountPickerForMic = false
-                                                pendingMicTransactionData = null
-                                            }
-                                    ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column {
-                                                Text(acc.name, fontWeight = FontWeight.Bold, color = AiText, fontSize = 16.sp)
-                                                val accNo = acc.bank_account_no ?: acc.card_numbers ?: ""
-                                                if (accNo.isNotBlank()) {
-                                                    Text(accNo, color = AiDimText, fontSize = 12.sp)
-                                                }
-                                            }
-                                            Text("${acc.current_balance} EGP", fontWeight = FontWeight.SemiBold, color = Color(0xFF6366F1))
-                                        }
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
                         }
                     }
                 }
@@ -991,24 +715,6 @@ fun EmptyChatState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Sparkling Red/Coral Star Icon
-            Surface(
-                shape = CircleShape,
-                color = Color(0xFFFF5252).copy(alpha = 0.12f),
-                modifier = Modifier.size(56.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = "Piggy AI",
-                        tint = Color(0xFFFF5252),
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             Text(
                 text = "Find what Piggy AI knows",
                 color = AiText,
@@ -1369,26 +1075,6 @@ fun ChatMessageItem(
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.Top
         ) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(Color(0xFF8B5CF6), Color(0xFF3B82F6), Color(0xFF10B981))
-                        ),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            
             Column(modifier = Modifier.weight(1f)) {
                 val json = remember { Json { ignoreUnknownKeys = true; isLenient = true; classDiscriminator = "type" } }
                 val decodedResponse: SovereignAiResponse? = remember(message.content) {
@@ -1507,13 +1193,6 @@ fun ChatMessageItem(
                                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.AutoAwesome,
-                                        contentDescription = null,
-                                        tint = Color(0xFF6366F1),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
                                     Text(
                                         text = stepText,
                                         color = Color(0xFF312E81),
@@ -1540,11 +1219,35 @@ fun ChatMessageItem(
 @Composable
 fun FormattedMarkdownText(text: String) {
     val blocks = remember(text) { parseMarkdownBlocks(text) }
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         blocks.forEach { block ->
             when (block) {
+                is MarkdownBlock.CodeBlock -> {
+                    RenderCodeBlock(
+                        language = block.language,
+                        code = block.code,
+                        onCopy = {
+                            clipboardManager.setText(AnnotatedString(block.code))
+                            Toast.makeText(context, "Code copied to clipboard", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
+                is MarkdownBlock.CustomProgress -> {
+                    RenderProgressCard(block)
+                }
+                is MarkdownBlock.CustomSteps -> {
+                    RenderStepsCard(block)
+                }
+                is MarkdownBlock.CustomStat -> {
+                    RenderStatCard(block)
+                }
                 is MarkdownBlock.Header -> {
-                    val isWarning = block.text.contains("No connection", ignoreCase = true) || block.text.contains("⚠️", ignoreCase = true)
+                    val isWarning = block.text.contains("No connection", ignoreCase = true) || 
+                                    block.text.contains("Connection lost", ignoreCase = true) || 
+                                    block.text.contains("⚠️", ignoreCase = true)
                     if (isWarning || block.level == 1) {
                         Surface(
                             color = Color(0xFFFEF2F2),
@@ -1552,7 +1255,7 @@ fun FormattedMarkdownText(text: String) {
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 6.dp)
+                                .padding(vertical = 4.dp)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -1561,37 +1264,22 @@ fun FormattedMarkdownText(text: String) {
                                 Text(
                                     text = block.text,
                                     color = Color(0xFFDC2626),
-                                    fontSize = 22.sp,
+                                    fontSize = 20.sp,
                                     fontWeight = FontWeight.Black,
                                     letterSpacing = (-0.5).sp
                                 )
                             }
                         }
                     } else {
-                        val fontSize = when (block.level) {
-                            2 -> 19.sp
-                            else -> 17.sp
-                        }
-                        Text(
-                            text = parseAnnotatedString(block.text),
-                            color = AiText,
-                            fontSize = fontSize,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
-                        )
-                    }
-                }
-                is MarkdownBlock.BulletItem -> {
-                    Row(
-                        modifier = Modifier.padding(start = 4.dp, top = 2.dp),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Text("• ", color = AiAccent, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                        Text(
-                            text = parseAnnotatedString(block.text),
-                            color = AiText,
-                            fontSize = 15.sp,
-                            lineHeight = 22.sp
+                        Markdown(
+                            content = "#".repeat(block.level) + " " + block.text,
+                            colors = markdownColor(
+                                text = AiText,
+                                codeText = Color(0xFFE2E8F0),
+                                inlineCodeText = Color(0xFF4F46E5),
+                                inlineCodeBackground = Color(0xFFEEF2FF),
+                                dividerColor = Color(0xFFE5E7EB)
+                            )
                         )
                     }
                 }
@@ -1608,14 +1296,257 @@ fun FormattedMarkdownText(text: String) {
                 is MarkdownBlock.Table -> {
                     RenderMarkdownTable(block.headers, block.rows)
                 }
-                is MarkdownBlock.Paragraph -> {
-                    Text(
-                        text = parseAnnotatedString(block.text),
-                        color = AiText,
-                        fontSize = 15.sp,
-                        lineHeight = 23.sp
+                is MarkdownBlock.StandardMarkdown -> {
+                    Markdown(
+                        content = block.rawMarkdown,
+                        colors = markdownColor(
+                            text = AiText,
+                            codeText = Color(0xFFE2E8F0),
+                            inlineCodeText = Color(0xFF4F46E5),
+                            inlineCodeBackground = Color(0xFFEEF2FF),
+                            dividerColor = Color(0xFFE5E7EB)
+                        )
                     )
                 }
+                is MarkdownBlock.Paragraph -> {
+                    Markdown(
+                        content = block.text,
+                        colors = markdownColor(
+                            text = AiText,
+                            codeText = Color(0xFFE2E8F0),
+                            inlineCodeText = Color(0xFF4F46E5),
+                            inlineCodeBackground = Color(0xFFEEF2FF),
+                            dividerColor = Color(0xFFE5E7EB)
+                        )
+                    )
+                }
+                is MarkdownBlock.BulletItem -> {
+                    Markdown(
+                        content = "- " + block.text,
+                        colors = markdownColor(
+                            text = AiText,
+                            codeText = Color(0xFFE2E8F0),
+                            inlineCodeText = Color(0xFF4F46E5),
+                            inlineCodeBackground = Color(0xFFEEF2FF),
+                            dividerColor = Color(0xFFE5E7EB)
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RenderCodeBlock(
+    language: String,
+    code: String,
+    onCopy: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFF0F172A),
+        border = BorderStroke(1.dp, Color(0xFF334155)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+    ) {
+        Column {
+            // Header bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF1E293B))
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = Color(0xFF312E81),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        text = language.uppercase(),
+                        color = Color(0xFFA5B4FC),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+
+                Surface(
+                    onClick = onCopy,
+                    color = Color(0xFF334155),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Copy code",
+                            tint = Color(0xFF94A3B8),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Copy",
+                            color = Color(0xFFF8FAFC),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
+            HorizontalDivider(color = Color(0xFF334155), thickness = 1.dp)
+
+            // Code Content
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp)
+            ) {
+                Text(
+                    text = code,
+                    color = Color(0xFFF1F5F9),
+                    fontSize = 12.5.sp,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    lineHeight = 18.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RenderProgressCard(block: MarkdownBlock.CustomProgress) {
+    val pct = if (block.max > 0f) ((block.value / block.max) * 100).toInt().coerceIn(0, 100) else 0
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFFF8FAFC),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = block.title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Color(0xFF0F172A)
+                )
+                Text(
+                    text = "$pct%",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 14.sp,
+                    color = Color(0xFF4F46E5)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { (block.value / block.max.coerceAtLeast(1f)).coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = Color(0xFF6366F1),
+                trackColor = Color(0xFFE0E7FF)
+            )
+        }
+    }
+}
+
+@Composable
+fun RenderStepsCard(block: MarkdownBlock.CustomSteps) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFFF0FDF4),
+        border = BorderStroke(1.dp, Color(0xFFBBF7D0)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            if (block.title.isNotBlank()) {
+                Text(
+                    text = block.title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Color(0xFF166534),
+                    modifier = Modifier.padding(bottom = 10.dp)
+                )
+            }
+            block.steps.forEachIndexed { idx, stepText ->
+                Row(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .background(Color(0xFF22C55E), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "${idx + 1}",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = stepText,
+                        color = Color(0xFF14532D),
+                        fontSize = 13.5.sp,
+                        lineHeight = 19.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RenderStatCard(block: MarkdownBlock.CustomStat) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFFEEF2FF),
+        border = BorderStroke(1.dp, Color(0xFFC7D2FE)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = block.title,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF4338CA)
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = block.mainValue,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF312E81)
+            )
+            if (!block.subtitle.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = block.subtitle,
+                    fontSize = 12.sp,
+                    color = Color(0xFF6366F1)
+                )
             }
         }
     }
@@ -1723,12 +1654,17 @@ fun RenderMarkdownTable(headers: List<String>, rows: List<List<String>>) {
 }
 
 sealed class MarkdownBlock {
+    data class CodeBlock(val language: String, val code: String) : MarkdownBlock()
+    data class CustomProgress(val title: String, val value: Float, val max: Float) : MarkdownBlock()
+    data class CustomSteps(val title: String, val steps: List<String>) : MarkdownBlock()
+    data class CustomStat(val title: String, val mainValue: String, val subtitle: String? = null) : MarkdownBlock()
     data class Header(val level: Int, val text: String) : MarkdownBlock()
     data class BulletItem(val text: String) : MarkdownBlock()
     data class Callout(val text: String) : MarkdownBlock()
     data class HorizontalRule(val dummy: Unit = Unit) : MarkdownBlock()
     data class Table(val headers: List<String>, val rows: List<List<String>>) : MarkdownBlock()
     data class Paragraph(val text: String) : MarkdownBlock()
+    data class StandardMarkdown(val rawMarkdown: String) : MarkdownBlock()
 }
 
 fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
@@ -1742,6 +1678,60 @@ fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
         
         if (line.isEmpty()) {
             i++
+            continue
+        }
+        
+        // 0. Code block check: ```lang ... ```
+        if (line.startsWith("```")) {
+            val language = line.removePrefix("```").trim()
+            val codeLines = mutableListOf<String>()
+            i++
+            while (i < lines.size && !lines[i].trim().startsWith("```")) {
+                codeLines.add(lines[i])
+                i++
+            }
+            if (i < lines.size && lines[i].trim().startsWith("```")) {
+                i++
+            }
+            blocks.add(MarkdownBlock.CodeBlock(language.ifBlank { "code" }, codeLines.joinToString("\n")))
+            continue
+        }
+
+        // 0.1 :::progress
+        if (line.startsWith(":::progress")) {
+            i++
+            var title = "Progress"
+            var value = 0f
+            var max = 100f
+            while (i < lines.size && !lines[i].trim().startsWith(":::")) {
+                val l = lines[i].trim()
+                if (l.startsWith("title:")) title = l.removePrefix("title:").trim()
+                if (l.startsWith("value:")) value = l.removePrefix("value:").trim().toFloatOrNull() ?: 0f
+                if (l.startsWith("max:")) max = l.removePrefix("max:").trim().toFloatOrNull() ?: 100f
+                i++
+            }
+            if (i < lines.size && lines[i].trim().startsWith(":::")) i++
+            blocks.add(MarkdownBlock.CustomProgress(title, value, max))
+            continue
+        }
+
+        // 0.2 :::steps
+        if (line.startsWith(":::steps")) {
+            i++
+            var title = "Steps"
+            val stepItems = mutableListOf<String>()
+            while (i < lines.size && !lines[i].trim().startsWith(":::")) {
+                val l = lines[i].trim()
+                if (l.startsWith("title:")) {
+                    title = l.removePrefix("title:").trim()
+                } else if (l.isNotBlank()) {
+                    val stepText = l.replaceFirst(Regex("""^\d+\.\s*"""), "").removePrefix("-").trim()
+                    if (stepText.isNotBlank()) stepItems.add(stepText)
+                }
+                i++
+            }
+            if (i < lines.size && lines[i].trim().startsWith(":::")) i++
+            blocks.add(MarkdownBlock.CustomSteps(title, stepItems))
             continue
         }
         
@@ -1820,8 +1810,8 @@ fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
             continue
         }
         
-        // 6. Regular Paragraph
-        blocks.add(MarkdownBlock.Paragraph(line))
+        // 6. Regular Paragraph / Standard markdown chunk
+        blocks.add(MarkdownBlock.StandardMarkdown(line))
         i++
     }
     

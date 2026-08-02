@@ -48,6 +48,7 @@ posthog = "3.+"
 clerk = "1.0.10"
 biometric = "1.2.0-alpha01"
 lottie = "6.6.2"
+markdownRenderer = "0.27.0"
 
 supabase = "3.0.0"
 ktor = "3.0.0"
@@ -118,6 +119,7 @@ firebase-appcheck-recaptcha = { group = "com.google.firebase", name = "firebase-
 posthog-android = { group = "com.posthog", name = "posthog-android", version.ref = "posthog" }
 clerk-android-ui = { group = "com.clerk", name = "clerk-android-ui", version.ref = "clerk" }
 lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", version.ref = "lottie" }
+markdown-renderer-m3 = { group = "com.mikepenz", name = "multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

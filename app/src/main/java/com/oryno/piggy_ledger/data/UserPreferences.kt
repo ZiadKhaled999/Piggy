@@ -9,6 +9,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 val Context.dataStore by preferencesDataStore(name = "user_prefs")
 
@@ -100,18 +102,21 @@ class UserPreferences(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[HAS_ONBOARDED] = completed
         }
+        syncPreferencesToDb()
     }
     
     suspend fun saveLanguageSelected(selected: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[HAS_LANGUAGE_SELECTED] = selected
         }
+        syncPreferencesToDb()
     }
 
     suspend fun saveHeardAboutUs(completed: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[HAS_HEARD_ABOUT_US] = completed
         }
+        syncPreferencesToDb()
     }
 
     suspend fun saveAuthentication(authenticated: Boolean, email: String = "", name: String = "", photoUrl: String = "") {
@@ -121,12 +126,14 @@ class UserPreferences(private val context: Context) {
             prefs[AUTH_USER_NAME] = name
             prefs[AUTH_USER_PHOTO_URL] = photoUrl
         }
+        syncPreferencesToDb()
     }
 
     suspend fun saveBiometricLockEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[IS_BIOMETRIC_LOCK_ENABLED] = enabled
         }
+        syncPreferencesToDb()
     }
 
     suspend fun saveLockTimeout(seconds: Long) {
@@ -145,12 +152,14 @@ class UserPreferences(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[IS_SCREENSHOT_PROTECTION_ENABLED] = enabled
         }
+        syncPreferencesToDb()
     }
 
     suspend fun savePremiumStatus(isPremium: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[IS_PREMIUM] = isPremium
         }
+        syncPreferencesToDb()
     }
 
     suspend fun savePersonalization(intent: Int, intensity: Int, savingMode: String) {
@@ -159,11 +168,72 @@ class UserPreferences(private val context: Context) {
             prefs[PERSONALIZED_INTENSITY] = intensity
             prefs[SAVING_MODE] = savingMode
         }
+        syncPreferencesToDb()
     }
 
     suspend fun saveCustomIdentifiersJson(json: String) {
         context.dataStore.edit { prefs ->
             prefs[CUSTOM_IDENTIFIERS_JSON] = json
+        }
+        syncPreferencesToDb()
+    }
+
+    suspend fun syncPreferencesToDb() {
+        try {
+            val user = com.clerk.api.Clerk.userFlow.value
+            val userId = user?.id ?: "local_user"
+            val prefs = context.dataStore.data.first()
+            val entity = UserPreferencesEntity(
+                userId = userId,
+                hasOnboarded = prefs[HAS_ONBOARDED] ?: false,
+                hasLanguageSelected = prefs[HAS_LANGUAGE_SELECTED] ?: false,
+                hasHeardAboutUs = prefs[HAS_HEARD_ABOUT_US] ?: false,
+                personalizedIntent = prefs[PERSONALIZED_INTENT] ?: -1,
+                personalizedIntensity = prefs[PERSONALIZED_INTENSITY] ?: -1,
+                savingMode = prefs[SAVING_MODE] ?: "piggy",
+                customIdentifiersJson = prefs[CUSTOM_IDENTIFIERS_JSON] ?: "{}",
+                isBiometricLockEnabled = prefs[IS_BIOMETRIC_LOCK_ENABLED] ?: false,
+                isScreenshotProtectionEnabled = prefs[IS_SCREENSHOT_PROTECTION_ENABLED] ?: false,
+                isPremium = prefs[IS_PREMIUM] ?: false,
+                updatedAt = System.currentTimeMillis(),
+                isSynced = false
+            )
+            val dao = PiggyLedgerDatabase.getInstance(context.applicationContext).piggyLedgerDao()
+            dao.insertUserPreferences(entity)
+            triggerSync(context)
+        } catch (e: Exception) {
+            android.util.Log.e("UserPreferences", "Failed to sync preferences to Room", e)
+        }
+    }
+
+    suspend fun applyFromEntity(entity: UserPreferencesEntity) {
+        context.dataStore.edit { prefs ->
+            prefs[HAS_ONBOARDED] = entity.hasOnboarded
+            prefs[HAS_LANGUAGE_SELECTED] = entity.hasLanguageSelected
+            prefs[HAS_HEARD_ABOUT_US] = entity.hasHeardAboutUs
+            prefs[PERSONALIZED_INTENT] = entity.personalizedIntent
+            prefs[PERSONALIZED_INTENSITY] = entity.personalizedIntensity
+            prefs[SAVING_MODE] = entity.savingMode
+            prefs[CUSTOM_IDENTIFIERS_JSON] = entity.customIdentifiersJson
+            prefs[IS_BIOMETRIC_LOCK_ENABLED] = entity.isBiometricLockEnabled
+            prefs[IS_SCREENSHOT_PROTECTION_ENABLED] = entity.isScreenshotProtectionEnabled
+            prefs[IS_PREMIUM] = entity.isPremium
+        }
+    }
+
+    private fun triggerSync(context: Context) {
+        val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.SyncWorker>().build()
+        androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
+            "SyncWork",
+            androidx.work.ExistingWorkPolicy.REPLACE,
+            workRequest
+        )
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                com.oryno.piggy_ledger.service.SyncManager(context).syncAll()
+            } catch (e: Exception) {
+                android.util.Log.e("UserPreferences", "Direct sync trigger failed", e)
+            }
         }
     }
 }

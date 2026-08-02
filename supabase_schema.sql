@@ -116,6 +116,58 @@ CREATE TABLE IF NOT EXISTS pending_transactions (
     "isSynced" BOOLEAN DEFAULT true
 );
 
+-- 8. Create User Preferences & Onboarding Table
+CREATE TABLE IF NOT EXISTS user_preferences (
+    "userId" TEXT PRIMARY KEY,
+    "hasOnboarded" BOOLEAN DEFAULT false,
+    "hasLanguageSelected" BOOLEAN DEFAULT false,
+    "hasHeardAboutUs" BOOLEAN DEFAULT false,
+    "personalizedIntent" INTEGER DEFAULT -1,
+    "personalizedIntensity" INTEGER DEFAULT -1,
+    "savingMode" TEXT DEFAULT 'piggy',
+    "customIdentifiersJson" TEXT DEFAULT '{}',
+    "isBiometricLockEnabled" BOOLEAN DEFAULT false,
+    "isScreenshotProtectionEnabled" BOOLEAN DEFAULT false,
+    "isPremium" BOOLEAN DEFAULT false,
+    "createdAt" BIGINT NOT NULL,
+    "updatedAt" BIGINT NOT NULL,
+    "isSynced" BOOLEAN DEFAULT true
+);
+
+-- 9. Create Streak Dates Table
+CREATE TABLE IF NOT EXISTS streak_dates (
+    id TEXT PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "dateStr" TEXT NOT NULL,
+    "createdAt" BIGINT NOT NULL,
+    "updatedAt" BIGINT NOT NULL,
+    "isSynced" BOOLEAN DEFAULT true
+);
+
+-- 10. Create AI Conversations Table
+CREATE TABLE IF NOT EXISTS ai_conversations (
+    id TEXT PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    title TEXT NOT NULL,
+    "isPinned" BOOLEAN DEFAULT false,
+    "createdAt" BIGINT NOT NULL,
+    "updatedAt" BIGINT NOT NULL,
+    "isSynced" BOOLEAN DEFAULT true
+);
+
+-- 11. Create AI Chat Messages Table
+CREATE TABLE IF NOT EXISTS ai_chat_messages (
+    id TEXT PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "conversationId" TEXT NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    timestamp BIGINT NOT NULL,
+    "createdAt" BIGINT NOT NULL,
+    "updatedAt" BIGINT NOT NULL,
+    "isSynced" BOOLEAN DEFAULT true
+);
+
 -- ENABLE ROW LEVEL SECURITY (RLS) FOR ALL TABLES
 ALTER TABLE goals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
@@ -124,6 +176,10 @@ ALTER TABLE loan_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE account_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pending_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE streak_dates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_chat_messages ENABLE ROW LEVEL SECURITY;
 
 -- DROP OLD POLICIES IF PRESENT
 DROP POLICY IF EXISTS "Enable all access for goals" ON goals;
@@ -133,6 +189,10 @@ DROP POLICY IF EXISTS "Enable all access for loan_payments" ON loan_payments;
 DROP POLICY IF EXISTS "Enable all access for accounts" ON accounts;
 DROP POLICY IF EXISTS "Enable all access for account_transactions" ON account_transactions;
 DROP POLICY IF EXISTS "Enable all access for pending_transactions" ON pending_transactions;
+DROP POLICY IF EXISTS "Enable all access for user_preferences" ON user_preferences;
+DROP POLICY IF EXISTS "Enable all access for streak_dates" ON streak_dates;
+DROP POLICY IF EXISTS "Enable all access for ai_conversations" ON ai_conversations;
+DROP POLICY IF EXISTS "Enable all access for ai_chat_messages" ON ai_chat_messages;
 
 DROP POLICY IF EXISTS "Users can manage their own goals" ON goals;
 DROP POLICY IF EXISTS "Users can manage their own transactions" ON transactions;
@@ -150,4 +210,8 @@ CREATE POLICY "Enable all access for loan_payments" ON loan_payments FOR ALL USI
 CREATE POLICY "Enable all access for accounts" ON accounts FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all access for account_transactions" ON account_transactions FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all access for pending_transactions" ON pending_transactions FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all access for user_preferences" ON user_preferences FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all access for streak_dates" ON streak_dates FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all access for ai_conversations" ON ai_conversations FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all access for ai_chat_messages" ON ai_chat_messages FOR ALL USING (true) WITH CHECK (true);
 

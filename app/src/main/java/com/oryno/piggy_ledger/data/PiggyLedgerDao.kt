@@ -31,6 +31,18 @@ interface PiggyLedgerDao {
     @Query("SELECT * FROM pending_transactions WHERE isSynced = 0")
     suspend fun getUnsyncedPendingTransactions(): List<PendingTransaction>
 
+    @Query("SELECT * FROM user_preferences WHERE isSynced = 0")
+    suspend fun getUnsyncedUserPreferences(): List<UserPreferencesEntity>
+
+    @Query("SELECT * FROM streak_dates WHERE isSynced = 0")
+    suspend fun getUnsyncedStreakDates(): List<StreakDateEntity>
+
+    @Query("SELECT * FROM ai_conversations WHERE isSynced = 0")
+    suspend fun getUnsyncedAiConversations(): List<AiConversation>
+
+    @Query("SELECT * FROM ai_chat_messages WHERE isSynced = 0")
+    suspend fun getUnsyncedAiChatMessages(): List<AiChatMessage>
+
     @Query("SELECT * FROM goals ORDER BY createdAt DESC")
     fun getAllGoals(): Flow<List<Goal>>
 
@@ -259,4 +271,37 @@ interface PiggyLedgerDao {
 
     @Query("DELETE FROM ai_chat_messages")
     suspend fun clearChatMessages()
+
+    @Query("SELECT * FROM user_preferences")
+    suspend fun getAllUserPreferencesSync(): List<UserPreferencesEntity>
+
+    @Query("SELECT * FROM user_preferences WHERE userId = :userId")
+    suspend fun getUserPreferencesByUserId(userId: String): UserPreferencesEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertUserPreferences(userPreferences: UserPreferencesEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertUserPreferencesList(preferencesList: List<UserPreferencesEntity>)
+
+    @Query("SELECT * FROM streak_dates")
+    suspend fun getAllStreakDatesSync(): List<StreakDateEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertStreakDate(streakDate: StreakDateEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertStreakDates(streakDates: List<StreakDateEntity>)
+
+    @Query("SELECT * FROM ai_conversations")
+    suspend fun getAllAiConversationsSync(): List<AiConversation>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAiConversations(conversations: List<AiConversation>)
+
+    @Query("SELECT * FROM ai_chat_messages")
+    suspend fun getAllAiChatMessagesSync(): List<AiChatMessage>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAiChatMessages(messages: List<AiChatMessage>)
 }

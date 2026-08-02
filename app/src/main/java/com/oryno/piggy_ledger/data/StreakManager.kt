@@ -2,6 +2,7 @@ package com.oryno.piggy_ledger.data
 
 import android.content.Context
 import com.oryno.piggy_ledger.R
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.InputStream
 import java.text.SimpleDateFormat
@@ -27,6 +28,7 @@ object StreakManager {
         val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         if (dates.add(todayStr)) {
             prefs.edit().putStringSet(KEY_ACTION_DATES, dates).apply()
+            syncStreakToDb(context)
         }
         // Trigger update for both widgets
         com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
@@ -39,6 +41,7 @@ object StreakManager {
         val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         if (dates.remove(todayStr)) {
             prefs.edit().putStringSet(KEY_ACTION_DATES, dates).apply()
+            syncStreakToDb(context)
         }
         // Trigger update for both widgets
         com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
@@ -177,8 +180,49 @@ object StreakManager {
     fun setActionDates(context: Context, dates: Set<String>) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putStringSet(KEY_ACTION_DATES, dates).apply()
+        syncStreakToDb(context)
         com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
         com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+    }
+
+    fun syncFromCloud(context: Context, remoteDates: Set<String>) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val localDates = prefs.getStringSet(KEY_ACTION_DATES, emptySet()) ?: emptySet()
+        val merged = localDates.toMutableSet().apply { addAll(remoteDates) }
+        prefs.edit().putStringSet(KEY_ACTION_DATES, merged).apply()
+        com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+        com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+    }
+
+    fun syncStreakToDb(context: Context) {
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                val user = com.clerk.api.Clerk.userFlow.value
+                val userId = user?.id ?: "local_user"
+                val dates = getActionDates(context)
+                val entities = dates.map { dateStr ->
+                    StreakDateEntity(
+                        id = "${userId}_$dateStr",
+                        userId = userId,
+                        dateStr = dateStr,
+                        updatedAt = System.currentTimeMillis(),
+                        isSynced = false
+                    )
+                }
+                val dao = PiggyLedgerDatabase.getInstance(context.applicationContext).piggyLedgerDao()
+                dao.insertStreakDates(entities)
+                
+                val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.SyncWorker>().build()
+                androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
+                    "SyncWork",
+                    androidx.work.ExistingWorkPolicy.REPLACE,
+                    workRequest
+                )
+                com.oryno.piggy_ledger.service.SyncManager(context).syncAll()
+            } catch (e: Exception) {
+                android.util.Log.e("StreakManager", "Failed to sync streak dates to Room", e)
+            }
+        }
     }
 
     enum class PiggyState {

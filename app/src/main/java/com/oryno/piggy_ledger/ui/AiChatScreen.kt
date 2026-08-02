@@ -125,11 +125,11 @@ fun AiChatScreen(
 
     val context = LocalContext.current
 
-    var initialHistoryIds by remember { mutableStateOf<Set<Int>?>(null) }
+    var initialHistoryIds by remember { mutableStateOf<Set<String>?>(null) }
     if (initialHistoryIds == null && chatHistory.isNotEmpty()) {
         initialHistoryIds = chatHistory.map { it.id }.toSet()
     }
-    val animatedMessageIds = remember { mutableStateListOf<Int>() }
+    val animatedMessageIds = remember { mutableStateListOf<String>() }
 
     // Position automatically to bottom on opening or new messages
     LaunchedEffect(chatHistory.size) {

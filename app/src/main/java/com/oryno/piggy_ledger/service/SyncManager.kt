@@ -58,6 +58,22 @@ class SyncManager(private val context: Context) {
         Log.i("SyncManager", "Starting syncAll for userId=$userId")
 
         try {
+            // Sync User Preferences & Onboarding Data
+            syncTable("user_preferences", userId, dao.getUnsyncedUserPreferences(), { dao.getAllUserPreferencesSync() }, { dao.insertUserPreferencesList(it) })
+            
+            val remotePrefs = dao.getUserPreferencesByUserId(userId)
+            if (remotePrefs != null) {
+                UserPreferences(context).applyFromEntity(remotePrefs)
+            }
+
+            // Sync Streak Dates
+            syncTable("streak_dates", userId, dao.getUnsyncedStreakDates(), { dao.getAllStreakDatesSync() }, { dao.insertStreakDates(it) })
+            
+            val remoteStreakDates = dao.getAllStreakDatesSync().map { it.dateStr }.toSet()
+            if (remoteStreakDates.isNotEmpty()) {
+                StreakManager.syncFromCloud(context, remoteStreakDates)
+            }
+
             // Sync Goals
             syncTable("goals", userId, dao.getUnsyncedGoals(), { dao.getAllGoalsSync() }, { dao.insertGoals(it) })
             // Sync Transactions
@@ -72,6 +88,10 @@ class SyncManager(private val context: Context) {
             syncTable("account_transactions", userId, dao.getUnsyncedAccountTransactions(), { dao.getAllAccountTransactionsSync() }, { dao.insertAccountTransactions(it) })
             // Sync PendingTransactions
             syncTable("pending_transactions", userId, dao.getUnsyncedPendingTransactions(), { dao.getAllPendingTransactionsSync() }, { dao.insertPendingTransactions(it) })
+            // Sync AI Conversations
+            syncTable("ai_conversations", userId, dao.getUnsyncedAiConversations(), { dao.getAllAiConversationsSync() }, { dao.insertAiConversations(it) })
+            // Sync AI Chat Messages
+            syncTable("ai_chat_messages", userId, dao.getUnsyncedAiChatMessages(), { dao.getAllAiChatMessagesSync() }, { dao.insertAiChatMessages(it) })
 
             Log.i("SyncManager", "Sync completed successfully.")
         } catch (e: Exception) {
@@ -93,6 +113,8 @@ class SyncManager(private val context: Context) {
             if (unsyncedLocal.isNotEmpty()) {
                 val toPush = unsyncedLocal.map { item ->
                     when (item) {
+                        is UserPreferencesEntity -> item.copy(userId = userId, isSynced = true) as T
+                        is StreakDateEntity -> item.copy(userId = userId, isSynced = true) as T
                         is Goal -> item.copy(userId = userId, isSynced = true) as T
                         is Transaction -> item.copy(userId = userId, isSynced = true) as T
                         is Loan -> item.copy(userId = userId, isSynced = true) as T
@@ -100,6 +122,8 @@ class SyncManager(private val context: Context) {
                         is Account -> item.copy(userId = userId, isSynced = true) as T
                         is AccountTransaction -> item.copy(userId = userId, isSynced = true) as T
                         is PendingTransaction -> item.copy(userId = userId, isSynced = true) as T
+                        is AiConversation -> item.copy(userId = userId, isSynced = true) as T
+                        is AiChatMessage -> item.copy(userId = userId, isSynced = true) as T
                         else -> item
                     }
                 }
@@ -129,6 +153,8 @@ class SyncManager(private val context: Context) {
             if (remoteItems.isNotEmpty()) {
                 val finalLocal = remoteItems.map { item ->
                     when (item) {
+                        is UserPreferencesEntity -> item.copy(isSynced = true) as T
+                        is StreakDateEntity -> item.copy(isSynced = true) as T
                         is Goal -> item.copy(isSynced = true) as T
                         is Transaction -> item.copy(isSynced = true) as T
                         is Loan -> item.copy(isSynced = true) as T
@@ -136,6 +162,8 @@ class SyncManager(private val context: Context) {
                         is Account -> item.copy(isSynced = true) as T
                         is AccountTransaction -> item.copy(isSynced = true) as T
                         is PendingTransaction -> item.copy(isSynced = true) as T
+                        is AiConversation -> item.copy(isSynced = true) as T
+                        is AiChatMessage -> item.copy(isSynced = true) as T
                         else -> item
                     }
                 }

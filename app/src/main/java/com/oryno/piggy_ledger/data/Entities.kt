@@ -143,23 +143,59 @@ data class AccountTransaction(
 )
 
 @Serializable
+@Entity(tableName = "user_preferences")
+data class UserPreferencesEntity(
+    @PrimaryKey val userId: String = "local_user",
+    val hasOnboarded: Boolean = false,
+    val hasLanguageSelected: Boolean = false,
+    val hasHeardAboutUs: Boolean = false,
+    val personalizedIntent: Int = -1,
+    val personalizedIntensity: Int = -1,
+    val savingMode: String = "piggy",
+    val customIdentifiersJson: String = "{}",
+    val isBiometricLockEnabled: Boolean = false,
+    val isScreenshotProtectionEnabled: Boolean = false,
+    val isPremium: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false
+)
+
+@Serializable
+@Entity(tableName = "streak_dates")
+data class StreakDateEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val userId: String = "",
+    val dateStr: String,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false
+)
+
+@Serializable
 @Entity(tableName = "ai_conversations")
 data class AiConversation(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val userId: String = "",
     val title: String = "New Conversation",
     val isPinned: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false
 )
 
 @Serializable
 @Entity(tableName = "ai_chat_messages")
 data class AiChatMessage(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val userId: String = "",
     val conversationId: String = "default",
     val role: String, // "user" or "assistant"
     val content: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false
 )
 
 @Serializable

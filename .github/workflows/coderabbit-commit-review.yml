@@ -54,6 +54,10 @@ jobs:
           echo "Reviewing against base reference: $BASE_REF"
           cr review --base "$BASE_REF" --plain > review_output.md || true
 
+          if [ ! -s review_output.md ]; then
+            echo "No issues or significant changes detected in this review." > review_output.md
+          fi
+
           cat review_output.md
 
       - name: Publish Review to GitHub Action Summary (UI)

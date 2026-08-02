@@ -680,27 +680,14 @@ data class CategoryPillData(
     val query: String
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EmptyChatState(
     onSuggestionClick: (String) -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
-    var showInfoBottomSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         visible = true
-    }
-
-    if (showInfoBottomSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showInfoBottomSheet = false },
-            containerColor = Color.White,
-            contentColor = Color(0xFF0F172A),
-            dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFFCBD5E1)) }
-        ) {
-            HowPiggyAiWorksSheetContent(onDismiss = { showInfoBottomSheet = false })
-        }
     }
 
     AnimatedVisibility(
@@ -762,105 +749,7 @@ fun EmptyChatState(
                 )
             }
             InfinitePillRow(pills = row3Pills, initialOffset = 5000, scrollSpeed = 1.2f, onSuggestionClick = onSuggestionClick)
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // Footer link
-            TextButton(onClick = { showInfoBottomSheet = true }) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Learn how Piggy AI search works",
-                        color = AiDimText,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        tint = AiDimText,
-                        modifier = Modifier.size(13.dp)
-                    )
-                }
-            }
         }
-    }
-}
-
-@Composable
-fun HowPiggyAiWorksSheetContent(onDismiss: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = "How Piggy AI Works",
-                color = Color(0xFF0F172A),
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = (-0.5).sp
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Privacy-first, client-side financial intelligence engine",
-                color = Color(0xFF64748B),
-                fontSize = 13.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-        HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 1.dp)
-        Spacer(modifier = Modifier.height(20.dp))
-
-        val sections = listOf(
-            "1. On-Device Context" to "Piggy AI securely accesses your local accounts, transactions, and savings goals directly on your device.",
-            "2. Smart Habit Engine" to "Tracks your daily financial logging streak and provides personalized recommendations.",
-            "3. Privacy & Offline Ready" to "Your financial data stays private on your device with secure local storage and full offline capability."
-        )
-
-        sections.forEach { (title, description) ->
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = title,
-                    color = Color(0xFF0F172A),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = description,
-                    color = Color(0xFF334155),
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 1.dp)
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(
-            onClick = onDismiss,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1)),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-        ) {
-            Text(
-                text = "Got it, thanks!",
-                color = Color.White,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 

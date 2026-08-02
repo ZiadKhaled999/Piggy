@@ -123,8 +123,11 @@ class SmsReceiver : BroadcastReceiver() {
                     if (isTrusted) {
                         Log.d("SmsReceiver", "Sender $sender is verified as trusted. Processing SMS...")
                         SmsProcessor.process(context, sender, body)
+                    } else if (body.contains("EGP", ignoreCase = true) || body.contains("جنيه") || body.contains("تحويل") || body.contains("purchase", ignoreCase = true) || body.contains("LE", ignoreCase = true)) {
+                        Log.d("SmsReceiver", "Sender $sender not in whitelist, but contains financial keywords. Processing as pending...")
+                        SmsProcessor.process(context, sender, body)
                     } else {
-                        Log.d("SmsReceiver", "SMS from $sender ignored (not matched in trusted providers or user accounts)")
+                        Log.d("SmsReceiver", "SMS from $sender ignored (no financial keywords)")
                     }
                 } catch (e: Exception) {
                     Log.e("SmsReceiver", "Error processing incoming SMS in receiver", e)

@@ -51,7 +51,10 @@ class PiggyLedgerViewModel(
     private val context: Context
 ) : ViewModel() {
 
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json { 
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     init {
         triggerCloudSync()

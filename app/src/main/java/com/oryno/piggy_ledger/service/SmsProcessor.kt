@@ -13,12 +13,53 @@ object SmsProcessor {
         val isIncome = parsedSms.isIncome
         val actionType = parsedSms.actionType
 
+        val db = PiggyLedgerDatabase.getInstance(context)
+        val dao = db.piggyLedgerDao()
+
         if (amount == 0.0) {
+            dao.insertPendingTransaction(
+                PendingTransaction(
+                    amount = 0.0,
+                    merchant = "Failed to parse – please verify",
+                    raw_sms_body = rawBody,
+                    sender = sender
+                )
+            )
+            try {
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                val channelId = "pending_transactions_channel"
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    val channel = android.app.NotificationChannel(
+                        channelId,
+                        "Pending Transactions",
+                        android.app.NotificationManager.IMPORTANCE_DEFAULT
+                    )
+                    notificationManager.createNotificationChannel(channel)
+                }
+
+                val intent = android.content.Intent(context, com.oryno.piggy_ledger.MainActivity::class.java).apply {
+                    flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                val pendingIntent: android.app.PendingIntent = android.app.PendingIntent.getActivity(
+                    context, System.currentTimeMillis().toInt(), intent, android.app.PendingIntent.FLAG_IMMUTABLE
+                )
+
+                val notification = androidx.core.app.NotificationCompat.Builder(context, channelId)
+                    .setSmallIcon(com.oryno.piggy_ledger.R.drawable.img_app_logo)
+                    .setContentTitle("Failed to Parse SMS")
+                    .setContentText("An SMS from $sender could not be parsed automatically. Tap to review.")
+                    .setContentIntent(pendingIntent)
+                    .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+                    .setAutoCancel(true)
+                    .build()
+
+                notificationManager.notify(System.currentTimeMillis().toInt(), notification)
+            } catch (e: Exception) {
+                android.util.Log.e("SmsProcessor", "Failed to show parse failure notification", e)
+            }
             return
         }
 
-        val db = PiggyLedgerDatabase.getInstance(context)
-        val dao = db.piggyLedgerDao()
         val body = SmsParser.convertArabicDigitsAndSymbols(rawBody)
 
         val accounts = dao.getAllAccountsSync()
@@ -57,7 +98,6 @@ object SmsProcessor {
         val matchedAccount: Account? = when {
             uniqueMatches.size == 1 -> uniqueMatches.first()
             uniqueMatches.isEmpty() && providerMatches.size == 1 -> providerMatches.first()
-            accounts.size == 1 -> accounts.first()
             else -> null
         }
 

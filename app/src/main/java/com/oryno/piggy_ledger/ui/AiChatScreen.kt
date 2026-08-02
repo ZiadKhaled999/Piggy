@@ -124,6 +124,20 @@ fun AiChatScreen(
     val focusRequester = remember { FocusRequester() }
 
     val context = LocalContext.current
+    var speechLang by remember { mutableStateOf(if (java.util.Locale.getDefault().language == "ar") "ar-EG" else "en-US") }
+
+    val speechRecognizerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val data = result.data
+            val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            val recognizedText = results?.get(0)
+            if (!recognizedText.isNullOrBlank()) {
+                inputText = (inputText + " " + recognizedText).trim()
+            }
+        }
+    }
 
     var initialHistoryIds by remember { mutableStateOf<Set<String>?>(null) }
     if (initialHistoryIds == null && chatHistory.isNotEmpty()) {
@@ -326,29 +340,66 @@ fun AiChatScreen(
                                 )
                             }
 
-                            // Rightmost Cyan Action Pill (Send Button)
+                            // Rightmost Cyan Action Pill (Send/Mic Button)
+                            val isInputEmpty = inputText.isBlank()
+                            
+                            if (isInputEmpty) {
+                                Text(
+                                    text = if (speechLang == "ar-EG") "AR" else "EN",
+                                    color = Color(0xFF64748B),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    modifier = Modifier
+                                        .padding(end = 8.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable {
+                                            speechLang = if (speechLang == "ar-EG") "en-US" else "ar-EG"
+                                        }
+                                        .padding(8.dp)
+                                )
+                            }
                             Box(
                                 modifier = Modifier
                                     .size(48.dp)
                                     .background(
-                                        if (inputText.isNotBlank() && !isLoading) Color(0xFF00B0FF) else Color(0xFFE2E8F0),
+                                        if (!isInputEmpty && !isLoading) Color(0xFF00B0FF) else if (isInputEmpty && !isLoading) Color(0xFFE2E8F0) else Color(0xFFE2E8F0),
                                         CircleShape
                                     )
                                     .clip(CircleShape)
                                     .clickable {
-                                        if (inputText.isNotBlank() && !isLoading) {
+                                        if (!isInputEmpty && !isLoading) {
                                             viewModel.sendMessage(inputText)
                                             inputText = ""
+                                        } else if (isInputEmpty && !isLoading) {
+                                            try {
+                                                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, speechLang)
+                                                    putExtra(RecognizerIntent.EXTRA_SUPPORTED_LANGUAGES, arrayOf("ar-EG", "en-US", "ar-SA"))
+                                                }
+                                                speechRecognizerLauncher.launch(intent)
+                                            } catch (e: Exception) {
+                                                Toast.makeText(context, "Speech recognition not supported on this device.", Toast.LENGTH_SHORT).show()
+                                            }
                                         }
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.Send,
-                                    contentDescription = "Send",
-                                    tint = if (inputText.isNotBlank() && !isLoading) Color(0xFF0F172A) else Color(0xFF94A3B8),
-                                    modifier = Modifier.size(20.dp)
-                                )
+                                if (isInputEmpty) {
+                                    Icon(
+                                        imageVector = Icons.Default.Mic,
+                                        contentDescription = "Voice Input",
+                                        tint = if (!isLoading) Color(0xFF475569) else Color(0xFF94A3B8),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Send,
+                                        contentDescription = "Send",
+                                        tint = if (!isLoading) Color(0xFF0F172A) else Color(0xFF94A3B8),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
                         }
                     }

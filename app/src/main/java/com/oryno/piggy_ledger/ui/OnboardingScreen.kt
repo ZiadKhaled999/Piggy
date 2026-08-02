@@ -49,7 +49,10 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -1262,12 +1265,29 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                                 color = NavyDark
                                             )
                                         } else {
-                                            Text(
-                                                text = letter,
-                                                fontSize = letterFontSize,
-                                                fontWeight = FontWeight.Black,
-                                                color = Color(0xFFCBD5E1).copy(alpha = 0.6f)
-                                            )
+                                            val density = LocalDensity.current
+                                            val fontSizePx = with(density) { letterFontSize.toPx() }
+                                            val darkGrayInt = android.graphics.Color.parseColor("#475569")
+                                            Canvas(
+                                                modifier = Modifier.size(circleSize)
+                                            ) {
+                                                val paint = android.graphics.Paint().apply {
+                                                    isAntiAlias = true
+                                                    textSize = fontSizePx
+                                                    typeface = android.graphics.Typeface.DEFAULT_BOLD
+                                                    style = android.graphics.Paint.Style.STROKE
+                                                    strokeWidth = 3.5f
+                                                    pathEffect = android.graphics.DashPathEffect(floatArrayOf(14f, 8f), 0f)
+                                                    color = darkGrayInt
+                                                }
+                                                val bounds = android.graphics.Rect()
+                                                paint.getTextBounds(letter, 0, letter.length, bounds)
+                                                val x = (size.width - bounds.width()) / 2f - bounds.left
+                                                val y = (size.height + bounds.height()) / 2f - bounds.bottom
+                                                drawIntoCanvas { canvas ->
+                                                    canvas.nativeCanvas.drawText(letter, x, y, paint)
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -1424,6 +1444,8 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                         label = "shimmer_alpha"
                     )
 
+                    val roadmapScrollState = rememberScrollState()
+
                     LaunchedEffect(Unit) {
                         if (roadmapStep == -1) {
                             isPlanFinished = false
@@ -1441,6 +1463,15 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                             isPlanFinished = true
                         } else if (roadmapStep >= steps.size) {
                             isPlanFinished = true
+                        }
+                    }
+
+                    LaunchedEffect(roadmapStep, roadmapScrollState.maxValue) {
+                        if (roadmapStep >= 0 && roadmapScrollState.maxValue > 0) {
+                            roadmapScrollState.animateScrollTo(
+                                value = roadmapScrollState.maxValue,
+                                animationSpec = tween(durationMillis = 800)
+                            )
                         }
                     }
 
@@ -1472,7 +1503,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .verticalScroll(rememberScrollState()),
+                                .verticalScroll(roadmapScrollState),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {

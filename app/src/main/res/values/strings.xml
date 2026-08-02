@@ -776,4 +776,13 @@
     <string name="insight_spending_two">Most expenses come from %1$s and %2$s, keeping you on track.</string>
     <string name="category_other">Other</string>
     <string name="paywall_cta_upgrade">Level Up Now</string>
+    <string name="customize_card_color">Customize Card Color</string>
+    <string name="change_card_color_desc">Choose a color for your %s card</string>
+    <string name="main_colors">Main Colors</string>
+    <string name="more_colors">More</string>
+    <string name="custom_color_picker">Custom Color Picker</string>
+    <string name="apply_color">Apply Color</string>
+    <string name="hex_code">HEX Color Code</string>
+    <string name="preset_palettes">Preset Palettes</string>
+    <string name="card_color_updated">Card color updated successfully!</string>
 </resources>

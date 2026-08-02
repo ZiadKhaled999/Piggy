@@ -735,4 +735,13 @@
     <string name="insight_spending_two">معظم النفقات تأتي من %1$s و %2$s.</string>
     <string name="category_other">أخرى</string>
     <string name="paywall_cta_upgrade">الترقية إلى الفئة الاحترافية</string>
+    <string name="customize_card_color">تخصيص لون البطاقة</string>
+    <string name="change_card_color_desc">اختر لونًا لبطاقة %s</string>
+    <string name="main_colors">الألوان الرئيسية</string>
+    <string name="more_colors">المزيد</string>
+    <string name="custom_color_picker">منتقي الألوان المخصص</string>
+    <string name="apply_color">تطبيق اللون</string>
+    <string name="hex_code">رمز اللون HEX</string>
+    <string name="preset_palettes">مجموعات الألوان</string>
+    <string name="card_color_updated">تم تحديث لون البطاقة بنجاح!</string>
 </resources>

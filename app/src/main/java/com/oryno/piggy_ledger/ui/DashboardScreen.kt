@@ -225,7 +225,22 @@ fun DashboardScreen(
                 VirtualCardsWidget(
                     totalBalance = totalBalance, 
                     accounts = accounts, 
-                    onClick = onNavigateToAccounts
+                    onClick = onNavigateToAccounts,
+                    onUpdateAccountColor = { acc, newColorHex ->
+                        if (acc != null) {
+                            viewModel.updateAccount(acc.copy(icon_color = newColorHex, updatedAt = System.currentTimeMillis()))
+                        } else {
+                            val defaultAccount = com.oryno.piggy_ledger.data.Account(
+                                name = "Main Wallet",
+                                type = com.oryno.piggy_ledger.data.AccountType.CASH,
+                                icon_color = newColorHex,
+                                currency = "EGP",
+                                starting_balance = 0.0,
+                                current_balance = totalBalance
+                            )
+                            viewModel.addAccount(defaultAccount)
+                        }
+                    }
                 )
             }
 
@@ -802,11 +817,19 @@ fun PendingTransactionDashboardCard(
 }
 
 @Composable
-fun VirtualCardsWidget(totalBalance: Double, accounts: List<com.oryno.piggy_ledger.data.Account>, onClick: () -> Unit) {
+fun VirtualCardsWidget(
+    totalBalance: Double, 
+    accounts: List<com.oryno.piggy_ledger.data.Account>, 
+    onClick: () -> Unit,
+    onUpdateAccountColor: (com.oryno.piggy_ledger.data.Account?, String) -> Unit = { _, _ -> }
+) {
     var currentIndex by remember { mutableIntStateOf(0) }
     var isCardIdVisible by remember { mutableStateOf(true) }
-    val account = accounts.getOrNull(currentIndex)
-    
+    var showColorPickerSheet by remember { mutableStateOf(false) }
+
+    val safeIndex = if (accounts.isNotEmpty()) currentIndex % accounts.size else 0
+    val activeAccount = accounts.getOrNull(safeIndex)
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -821,13 +844,11 @@ fun VirtualCardsWidget(totalBalance: Double, accounts: List<com.oryno.piggy_ledg
                 .height(180.dp)
                 .offset(y = (-20).dp),
             shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = PinkPrimary.copy(alpha = 0.5f))
+            colors = CardDefaults.cardColors(containerColor = parseHexColor(activeAccount?.icon_color, PinkPrimary).copy(alpha = 0.5f))
         ) {}
         
         // Front Card
-        val frontGradient = Brush.linearGradient(
-            colors = listOf(Color(0xFFE11D48), PinkPrimary, Color(0xFFFF85A1))
-        )
+        val frontGradient = getAccountGradient(activeAccount?.icon_color)
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -841,14 +862,14 @@ fun VirtualCardsWidget(totalBalance: Double, accounts: List<com.oryno.piggy_ledg
                 Box(modifier = Modifier.offset(x = (-50).dp, y = 100.dp).size(150.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.1f)))
 
                 AnimatedContent(
-                    targetState = currentIndex,
+                    targetState = Pair(safeIndex, activeAccount?.icon_color),
                     transitionSpec = {
                         (slideInVertically { height -> -height } + fadeIn())
                             .togetherWith(slideOutVertically { height -> height } + fadeOut()) using SizeTransform(clip = false)
                     },
                     label = "CardSwitchTransition",
                     modifier = Modifier.fillMaxSize()
-                ) { targetIndex ->
+                ) { (targetIndex, _) ->
                     val currentAccount = accounts.getOrNull(targetIndex)
                     val currentBalanceToShow = currentAccount?.current_balance ?: totalBalance
                     val id = currentAccount?.card_numbers?.takeIf { it.isNotBlank() }
@@ -872,20 +893,40 @@ fun VirtualCardsWidget(totalBalance: Double, accounts: List<com.oryno.piggy_ledg
                                 letterSpacing = 1.sp
                             )
                             
-                            // Switch button
-                            if (accounts.size > 1) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // Brush Button (ALWAYS visible for 1 account or more)
                                 IconButton(
-                                    onClick = { currentIndex = (currentIndex + 1) % accounts.size },
+                                    onClick = { showColorPickerSheet = true },
                                     modifier = Modifier
                                         .background(Color.White.copy(alpha = 0.2f), CircleShape)
                                         .size(32.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.SwapHoriz,
-                                        contentDescription = "Switch Card",
+                                        imageVector = Icons.Default.Brush,
+                                        contentDescription = "Customize Card Color",
                                         tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(17.dp)
                                     )
+                                }
+
+                                // Switch button (if accounts.size > 1)
+                                if (accounts.size > 1) {
+                                    IconButton(
+                                        onClick = { currentIndex = (currentIndex + 1) % accounts.size },
+                                        modifier = Modifier
+                                            .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                                            .size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.SwapHoriz,
+                                            contentDescription = "Switch Card",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -951,6 +992,17 @@ fun VirtualCardsWidget(totalBalance: Double, accounts: List<com.oryno.piggy_ledg
                 }
             }
         }
+    }
+
+    if (showColorPickerSheet) {
+        CardColorPickerBottomSheet(
+            account = activeAccount,
+            onDismiss = { showColorPickerSheet = false },
+            onSelectColor = { selectedColorHex ->
+                onUpdateAccountColor(activeAccount, selectedColorHex)
+                showColorPickerSheet = false
+            }
+        )
     }
 }
 

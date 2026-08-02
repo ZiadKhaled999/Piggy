@@ -2,9 +2,6 @@ name: CodeRabbit Automated Review
 
 on:
   push:
-    branches-ignore:
-      - main
-      - master
   workflow_dispatch:
     inputs:
       review_mode:

@@ -68,7 +68,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: gradle bundleRelease
+        run: gradle bundleRelease -Djava.awt.headless=true
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}

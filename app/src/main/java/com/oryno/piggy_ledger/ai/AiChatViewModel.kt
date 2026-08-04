@@ -153,7 +153,9 @@ class AiChatViewModel(
 
     fun deleteConversation(id: String) {
         viewModelScope.launch {
-            repository.deleteConversation(id)
+            if (context != null) {
+                repository.deleteConversation(context, id)
+            }
             val currentList = conversations.value.filter { it.id != id }
             if (_activeConversationId.value == id) {
                 if (currentList.isNotEmpty()) {

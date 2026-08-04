@@ -6,12 +6,54 @@ import com.oryno.piggy_ledger.data.PendingTransaction
 import com.oryno.piggy_ledger.data.Account
 
 object SmsProcessor {
+    private fun isPromotionalSms(body: String, sender: String): Boolean {
+        val cleanSender = sender.lowercase()
+        val cleanBody = body.lowercase()
+
+        val promoSenders = listOf(
+            "orange misr", "vodafone offers", "we offers", "etisalat offers",
+            "1112", "8585", "8888"
+        )
+        if (promoSenders.any { cleanSender.contains(it) }) {
+            return true
+        }
+
+        val promoKeywords = listOf(
+            "offer", "promo", "promotion", "discount", "bonus", "campaign", "free", "cashback", "reward",
+            "points", "coupon", "voucher", "exclusive", "limited time", "special offer", "enjoy", "celebrate",
+            "win", "gift", "redemption", "subscribe", "opt out", "unsubscribe",
+            "عرض", "عروض", "خصم", "خصومات", "كاش باك", "مكافأة", "نقاط", "كوبون", "هدية", "أحصل", "احصل",
+            "فرصة", "ترقية", "كود", "رمز", "تخفيض", "بطاقة", "استمتع", "اشترك", "اكسب", "ربح", "مسابقة",
+            "شروط", "أحكام", "وفرلي", "شحنة", "باقة", "وحدات", "تحويلية", "فيلوس", "اشترك واكسب", "gold", "شحن",
+            "إلغاء", "الاشتراك", "قف", "stop"
+        )
+        if (promoKeywords.any { cleanBody.contains(it) }) {
+            return true
+        }
+
+        val promoUrls = listOf(
+            "myo.orange.eg", "web.vodafone.com.eg", "te.eg", "promo", "offer", "campaign"
+        )
+        if (promoUrls.any { cleanBody.contains(it) }) {
+            return true
+        }
+
+        return false
+    }
+
     suspend fun process(context: Context, sender: String, rawBody: String) {
+        if (isPromotionalSms(rawBody, sender)) {
+            android.util.Log.d("SmsProcessor", "Ignoring promotional SMS from $sender")
+            return
+        }
+
         val parsedSms = SmsParser.parse(rawBody)
         val amount = parsedSms.amount
         val merchant = parsedSms.merchant
         val isIncome = parsedSms.isIncome
         val actionType = parsedSms.actionType
+
+        android.util.Log.d("SmsProcessor", "Transaction from/for: $merchant, Amount: $amount, Income: $isIncome")
 
         val db = PiggyLedgerDatabase.getInstance(context)
         val dao = db.piggyLedgerDao()
@@ -19,8 +61,8 @@ object SmsProcessor {
         if (amount == 0.0) {
             dao.insertPendingTransaction(
                 PendingTransaction(
-                    amount = 0.0,
-                    merchant = "Failed to parse – please verify",
+                    amount = if (isIncome) amount else -amount,
+                    merchant = merchant,
                     raw_sms_body = rawBody,
                     sender = sender
                 )

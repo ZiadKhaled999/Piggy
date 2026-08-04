@@ -150,7 +150,7 @@ interface PiggyLedgerDao {
         if (account.type == AccountType.CARD && newAvailableCredit != null) {
             newAvailableCredit += signedAmount
         }
-        updateAccount(account.copy(current_balance = newBalance, available_credit = newAvailableCredit))
+        updateAccount(account.copy(current_balance = newBalance, available_credit = newAvailableCredit, isSynced = false))
     }
 
 
@@ -248,10 +248,10 @@ interface PiggyLedgerDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertConversation(conversation: AiConversation)
 
-    @Query("UPDATE ai_conversations SET title = :title, updatedAt = :updatedAt WHERE id = :id")
+    @Query("UPDATE ai_conversations SET title = :title, updatedAt = :updatedAt, isSynced = 0 WHERE id = :id")
     suspend fun updateConversationTitle(id: String, title: String, updatedAt: Long = System.currentTimeMillis())
 
-    @Query("UPDATE ai_conversations SET isPinned = :isPinned WHERE id = :id")
+    @Query("UPDATE ai_conversations SET isPinned = :isPinned, isSynced = 0 WHERE id = :id")
     suspend fun updateConversationPinned(id: String, isPinned: Boolean)
 
     @Query("DELETE FROM ai_conversations WHERE id = :id")

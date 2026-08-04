@@ -17,13 +17,18 @@ object SmsParser {
     fun parse(rawBody: String): ParsedSms {
         val body = convertArabicDigitsAndSymbols(rawBody)
         
-        // Step 1: Parse Amount (English and Arabic currencies with proper word boundaries)
+        // ===== AMOUNT EXTRACTION (PRIORITIZED) =====
         val currencyTokens = """\bEGP\b|\bLE\b|L\.E\.|\bUSD\b|\$|\bEUR\b|€|£|₩|\bAED\b|\bSAR\b|\bKWD\b|\bQAR\b|\bBHD\b|\bOMR\b|ج\.م|جنيه|جنيها|جنيهًا|ريال|درهم|دينار"""
         
-        var amountMatch = Regex("""(?i)(?:amount|paid|purchase|pay|سداد|دفع|مبلغ|تحويل|transfer)(?:\s*is|:|\s*)\s*([\d,]+(?:\.\d{1,2})?)""").find(body)
+        // 1. Try transaction keywords first
+        var amountMatch = Regex("""(?i)(?:amount|paid|purchase|pay|سداد|دفع|مبلغ|بمبلغ|تحويل|transfer|استقبلت)(?:\s*is|:|\s*)\s*([\d,]+(?:\.\d{1,2})?)""").find(body)
+        
+        // 2. Try currency-prefixed numbers
         if (amountMatch == null) {
             amountMatch = Regex("""(?i)(?:$currencyTokens)\s*([\d,]+(?:\.\d{1,2})?)|([\d,]+(?:\.\d{1,2})?)\s*(?:$currencyTokens)""").find(body)
         }
+        
+        // 3. Try balance as fallback
         if (amountMatch == null) {
             amountMatch = Regex("""(?i)(?:balance|رصيد|رصيدك)(?:\s*is|:|\s*)\s*([\d,]+(?:\.\d{1,2})?)""").find(body)
         }
@@ -31,32 +36,71 @@ object SmsParser {
         val amountStr = amountMatch?.groups?.get(1)?.value 
             ?: amountMatch?.groups?.get(2)?.value 
             ?: amountMatch?.groups?.get(3)?.value
-        val amount = amountStr?.replace(",", "")?.toDoubleOrNull() ?: 0.0
+            
+        // Clean the amount string – remove appended dates like "8/3/26"
+        val cleanAmountStr = amountStr
+            ?.replace(",", "")
+            ?.replace(Regex("""\s+\d{1,2}/\d{1,2}/\d{2,4}.*"""), "")
+            ?.trim()
+        val amount = cleanAmountStr?.toDoubleOrNull() ?: 0.0
         
-        // Step 2: Extract Merchant (English and Arabic prepositions with word boundaries and expanded character class)
-        val merchantRegex = Regex("""(?i)(?:\bat\b|\bto\b|\bfrom\b|في|من حسابك لدى|حسابك لدى|لدى|من|إلى)\s+([A-Za-z0-9\s\u0600-\u06FF\-.',&]{2,50}?)(?:\s+on\b|\s+value\b|\.|بتاريخ|$)""")
+        // ===== MERCHANT / PERSON NAME EXTRACTION =====
+        // Try standard merchant regex first
+        val merchantRegex = Regex("""(?i)(?:\bat\b|\bto\b|\bfrom\b|في|من حسابك لدى|حسابك لدى|لدى|من|إلى|الي)\s+([A-Za-z0-9\s\u0600-\u06FF\-.',&]{2,50}?)(?:\s+on\b|\s+value\b|\.|بتاريخ|يوم|\d{1,2}/\d{1,2}|\$)""")
         val merchantMatch = merchantRegex.find(body)
-        val merchant = merchantMatch?.groups?.get(1)?.value?.trim() ?: "Unknown SMS Merchant"
+        var merchant = merchantMatch?.groups?.get(1)?.value?.trim() ?: ""
 
-        // Step 3: Extract Date
+        // Special: InstaPay transfers with "من" (from) for person names
+        if (merchant.isBlank() || merchant.contains("حسابك")) {
+            val instaPayNameRegex = Regex("""من\s+([\u0600-\u06FF\s]{3,50}?)(?:\s+يوم|\s+في|\s+رقم)""")
+            val instaPayMatch = instaPayNameRegex.find(body)
+            if (instaPayMatch != null) {
+                merchant = instaPayMatch.groups[1]?.value?.trim() ?: merchant
+            }
+        }
+
+        // If still blank, set default
+        if (merchant.isBlank()) {
+            merchant = "Unknown SMS Merchant"
+        }
+
+        // ===== DATE EXTRACTION =====
         val dateRegex = Regex("""(\d{1,2}[/-]\d{1,2}([/-]\d{2,4})?)""")
         val dateMatch = dateRegex.find(body)
         val date = dateMatch?.value 
 
-        // Step 4: Detect Income vs Expense
-        val incomeKeywords = listOf("استقبلت", "ايداع", "إيداع", "إضافة", "اضافة", "استرداد", "received", "credited", "refunded", "deposit", "added")
-        val isIncome = incomeKeywords.any { body.contains(it, ignoreCase = true) }
+        // ===== INCOME vs EXPENSE DETECTION =====
+        var isIncome = false
+        
+        // Check for incoming InstaPay
+        if (body.contains("استقبلت تحويل لحظي", ignoreCase = true) ||
+            body.contains("لقد استقبلت", ignoreCase = true) ||
+            body.contains("تم اضافة", ignoreCase = true) ||
+            body.contains("ايداع", ignoreCase = true)) {
+            isIncome = true
+        } else {
+            val incomeKeywords = listOf("استقبلت", "ايداع", "إيداع", "إضافة", "اضافة", "استرداد", "received", "credited", "refunded", "deposit", "added")
+            isIncome = incomeKeywords.any { body.contains(it, ignoreCase = true) }
+        }
 
-        // Step 5: Detect Action Type
+        // ===== ACTION TYPE DETECTION =====
         val withdrawalKeywords = listOf("سحب", "withdrawal", "cash withdrawal", "withdrawn")
         val transferKeywords = listOf("تحويل", "transfer", "sent")
         val purchaseKeywords = listOf("شراء", "مدفوعات", "purchase", "paid", "payment", "bought")
         
         val actionType = when {
-            isIncome -> SmsActionType.DEPOSIT
+            // Incoming InstaPay
+            body.contains("استقبلت تحويل لحظي", ignoreCase = true) ||
+            body.contains("لقد استقبلت", ignoreCase = true) -> SmsActionType.DEPOSIT
+            
+            // Outgoing InstaPay
+            body.contains("قمت بتحويل لحظي", ignoreCase = true) ||
+            body.contains("تم تحويل", ignoreCase = true) -> SmsActionType.TRANSFER_OUT
+            
+            // Other types
             withdrawalKeywords.any { body.contains(it, ignoreCase = true) } -> SmsActionType.WITHDRAWAL
-            transferKeywords.any { body.contains(it, ignoreCase = true) } -> SmsActionType.TRANSFER_OUT
             purchaseKeywords.any { body.contains(it, ignoreCase = true) } -> SmsActionType.PURCHASE
+            isIncome -> SmsActionType.DEPOSIT
             else -> SmsActionType.UNKNOWN
         }
 

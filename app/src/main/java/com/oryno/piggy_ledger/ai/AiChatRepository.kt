@@ -40,9 +40,12 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
         dao.updateConversationPinned(id, isPinned)
     }
 
-    suspend fun deleteConversation(id: String) {
+    suspend fun deleteConversation(context: android.content.Context, id: String) {
         dao.deleteConversationById(id)
         dao.deleteChatMessagesForConversation(id)
+        try {
+            com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("ai_conversations", id)
+        } catch (e: Exception) {}
     }
 
     fun getChatMessagesForConversation(conversationId: String): Flow<List<AiChatMessage>> {

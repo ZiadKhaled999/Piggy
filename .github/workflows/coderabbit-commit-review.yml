@@ -1,76 +1,76 @@
-name: CodeRabbit Automated Review
+# name: CodeRabbit Automated Review
 
-on:
-  push:
-  workflow_dispatch:
-    inputs:
-      review_mode:
-        description: 'Review Scope: commit (latest commit & affected files) or full (entire repository)'
-        required: true
-        default: 'commit'
-        type: choice
-        options:
-          - commit
-          - full
+# on:
+#   push:
+#   workflow_dispatch:
+#     inputs:
+#       review_mode:
+#         description: 'Review Scope: commit (latest commit & affected files) or full (entire repository)'
+#         required: true
+#         default: 'commit'
+#         type: choice
+#         options:
+#           - commit
+#           - full
 
-jobs:
-  review:
-    name: CodeRabbit Automated Review
-    runs-on: ubuntu-latest
+# jobs:
+#   review:
+#     name: CodeRabbit Automated Review
+#     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write
-      id-token: write
+#     permissions:
+#       contents: write
+#       id-token: write
 
-    steps:
-      - name: Checkout Code Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+#     steps:
+#       - name: Checkout Code Repository
+#         uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
 
-      - name: Install CodeRabbit CLI
-        run: |
-          curl -fsSL https://cli.coderabbit.ai/install.sh | sh
-          echo "$HOME/.coderabbit/bin" >> $GITHUB_PATH
+#       - name: Install CodeRabbit CLI
+#         run: |
+#           curl -fsSL https://cli.coderabbit.ai/install.sh | sh
+#           echo "$HOME/.coderabbit/bin" >> $GITHUB_PATH
 
-      - name: Run CodeRabbit Review
-        env:
-          CODERABBIT_API_KEY: ${{ secrets.CODERABBIT_API_KEY }}
-          INPUT_MODE: ${{ inputs.review_mode }}
-        run: |
-          # Default mode set to 'commit' to review only the pushed commit and affected logic/files.
-          REVIEW_MODE="${INPUT_MODE:-commit}"
+#       - name: Run CodeRabbit Review
+#         env:
+#           CODERABBIT_API_KEY: ${{ secrets.CODERABBIT_API_KEY }}
+#           INPUT_MODE: ${{ inputs.review_mode }}
+#         run: |
+#           # Default mode set to 'commit' to review only the pushed commit and affected logic/files.
+#           REVIEW_MODE="${INPUT_MODE:-commit}"
 
-          if [ "$REVIEW_MODE" = "full" ]; then
-            echo "Executing full repository review..."
-            # 4b825dc642cb6eb9a060e54bf8d69288fbee4904 represents the empty git tree (compares entire repo state)
-            BASE_REF="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
-          else
-            echo "Executing commit-level review (HEAD~1 vs HEAD)..."
-            BASE_REF="HEAD~1"
-          fi
+#           if [ "$REVIEW_MODE" = "full" ]; then
+#             echo "Executing full repository review..."
+#             # 4b825dc642cb6eb9a060e54bf8d69288fbee4904 represents the empty git tree (compares entire repo state)
+#             BASE_REF="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+#           else
+#             echo "Executing commit-level review (HEAD~1 vs HEAD)..."
+#             BASE_REF="HEAD~1"
+#           fi
 
-          echo "Reviewing against base reference: $BASE_REF"
-          cr review --base "$BASE_REF" --plain > review_output.md || true
+#           echo "Reviewing against base reference: $BASE_REF"
+#           cr review --base "$BASE_REF" --plain > review_output.md || true
 
-          if [ ! -s review_output.md ]; then
-            echo "No issues or significant changes detected in this review." > review_output.md
-          fi
+#           if [ ! -s review_output.md ]; then
+#             echo "No issues or significant changes detected in this review." > review_output.md
+#           fi
 
-          cat review_output.md
+#           cat review_output.md
 
-      - name: Publish Review to GitHub Action Summary (UI)
-        if: always()
-        run: |
-          echo "## 🤖 CodeRabbit Review Summary" >> $GITHUB_STEP_SUMMARY
-          if [ -s review_output.md ]; then
-            cat review_output.md >> $GITHUB_STEP_SUMMARY
-          else
-            echo "No issues or significant changes detected." >> $GITHUB_STEP_SUMMARY
-          fi
+#       - name: Publish Review to GitHub Action Summary (UI)
+#         if: always()
+#         run: |
+#           echo "## 🤖 CodeRabbit Review Summary" >> $GITHUB_STEP_SUMMARY
+#           if [ -s review_output.md ]; then
+#             cat review_output.md >> $GITHUB_STEP_SUMMARY
+#           else
+#             echo "No issues or significant changes detected." >> $GITHUB_STEP_SUMMARY
+#           fi
 
-      - name: Post Review as Commit Comment
-        if: always()
-        uses: peter-evans/commit-comment@v3
-        with:
-          body-path: review_output.md
+#       - name: Post Review as Commit Comment
+#         if: always()
+#         uses: peter-evans/commit-comment@v3
+#         with:
+#           body-path: review_output.md

@@ -155,6 +155,7 @@ kotlin {
 secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
+  ignoreList.clear()
 }
 
 googleServices {
@@ -196,8 +197,10 @@ dependencies {
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   implementation(libs.androidx.work.runtime.ktx)
-  implementation(libs.supabase.postgrest)
   implementation(libs.ktor.client.android)
+  implementation(libs.ktor.client.content.negotiation)
+  implementation(libs.ktor.client.logging)
+  implementation(libs.ktor.serialization.kotlinx.json)
   implementation(libs.ktor.client.core)
   implementation(libs.ktor.utils)
   implementation(libs.vico.compose)

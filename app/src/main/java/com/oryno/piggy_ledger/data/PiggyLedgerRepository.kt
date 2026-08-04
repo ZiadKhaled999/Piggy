@@ -41,24 +41,27 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
     val allLoanPayments: Flow<List<LoanPayment>> = dao.getAllLoanPaymentsFlow()
     fun getPaymentsForLoan(loanId: String) = dao.getPaymentsForLoan(loanId)
     suspend fun insertLoanPayment(payment: LoanPayment) { dao.insertLoanPayment(payment); triggerSync() }
-    suspend fun deleteLoanPayment(id: String) { dao.deleteLoanPaymentById(id); triggerSync() }
+    suspend fun deleteLoanPayment(id: String) { dao.deleteLoanPaymentById(id); try { com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("loan_payments", id) } catch(e: Exception){}; triggerSync() }
     
     suspend fun insertAccount(account: Account) { dao.insertAccount(account); triggerSync() }
-    suspend fun updateAccount(account: Account) { dao.updateAccount(account); triggerSync() }
-    suspend fun deleteAccount(id: String) { dao.deleteAccountById(id); triggerSync() }
+    suspend fun updateAccount(account: Account) { dao.updateAccount(account.copy(isSynced = false)); triggerSync() }
+    suspend fun deleteAccount(id: String) { dao.deleteAccountById(id); try { com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("accounts", id) } catch(e: Exception){}; triggerSync() }
     suspend fun insertAccountTransaction(transaction: AccountTransaction) { dao.insertAccountTransaction(transaction); triggerSync() }
     suspend fun markLoanAsPaid(id: String) {
         val loan = dao.getLoanById(id)
         if (loan != null) {
-            dao.updateLoan(loan.copy(isPaidOff = true))
+            dao.updateLoan(loan.copy(isPaidOff = true, isSynced = false))
             triggerSync()
         }
     }
-    suspend fun deleteLoan(id: String) { dao.deleteLoanById(id); triggerSync() }
+    suspend fun deleteLoan(id: String) { dao.deleteLoanById(id); try { com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("loans", id) } catch(e: Exception){}; triggerSync() }
 
     suspend fun deleteGoal(id: String) {
         dao.deleteTransactionsForGoal(id)
         dao.deleteGoalById(id)
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("goals", id)
+        }
     }
 
     suspend fun getFullBackup(streakDates: Set<String>): BackupData {
@@ -115,6 +118,6 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
 
     val allPendingTransactions: Flow<List<PendingTransaction>> = dao.getAllPendingTransactionsFlow()
     suspend fun insertPendingTransaction(transaction: PendingTransaction) { dao.insertPendingTransaction(transaction); triggerSync() }
-    suspend fun deletePendingTransaction(id: String) { dao.deletePendingTransactionById(id); triggerSync() }
+    suspend fun deletePendingTransaction(id: String) { dao.deletePendingTransactionById(id); try { com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("pending_transactions", id) } catch(e: Exception){}; triggerSync() }
     suspend fun resolvePendingTransaction(pendingId: String, accountId: String) { dao.resolvePendingTransaction(pendingId, accountId); triggerSync() }
 }

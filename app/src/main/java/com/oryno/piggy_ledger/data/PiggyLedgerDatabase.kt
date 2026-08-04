@@ -102,6 +102,20 @@ abstract class PiggyLedgerDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                val tables = listOf("goals", "transactions", "loans", "loan_payments", "accounts", "account_transactions", "pending_transactions", "ai_conversations", "ai_chat_messages")
+                for (table in tables) {
+                    try { database.execSQL("ALTER TABLE $table ADD COLUMN userId TEXT NOT NULL DEFAULT ''") } catch(e: Exception) {}
+                    try { database.execSQL("ALTER TABLE $table ADD COLUMN isSynced INTEGER NOT NULL DEFAULT 0") } catch(e: Exception) {}
+                    try { database.execSQL("ALTER TABLE $table ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0") } catch(e: Exception) {}
+                    try { database.execSQL("ALTER TABLE $table ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0") } catch(e: Exception) {}
+                }
+                database.execSQL("CREATE TABLE IF NOT EXISTS `user_preferences` (`userId` TEXT NOT NULL, `hasOnboarded` INTEGER NOT NULL, `hasLanguageSelected` INTEGER NOT NULL, `hasHeardAboutUs` INTEGER NOT NULL, `personalizedIntent` INTEGER NOT NULL, `personalizedIntensity` INTEGER NOT NULL, `savingMode` TEXT NOT NULL, `customIdentifiersJson` TEXT NOT NULL, `isBiometricLockEnabled` INTEGER NOT NULL, `isScreenshotProtectionEnabled` INTEGER NOT NULL, `isPremium` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isSynced` INTEGER NOT NULL, PRIMARY KEY(`userId`))")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `streak_dates` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `dateStr` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isSynced` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+            }
+        }
+
         fun getInstance(context: Context): PiggyLedgerDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -109,7 +123,7 @@ abstract class PiggyLedgerDatabase : RoomDatabase() {
                     PiggyLedgerDatabase::class.java,
                     "piggy_ledger_db"
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

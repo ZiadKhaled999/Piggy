@@ -168,6 +168,13 @@ CREATE TABLE IF NOT EXISTS ai_chat_messages (
     "isSynced" BOOLEAN DEFAULT true
 );
 
+-- 12. Create Onboarding Answers Table
+CREATE TABLE IF NOT EXISTS onboarding_answers (
+    "key" TEXT PRIMARY KEY,
+    "value" TEXT NOT NULL,
+    "updatedAt" BIGINT NOT NULL
+);
+
 -- ENABLE ROW LEVEL SECURITY (RLS) FOR ALL TABLES
 ALTER TABLE goals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
@@ -180,6 +187,7 @@ ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE streak_dates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE onboarding_answers ENABLE ROW LEVEL SECURITY;
 
 -- DROP OLD POLICIES IF PRESENT
 DROP POLICY IF EXISTS "Enable all access for goals" ON goals;
@@ -193,6 +201,7 @@ DROP POLICY IF EXISTS "Enable all access for user_preferences" ON user_preferenc
 DROP POLICY IF EXISTS "Enable all access for streak_dates" ON streak_dates;
 DROP POLICY IF EXISTS "Enable all access for ai_conversations" ON ai_conversations;
 DROP POLICY IF EXISTS "Enable all access for ai_chat_messages" ON ai_chat_messages;
+DROP POLICY IF EXISTS "Enable all access for onboarding_answers" ON onboarding_answers;
 
 DROP POLICY IF EXISTS "Users can manage their own goals" ON goals;
 DROP POLICY IF EXISTS "Users can manage their own transactions" ON transactions;
@@ -214,4 +223,5 @@ CREATE POLICY "Enable all access for user_preferences" ON user_preferences FOR A
 CREATE POLICY "Enable all access for streak_dates" ON streak_dates FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all access for ai_conversations" ON ai_conversations FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all access for ai_chat_messages" ON ai_chat_messages FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all access for onboarding_answers" ON onboarding_answers FOR ALL USING (true) WITH CHECK (true);
 

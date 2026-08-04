@@ -221,3 +221,11 @@ data class PendingTransaction(
     val updatedAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false
 )
+
+@Serializable
+@Entity(tableName = "onboarding_answers")
+data class OnboardingAnswer(
+    @PrimaryKey val key: String,
+    val value: String,
+    val updatedAt: Long = System.currentTimeMillis()
+)

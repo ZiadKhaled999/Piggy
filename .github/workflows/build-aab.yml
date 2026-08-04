@@ -34,11 +34,21 @@ jobs:
 
       - name: Generate .env file
         run: |
-          echo "CLERK_PUBLISHABLE_KEY=${{ secrets.CLERK_PUBLISHABLE_KEY }}" >> .env
-          echo "REVENUECAT_API_KEY=${{ secrets.REVENUECAT_API_KEY }}" >> .env
-          echo "POSTHOG_API_KEY=${{ secrets.POSTHOG_API_KEY }}" >> .env
-          echo "NEON_API_URL=${{ secrets.NEON_API_URL }}" >> .env
-          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
+          if [ -n "${{ secrets.CLERK_PUBLISHABLE_KEY }}" ]; then
+            echo "CLERK_PUBLISHABLE_KEY=${{ secrets.CLERK_PUBLISHABLE_KEY }}" >> .env
+          fi
+          if [ -n "${{ secrets.REVENUECAT_API_KEY }}" ]; then
+            echo "REVENUECAT_API_KEY=${{ secrets.REVENUECAT_API_KEY }}" >> .env
+          fi
+          if [ -n "${{ secrets.POSTHOG_API_KEY }}" ]; then
+            echo "POSTHOG_API_KEY=${{ secrets.POSTHOG_API_KEY }}" >> .env
+          fi
+          if [ -n "${{ secrets.NEON_API_URL }}" ]; then
+            echo "NEON_API_URL=${{ secrets.NEON_API_URL }}" >> .env
+          fi
+          if [ -n "${{ secrets.GROQ_API_KEY }}" ]; then
+            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
+          fi
          
       - name: Decode Keystore
         run: |

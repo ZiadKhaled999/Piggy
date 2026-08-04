@@ -226,6 +226,15 @@ interface PiggyLedgerDao {
     @Query("DELETE FROM pending_transactions")
     suspend fun clearPendingTransactions()
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOnboardingAnswer(answer: OnboardingAnswer)
+
+    @Query("SELECT * FROM onboarding_answers")
+    suspend fun getAllOnboardingAnswers(): List<OnboardingAnswer>
+
+    @Query("SELECT * FROM onboarding_answers WHERE `key` = :key")
+    suspend fun getOnboardingAnswerByKey(key: String): OnboardingAnswer?
+
 
     @androidx.room.Transaction
     suspend fun resolvePendingTransaction(pendingId: String, accountId: String) {

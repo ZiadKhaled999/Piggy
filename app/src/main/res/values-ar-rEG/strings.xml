@@ -72,16 +72,20 @@
     <string name="onboarding_personalize_intensity_aggressive">حماس ملوش حدود</string>
     <string name="onboarding_personalize_intensity_aggressive_desc">30٪+ من الدخل. أقصى سرعة تحويش عشان تكسر أهدافك بسرعة البرق.</string>
 
-    <string name="onboarding_personalize_roadmap_title">خطة تحويشك المتفصلة ليك</string>
-    <string name="onboarding_personalize_roadmap_subtitle">دليلك المتفصل عشان توصل لأهداف تحويشك بسهولة.</string>
-    <string name="onboarding_personalize_roadmap_step1_title">ظبطنا حسابك بالملي</string>
-    <string name="onboarding_personalize_roadmap_step1_desc">جهزنالك مساحة مخصصة لـ %s.</string>
-    <string name="onboarding_personalize_roadmap_step2_title">ابدأ هدف %s بتاعك</string>
-    <string name="onboarding_personalize_roadmap_step2_desc">بنقترح تبدأ تحوش %s من دخلك.</string>
-    <string name="onboarding_personalize_roadmap_step3_title">تتبع ذكي شغال تلقائي</string>
-    <string name="onboarding_personalize_roadmap_step3_desc">متابعة وتحديث تلقائي لرسائل التحويلات والمعاملات يومياً.</string>
-    <string name="onboarding_personalize_roadmap_step4_title">حافظ على الاستمرارية (الستريك)</string>
-    <string name="onboarding_personalize_roadmap_step4_desc">تابع تحليلات ورسوم بيانية خطيرة وحدث إضافات الشاشة أول بأول!</string>
+    <string name="onboarding_personalize_roadmap_title">بنظبطلك خطتك المالية</string>
+    <string name="onboarding_personalize_roadmap_subtitle">دليلك الشخصي عشان توصل لأهدافك وتحوش مرتاح.</string>
+    <string name="onboarding_roadmap_step1">تحليل قدراتك المالية العالية</string>
+    <string name="onboarding_roadmap_step2">حساب أفضل طريق للحرية المالية</string>
+    <string name="onboarding_roadmap_step3">تظبيط خطة التحويش المخصصة ليك</string>
+    <string name="onboarding_roadmap_step4">فتح أبواب الاستقرار والنجاح المالي</string>
+    <string name="onboarding_roadmap_ready_title">كده كل حاجة جاهزة!</string>
+    <string name="onboarding_roadmap_ready_desc">خطتك متفصلة بالملي عشان توصل لأهدافك وتعيش مرتاح.</string>
+    <string name="onboarding_testimonial_1_quote">"حوشت ١٢,٠٠٠ ج.م في ٣ شهور!\nإحساس ممتاز بالتحكم!"</string>
+    <string name="onboarding_testimonial_1_author">@Tom</string>
+    <string name="onboarding_testimonial_2_quote">"سددت ديوني كلها في شهرين.\nتغيير حقيقي لحياتي!"</string>
+    <string name="onboarding_testimonial_2_author">@Hannah84</string>
+    <string name="onboarding_testimonial_3_quote">"حققت هدفي المالي\nبفضل دفتر الحصالة!"</string>
+    <string name="onboarding_testimonial_3_author">@Tina1974</string>
     
     <!-- Dashboard & UI -->
     <string name="welcome_back">نورت تاني!</string>

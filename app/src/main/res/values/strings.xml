@@ -131,16 +131,20 @@
     <string name="onboarding_personalize_intensity_aggressive">Laser Focus</string>
     <string name="onboarding_personalize_intensity_aggressive_desc">30%%+ of income. Maximum savings speed to crash through targets.</string>
 
-    <string name="onboarding_personalize_roadmap_title">Your Personalized Saving Roadmap</string>
+    <string name="onboarding_personalize_roadmap_title">Tailoring your roadmap</string>
     <string name="onboarding_personalize_roadmap_subtitle">Your personalized guide to reaching your saving goals.</string>
-    <string name="onboarding_personalize_roadmap_step1_title">Profile Optimized</string>
-    <string name="onboarding_personalize_roadmap_step1_desc">Prepared a custom workspace tailored for %s.</string>
-    <string name="onboarding_personalize_roadmap_step2_title">Setup Your %s Target</string>
-    <string name="onboarding_personalize_roadmap_step2_desc">We suggest starting with a %s target.</string>
-    <string name="onboarding_personalize_roadmap_step3_title">Smart Sync Activated</string>
-    <string name="onboarding_personalize_roadmap_step3_desc">Automatically tracks SMS receipts and daily transactions.</string>
-    <string name="onboarding_personalize_roadmap_step4_title">Build Your Daily Streak</string>
-    <string name="onboarding_personalize_roadmap_step4_desc">Stay consistent, view dynamic charts, and unlock local widget updates!</string>
+    <string name="onboarding_roadmap_step1">Analyzing your wealth potential</string>
+    <string name="onboarding_roadmap_step2">Calculating your optimal path</string>
+    <string name="onboarding_roadmap_step3">Generating your dream savings plan</string>
+    <string name="onboarding_roadmap_step4">Unlocking your financial freedom</string>
+    <string name="onboarding_roadmap_ready_title">You\'re All Set!</string>
+    <string name="onboarding_roadmap_ready_desc">Your personalized financial roadmap is fully created and ready.</string>
+    <string name="onboarding_testimonial_1_quote">"Saved $1,200 in 3 months!\nFeeling in control!"</string>
+    <string name="onboarding_testimonial_1_author">@Tom</string>
+    <string name="onboarding_testimonial_2_quote">"Paid off $800 debt in 2 months.\nLife-changing!"</string>
+    <string name="onboarding_testimonial_2_author">@Hannah84</string>
+    <string name="onboarding_testimonial_3_quote">"I\'ve achieved my goal\nwith Piggy Ledger!"</string>
+    <string name="onboarding_testimonial_3_author">@Tina1974</string>
 
 
 <string name="loans_payoffs_title">Loans &amp; Payoffs</string>

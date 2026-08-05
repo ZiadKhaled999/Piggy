@@ -12,6 +12,16 @@ import android.Manifest
 import android.widget.Toast
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Animatable
@@ -295,7 +305,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
             .background(Color.White)
             .statusBarsPadding()
             .navigationBarsPadding()
-            .padding(horizontal = if (currentPage in 7..9) 0.dp else horizontalPadding, vertical = if (currentPage in 7..9) 6.dp else (if (isSmallScreen) 12.dp else 16.dp)),
+            .padding(horizontal = if (currentPage in 7..9 || currentPage == 11) 4.dp else horizontalPadding, vertical = if (currentPage in 7..9) 6.dp else (if (isSmallScreen) 12.dp else 16.dp)),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Upper Content with Crossfade Page Transition
@@ -1360,332 +1370,256 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                         Spacer(modifier = Modifier.height(if (isSmallScreen) 20.dp else 30.dp))
                     }
                 } else if (pageIndex == 11) {
-                    val focusName = when (selectedIntent) {
-                        0 -> stringResource(R.string.onboarding_personalize_intent_personal)
-                        1 -> stringResource(R.string.onboarding_personalize_intent_loans)
-                        else -> stringResource(R.string.onboarding_personalize_intent_auto)
-                    }
-
-                    val focusDesc = when (selectedIntent) {
-                        0 -> stringResource(R.string.onboarding_step_workspace_desc_personal)
-                        1 -> stringResource(R.string.onboarding_step_workspace_desc_loans)
-                        else -> stringResource(R.string.onboarding_step_workspace_desc_auto)
-                    }
-
-                    val intensityName = when (selectedIntensity) {
-                        0 -> stringResource(R.string.onboarding_personalize_intensity_casual)
-                        1 -> stringResource(R.string.onboarding_personalize_intensity_balanced)
-                        else -> stringResource(R.string.onboarding_personalize_intensity_aggressive)
-                    }
-
-                    val intensityValue = when (selectedIntensity) {
-                        0 -> "5% – 10%"
-                        1 -> "15% – 20%"
-                        else -> "30%+"
-                    }
-
-                    val intensityDesc = when (selectedIntensity) {
-                        0 -> stringResource(R.string.onboarding_step_intensity_desc_casual)
-                        1 -> stringResource(R.string.onboarding_step_intensity_desc_balanced)
-                        else -> stringResource(R.string.onboarding_step_intensity_desc_aggressive)
-                    }
-
-                    val isSmsGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED ||
-                            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
-                    
-                    val syncTitle = stringResource(R.string.onboarding_step_sync_title)
-                    val syncDesc = if (isSmsGranted) {
-                        stringResource(R.string.onboarding_step_sync_desc_granted)
-                    } else {
-                        stringResource(R.string.onboarding_step_sync_desc_manual)
-                    }
-
-                    val milestoneTitle = stringResource(R.string.onboarding_step_milestone_title)
-                    val milestoneDesc = when (selectedIntent) {
-                        0 -> stringResource(R.string.onboarding_step_milestone_desc_personal)
-                        1 -> stringResource(R.string.onboarding_step_milestone_desc_loans)
-                        else -> stringResource(R.string.onboarding_step_milestone_desc_auto)
-                    }
-
-                    val step1Title = stringResource(R.string.onboarding_step_workspace_title, focusName)
-                    val step2Title = stringResource(R.string.onboarding_step_intensity_title, intensityName, intensityValue)
-                    
-                    val stepsList = mutableListOf(
-                        Triple(step1Title, focusDesc, "👥"),
-                        Triple(step2Title, intensityDesc, "📈"),
-                        Triple(syncTitle, syncDesc, if (isSmsGranted) "⚡" else "📋"),
-                        Triple(milestoneTitle, milestoneDesc, "🎯")
-                    )
-                    
-                    if (relatesToLoans == true) {
-                        stepsList.add(0, Triple(stringResource(R.string.onboarding_step_debt_title), stringResource(R.string.onboarding_step_debt_desc), "💸"))
-                    }
-                    if (relatesToAccounts == true) {
-                        stepsList.add(1, Triple(stringResource(R.string.onboarding_step_accounts_title), stringResource(R.string.onboarding_step_accounts_desc), "🔗"))
-                    }
-                    if (relatesToEmergency == true) {
-                        stepsList.add(Triple(stringResource(R.string.onboarding_step_emergency_title), stringResource(R.string.onboarding_step_emergency_desc), "🛡️"))
-                    }
-                    
-                    val steps = stepsList.toList()
-
-                    // AI ROAMAP LOADING LOGIC
-                    var roadmapStep by remember { mutableStateOf(-1) } // -1: Thinking, 0-3: Steps, 4: Done
-                    var thinkingPhase by remember { mutableStateOf(0) } // 0: Thinking, 1: Sketching, 2: Planning
-                    
-                    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
-                    val shimmerAlpha by infiniteTransition.animateFloat(
-                        initialValue = 0.3f,
-                        targetValue = 0.6f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(800),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "shimmer_alpha"
+                    val stepTitles = listOf(
+                        stringResource(R.string.onboarding_roadmap_step1),
+                        stringResource(R.string.onboarding_roadmap_step2),
+                        stringResource(R.string.onboarding_roadmap_step3),
+                        stringResource(R.string.onboarding_roadmap_step4)
                     )
 
-                    val roadmapScrollState = rememberScrollState()
+                    var currentStep by remember { mutableStateOf(0) }
+                    var isCompleted by remember { mutableStateOf(false) }
+                    val progressAnim = remember { Animatable(0f) }
+
+                    val pinkGradient = Brush.horizontalGradient(
+                        colors = listOf(
+                            PinkPrimary,
+                            Color(0xFFBE185D)
+                        )
+                    )
 
                     LaunchedEffect(Unit) {
-                        if (roadmapStep == -1) {
-                            isPlanFinished = false
-                            delay(800)
-                            thinkingPhase = 1 // Sketching
-                            delay(800)
-                            thinkingPhase = 2 // Planning
-                            delay(1000)
-                            
-                            for (i in 0 until steps.size) {
-                                roadmapStep = i
-                                delay(1200)
-                            }
-                            roadmapStep = steps.size // All Done
-                            isPlanFinished = true
-                        } else if (roadmapStep >= steps.size) {
-                            isPlanFinished = true
-                        }
-                    }
-
-                    LaunchedEffect(roadmapStep, roadmapScrollState.maxValue) {
-                        if (roadmapStep >= 0 && roadmapScrollState.maxValue > 0) {
-                            roadmapScrollState.animateScrollTo(
-                                value = roadmapScrollState.maxValue,
-                                animationSpec = tween(durationMillis = 800)
+                        isPlanFinished = false
+                        for (step in 0..3) {
+                            currentStep = step
+                            progressAnim.snapTo(0f)
+                            val duration = 1100 + step * 100
+                            progressAnim.animateTo(
+                                targetValue = 1f,
+                                animationSpec = tween(durationMillis = duration)
                             )
+                            delay(120)
                         }
+                        isCompleted = true
+                        isPlanFinished = true
                     }
 
-                    if (roadmapStep == -1) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                ExpressiveLoadingIndicator(
-                                    size = 54.dp,
-                                    strokeWidth = 4.dp
-                                )
-                                Spacer(modifier = Modifier.height(28.dp))
-                                val text = when(thinkingPhase) {
-                                    0 -> stringResource(R.string.onboarding_ai_thinking)
-                                    1 -> stringResource(R.string.onboarding_ai_sketching)
-                                    else -> stringResource(R.string.onboarding_ai_making_plan)
-                                }
-                                Text(
-                                    text = text,
-                                    fontSize = 22.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = NavyDark
-                                )
-                            }
-                        }
-                    } else {
+                    val stepProgress = progressAnim.value
+                    val roadmapScrollState = rememberScrollState()
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(roadmapScrollState)
+                            .padding(horizontal = if (isSmallScreen) 4.dp else 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 12.dp else 24.dp))
+
+                        Text(
+                            text = stringResource(R.string.onboarding_personalize_roadmap_title),
+                            fontSize = if (isSmallScreen) 22.sp else 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDark,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = stringResource(R.string.onboarding_personalize_roadmap_subtitle),
+                            fontSize = if (isSmallScreen) 12.sp else 14.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = TextLight,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 20.dp else 28.dp))
+
+                        // Responsive Full Width Steps Container
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .verticalScroll(roadmapScrollState),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(if (isSmallScreen) 12.dp else 16.dp)
                         ) {
-                            Text(
-                                text = stringResource(R.string.onboarding_personalize_roadmap_title),
-                                fontSize = titleFontSize,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = NavyDark,
-                                textAlign = TextAlign.Center,
-                                lineHeight = titleLineHeight
-                            )
-                            
-                            Spacer(modifier = Modifier.height(10.dp))
-                            
-                            Text(
-                                text = stringResource(R.string.onboarding_personalize_roadmap_subtitle),
-                                fontSize = subtitleFontSize,
-                                color = TextLight,
-                                textAlign = TextAlign.Center,
-                                lineHeight = subtitleLineHeight,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                            
-                            Spacer(modifier = Modifier.height(28.dp))
-                            
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth(if (isSmallScreen) 1f else 0.96f)
-                                    .padding(bottom = if (isSmallScreen) 12.dp else 16.dp),
-                                shape = RoundedCornerShape(24.dp),
-                                color = Color(0xFFF8FAFC),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                shadowElevation = 1.dp
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = if (isSmallScreen) 12.dp else 16.dp, vertical = if (isSmallScreen) 16.dp else 20.dp)
+                            stepTitles.forEachIndexed { index, title ->
+                                val isFinished = index < currentStep || (index == 3 && isCompleted)
+                                val isActive = index == currentStep && !isCompleted
+
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(18.dp),
+                                    color = if (isActive) Color(0xFFFFF5F8) else if (isFinished) Color(0xFFFAFAFC) else Color.White,
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        width = if (isActive) 1.5.dp else 1.dp,
+                                        color = if (isActive) PinkPrimary.copy(alpha = 0.4f) else if (isFinished) Color(0xFFE2E8F0) else Color(0xFFF1F5F9)
+                                    ),
+                                    shadowElevation = if (isActive) 2.dp else 0.dp
                                 ) {
-                                    steps.forEachIndexed { index, step ->
-                                        if (index <= roadmapStep) {
-                                            val (stepTitle, stepDesc, stepEmoji) = step
-                                            val isSyncing = index == roadmapStep && roadmapStep < 4
-                                            
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(bottom = if (index < steps.size - 1) (if (isSmallScreen) 12.dp else 16.dp) else 0.dp),
-                                                verticalAlignment = Alignment.Top
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(
+                                                horizontal = if (isSmallScreen) 14.dp else 18.dp,
+                                                vertical = if (isSmallScreen) 12.dp else 16.dp
+                                            )
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = title,
+                                                fontSize = if (isSmallScreen) 13.5.sp else 15.sp,
+                                                fontWeight = if (isActive || isFinished) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (isActive || isFinished) NavyDark else Color(0xFF64748B),
+                                                modifier = Modifier.weight(1f)
+                                            )
+
+                                            Spacer(modifier = Modifier.width(8.dp))
+
+                                            AnimatedVisibility(
+                                                visible = isFinished,
+                                                enter = scaleIn(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
+                                                exit = fadeOut()
                                             ) {
-                                                Column(
-                                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                                    modifier = Modifier.padding(end = if (isSmallScreen) 10.dp else 14.dp)
-                                                ) {
-                                                    if (isSyncing) {
-                                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                            Box(
-                                                                modifier = Modifier.size(36.dp),
-                                                                contentAlignment = Alignment.Center
-                                                            ) {
-                                                                ExpressiveLoadingIndicator(
-                                                                    size = 28.dp,
-                                                                    strokeWidth = 2.dp
-                                                                )
-                                                            }
-                                                            Spacer(modifier = Modifier.height(4.dp))
-                                                            Text(
-                                                                text = stringResource(R.string.onboarding_ai_syncing),
-                                                                fontSize = 9.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = PinkPrimary
-                                                            )
-                                                        }
-                                                    } else {
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .size(36.dp)
-                                                                .clip(CircleShape)
-                                                                .background(
-                                                                    (when (index) {
-                                                                        0 -> PinkPrimary
-                                                                        1 -> PinkPrimary
-                                                                        2 -> AccentBlue
-                                                                        else -> Color(0xFFF59E0B)
-                                                                    }).copy(alpha = 0.15f)
-                                                                ),
-                                                            contentAlignment = Alignment.Center
-                                                        ) {
-                                                            Text(
-                                                                text = stepEmoji,
-                                                                fontSize = 18.sp
-                                                            )
-                                                        }
-                                                    }
-                                                    
-                                                    if (index < steps.size - 1) {
-                                                        val startColor = when (index) {
-                                                            0 -> PinkPrimary
-                                                            1 -> PinkPrimary
-                                                            2 -> AccentBlue
-                                                            else -> Color(0xFFF59E0B)
-                                                        }
-                                                        val endColor = when (index + 1) {
-                                                            0 -> PinkPrimary
-                                                            1 -> PinkPrimary
-                                                            2 -> AccentBlue
-                                                            else -> Color(0xFFF59E0B)
-                                                        }
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .width(2.dp)
-                                                                .height(if (isSmallScreen) 40.dp else 54.dp)
-                                                                .background(
-                                                                    Brush.verticalGradient(
-                                                                        colors = listOf(
-                                                                            startColor.copy(alpha = 0.4f),
-                                                                            endColor.copy(alpha = 0.4f)
-                                                                        )
-                                                                    )
-                                                                )
-                                                        )
-                                                    }
-                                                }
-                                                
-                                                Column(
+                                                Box(
                                                     modifier = Modifier
-                                                        .weight(1f)
-                                                        .padding(top = 2.dp)
+                                                        .size(24.dp)
+                                                        .clip(CircleShape)
+                                                        .background(PinkPrimary),
+                                                    contentAlignment = Alignment.Center
                                                 ) {
-                                                    if (isSyncing) {
-                                                        Column {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .fillMaxWidth(0.7f)
-                                                                    .height(18.dp)
-                                                                    .clip(RoundedCornerShape(4.dp))
-                                                                    .background(Color(0xFFE2E8F0).copy(alpha = shimmerAlpha))
-                                                            )
-                                                            Spacer(modifier = Modifier.height(10.dp))
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .fillMaxWidth(0.9f)
-                                                                    .height(12.dp)
-                                                                    .clip(RoundedCornerShape(4.dp))
-                                                                    .background(Color(0xFFE2E8F0).copy(alpha = shimmerAlpha))
-                                                            )
-                                                            Spacer(modifier = Modifier.height(6.dp))
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .fillMaxWidth(0.5f)
-                                                                    .height(12.dp)
-                                                                    .clip(RoundedCornerShape(4.dp))
-                                                                    .background(Color(0xFFE2E8F0).copy(alpha = shimmerAlpha))
-                                                            )
-                                                        }
-                                                    } else {
-                                                        Text(
-                                                            text = stepTitle,
-                                                            fontSize = if (isSmallScreen) 14.sp else 15.sp,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = NavyDark,
-                                                            maxLines = 1,
-                                                            overflow = TextOverflow.Ellipsis
-                                                        )
-                                                        Spacer(modifier = Modifier.height(4.dp))
-                                                        Text(
-                                                            text = stepDesc,
-                                                            fontSize = if (isSmallScreen) 11.sp else 12.sp,
-                                                            fontWeight = FontWeight.Medium,
-                                                            color = TextLight,
-                                                            lineHeight = cardDescLineHeight,
-                                                            maxLines = 2,
-                                                            overflow = TextOverflow.Ellipsis
-                                                        )
-                                                    }
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(14.dp)
+                                                    )
                                                 }
                                             }
+
+                                            AnimatedVisibility(
+                                                visible = isActive,
+                                                enter = fadeIn() + scaleIn(),
+                                                exit = fadeOut() + scaleOut()
+                                            ) {
+                                                ExpressiveLoadingIndicator(
+                                                    size = 22.dp,
+                                                    color = PinkPrimary,
+                                                    strokeWidth = 2.5.dp
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(if (isActive) 12.dp else 8.dp))
+
+                                        // Animated Smooth Transition between Big Progress Card and Sleek Completed Line
+                                        AnimatedVisibility(
+                                            visible = isActive,
+                                            enter = expandVertically() + fadeIn(),
+                                            exit = shrinkVertically() + fadeOut()
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(if (isSmallScreen) 52.dp else 60.dp)
+                                                    .clip(RoundedCornerShape(14.dp))
+                                                    .background(Color(0xFFFCE4EC))
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth(stepProgress.coerceIn(0.08f, 1f))
+                                                        .fillMaxHeight()
+                                                        .clip(RoundedCornerShape(14.dp))
+                                                        .background(pinkGradient)
+                                                )
+                                                Text(
+                                                    text = "${(stepProgress * 100).toInt()}%",
+                                                    fontSize = if (isSmallScreen) 22.sp else 26.sp,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    color = Color.White,
+                                                    modifier = Modifier
+                                                        .align(Alignment.CenterStart)
+                                                        .padding(start = 18.dp)
+                                                )
+                                            }
+                                        }
+
+                                        AnimatedVisibility(
+                                            visible = !isActive,
+                                            enter = expandVertically() + fadeIn(),
+                                            exit = shrinkVertically() + fadeOut()
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(6.dp)
+                                                    .clip(RoundedCornerShape(3.dp))
+                                                    .background(if (isFinished) pinkGradient else androidx.compose.ui.graphics.SolidColor(Color(0xFFE2E8F0)))
+                                            )
                                         }
                                     }
                                 }
                             }
                         }
+
+                        AnimatedVisibility(
+                            visible = isCompleted,
+                            enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn()
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Spacer(modifier = Modifier.height(if (isSmallScreen) 16.dp else 24.dp))
+
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = Color(0xFFFFF1F5),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, PinkPrimary.copy(alpha = 0.35f)),
+                                    shadowElevation = 1.dp
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(if (isSmallScreen) 14.dp else 18.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(42.dp)
+                                                .clip(CircleShape)
+                                                .background(pinkGradient),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(14.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = stringResource(R.string.onboarding_roadmap_ready_title),
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = if (isSmallScreen) 14.sp else 15.sp,
+                                                color = NavyDark
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = stringResource(R.string.onboarding_roadmap_ready_desc),
+                                                fontSize = if (isSmallScreen) 11.5.sp else 12.5.sp,
+                                                color = TextLight,
+                                                lineHeight = 16.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 20.dp else 30.dp))
                     }
                 } else if (pageIndex == 12) {
                     val anim1 = remember { Animatable(0f) }

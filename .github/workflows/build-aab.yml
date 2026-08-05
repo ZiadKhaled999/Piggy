@@ -3,80 +3,79 @@
 # To re-enable this workflow later, simply remove the leading '#' comments below.
 # ==============================================================================
 
-name: Build Android App Bundle
-
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    # If you used 'Environment Secrets', uncomment the line below and set the correct environment name
-    # environment: production
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: 9.3.1
-          validate-wrappers: false
-
-      - name: Generate .env file
-        run: |
-          if [ -n "${{ secrets.CLERK_PUBLISHABLE_KEY }}" ]; then
-            echo "CLERK_PUBLISHABLE_KEY=${{ secrets.CLERK_PUBLISHABLE_KEY }}" >> .env
-          fi
-          if [ -n "${{ secrets.REVENUECAT_API_KEY }}" ]; then
-            echo "REVENUECAT_API_KEY=${{ secrets.REVENUECAT_API_KEY }}" >> .env
-          fi
-          if [ -n "${{ secrets.POSTHOG_API_KEY }}" ]; then
-            echo "POSTHOG_API_KEY=${{ secrets.POSTHOG_API_KEY }}" >> .env
-          fi
-          if [ -n "${{ secrets.NEON_API_URL }}" ]; then
-            echo "NEON_API_URL=${{ secrets.NEON_API_URL }}" >> .env
-          fi
-          if [ -n "${{ secrets.GROQ_API_KEY }}" ]; then
-            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
-          fi
-         
-      - name: Decode Keystore
-        run: |
-          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\r\n ' | base64 --decode > app/release.keystore
-            if [ -s app/release.keystore ]; then
-              echo "Keystore decoded successfully."
-            else
-              echo "Warning: Decoded app/release.keystore was empty. Removing file."
-              rm -f app/release.keystore
-            fi
-          else
-            echo "Warning: ANDROID_KEYSTORE_BASE64 secret is empty. Proceeding with fallback config."
-          fi
-
-      - name: Make Gradlew Executable
-        run: chmod +x gradlew
-
-      - name: Build with Gradle
-        run: gradle bundleRelease -Djava.awt.headless=true
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-
-      - name: Upload AAB Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-aab
-          path: app/build/outputs/bundle/release/*.aab
-
+# name: Build Android App Bundle
+# 
+# on:
+#   push:
+#     branches:
+#       - main
+#   workflow_dispatch:
+# 
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     # If you used 'Environment Secrets', uncomment the line below and set the correct environment name
+#     # environment: production
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v4
+# 
+#       - name: Set up JDK 17
+#         uses: actions/setup-java@v4
+#         with:
+#           distribution: 'temurin'
+#           java-version: '17'
+# 
+#       - name: Setup Gradle
+#         uses: gradle/actions/setup-gradle@v4
+#         with:
+#           gradle-version: 9.3.1
+#           validate-wrappers: false
+# 
+#       - name: Generate .env file
+#         run: |
+#           if [ -n "${{ secrets.CLERK_PUBLISHABLE_KEY }}" ]; then
+#             echo "CLERK_PUBLISHABLE_KEY=${{ secrets.CLERK_PUBLISHABLE_KEY }}" >> .env
+#           fi
+#           if [ -n "${{ secrets.REVENUECAT_API_KEY }}" ]; then
+#             echo "REVENUECAT_API_KEY=${{ secrets.REVENUECAT_API_KEY }}" >> .env
+#           fi
+#           if [ -n "${{ secrets.POSTHOG_API_KEY }}" ]; then
+#             echo "POSTHOG_API_KEY=${{ secrets.POSTHOG_API_KEY }}" >> .env
+#           fi
+#           if [ -n "${{ secrets.NEON_API_URL }}" ]; then
+#             echo "NEON_API_URL=${{ secrets.NEON_API_URL }}" >> .env
+#           fi
+#           if [ -n "${{ secrets.GROQ_API_KEY }}" ]; then
+#             echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
+#           fi
+#          
+#       - name: Decode Keystore
+#         run: |
+#           if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+#             echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\r\n ' | base64 --decode > app/release.keystore
+#             if [ -s app/release.keystore ]; then
+#               echo "Keystore decoded successfully."
+#             else
+#               echo "Warning: Decoded app/release.keystore was empty. Removing file."
+#               rm -f app/release.keystore
+#             fi
+#           else
+#             echo "Warning: ANDROID_KEYSTORE_BASE64 secret is empty. Proceeding with fallback config."
+#           fi
+# 
+#       - name: Make Gradlew Executable
+#         run: chmod +x gradlew
+# 
+#       - name: Build with Gradle
+#         run: gradle bundleRelease -Djava.awt.headless=true
+#         env:
+#           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+#           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+#           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+# 
+#       - name: Upload AAB Artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: release-aab
+#           path: app/build/outputs/bundle/release/*.aab

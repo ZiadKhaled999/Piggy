@@ -58,16 +58,20 @@
     <string name="onboarding_personalize_intensity_aggressive">تركيز ليزر</string>
     <string name="onboarding_personalize_intensity_aggressive_desc">٣٠٪+ من الدخل. أقصى سرعة تحويش عشان تكسر أهدافك.</string>
     
-    <string name="onboarding_personalize_roadmap_title">خطتك المخصصة للتحويش</string>
-    <string name="onboarding_personalize_roadmap_subtitle">دليلك المخصص عشان توصل لأهدافك.</string>
-    <string name="onboarding_personalize_roadmap_step1_title">البروفايل جاهز</string>
-    <string name="onboarding_personalize_roadmap_step1_desc">جهزنا مكان متفصل عشان %s.</string>
-    <string name="onboarding_personalize_roadmap_step2_title">ظبط هدفك كـ %s</string>
-    <string name="onboarding_personalize_roadmap_step2_desc">بنقترح تبدأ بهدف %s.</string>
-    <string name="onboarding_personalize_roadmap_step3_title">المزامنة الذكية شغالة</string>
-    <string name="onboarding_personalize_roadmap_step3_desc">بيتابع رسايل الـ SMS ومعاملاتك اليومية تلقائي.</string>
-    <string name="onboarding_personalize_roadmap_step4_title">ابني سلسلتك اليومية</string>
-    <string name="onboarding_personalize_roadmap_step4_desc">خليك مستمر، شوف إحصائياتك، وافتح الودجت المحلية!</string>
+    <string name="onboarding_personalize_roadmap_title">إعداد خطتك المالية</string>
+    <string name="onboarding_personalize_roadmap_subtitle">دليلك الشخصي المصمم لتحقيق أهدافك المالية بسهولة.</string>
+    <string name="onboarding_roadmap_step1">تحليل قدرتك المالية المذهلة</string>
+    <string name="onboarding_roadmap_step2">حساب مسارك الأمثل للحرية المالية</string>
+    <string name="onboarding_roadmap_step3">تصميم خطتك المخصصة للنمو والتحويش</string>
+    <string name="onboarding_roadmap_step4">فتح أبواب الاستقرار والنجاح المالي</string>
+    <string name="onboarding_roadmap_ready_title">جاهز تماماً للانطلاق!</string>
+    <string name="onboarding_roadmap_ready_desc">صُممت خطتك المخصصة بنجاح لمساعدتك في تحقيق أحلامك.</string>
+    <string name="onboarding_testimonial_1_quote">"حوشت ١٢,٠٠٠ ج.م في ٣ شهور!\nإحساس ممتاز بالتحكم!"</string>
+    <string name="onboarding_testimonial_1_author">@Tom</string>
+    <string name="onboarding_testimonial_2_quote">"سددت ديوني كلها في شهرين.\nتغيير حقيقي لحياتي!"</string>
+    <string name="onboarding_testimonial_2_author">@Hannah84</string>
+    <string name="onboarding_testimonial_3_quote">"حققت هدفي المالي\nبفضل دفتر الحصالة!"</string>
+    <string name="onboarding_testimonial_3_author">@Tina1974</string>
 
     <string name="repayment_deadline_header">ميعاد السداد</string>
     <string name="repayment_deadline_over">ميعاد السداد لـ %1$s خلص. المبلغ المتبقي: %2$s.</string>

@@ -56,5 +56,22 @@ class PiggyLedgerApplication : Application() {
         } catch (e: Exception) {
             Log.e("PiggyLedgerApp", "Failed to initialize NotificationScheduler", e)
         }
+
+        // Schedule Remote Config & Mascot Asset Sync
+        try {
+            val oneTimeSync = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.PiggyRemoteConfigWorker>().build()
+            androidx.work.WorkManager.getInstance(this).enqueue(oneTimeSync)
+
+            val periodicSync = androidx.work.PeriodicWorkRequestBuilder<com.oryno.piggy_ledger.service.PiggyRemoteConfigWorker>(
+                12, java.util.concurrent.TimeUnit.HOURS
+            ).build()
+            androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "PiggyRemoteConfigSync",
+                androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                periodicSync
+            )
+        } catch (e: Exception) {
+            Log.e("PiggyLedgerApp", "Failed to schedule PiggyRemoteConfigWorker", e)
+        }
     }
 }

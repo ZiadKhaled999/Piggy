@@ -33,8 +33,12 @@ class StreakWidgetProvider : AppWidgetProvider() {
             // Update speech bubble text in the center
             views.setTextViewText(R.id.tv_streak_message, displayInfo.speechMessage)
 
-            // Update mascot image at the bottom
-            views.setImageViewResource(R.id.iv_streak_mascot, displayInfo.mascotResource)
+            // Update mascot image at the bottom (Remote Bitmap or local Drawable resource)
+            if (displayInfo.mascotBitmap != null) {
+                views.setImageViewBitmap(R.id.iv_streak_mascot, displayInfo.mascotBitmap)
+            } else {
+                views.setImageViewResource(R.id.iv_streak_mascot, displayInfo.mascotResource)
+            }
 
             // Intent to launch MainActivity when clicking the widget
             val intent = Intent(context, MainActivity::class.java).apply {

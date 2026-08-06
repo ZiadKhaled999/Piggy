@@ -19,7 +19,8 @@ object StreakManager {
         val badgeResource: Int,
         val backgroundResource: Int,
         val speechMessage: String,
-        val mascotResource: Int
+        val mascotResource: Int,
+        val mascotBitmap: android.graphics.Bitmap? = null
     )
 
     fun recordAction(context: Context) {
@@ -282,13 +283,13 @@ object StreakManager {
             actionToday -> {
                 categoryId = 8 // Streak Extended / Logged Today
                 badgeRes = R.drawable.streak
-                bgRes = R.drawable.bg_streak_widget_success
+                bgRes = R.drawable.img_widget_bg_cyan_1785543039542
                 mascotRes = R.drawable.ic_piggy_success
             }
             isFrozenToday -> {
                 categoryId = 7 // Streak Frozen State
                 badgeRes = R.drawable.streak_frozen
-                bgRes = R.drawable.bg_streak_widget_frozen
+                bgRes = R.drawable.img_widget_bg_dark_1785543053480
                 mascotRes = R.drawable.ic_piggy_worried
             }
             streak == 0 && dates.isNotEmpty() -> {
@@ -345,7 +346,21 @@ object StreakManager {
             }
         }
 
-        val rawPhrase = getRandomPhraseFromCategory(context, categoryId, seed = dayOfYear * 24 + hour)
+        val lang = context.resources.configuration.locales.get(0).language
+        val isArabic = lang == "ar"
+
+        val remoteResult = PiggyRemoteConfigManager.resolveMascot(
+            context = context,
+            categoryId = categoryId,
+            streak = streak,
+            isActionToday = actionToday,
+            isFrozen = isFrozenToday,
+            isLost = streak == 0 && dates.isNotEmpty(),
+            hour = hour,
+            languageIsArabic = isArabic
+        )
+
+        val rawPhrase = remoteResult.phrase ?: getRandomPhraseFromCategory(context, categoryId, seed = dayOfYear * 24 + hour)
         val userName = getUserName(context)
         val formattedSpeech = rawPhrase
             .replace("[Username]", userName)
@@ -358,7 +373,8 @@ object StreakManager {
             badgeResource = badgeRes,
             backgroundResource = bgRes,
             speechMessage = formattedSpeech,
-            mascotResource = mascotRes
+            mascotResource = mascotRes,
+            mascotBitmap = remoteResult.bitmap
         )
     }
 

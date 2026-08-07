@@ -6,6 +6,9 @@ import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
 import com.clerk.api.Clerk
 import com.clerk.api.ClerkConfigurationOptions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class PiggyLedgerApplication : Application() {
     override fun onCreate() {
@@ -26,12 +29,14 @@ class PiggyLedgerApplication : Application() {
         }
 
         try {
-            com.revenuecat.purchases.Purchases.configure(
-                com.revenuecat.purchases.PurchasesConfiguration.Builder(this, BuildConfig.REVENUECAT_API_KEY).build()
-            )
-            com.revenuecat.purchases.Purchases.logLevel = com.revenuecat.purchases.LogLevel.DEBUG
+            if (BuildConfig.REVENUECAT_API_KEY.isNotBlank()) {
+                com.revenuecat.purchases.Purchases.logLevel = com.revenuecat.purchases.LogLevel.INFO
+                com.revenuecat.purchases.Purchases.configure(
+                    com.revenuecat.purchases.PurchasesConfiguration.Builder(this, BuildConfig.REVENUECAT_API_KEY).build()
+                )
+            }
         } catch (e: Exception) {
-            Log.e("PiggyLedgerApp", "Failed to initialize RevenueCat Purchases", e)
+            Log.w("PiggyLedgerApp", "RevenueCat Purchases initialization skipped/failed: ${e.message}")
         }
 
         val clerkKey = BuildConfig.CLERK_PUBLISHABLE_KEY
@@ -59,6 +64,18 @@ class PiggyLedgerApplication : Application() {
 
         // Schedule Remote Config & Mascot Asset Sync
         try {
+            // Immediate startup sync
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val updated = com.oryno.piggy_ledger.data.PiggyRemoteConfigManager.fetchAndSyncConfig(this@PiggyLedgerApplication)
+                    if (updated) {
+                        com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(this@PiggyLedgerApplication)
+                    }
+                } catch (e: Exception) {
+                    Log.e("PiggyLedgerApp", "Immediate fetch error", e)
+                }
+            }
+
             val oneTimeSync = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.PiggyRemoteConfigWorker>().build()
             androidx.work.WorkManager.getInstance(this).enqueue(oneTimeSync)
 

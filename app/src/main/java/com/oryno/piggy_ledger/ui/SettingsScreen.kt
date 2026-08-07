@@ -178,6 +178,7 @@ import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.CloudUpload
 
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Logout
 
 import androidx.compose.foundation.lazy.items
 
@@ -202,7 +203,8 @@ fun SettingsScreen(
     viewModel: PiggyLedgerViewModel,
     initialMode: SettingsMode = SettingsMode.MAIN,
     onNavigateToPendingTransactions: () -> Unit,
-    onBackClick: (() -> Unit)? = null
+    onBackClick: (() -> Unit)? = null,
+    onSignOutClick: (() -> Unit)? = null
 ) {
     var settingsMode by remember { mutableStateOf(initialMode) }
     val context = LocalContext.current
@@ -268,7 +270,8 @@ fun SettingsScreen(
                 
                 SettingsMainContent(
                     onModeChange = { settingsMode = it },
-                    onNavigateToPendingTransactions = onNavigateToPendingTransactions
+                    onNavigateToPendingTransactions = onNavigateToPendingTransactions,
+                    onSignOutClick = onSignOutClick
                 )
             }
             else -> {
@@ -295,7 +298,8 @@ fun SettingsScreen(
 @Composable
 fun SettingsMainContent(
     onModeChange: (SettingsMode) -> Unit,
-    onNavigateToPendingTransactions: () -> Unit
+    onNavigateToPendingTransactions: () -> Unit,
+    onSignOutClick: (() -> Unit)? = null
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SettingsItem(
@@ -355,6 +359,15 @@ fun SettingsMainContent(
             iconVector = Icons.Default.Star,
             onClick = { onModeChange(SettingsMode.PRO) }
         )
+
+        onSignOutClick?.let { onSignOut ->
+            SettingsItem(
+                title = stringResource(R.string.auth_sign_out),
+                iconRes = null,
+                iconVector = Icons.Default.Logout,
+                onClick = onSignOut
+            )
+        }
         
         Spacer(modifier = Modifier.height(16.dp))
     }
@@ -1348,21 +1361,25 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
 
     LaunchedEffect(Unit) {
         try {
-            com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
-                object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
-                    override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
-                        customerInfo = info
-                        val active = info.entitlements.all.values.any { it.isActive } || info.entitlements["Piggy Ledger Pro"]?.isActive == true
-                        isPro = active || isPremiumState
-                        if (active != isPremiumState) {
-                            viewModel.setPremiumStatus(active)
+            if (com.revenuecat.purchases.Purchases.isConfigured) {
+                com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
+                    object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
+                        override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
+                            customerInfo = info
+                            val active = info.entitlements.all.values.any { it.isActive } || info.entitlements["Piggy Ledger Pro"]?.isActive == true
+                            isPro = active || isPremiumState
+                            if (active != isPremiumState) {
+                                viewModel.setPremiumStatus(active)
+                            }
+                        }
+                        override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                            isPro = isPremiumState
                         }
                     }
-                    override fun onError(error: com.revenuecat.purchases.PurchasesError) {
-                        isPro = isPremiumState
-                    }
-                }
-            )
+                )
+            } else {
+                isPro = isPremiumState
+            }
         } catch (e: Exception) {
             isPro = isPremiumState
         }
@@ -1592,19 +1609,29 @@ fun PiggyLedgerPaywall(
     var isPurchasing by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        com.revenuecat.purchases.Purchases.sharedInstance.getOfferings(
-            object : com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback {
-                override fun onReceived(offeringsResult: com.revenuecat.purchases.Offerings) {
-                    isLoadingOfferings = false
-                    offerings = offeringsResult
-                }
-                override fun onError(error: com.revenuecat.purchases.PurchasesError) {
-                    isLoadingOfferings = false
-                    fetchError = error.message
-                    android.util.Log.e("Paywall", "Error fetching offerings: ${error.message}")
-                }
+        try {
+            if (com.revenuecat.purchases.Purchases.isConfigured) {
+                com.revenuecat.purchases.Purchases.sharedInstance.getOfferings(
+                    object : com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback {
+                        override fun onReceived(offeringsResult: com.revenuecat.purchases.Offerings) {
+                            isLoadingOfferings = false
+                            offerings = offeringsResult
+                        }
+                        override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                            isLoadingOfferings = false
+                            fetchError = error.message
+                            android.util.Log.e("Paywall", "Error fetching offerings: ${error.message}")
+                        }
+                    }
+                )
+            } else {
+                isLoadingOfferings = false
+                fetchError = "In-App Billing is not available on this device."
             }
-        )
+        } catch (e: Exception) {
+            isLoadingOfferings = false
+            fetchError = e.message ?: "Failed to connect to billing service."
+        }
     }
 
     val packagesList = remember(offerings) {
@@ -1947,23 +1974,31 @@ fun PiggyLedgerPaywall(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .clickable {
-                        com.revenuecat.purchases.Purchases.sharedInstance.restorePurchases(
-                            object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
-                                override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
-                                    val active = info.entitlements.all.values.any { it.isActive } || info.entitlements["Piggy Ledger Pro"]?.isActive == true
-                                    if (active) {
-                                        viewModel.setPremiumStatus(true)
-                                        onPurchaseSuccess(info)
-                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Pro features restored!", Toast.LENGTH_LONG)
-                                    } else {
-                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "No active subscription found.", Toast.LENGTH_LONG)
+                        if (com.revenuecat.purchases.Purchases.isConfigured) {
+                            try {
+                                com.revenuecat.purchases.Purchases.sharedInstance.restorePurchases(
+                                    object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
+                                        override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
+                                            val active = info.entitlements.all.values.any { it.isActive } || info.entitlements["Piggy Ledger Pro"]?.isActive == true
+                                            if (active) {
+                                                viewModel.setPremiumStatus(true)
+                                                onPurchaseSuccess(info)
+                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Pro features restored!", Toast.LENGTH_LONG)
+                                            } else {
+                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "No active subscription found.", Toast.LENGTH_LONG)
+                                            }
+                                        }
+                                        override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Restore failed: ${error.message}", Toast.LENGTH_LONG)
+                                        }
                                     }
-                                }
-                                override fun onError(error: com.revenuecat.purchases.PurchasesError) {
-                                    com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Restore failed: ${error.message}", Toast.LENGTH_LONG)
-                                }
+                                )
+                            } catch (e: Exception) {
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Restore failed: ${e.message}", Toast.LENGTH_LONG)
                             }
-                        )
+                        } else {
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "In-App Billing is not available on this device.", Toast.LENGTH_LONG)
+                        }
                     }
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             )
@@ -1981,31 +2016,40 @@ fun PiggyLedgerPaywall(
                     }
                     val activity = context.findActivity()
                     if (packageToBuy != null && activity != null) {
-                        isPurchasing = true
-                        com.revenuecat.purchases.Purchases.sharedInstance.purchase(
-                            com.revenuecat.purchases.PurchaseParams.Builder(activity, packageToBuy).build(),
-                            object : com.revenuecat.purchases.interfaces.PurchaseCallback {
-                                override fun onCompleted(storeTransaction: com.revenuecat.purchases.models.StoreTransaction, customerInfo: com.revenuecat.purchases.CustomerInfo) {
-                                    isPurchasing = false
-                                    val active = customerInfo.entitlements.all.values.any { it.isActive } || customerInfo.entitlements["Piggy Ledger Pro"]?.isActive == true
-                                    if (active || customerInfo.entitlements.all.isNotEmpty()) {
-                                        viewModel.setPremiumStatus(true)
-                                        onPurchaseSuccess(customerInfo)
-                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Welcome to Pro! Pro features unlocked.", android.widget.Toast.LENGTH_SHORT)
-                                    } else {
-                                        viewModel.setPremiumStatus(true)
-                                        onPurchaseSuccess(customerInfo)
-                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase complete! Unlocking Pro...", android.widget.Toast.LENGTH_SHORT)
+                        if (com.revenuecat.purchases.Purchases.isConfigured) {
+                            try {
+                                isPurchasing = true
+                                com.revenuecat.purchases.Purchases.sharedInstance.purchase(
+                                    com.revenuecat.purchases.PurchaseParams.Builder(activity, packageToBuy).build(),
+                                    object : com.revenuecat.purchases.interfaces.PurchaseCallback {
+                                        override fun onCompleted(storeTransaction: com.revenuecat.purchases.models.StoreTransaction, customerInfo: com.revenuecat.purchases.CustomerInfo) {
+                                            isPurchasing = false
+                                            val active = customerInfo.entitlements.all.values.any { it.isActive } || customerInfo.entitlements["Piggy Ledger Pro"]?.isActive == true
+                                            if (active || customerInfo.entitlements.all.isNotEmpty()) {
+                                                viewModel.setPremiumStatus(true)
+                                                onPurchaseSuccess(customerInfo)
+                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Welcome to Pro! Pro features unlocked.", android.widget.Toast.LENGTH_SHORT)
+                                            } else {
+                                                viewModel.setPremiumStatus(true)
+                                                onPurchaseSuccess(customerInfo)
+                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase complete! Unlocking Pro...", android.widget.Toast.LENGTH_SHORT)
+                                            }
+                                        }
+                                        override fun onError(error: com.revenuecat.purchases.PurchasesError, userCancelled: Boolean) {
+                                            isPurchasing = false
+                                            if (!userCancelled) {
+                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase error: ${error.message}", android.widget.Toast.LENGTH_LONG)
+                                            }
+                                        }
                                     }
-                                }
-                                override fun onError(error: com.revenuecat.purchases.PurchasesError, userCancelled: Boolean) {
-                                    isPurchasing = false
-                                    if (!userCancelled) {
-                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase error: ${error.message}", android.widget.Toast.LENGTH_LONG)
-                                    }
-                                }
+                                )
+                            } catch (e: Exception) {
+                                isPurchasing = false
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase error: ${e.message}", android.widget.Toast.LENGTH_LONG)
                             }
-                        )
+                        } else {
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "In-App Billing is not available on this device.", Toast.LENGTH_LONG)
+                        }
                     } else {
                         val msg = when {
                             isLoadingOfferings -> "Plans are loading from RevenueCat. Please wait a moment..."

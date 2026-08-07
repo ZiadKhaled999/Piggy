@@ -23,9 +23,6 @@ class StreakWidgetProvider : AppWidgetProvider() {
         for (appWidgetId in appWidgetIds) {
             val views = RemoteViews(context.packageName, R.layout.widget_streak)
 
-            // Set widget background artwork image based on status/time tier
-            views.setImageViewResource(R.id.iv_widget_bg, displayInfo.backgroundResource)
-
             // Update top bar: Streak status PNG image + Active Streak Count number
             views.setImageViewResource(R.id.iv_streak_status_icon, displayInfo.badgeResource)
             views.setTextViewText(R.id.tv_streak_count, displayInfo.streakCount.toString())

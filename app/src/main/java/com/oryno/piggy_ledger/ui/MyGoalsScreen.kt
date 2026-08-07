@@ -47,6 +47,7 @@ fun MyGoalsScreen(
 ) {
     val goals by viewModel.goals.collectAsState()
     val allTransactions by viewModel.allTransactions.collectAsState()
+    val isPrivacyMode by viewModel.isPrivacyModeEnabled.collectAsState()
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     
@@ -200,6 +201,23 @@ fun MyGoalsScreen(
             
             Text(stringResource(R.string.my_goals), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = NavyDark, modifier = Modifier.weight(1f))
 
+            IconButton(
+                onClick = { viewModel.togglePrivacyMode(context) },
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(Color.White, RoundedCornerShape(14.dp))
+                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(14.dp))
+            ) {
+                Icon(
+                    imageVector = if (isPrivacyMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                    contentDescription = "Toggle Privacy",
+                    tint = NavyDark,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(8.dp))
+
             if (goals.isNotEmpty()) {
                 IconButton(
                     onClick = onNavigateToCreateGoal,
@@ -283,6 +301,7 @@ fun MyGoalsScreen(
                     GoalCard(
                         goal = goal, 
                         transactions = goalTransactions, 
+                        isPrivacyMode = isPrivacyMode,
                         onClick = { onNavigateToGoal(goal.id) },
                         onDeleteClick = { goalToDelete = goal }
                     )
@@ -293,7 +312,7 @@ fun MyGoalsScreen(
 }
 
 @Composable
-fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit, onDeleteClick: () -> Unit) {
+fun GoalCard(goal: Goal, transactions: List<Transaction>, isPrivacyMode: Boolean, onClick: () -> Unit, onDeleteClick: () -> Unit) {
     val savedAmount = transactions.sumOf { it.amount }
     val isOpenSavings = goal.targetAmount <= 0.0
     val progress = if (goal.targetAmount > 0) (savedAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f) else 0f
@@ -325,7 +344,11 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit, o
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = if (isOpenSavings) stringResource(R.string.open_savings) else stringResource(R.string.target) + " \$${String.format("%.0f", goal.targetAmount)}",
+                        text = if (isPrivacyMode) {
+                            if (isOpenSavings) stringResource(R.string.open_savings) else stringResource(R.string.target) + " $••••••"
+                        } else {
+                            if (isOpenSavings) stringResource(R.string.open_savings) else stringResource(R.string.target) + " $${String.format("%.0f", goal.targetAmount)}"
+                        },
                         fontSize = 12.sp,
                         color = TextLight
                     )
@@ -353,7 +376,7 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit, o
                     }
                 } else {
                     Text(
-                        text = "${(progress * 100).toInt()}%",
+                        text = if (isPrivacyMode) "••%" else "${(progress * 100).toInt()}%",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = NavyDark
@@ -379,7 +402,7 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit, o
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 LinearProgressIndicator(
-                    progress = { progress },
+                    progress = { if (isPrivacyMode) 0f else progress },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
@@ -396,7 +419,9 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit, o
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 val remaining = goal.targetAmount - savedAmount
-                val savedText = if (isOpenSavings) {
+                val savedText = if (isPrivacyMode) {
+                    stringResource(R.string.amount_saved, "••••••")
+                } else if (isOpenSavings) {
                     stringResource(R.string.amount_saved, String.format("%.2f", savedAmount))
                 } else if (remaining < 0) {
                     stringResource(R.string.amount_total_extra, String.format("%.2f", savedAmount), String.format("%.2f", -remaining))
@@ -412,7 +437,7 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, onClick: () -> Unit, o
                 
                 if (remaining > 0 && !isOpenSavings) {
                     Text(
-                        text = stringResource(R.string.remaining_left, String.format("%.2f", remaining)),
+                        text = if (isPrivacyMode) stringResource(R.string.remaining_left, "••••••") else stringResource(R.string.remaining_left, String.format("%.2f", remaining)),
                         color = NavyDark,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp

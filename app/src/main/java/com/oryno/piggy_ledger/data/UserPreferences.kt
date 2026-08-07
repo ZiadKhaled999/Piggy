@@ -221,6 +221,12 @@ class UserPreferences(private val context: Context) {
         }
     }
 
+    suspend fun clearAll() {
+        context.dataStore.edit { prefs ->
+            prefs.clear()
+        }
+    }
+
     private fun triggerSync(context: Context) {
         val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.SyncWorker>().build()
         androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(

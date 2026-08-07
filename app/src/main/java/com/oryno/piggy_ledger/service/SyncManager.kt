@@ -72,6 +72,7 @@ class SyncManager(private val context: Context) {
             syncPendingTransactions(userId, authHeader)
             syncAiConversations(userId, authHeader)
             syncAiChatMessages(userId, authHeader)
+            syncOnboardingAnswers(userId, authHeader)
 
             Log.i("SyncManager", "Sync completed successfully.")
         } catch (e: Exception) {
@@ -138,8 +139,18 @@ class SyncManager(private val context: Context) {
         }
         val remote: List<UserPreferencesEntity>? = pullRemote(tableName, authHeader)
         if (remote != null && remote.isNotEmpty()) {
-            val updated = remote.map { it.copy(isSynced = true) }
-            dao.insertUserPreferencesList(updated)
+            val localItem = dao.getUserPreferencesByUserId(userId)
+            val itemsToInsert = mutableListOf<UserPreferencesEntity>()
+            for (remoteItem in remote) {
+                if (localItem == null) {
+                    itemsToInsert.add(remoteItem.copy(isSynced = true))
+                } else if (localItem.isSynced) {
+                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                        itemsToInsert.add(remoteItem.copy(isSynced = true))
+                    }
+                }
+            }
+            if (itemsToInsert.isNotEmpty()) dao.insertUserPreferencesList(itemsToInsert)
         }
         val remotePrefs = dao.getUserPreferencesByUserId(userId)
         if (remotePrefs != null) {
@@ -149,14 +160,37 @@ class SyncManager(private val context: Context) {
 
     private suspend fun syncStreakDates(userId: String, authHeader: String) {
         val tableName = "streak_dates"
-        val unsynced = dao.getUnsyncedStreakDates().map { it.copy(userId = userId, isSynced = true) }
-        if (pushRemote(tableName, authHeader, unsynced)) {
-            if (unsynced.isNotEmpty()) dao.insertStreakDates(unsynced)
+        val rawUnsynced = dao.getUnsyncedStreakDates()
+        val mappedUnsynced = mutableListOf<StreakDateEntity>()
+        val idsToDelete = mutableListOf<String>()
+        
+        for (item in rawUnsynced) {
+            if (item.id.startsWith("local_user_")) {
+                idsToDelete.add(item.id)
+                val newId = item.id.replace("local_user_", "${userId}_")
+                mappedUnsynced.add(item.copy(id = newId, userId = userId, isSynced = true))
+            } else {
+                mappedUnsynced.add(item.copy(userId = userId, isSynced = true))
+            }
+        }
+
+        if (pushRemote(tableName, authHeader, mappedUnsynced)) {
+            if (mappedUnsynced.isNotEmpty()) dao.insertStreakDates(mappedUnsynced)
+            for (oldId in idsToDelete) {
+                dao.deleteStreakDateById(oldId)
+            }
         }
         val remote: List<StreakDateEntity>? = pullRemote(tableName, authHeader)
         if (remote != null && remote.isNotEmpty()) {
-            val updated = remote.map { it.copy(isSynced = true) }
-            dao.insertStreakDates(updated)
+            val localMap = dao.getAllStreakDatesSync().associateBy { it.id }
+            val itemsToInsert = mutableListOf<StreakDateEntity>()
+            for (remoteItem in remote) {
+                val localItem = localMap[remoteItem.id]
+                if (localItem == null || localItem.isSynced) {
+                    itemsToInsert.add(remoteItem.copy(isSynced = true))
+                }
+            }
+            if (itemsToInsert.isNotEmpty()) dao.insertStreakDates(itemsToInsert)
         }
         val remoteStreakDates = dao.getAllStreakDatesSync().map { it.dateStr }.toSet()
         if (remoteStreakDates.isNotEmpty()) {
@@ -172,8 +206,19 @@ class SyncManager(private val context: Context) {
         }
         val remote: List<Goal>? = pullRemote(tableName, authHeader)
         if (remote != null && remote.isNotEmpty()) {
-            val updated = remote.map { it.copy(isSynced = true) }
-            dao.insertGoals(updated)
+            val localMap = dao.getAllGoalsSync().associateBy { it.id }
+            val itemsToInsert = mutableListOf<Goal>()
+            for (remoteItem in remote) {
+                val localItem = localMap[remoteItem.id]
+                if (localItem == null) {
+                    itemsToInsert.add(remoteItem.copy(isSynced = true))
+                } else if (localItem.isSynced) {
+                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                        itemsToInsert.add(remoteItem.copy(isSynced = true))
+                    }
+                }
+            }
+            if (itemsToInsert.isNotEmpty()) dao.insertGoals(itemsToInsert)
         }
     }
 
@@ -185,8 +230,19 @@ class SyncManager(private val context: Context) {
         }
         val remote: List<Transaction>? = pullRemote(tableName, authHeader)
         if (remote != null && remote.isNotEmpty()) {
-            val updated = remote.map { it.copy(isSynced = true) }
-            dao.insertTransactions(updated)
+            val localMap = dao.getAllTransactions().associateBy { it.id }
+            val itemsToInsert = mutableListOf<Transaction>()
+            for (remoteItem in remote) {
+                val localItem = localMap[remoteItem.id]
+                if (localItem == null) {
+                    itemsToInsert.add(remoteItem.copy(isSynced = true))
+                } else if (localItem.isSynced) {
+                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                        itemsToInsert.add(remoteItem.copy(isSynced = true))
+                    }
+                }
+            }
+            if (itemsToInsert.isNotEmpty()) dao.insertTransactions(itemsToInsert)
         }
     }
 
@@ -198,8 +254,19 @@ class SyncManager(private val context: Context) {
         }
         val remote: List<Loan>? = pullRemote(tableName, authHeader)
         if (remote != null && remote.isNotEmpty()) {
-            val updated = remote.map { it.copy(isSynced = true) }
-            dao.insertLoans(updated)
+            val localMap = dao.getAllLoansSync().associateBy { it.id }
+            val itemsToInsert = mutableListOf<Loan>()
+            for (remoteItem in remote) {
+                val localItem = localMap[remoteItem.id]
+                if (localItem == null) {
+                    itemsToInsert.add(remoteItem.copy(isSynced = true))
+                } else if (localItem.isSynced) {
+                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                        itemsToInsert.add(remoteItem.copy(isSynced = true))
+                    }
+                }
+            }
+            if (itemsToInsert.isNotEmpty()) dao.insertLoans(itemsToInsert)
         }
     }
 
@@ -211,21 +278,19 @@ class SyncManager(private val context: Context) {
         }
         val remote: List<LoanPayment>? = pullRemote(tableName, authHeader)
         if (remote != null && remote.isNotEmpty()) {
-            val updated = remote.map { it.copy(isSynced = true) }
-            dao.insertLoanPayments(updated)
-        }
-    }
-
-    private suspend fun syncAccounts(userId: String, authHeader: String) {
-        val tableName = "accounts"
-        val unsynced = dao.getUnsyncedAccounts().map { it.copy(userId = userId, isSynced = true) }
-        if (pushRemote(tableName, authHeader, unsynced)) {
-            if (unsynced.isNotEmpty()) dao.insertAccounts(unsynced)
-        }
-        val remote: List<Account>? = pullRemote(tableName, authHeader)
-        if (remote != null && remote.isNotEmpty()) {
-            val updated = remote.map { it.copy(isSynced = true) }
-            dao.insertAccounts(updated)
+            val localMap = dao.getAllLoanPaymentsSync().associateBy { it.id }
+            val itemsToInsert = mutableListOf<LoanPayment>()
+            for (remoteItem in remote) {
+                val localItem = localMap[remoteItem.id]
+                if (localItem == null) {
+                    itemsToInsert.add(remoteItem.copy(isSynced = true))
+                } else if (localItem.isSynced) {
+                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                        itemsToInsert.add(remoteItem.copy(isSynced = true))
+                    }
+                }
+            }
+            if (itemsToInsert.isNotEmpty()) dao.insertLoanPayments(itemsToInsert)
         }
     }
 
@@ -237,8 +302,43 @@ class SyncManager(private val context: Context) {
         }
         val remote: List<AccountTransaction>? = pullRemote(tableName, authHeader)
         if (remote != null && remote.isNotEmpty()) {
-            val updated = remote.map { it.copy(isSynced = true) }
-            dao.insertAccountTransactions(updated)
+            val localMap = dao.getAllAccountTransactionsSync().associateBy { it.id }
+            val itemsToInsert = mutableListOf<AccountTransaction>()
+            for (remoteItem in remote) {
+                val localItem = localMap[remoteItem.id]
+                if (localItem == null) {
+                    itemsToInsert.add(remoteItem.copy(isSynced = true))
+                } else if (localItem.isSynced) {
+                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                        itemsToInsert.add(remoteItem.copy(isSynced = true))
+                    }
+                }
+            }
+            if (itemsToInsert.isNotEmpty()) dao.insertAccountTransactions(itemsToInsert)
+        }
+    }
+
+    private suspend fun syncAccounts(userId: String, authHeader: String) {
+        val tableName = "accounts"
+        val unsynced = dao.getUnsyncedAccounts().map { it.copy(userId = userId, isSynced = true) }
+        if (pushRemote(tableName, authHeader, unsynced)) {
+            if (unsynced.isNotEmpty()) dao.insertAccounts(unsynced)
+        }
+        val remote: List<Account>? = pullRemote(tableName, authHeader)
+        if (remote != null && remote.isNotEmpty()) {
+            val localMap = dao.getAllAccountsSync().associateBy { it.id }
+            val itemsToInsert = mutableListOf<Account>()
+            for (remoteItem in remote) {
+                val localItem = localMap[remoteItem.id]
+                if (localItem == null) {
+                    itemsToInsert.add(remoteItem.copy(isSynced = true))
+                } else if (localItem.isSynced) {
+                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                        itemsToInsert.add(remoteItem.copy(isSynced = true))
+                    }
+                }
+            }
+            if (itemsToInsert.isNotEmpty()) dao.insertAccounts(itemsToInsert)
         }
     }
 
@@ -250,8 +350,19 @@ class SyncManager(private val context: Context) {
         }
         val remote: List<PendingTransaction>? = pullRemote(tableName, authHeader)
         if (remote != null && remote.isNotEmpty()) {
-            val updated = remote.map { it.copy(isSynced = true) }
-            dao.insertPendingTransactions(updated)
+            val localMap = dao.getAllPendingTransactionsSync().associateBy { it.id }
+            val itemsToInsert = mutableListOf<PendingTransaction>()
+            for (remoteItem in remote) {
+                val localItem = localMap[remoteItem.id]
+                if (localItem == null) {
+                    itemsToInsert.add(remoteItem.copy(isSynced = true))
+                } else if (localItem.isSynced) {
+                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                        itemsToInsert.add(remoteItem.copy(isSynced = true))
+                    }
+                }
+            }
+            if (itemsToInsert.isNotEmpty()) dao.insertPendingTransactions(itemsToInsert)
         }
     }
 
@@ -263,8 +374,19 @@ class SyncManager(private val context: Context) {
         }
         val remote: List<AiConversation>? = pullRemote(tableName, authHeader)
         if (remote != null && remote.isNotEmpty()) {
-            val updated = remote.map { it.copy(isSynced = true) }
-            dao.insertAiConversations(updated)
+            val localMap = dao.getAllAiConversationsSync().associateBy { it.id }
+            val itemsToInsert = mutableListOf<AiConversation>()
+            for (remoteItem in remote) {
+                val localItem = localMap[remoteItem.id]
+                if (localItem == null) {
+                    itemsToInsert.add(remoteItem.copy(isSynced = true))
+                } else if (localItem.isSynced) {
+                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                        itemsToInsert.add(remoteItem.copy(isSynced = true))
+                    }
+                }
+            }
+            if (itemsToInsert.isNotEmpty()) dao.insertAiConversations(itemsToInsert)
         }
     }
 
@@ -276,8 +398,43 @@ class SyncManager(private val context: Context) {
         }
         val remote: List<AiChatMessage>? = pullRemote(tableName, authHeader)
         if (remote != null && remote.isNotEmpty()) {
-            val updated = remote.map { it.copy(isSynced = true) }
-            dao.insertAiChatMessages(updated)
+            val localMap = dao.getAllAiChatMessagesSync().associateBy { it.id }
+            val itemsToInsert = mutableListOf<AiChatMessage>()
+            for (remoteItem in remote) {
+                val localItem = localMap[remoteItem.id]
+                if (localItem == null) {
+                    itemsToInsert.add(remoteItem.copy(isSynced = true))
+                } else if (localItem.isSynced) {
+                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                        itemsToInsert.add(remoteItem.copy(isSynced = true))
+                    }
+                }
+            }
+            if (itemsToInsert.isNotEmpty()) dao.insertAiChatMessages(itemsToInsert)
+        }
+    }
+
+    private suspend fun syncOnboardingAnswers(userId: String, authHeader: String) {
+        val tableName = "onboarding_answers"
+        val unsynced = dao.getUnsyncedOnboardingAnswers().map { it.copy(userId = userId, isSynced = true) }
+        if (pushRemote(tableName, authHeader, unsynced)) {
+            if (unsynced.isNotEmpty()) dao.insertOnboardingAnswers(unsynced)
+        }
+        val remote: List<OnboardingAnswer>? = pullRemote(tableName, authHeader)
+        if (remote != null && remote.isNotEmpty()) {
+            val localMap = dao.getAllOnboardingAnswersSync().associateBy { it.id }
+            val itemsToInsert = mutableListOf<OnboardingAnswer>()
+            for (remoteItem in remote) {
+                val localItem = localMap[remoteItem.id]
+                if (localItem == null) {
+                    itemsToInsert.add(remoteItem.copy(isSynced = true))
+                } else if (localItem.isSynced) {
+                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                        itemsToInsert.add(remoteItem.copy(isSynced = true))
+                    }
+                }
+            }
+            if (itemsToInsert.isNotEmpty()) dao.insertOnboardingAnswers(itemsToInsert)
         }
     }
 

@@ -29,7 +29,10 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
     }
 
     suspend fun saveConversation(conversation: AiConversation) {
-        dao.insertConversation(conversation)
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        val updatedConversation = if (conversation.userId.isBlank()) conversation.copy(userId = userId) else conversation
+        dao.insertConversation(updatedConversation)
     }
 
     suspend fun updateConversationTitle(id: String, title: String) {
@@ -57,7 +60,9 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
     }
 
     suspend fun saveMessage(role: String, content: String, conversationId: String = "default") {
-        dao.insertChatMessage(AiChatMessage(conversationId = conversationId, role = role, content = content))
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        dao.insertChatMessage(AiChatMessage(conversationId = conversationId, role = role, content = content, userId = userId))
     }
 
     suspend fun clearHistoryForConversation(conversationId: String) {

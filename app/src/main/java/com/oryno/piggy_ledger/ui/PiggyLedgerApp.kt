@@ -63,6 +63,21 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
     val hasHeardAboutUs by viewModel.hasHeardAboutUs.collectAsState()
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
 
+    var showSignOutBottomSheet by remember { mutableStateOf(false) }
+
+    if (showSignOutBottomSheet) {
+        SignOutBottomSheet(
+            viewModel = viewModel,
+            onDismiss = { showSignOutBottomSheet = false },
+            onSignOutSuccess = {
+                showSignOutBottomSheet = false
+                navController.navigate(Screen.Auth) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        )
+    }
+
     LaunchedEffect(isAuthenticated, hasLanguageSelected, hasOnboarded) {
         if (isAuthenticated == false && hasLanguageSelected == true && hasOnboarded == true) {
             navController.navigate(Screen.Auth) {
@@ -158,8 +173,8 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                         PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Onboarding"))
                     }
                     OnboardingScreen(
-                        onComplete = { intent, intensity, savingMode ->
-                            viewModel.completeOnboarding(intent, intensity, savingMode)
+                        onComplete = { intent, intensity, savingMode, relatesLoans, relatesAccounts, relatesEmergency ->
+                            viewModel.completeOnboarding(intent, intensity, savingMode, relatesLoans, relatesAccounts, relatesEmergency)
                             navController.navigate(Screen.Auth) {
                                 popUpTo(Screen.Onboarding) { inclusive = true }
                             }
@@ -182,7 +197,11 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                 }
                 
                 composable<Screen.MainContainer> {
-                    MainContainer(viewModel = viewModel, appNavController = navController)
+                    MainContainer(
+                        viewModel = viewModel,
+                        appNavController = navController,
+                        onSignOutClick = { showSignOutBottomSheet = true }
+                    )
                 }
 
                 // Sub-screens that are not part of the main tabs but need to be accessible
@@ -292,7 +311,8 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                         viewModel = viewModel,
                         initialMode = mode,
                         onNavigateToPendingTransactions = { navController.navigate(Screen.PendingTransactions) },
-                        onBackClick = { navController.popBackStack() }
+                        onBackClick = { navController.popBackStack() },
+                        onSignOutClick = { showSignOutBottomSheet = true }
                     )
                 }
             }
@@ -303,7 +323,8 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
 @Composable
 fun MainContainer(
     viewModel: PiggyLedgerViewModel,
-    appNavController: NavHostController
+    appNavController: NavHostController,
+    onSignOutClick: () -> Unit = {}
 ) {
     val bottomNavController = rememberNavController()
     val overdueLoans by viewModel.overdueLoans.collectAsState()
@@ -491,7 +512,8 @@ fun MainContainer(
                 DrawerSettingsContent(
                     viewModel = viewModel,
                     appNavController = appNavController,
-                    onClose = { isDrawerOpen = false }
+                    onClose = { isDrawerOpen = false },
+                    onSignOutClick = onSignOutClick
                 )
             }
         }
@@ -695,7 +717,8 @@ fun NavBarItem(
 fun DrawerSettingsContent(
     viewModel: PiggyLedgerViewModel,
     appNavController: NavHostController,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onSignOutClick: () -> Unit = {}
 ) {
     val authUserName by viewModel.authUserName.collectAsState()
     val authUserEmail by viewModel.authUserEmail.collectAsState()
@@ -906,11 +929,8 @@ fun DrawerSettingsContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    appNavController.navigate(Screen.Auth) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                    viewModel.signOut()
                     onClose()
+                    onSignOutClick()
                 },
             shape = RoundedCornerShape(14.dp),
             color = Color.White.copy(alpha = 0.1f)

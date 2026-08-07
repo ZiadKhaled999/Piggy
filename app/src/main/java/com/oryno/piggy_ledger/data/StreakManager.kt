@@ -186,6 +186,13 @@ object StreakManager {
         com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
     }
 
+    fun clear(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().clear().apply()
+        com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+        com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+    }
+
     fun syncFromCloud(context: Context, remoteDates: Set<String>) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val localDates = prefs.getStringSet(KEY_ACTION_DATES, emptySet()) ?: emptySet()

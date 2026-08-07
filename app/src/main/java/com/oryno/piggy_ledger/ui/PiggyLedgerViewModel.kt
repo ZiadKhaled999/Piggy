@@ -1,49 +1,43 @@
 
 package com.oryno.piggy_ledger.ui
 
-import kotlinx.coroutines.flow.first
-
-import androidx.lifecycle.ViewModel
-
-import androidx.lifecycle.viewModelScope
-
-import com.oryno.piggy_ledger.data.Goal
-
-import com.oryno.piggy_ledger.data.Loan
-
-import com.oryno.piggy_ledger.data.PiggyLedgerRepository
-
-import com.oryno.piggy_ledger.data.Transaction
-
-import com.oryno.piggy_ledger.data.UserPreferences
-
-import kotlinx.coroutines.flow.Flow
-
-import kotlinx.coroutines.flow.map
-
-import kotlinx.coroutines.flow.SharingStarted
-
-import kotlinx.coroutines.flow.StateFlow
-
-import kotlinx.coroutines.flow.MutableStateFlow
-
-import kotlinx.coroutines.flow.stateIn
-
-import kotlinx.coroutines.launch
-
-import kotlinx.coroutines.delay
-
 import android.content.Context
-
-import java.util.UUID
-
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.oryno.piggy_ledger.data.Account
+import com.oryno.piggy_ledger.data.AccountTransaction
+import com.oryno.piggy_ledger.data.BackupData
+import com.oryno.piggy_ledger.data.Goal
+import com.oryno.piggy_ledger.data.Loan
+import com.oryno.piggy_ledger.data.LoanPayment
+import com.oryno.piggy_ledger.data.PendingTransaction
+import com.oryno.piggy_ledger.data.PiggyLedgerDatabase
+import com.oryno.piggy_ledger.data.PiggyLedgerRepository
+import com.oryno.piggy_ledger.data.StreakManager
+import com.oryno.piggy_ledger.data.Transaction
+import com.oryno.piggy_ledger.data.UserPreferences
 import com.posthog.PostHog
-
+import java.util.UUID
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-import kotlinx.serialization.encodeToString
-
-import com.oryno.piggy_ledger.data.BackupData
+sealed class LogoutState {
+    object Idle : LogoutState()
+    object Syncing : LogoutState()
+    object Success : LogoutState()
+    data class OfflineError(val unsyncedCount: Int) : LogoutState()
+    data class Error(val message: String) : LogoutState()
+}
 
 class PiggyLedgerViewModel(
     private val repository: PiggyLedgerRepository,
@@ -359,21 +353,23 @@ class PiggyLedgerViewModel(
 
     fun checkRevenueCatPremiumStatus() {
         try {
-            com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
-                object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
-                    override fun onReceived(customerInfo: com.revenuecat.purchases.CustomerInfo) {
-                        val isProActive = customerInfo.entitlements["Piggy Ledger Pro"]?.isActive == true
-                        viewModelScope.launch {
-                            userPreferences.savePremiumStatus(isProActive)
+            if (com.revenuecat.purchases.Purchases.isConfigured) {
+                com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
+                    object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
+                        override fun onReceived(customerInfo: com.revenuecat.purchases.CustomerInfo) {
+                            val isProActive = customerInfo.entitlements["Piggy Ledger Pro"]?.isActive == true || customerInfo.entitlements.all.values.any { it.isActive }
+                            viewModelScope.launch {
+                                userPreferences.savePremiumStatus(isProActive)
+                            }
+                        }
+                        override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                            // Keep current cached status
                         }
                     }
-                    override fun onError(error: com.revenuecat.purchases.PurchasesError) {
-                        // Keep current cached status
-                    }
-                }
-            )
+                )
+            }
         } catch (e: Exception) {
-            // RevenueCat not initialized yet
+            // RevenueCat not initialized or billing unavailable
         }
     }
 
@@ -389,18 +385,102 @@ class PiggyLedgerViewModel(
         }
     }
 
-    fun signOut() {
+    private val _logoutState = MutableStateFlow<LogoutState>(LogoutState.Idle)
+    val logoutState: StateFlow<LogoutState> = _logoutState.asStateFlow()
+
+    fun resetLogoutState() {
+        _logoutState.value = LogoutState.Idle
+    }
+
+    fun performSyncAndLogout(forceDeleteIfOffline: Boolean = false, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
+            _logoutState.value = LogoutState.Syncing
             try {
-                com.clerk.api.Clerk.auth.signOut()
+                val unsyncedCount = repository.getPendingUploadCount()
+                val networkAvailable = isNetworkAvailable(context)
+
+                if (unsyncedCount > 0 && !networkAvailable && !forceDeleteIfOffline) {
+                    _logoutState.value = LogoutState.OfflineError(unsyncedCount)
+                    return@launch
+                }
+
+                if (unsyncedCount > 0 && networkAvailable) {
+                    try {
+                        com.oryno.piggy_ledger.service.SyncManager(context).syncAll()
+                    } catch (e: Exception) {
+                        android.util.Log.e("PiggyLedgerViewModel", "Sync on logout failed", e)
+                        if (!forceDeleteIfOffline) {
+                            _logoutState.value = LogoutState.Error(e.localizedMessage ?: "Sync failed")
+                            return@launch
+                        }
+                    }
+                }
+
+                wipeLocalData()
+
+                try {
+                    com.clerk.api.Clerk.auth.signOut()
+                } catch (e: Exception) {
+                    android.util.Log.e("PiggyLedgerViewModel", "Clerk sign out failed", e)
+                }
+                userPreferences.saveAuthentication(false, "", "", "")
+                PostHog.capture("user_sign_out")
+                PostHog.reset()
+                com.oryno.piggy_ledger.ui.NotificationHelper(context).showAuthNotification(false)
+
+                _logoutState.value = LogoutState.Success
+                onSuccess()
             } catch (e: Exception) {
-                android.util.Log.e("PiggyLedgerViewModel", "Clerk sign out failed", e)
+                android.util.Log.e("PiggyLedgerViewModel", "Perform sync and logout failed", e)
+                _logoutState.value = LogoutState.Error(e.localizedMessage ?: "Logout failed")
             }
-            userPreferences.saveAuthentication(false, "", "", "")
-            PostHog.capture("user_sign_out")
-            PostHog.reset()
-            com.oryno.piggy_ledger.ui.NotificationHelper(context).showAuthNotification(false)
         }
+    }
+
+    private suspend fun wipeLocalData() = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            PiggyLedgerDatabase.getInstance(context.applicationContext).clearAllTables()
+        } catch (e: Exception) {
+            android.util.Log.e("PiggyLedgerViewModel", "Clear database tables failed", e)
+        }
+
+        try {
+            userPreferences.clearAll()
+        } catch (e: Exception) {
+            android.util.Log.e("PiggyLedgerViewModel", "Clear UserPreferences failed", e)
+        }
+
+        try {
+            context.cacheDir?.deleteRecursively()
+        } catch (e: Exception) {
+            android.util.Log.e("PiggyLedgerViewModel", "Clear cache failed", e)
+        }
+
+        try {
+            StreakManager.clear(context)
+        } catch (e: Exception) {
+            android.util.Log.e("PiggyLedgerViewModel", "Clear streak manager failed", e)
+        }
+
+        try {
+            com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+        } catch (e: Exception) {
+            // Widget update fail silent
+        }
+    }
+
+    private fun isNetworkAvailable(context: android.content.Context): Boolean {
+        val cm = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+            ?: return false
+        val activeNetwork = cm.activeNetwork ?: return false
+        val capabilities = cm.getNetworkCapabilities(activeNetwork) ?: return false
+        return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    fun signOut() {
+        performSyncAndLogout(forceDeleteIfOffline = true)
     }
 
     fun setBiometricLockEnabled(enabled: Boolean) {
@@ -675,10 +755,30 @@ class PiggyLedgerViewModel(
         return allTransactions.map { list -> list.filter { it.goalId == goalId } }
     }
 
-    fun completeOnboarding(intent: Int, intensity: Int, savingMode: String) {
+    fun completeOnboarding(
+        intent: Int,
+        intensity: Int,
+        savingMode: String,
+        relatesToLoans: Boolean? = null,
+        relatesToAccounts: Boolean? = null,
+        relatesToEmergency: Boolean? = null
+    ) {
         viewModelScope.launch {
             userPreferences.saveOnboarding(true)
             userPreferences.savePersonalization(intent, intensity, savingMode)
+            
+            val answersMap = mutableMapOf(
+                "personalized_intent" to intent.toString(),
+                "personalized_intensity" to intensity.toString(),
+                "saving_mode" to savingMode,
+                "completed_at" to System.currentTimeMillis().toString()
+            )
+            relatesToLoans?.let { answersMap["relates_to_loans"] = it.toString() }
+            relatesToAccounts?.let { answersMap["relates_to_accounts"] = it.toString() }
+            relatesToEmergency?.let { answersMap["relates_to_emergency"] = it.toString() }
+
+            repository.saveOnboardingAnswers(answersMap)
+
             PostHog.capture(
                 event = "onboarding_completed",
                 properties = mapOf(
@@ -694,6 +794,7 @@ class PiggyLedgerViewModel(
         viewModelScope.launch {
             userPreferences.saveLanguageSelected(true)
             val currentLang = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags()
+            repository.saveOnboardingAnswer("language", currentLang)
             PostHog.capture("language_selection_completed", properties = mapOf("\$set" to mapOf("language" to currentLang)))
         }
     }
@@ -701,6 +802,7 @@ class PiggyLedgerViewModel(
     fun completeHearAboutUs(source: String) {
         viewModelScope.launch {
             userPreferences.saveHeardAboutUs(true)
+            repository.saveOnboardingAnswer("hear_about_us_source", source)
             PostHog.capture("hear_about_us_answered", properties = mapOf("source" to source, "\$set" to mapOf("hear_about_us_source" to source)))
         }
     }
@@ -885,4 +987,27 @@ class PiggyLedgerViewModel(
     fun canAddLoan(currentCount: Int): Boolean = isPremium.value || currentCount < 2
     fun canAccessFullAnalytics(): Boolean = isPremium.value
     fun canExportData(): Boolean = isPremium.value
+
+    private val _isPrivacyModeEnabled = MutableStateFlow<Boolean>(false)
+    val isPrivacyModeEnabled: StateFlow<Boolean> = _isPrivacyModeEnabled.asStateFlow()
+
+    fun togglePrivacyMode(context: Context) {
+        if (!_isPrivacyModeEnabled.value) {
+            _isPrivacyModeEnabled.value = true
+        } else {
+            BiometricHelper.authenticateToUnhide(
+                context = context,
+                onSuccess = {
+                    _isPrivacyModeEnabled.value = false
+                },
+                onError = { err ->
+                    android.widget.Toast.makeText(
+                        context,
+                        err.ifBlank { "Authentication required to unhide numbers" },
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+            )
+        }
+    }
 }

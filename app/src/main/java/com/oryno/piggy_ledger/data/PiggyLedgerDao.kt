@@ -43,6 +43,24 @@ interface PiggyLedgerDao {
     @Query("SELECT * FROM ai_chat_messages WHERE isSynced = 0")
     suspend fun getUnsyncedAiChatMessages(): List<AiChatMessage>
 
+    @Query("SELECT * FROM onboarding_answers WHERE isSynced = 0")
+    suspend fun getUnsyncedOnboardingAnswers(): List<OnboardingAnswer>
+
+    suspend fun getTotalUnsyncedCount(): Int {
+        return getUnsyncedGoals().size +
+               getUnsyncedTransactions().size +
+               getUnsyncedLoans().size +
+               getUnsyncedLoanPayments().size +
+               getUnsyncedAccounts().size +
+               getUnsyncedAccountTransactions().size +
+               getUnsyncedPendingTransactions().size +
+               getUnsyncedUserPreferences().size +
+               getUnsyncedStreakDates().size +
+               getUnsyncedAiConversations().size +
+               getUnsyncedAiChatMessages().size +
+               getUnsyncedOnboardingAnswers().size
+    }
+
     @Query("SELECT * FROM goals ORDER BY createdAt DESC")
     fun getAllGoals(): Flow<List<Goal>>
 
@@ -117,6 +135,9 @@ interface PiggyLedgerDao {
 
     @Query("DELETE FROM accounts WHERE id = :id")
     suspend fun deleteAccountById(id: String)
+
+    @Query("DELETE FROM account_transactions WHERE account_id = :accountId")
+    suspend fun deleteTransactionsForAccount(accountId: String)
 
     @Query("SELECT * FROM account_transactions WHERE account_id = :accountId ORDER BY timestamp DESC")
     fun getTransactionsForAccount(accountId: String): Flow<List<AccountTransaction>>
@@ -229,8 +250,14 @@ interface PiggyLedgerDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOnboardingAnswer(answer: OnboardingAnswer)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOnboardingAnswers(answers: List<OnboardingAnswer>)
+
     @Query("SELECT * FROM onboarding_answers")
     suspend fun getAllOnboardingAnswers(): List<OnboardingAnswer>
+
+    @Query("SELECT * FROM onboarding_answers")
+    suspend fun getAllOnboardingAnswersSync(): List<OnboardingAnswer>
 
     @Query("SELECT * FROM onboarding_answers WHERE `key` = :key")
     suspend fun getOnboardingAnswerByKey(key: String): OnboardingAnswer?
@@ -301,6 +328,9 @@ interface PiggyLedgerDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertStreakDates(streakDates: List<StreakDateEntity>)
+
+    @Query("DELETE FROM streak_dates WHERE id = :id")
+    suspend fun deleteStreakDateById(id: String)
 
     @Query("SELECT * FROM ai_conversations")
     suspend fun getAllAiConversationsSync(): List<AiConversation>

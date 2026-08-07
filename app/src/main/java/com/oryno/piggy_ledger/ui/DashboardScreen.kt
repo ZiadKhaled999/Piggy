@@ -69,6 +69,7 @@ fun DashboardScreen(
     val accountTransactions by viewModel.allAccountTransactions.collectAsState()
     
     val pendingTransactions by viewModel.allPendingTransactions.collectAsState()
+    val isPrivacyMode by viewModel.isPrivacyModeEnabled.collectAsState()
     var automaticallyShowPendingSheet by remember { mutableStateOf(true) }
     var selectedPendingTxForSheet by remember { mutableStateOf<com.oryno.piggy_ledger.data.PendingTransaction?>(null) }
 
@@ -91,20 +92,22 @@ fun DashboardScreen(
     LaunchedEffect(isPremiumState, showProfileBottomSheet) {
         if (showProfileBottomSheet || customerInfo == null) {
             try {
-                com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
-                    object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
-                        override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
-                            customerInfo = info
-                            val active = info.entitlements.all.values.any { it.isActive } || info.entitlements["Piggy Ledger Pro"]?.isActive == true
-                            if (active != isPremiumState) {
-                                viewModel.setPremiumStatus(active)
+                if (com.revenuecat.purchases.Purchases.isConfigured) {
+                    com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
+                        object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
+                            override fun onReceived(info: com.revenuecat.purchases.CustomerInfo) {
+                                customerInfo = info
+                                val active = info.entitlements.all.values.any { it.isActive } || info.entitlements["Piggy Ledger Pro"]?.isActive == true
+                                if (active != isPremiumState) {
+                                    viewModel.setPremiumStatus(active)
+                                }
+                            }
+                            override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                                // Optionally ignore
                             }
                         }
-                        override fun onError(error: com.revenuecat.purchases.PurchasesError) {
-                            // Optionally ignore
-                        }
-                    }
-                )
+                    )
+                }
             } catch (e: Exception) {
                 // Ignore
             }
@@ -226,6 +229,8 @@ fun DashboardScreen(
                     totalBalance = totalBalance, 
                     accounts = accounts, 
                     onClick = onNavigateToAccounts,
+                    isPrivacyMode = isPrivacyMode,
+                    onTogglePrivacy = { viewModel.togglePrivacyMode(context) },
                     onUpdateAccountColor = { acc, newColorHex ->
                         if (acc != null) {
                             viewModel.updateAccount(acc.copy(icon_color = newColorHex, updatedAt = System.currentTimeMillis()))
@@ -266,7 +271,7 @@ fun DashboardScreen(
                                 Text(stringResource(R.string.spent), color = TextLight, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                 val totalSpent = accountTransactions.filter { it.amount < 0 }.sumOf { Math.abs(it.amount) }
                                 Text(
-                                    text = "$${String.format("%,.0f", totalSpent)}",
+                                    text = if (isPrivacyMode) "$ ••••••" else "$${String.format("%,.0f", totalSpent)}",
                                     color = NavyDark,
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Black
@@ -287,7 +292,7 @@ fun DashboardScreen(
                             Column {
                                 Text(stringResource(R.string.payoffs), color = TextLight, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                 Text(
-                                    text = "$${String.format("%,.0f", totalLoan)}",
+                                    text = if (isPrivacyMode) "$ ••••••" else "$${String.format("%,.0f", totalLoan)}",
                                     color = NavyDark,
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Black
@@ -310,7 +315,7 @@ fun DashboardScreen(
                     Text(stringResource(R.string.see_all), fontSize = 14.sp, color = PinkPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onNavigateToMyGoals() }.padding(4.dp))
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                GoalsHorizontalList(goals = goals, transactions = transactions, onClick = onNavigateToMyGoals)
+                GoalsHorizontalList(goals = goals, transactions = transactions, onClick = onNavigateToMyGoals, isPrivacyMode = isPrivacyMode)
             }
 
             if (pendingTransactions.isNotEmpty()) {
@@ -821,6 +826,8 @@ fun VirtualCardsWidget(
     totalBalance: Double, 
     accounts: List<com.oryno.piggy_ledger.data.Account>, 
     onClick: () -> Unit,
+    isPrivacyMode: Boolean = false,
+    onTogglePrivacy: () -> Unit = {},
     onUpdateAccountColor: (com.oryno.piggy_ledger.data.Account?, String) -> Unit = { _, _ -> }
 ) {
     var currentIndex by remember { mutableIntStateOf(0) }
@@ -852,8 +859,7 @@ fun VirtualCardsWidget(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(190.dp)
-                .clickable { onClick() },
+                .height(190.dp),
             shape = RoundedCornerShape(28.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize().background(frontGradient)) {
@@ -897,6 +903,21 @@ fun VirtualCardsWidget(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
+                                // Privacy Toggle (Eyeball) Button
+                                IconButton(
+                                    onClick = onTogglePrivacy,
+                                    modifier = Modifier
+                                        .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                                        .size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (isPrivacyMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        contentDescription = "Toggle Privacy Mode",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(17.dp)
+                                    )
+                                }
+
                                 // Brush Button (ALWAYS visible for 1 account or more)
                                 IconButton(
                                     onClick = { showColorPickerSheet = true },
@@ -933,7 +954,7 @@ fun VirtualCardsWidget(
                         
                         Column {
                             Text(
-                                text = "$${String.format("%,.2f", currentBalanceToShow)}",
+                                text = if (isPrivacyMode) "$••••••" else "$${String.format("%,.2f", currentBalanceToShow)}",
                                 color = Color.White,
                                 fontSize = 34.sp,
                                 fontWeight = FontWeight.Black,
@@ -1007,7 +1028,12 @@ fun VirtualCardsWidget(
 }
 
 @Composable
-fun GoalsHorizontalList(goals: List<com.oryno.piggy_ledger.data.Goal>, transactions: List<com.oryno.piggy_ledger.data.Transaction>, onClick: () -> Unit) {
+fun GoalsHorizontalList(
+    goals: List<com.oryno.piggy_ledger.data.Goal>, 
+    transactions: List<com.oryno.piggy_ledger.data.Transaction>, 
+    onClick: () -> Unit,
+    isPrivacyMode: Boolean = false
+) {
     if (goals.isEmpty()) {
         Card(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).clickable { onClick() },
@@ -1042,7 +1068,9 @@ fun GoalsHorizontalList(goals: List<com.oryno.piggy_ledger.data.Goal>, transacti
                         Column {
                             Text(text = goal.name, fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 15.sp, maxLines = 1)
                             Spacer(modifier = Modifier.height(4.dp))
-                            val goalText = if (isOpenSavings) {
+                            val goalText = if (isPrivacyMode) {
+                                "$••••••"
+                            } else if (isOpenSavings) {
                                 "$${String.format("%.0f", saved)} / " + stringResource(R.string.widget_open_savings)
                             } else {
                                 "$${String.format("%.0f", saved)} / $${String.format("%.0f", goal.targetAmount)}"

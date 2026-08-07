@@ -67,8 +67,9 @@ fun AccountsScreen(
     var selectedYear by remember { mutableStateOf(calendar.get(Calendar.YEAR)) }
     var showMonthBottomSheet by remember { mutableStateOf(false) }
 
-    // Balance obfuscation toggling
-    var isBalanceVisible by remember { mutableStateOf(true) }
+    // Balance obfuscation bound to global privacy mode
+    val isPrivacyMode by viewModel.isPrivacyModeEnabled.collectAsState()
+    val isBalanceVisible = !isPrivacyMode
 
     val monthNames = listOf(
         stringResource(R.string.month_january),
@@ -245,10 +246,6 @@ fun AccountsScreen(
 
                             // Right Action Icons
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                IconButton(onClick = { isBalanceVisible = !isBalanceVisible }) {
-                                    Icon(if (isBalanceVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
-                                }
-                                
                                 // Account Switcher
                                 Box(
                                     modifier = Modifier
@@ -404,7 +401,7 @@ fun AccountsScreen(
                             .padding(horizontal = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(displayedTransactions) { tx ->
+                        items(displayedTransactions, key = { it.id }) { tx ->
                             val formattedDate = remember(tx.timestamp) {
                                 SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(tx.timestamp))
                             }

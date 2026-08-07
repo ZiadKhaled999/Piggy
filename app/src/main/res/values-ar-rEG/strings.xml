@@ -448,6 +448,21 @@
     <string name="auth_signing_in">بندخلك بحساب جوجل بتاعك...</string>
     <string name="auth_profile_title">ملفك الشخصي</string>
     <string name="auth_sign_out">تسجيل خروج</string>
+
+    <!-- Sync & Wipe Logout Strings -->
+    <string name="logout_sheet_title">متأكد إنك عايز تخرج؟</string>
+    <string name="logout_sheet_subtitle_prefix">هنرفع بياناتك وحاجتك على السحابة و </string>
+    <string name="logout_sheet_subtitle_highlight">هنمسح بياناتك المحفوطة هنا</string>
+    <string name="logout_sheet_subtitle_suffix"> من الموبايل ده.</string>
+    <string name="logout_button_yes">أيوة، اخرج</string>
+    <string name="logout_button_stay">خليني قاعد</string>
+    <string name="logout_syncing_msg">بنمزامن وبننظف البيانات من الموبايل...</string>
+    <string name="logout_offline_title">خلي بالك: في بيانات مترفعتش!</string>
+    <string name="logout_offline_subtitle">عندك %1$d حاجات متسجلتش عالسحابة ومفيش نت دلوقتي. لو خرجت دلوقتي </string>
+    <string name="logout_offline_highlight">الحاجات دي هتتمسح نهائياً</string>
+    <string name="logout_button_delete_anyway">امسح واخرج برضه</string>
+    <string name="logout_sync_failed">المزامنة معرفتش تكتمل. جرب تاني أو اتأكد من النت.</string>
+    <string name="logout_retry">جرب مزامنة تاني</string>
     <string name="auth_logged_in_as">داخل بحساب: %1$s</string>
 
     <!-- Edit Account Strings in Egyptian Arabic -->

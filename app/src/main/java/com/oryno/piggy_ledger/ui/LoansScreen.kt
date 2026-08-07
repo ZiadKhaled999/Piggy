@@ -76,6 +76,10 @@ import androidx.compose.material.icons.filled.Info
 
 import androidx.compose.material.icons.filled.Search
 
+import androidx.compose.material.icons.filled.Visibility
+
+import androidx.compose.material.icons.filled.VisibilityOff
+
 import androidx.compose.material3.*
 
 import androidx.compose.ui.res.stringResource
@@ -141,6 +145,7 @@ fun LoansScreen(
     val screenContext = LocalContext.current
     val loans by viewModel.loans.collectAsState()
     val allLoanPayments by viewModel.allLoanPayments.collectAsState()
+    val isPrivacyMode by viewModel.isPrivacyModeEnabled.collectAsState()
     
     val paymentsByLoanId = remember(allLoanPayments) { allLoanPayments.groupBy { it.loanId } }
     fun getRemainingAmount(loan: Loan): Double {
@@ -188,6 +193,21 @@ fun LoansScreen(
                 Text(stringResource(R.string.loans_payoffs_title), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark)
                 Text(stringResource(R.string.keep_tabs_subtitle), fontSize = 14.sp, color = TextLight, fontWeight = FontWeight.Medium)
             }
+            Spacer(modifier = Modifier.weight(1f))
+            IconButton(
+                onClick = { viewModel.togglePrivacyMode(screenContext) },
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(Color.White, androidx.compose.foundation.shape.CircleShape)
+                    .border(1.dp, Color(0xFFE2E8F0), androidx.compose.foundation.shape.CircleShape)
+            ) {
+                Icon(
+                    imageVector = if (isPrivacyMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                    contentDescription = "Toggle Privacy",
+                    tint = NavyDark,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
         
         Spacer(modifier = Modifier.height(12.dp))
@@ -213,14 +233,14 @@ fun LoansScreen(
                             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                             border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
                         ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
+                             Column(modifier = Modifier.padding(10.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = PinkAccent, modifier = Modifier.size(10.dp))
                                     Spacer(modifier = Modifier.width(3.dp))
                                     Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("$${String.format("%.0f", owedToMe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(if (isPrivacyMode) "$••••••" else "$${String.format("%.0f", owedToMe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
                         
@@ -238,7 +258,7 @@ fun LoansScreen(
                                     Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("$${String.format("%.0f", iOwe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(if (isPrivacyMode) "$••••••" else "$${String.format("%.0f", iOwe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
                     }
@@ -259,7 +279,7 @@ fun LoansScreen(
                         ) {
                             Text(stringResource(R.string.net_ledger), fontSize = 9.sp, fontWeight = FontWeight.Black, color = TextLight)
                             Text(
-                                text = if (netLedger >= 0) "+$${String.format("%.0f", netLedger)}" else "-$${String.format("%.0f", -netLedger)}", 
+                                text = if (isPrivacyMode) "$••••••" else (if (netLedger >= 0) "+$${String.format("%.0f", netLedger)}" else "-$${String.format("%.0f", -netLedger)}"), 
                                 fontSize = 15.sp, 
                                 fontWeight = FontWeight.Bold, 
                                 color = if (netLedger >= 0) PinkAccent else BlackAccent,
@@ -296,7 +316,7 @@ fun LoansScreen(
                                     Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text("$${String.format("%.0f", owedToMe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(if (isPrivacyMode) "$••••••" else "$${String.format("%.0f", owedToMe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
                         
@@ -314,7 +334,7 @@ fun LoansScreen(
                                     Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text("$${String.format("%.0f", iOwe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(if (isPrivacyMode) "$••••••" else "$${String.format("%.0f", iOwe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
                         
@@ -329,7 +349,7 @@ fun LoansScreen(
                                 Text(stringResource(R.string.net_ledger), fontSize = 8.sp, fontWeight = FontWeight.Black, color = TextLight, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = if (netLedger >= 0) "+$${String.format("%.0f", netLedger)}" else "-$${String.format("%.0f", -netLedger)}", 
+                                    text = if (isPrivacyMode) "$••••••" else (if (netLedger >= 0) "+$${String.format("%.0f", netLedger)}" else "-$${String.format("%.0f", -netLedger)}"), 
                                     fontSize = 16.sp, 
                                     fontWeight = FontWeight.Bold, 
                                     color = if (netLedger >= 0) PinkAccent else BlackAccent,
@@ -540,7 +560,7 @@ fun LoansScreen(
                                 Column(horizontalAlignment = Alignment.End) {
                                     val currentAmt = if (isPaidOff) loan.amount else getRemainingAmount(loan)
                                     Text(
-                                        text = "$prefix $${String.format("%.2f", currentAmt)}", 
+                                        text = if (isPrivacyMode) "$prefix $••••••" else "$prefix $${String.format("%.2f", currentAmt)}", 
                                         color = if (isPaidOff) Color(0xFF64748B) else textColor, 
                                         fontWeight = FontWeight.Bold, 
                                         fontSize = 15.sp,
@@ -1347,7 +1367,7 @@ fun LoansScreen(
                                             Spacer(modifier = Modifier.width(14.dp))
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text(
-                                                    text = "$${String.format(Locale.US, "%.2f", payment.amount)}",
+                                                    text = if (isPrivacyMode) "$••••••" else "$${String.format(Locale.US, "%.2f", payment.amount)}",
                                                     fontWeight = FontWeight.Bold,
                                                     fontSize = 16.sp,
                                                     color = NavyDark
@@ -1398,14 +1418,14 @@ fun LoansScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "$prefix $${String.format(Locale.US, "%.2f", remainingAmount)}",
+                                text = if (isPrivacyMode) "$prefix $••••••" else "$prefix $${String.format(Locale.US, "%.2f", remainingAmount)}",
                                 fontSize = 34.sp,
                                 fontWeight = FontWeight.Black,
                                 color = typeColor
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = stringResource(R.string.remaining_of_prefix, "$${String.format(Locale.US, "%.2f", selectedLoan!!.amount)}"),
+                                text = if (isPrivacyMode) stringResource(R.string.remaining_of_prefix, "$••••••") else stringResource(R.string.remaining_of_prefix, "$${String.format(Locale.US, "%.2f", selectedLoan!!.amount)}"),
                                 fontSize = 13.sp,
                                 color = TextLight,
                                 fontWeight = FontWeight.Medium

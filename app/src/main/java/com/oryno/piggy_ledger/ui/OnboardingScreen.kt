@@ -90,7 +90,7 @@ data class OnboardingPageData(
 )
 
 @Composable
-fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
+fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?) -> Unit) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp
@@ -1857,7 +1857,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String) -> Unit) {
                                 currentPage++
                             }
                         } else {
-                            onComplete(selectedIntent, selectedIntensity, selectedSavingMode)
+                            onComplete(selectedIntent, selectedIntensity, selectedSavingMode, relatesToLoans, relatesToAccounts, relatesToEmergency)
                         }
                     }
                 )

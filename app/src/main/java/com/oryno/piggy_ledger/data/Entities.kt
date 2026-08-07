@@ -124,7 +124,7 @@ data class Account(
             entity = Account::class,
             parentColumns = ["id"],
             childColumns = ["account_id"],
-            onDelete = androidx.room.ForeignKey.CASCADE
+            onDelete = androidx.room.ForeignKey.NO_ACTION
         )
     ],
     indices = [androidx.room.Index("account_id")]
@@ -225,7 +225,10 @@ data class PendingTransaction(
 @Serializable
 @Entity(tableName = "onboarding_answers")
 data class OnboardingAnswer(
-    @PrimaryKey val key: String,
-    val value: String,
-    val updatedAt: Long = System.currentTimeMillis()
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val userId: String = "",
+    val key: String = "",
+    val value: String = "",
+    val updatedAt: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false
 )

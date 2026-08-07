@@ -27,6 +27,8 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
     val allAccounts: Flow<List<Account>> = dao.getAllAccounts()
     val includedAccounts: Flow<List<Account>> = dao.getIncludedAccounts()
 
+    suspend fun getPendingUploadCount(): Int = dao.getTotalUnsyncedCount()
+
     fun getGoalById(id: String) = dao.getGoalById(id)
     fun getTransactionsForGoal(id: String) = dao.getTransactionsForGoal(id)
     
@@ -34,19 +36,61 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
     fun getTransactionsForAccount(id: String) = dao.getTransactionsForAccount(id)
     fun getAllAccountTransactions() = dao.getAllAccountTransactions()
 
-    suspend fun insertGoal(goal: Goal) { dao.insertGoal(goal); triggerSync() }
-    suspend fun insertTransaction(transaction: Transaction) { dao.insertTransaction(transaction); triggerSync() }
+    suspend fun insertGoal(goal: Goal) {
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        val updatedGoal = if (goal.userId.isBlank()) goal.copy(userId = userId) else goal
+        dao.insertGoal(updatedGoal)
+        triggerSync()
+    }
+    suspend fun insertTransaction(transaction: Transaction) {
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        val updatedTransaction = if (transaction.userId.isBlank()) transaction.copy(userId = userId) else transaction
+        dao.insertTransaction(updatedTransaction)
+        triggerSync()
+    }
     
-    suspend fun insertLoan(loan: Loan) { dao.insertLoan(loan); triggerSync() }
+    suspend fun insertLoan(loan: Loan) {
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        val updatedLoan = if (loan.userId.isBlank()) loan.copy(userId = userId) else loan
+        dao.insertLoan(updatedLoan)
+        triggerSync()
+    }
     val allLoanPayments: Flow<List<LoanPayment>> = dao.getAllLoanPaymentsFlow()
     fun getPaymentsForLoan(loanId: String) = dao.getPaymentsForLoan(loanId)
-    suspend fun insertLoanPayment(payment: LoanPayment) { dao.insertLoanPayment(payment); triggerSync() }
+    suspend fun insertLoanPayment(payment: LoanPayment) {
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        val updatedPayment = if (payment.userId.isBlank()) payment.copy(userId = userId) else payment
+        dao.insertLoanPayment(updatedPayment)
+        triggerSync()
+    }
     suspend fun deleteLoanPayment(id: String) { dao.deleteLoanPaymentById(id); try { com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("loan_payments", id) } catch(e: Exception){}; triggerSync() }
     
-    suspend fun insertAccount(account: Account) { dao.insertAccount(account); triggerSync() }
-    suspend fun updateAccount(account: Account) { dao.updateAccount(account.copy(isSynced = false)); triggerSync() }
-    suspend fun deleteAccount(id: String) { dao.deleteAccountById(id); try { com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("accounts", id) } catch(e: Exception){}; triggerSync() }
-    suspend fun insertAccountTransaction(transaction: AccountTransaction) { dao.insertAccountTransaction(transaction); triggerSync() }
+    suspend fun insertAccount(account: Account) {
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        val updatedAccount = if (account.userId.isBlank()) account.copy(userId = userId) else account
+        dao.insertAccount(updatedAccount)
+        triggerSync()
+    }
+    suspend fun updateAccount(account: Account) {
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        val updatedAccount = if (account.userId.isBlank()) account.copy(userId = userId, isSynced = false) else account.copy(isSynced = false)
+        dao.updateAccount(updatedAccount)
+        triggerSync()
+    }
+    suspend fun deleteAccount(id: String) { dao.deleteTransactionsForAccount(id); dao.deleteAccountById(id); try { com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("accounts", id) } catch(e: Exception){}; triggerSync() }
+    suspend fun insertAccountTransaction(transaction: AccountTransaction) {
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        val updatedTransaction = if (transaction.userId.isBlank()) transaction.copy(userId = userId) else transaction
+        dao.insertAccountTransaction(updatedTransaction)
+        triggerSync()
+    }
     suspend fun markLoanAsPaid(id: String) {
         val loan = dao.getLoanById(id)
         if (loan != null) {
@@ -117,7 +161,46 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
     }
 
     val allPendingTransactions: Flow<List<PendingTransaction>> = dao.getAllPendingTransactionsFlow()
-    suspend fun insertPendingTransaction(transaction: PendingTransaction) { dao.insertPendingTransaction(transaction); triggerSync() }
+    suspend fun insertPendingTransaction(transaction: PendingTransaction) {
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        val updatedTransaction = if (transaction.userId.isBlank()) transaction.copy(userId = userId) else transaction
+        dao.insertPendingTransaction(updatedTransaction)
+        triggerSync()
+    }
     suspend fun deletePendingTransaction(id: String) { dao.deletePendingTransactionById(id); try { com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("pending_transactions", id) } catch(e: Exception){}; triggerSync() }
     suspend fun resolvePendingTransaction(pendingId: String, accountId: String) { dao.resolvePendingTransaction(pendingId, accountId); triggerSync() }
+
+    suspend fun saveOnboardingAnswer(key: String, value: String) {
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        val answer = OnboardingAnswer(
+            id = "${userId}_$key",
+            userId = userId,
+            key = key,
+            value = value,
+            updatedAt = System.currentTimeMillis(),
+            isSynced = false
+        )
+        dao.insertOnboardingAnswer(answer)
+        triggerSync()
+    }
+
+    suspend fun saveOnboardingAnswers(answers: Map<String, String>) {
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        val now = System.currentTimeMillis()
+        val list = answers.map { (k, v) ->
+            OnboardingAnswer(
+                id = "${userId}_$k",
+                userId = userId,
+                key = k,
+                value = v,
+                updatedAt = now,
+                isSynced = false
+            )
+        }
+        dao.insertOnboardingAnswers(list)
+        triggerSync()
+    }
 }

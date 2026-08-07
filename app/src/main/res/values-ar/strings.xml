@@ -448,6 +448,21 @@
     <string name="auth_profile_title">ملفك الشخصي</string>
     <string name="auth_sign_out">تسجيل الخروج</string>
     <string name="auth_logged_in_as">مسجل الدخول كـ %1$s</string>
+
+    <!-- Sync & Wipe Logout Strings -->
+    <string name="logout_sheet_title">هل أنت متاكد من تسجيل الخروج؟</string>
+    <string name="logout_sheet_subtitle_prefix">سيتم مزامنة تقدمك المحلي و </string>
+    <string name="logout_sheet_subtitle_highlight">حذف بياناتك المحلية</string>
+    <string name="logout_sheet_subtitle_suffix"> من هذا الجهاز.</string>
+    <string name="logout_button_yes">نعم، تسجيل الخروج</string>
+    <string name="logout_button_stay">البقاء</string>
+    <string name="logout_syncing_msg">جاري المزامنة وتنظيف البيانات المحلية...</string>
+    <string name="logout_offline_title">تحذير: بيانات غير متزامنة</string>
+    <string name="logout_offline_subtitle">لديك %1$d عناصر غير متزامنة ولا يوجد اتصال بالإنترنت. تسجيل الخروج الآن سوف </string>
+    <string name="logout_offline_highlight">يحذف هذه العناصر نهائياً</string>
+    <string name="logout_button_delete_anyway">الحذف وتسجيل الخروج على أي حال</string>
+    <string name="logout_sync_failed">فشلت المزامنة. يرجى المحاولة مرة أخرى أو التحقق من الاتصال بالإنترنت.</string>
+    <string name="logout_retry">إعادة محاولة المزامنة</string>
     <string name="edit_account">تعديل الحساب</string>
     <string name="current_balance">الرصيد الحالي</string>
     <string name="credit_card_details">تفاصيل كارت الائتمان</string>

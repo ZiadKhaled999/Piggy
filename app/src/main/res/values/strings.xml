@@ -483,6 +483,21 @@
     <string name="auth_sign_out">Sign Out</string>
     <string name="auth_logged_in_as">Logged in as %1$s</string>
 
+    <!-- Sync & Wipe Logout Strings -->
+    <string name="logout_sheet_title">Are you sure you want to sign out?</string>
+    <string name="logout_sheet_subtitle_prefix">This will sync your local progress and </string>
+    <string name="logout_sheet_subtitle_highlight">delete your local data</string>
+    <string name="logout_sheet_subtitle_suffix"> from this device.</string>
+    <string name="logout_button_yes">Yes, Sign Out</string>
+    <string name="logout_button_stay">Stay</string>
+    <string name="logout_syncing_msg">Syncing and cleaning up local data...</string>
+    <string name="logout_offline_title">Unsynced Data Warning</string>
+    <string name="logout_offline_subtitle">You have %1$d unsynced items and no internet connection. Signing out now will </string>
+    <string name="logout_offline_highlight">permanently delete these items</string>
+    <string name="logout_button_delete_anyway">Delete &amp; Sign Out Anyway</string>
+    <string name="logout_sync_failed">Sync failed. Please check your connection and try again.</string>
+    <string name="logout_retry">Retry Sync</string>
+
     <!-- Edit Account Strings -->
     <string name="edit_account">Edit Account</string>
     <string name="current_balance">Current Balance</string>
@@ -544,6 +559,8 @@
     <string name="biometric_lock_desc">Require fingerprint or face recognition to open the app.</string>
     <string name="biometric_login_title">Biometric Login</string>
     <string name="biometric_login_subtitle">Use your biometric credential to access Piggy Ledger</string>
+    <string name="biometric_unhide_title">Verify Identity</string>
+    <string name="biometric_unhide_subtitle">Authenticate to unhide your financial numbers</string>
     <string name="lock_timeout">Lock Timeout</string>
     <string name="lock_timeout_desc">How long to wait before locking the app after exit.</string>
     <string name="instant">Instant</string>

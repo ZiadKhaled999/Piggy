@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
@@ -85,6 +87,7 @@ fun GoalDetailScreen(
 ) {
     val context = LocalContext.current
     val goals by viewModel.goals.collectAsState()
+    val isPrivacyMode by viewModel.isPrivacyModeEnabled.collectAsState()
     val goal = goals.find { it.id == goalId }
     val allTransactions by viewModel.allTransactions.collectAsState()
     val transactions = remember(allTransactions, goalId) {
@@ -204,9 +207,9 @@ fun GoalDetailScreen(
                                     Column {
                                         Text(goal.name, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                                         if (goal.targetAmount > 0.0) {
-                                            Text("$${String.format("%.2f", savedAmount)} / $${String.format("%.2f", goal.targetAmount)}", color = TextLight, fontSize = 14.sp)
+                                            Text(if (isPrivacyMode) "$•••••• / $••••••" else "$${String.format("%.2f", savedAmount)} / $${String.format("%.2f", goal.targetAmount)}", color = TextLight, fontSize = 14.sp)
                                         } else {
-                                            Text(stringResource(R.string.amount_saved_simple, String.format("%.2f", savedAmount)) + " (" + stringResource(R.string.open_savings) + ")", color = TextLight, fontSize = 14.sp)
+                                            Text(if (isPrivacyMode) stringResource(R.string.amount_saved_simple, "••••••") + " (" + stringResource(R.string.open_savings) + ")" else stringResource(R.string.amount_saved_simple, String.format("%.2f", savedAmount)) + " (" + stringResource(R.string.open_savings) + ")", color = TextLight, fontSize = 14.sp)
                                         }
                                     }
                                 }
@@ -215,7 +218,7 @@ fun GoalDetailScreen(
                                     Spacer(modifier = Modifier.height(24.dp))
                                     
                                     LinearProgressIndicator(
-                                        progress = { progress },
+                                        progress = { if (isPrivacyMode) 0f else progress },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(8.dp)
@@ -230,9 +233,11 @@ fun GoalDetailScreen(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text("${(progress * 100).toInt()}%", color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        Text(if (isPrivacyMode) "••%" else "${(progress * 100).toInt()}%", color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                         val remaining = goal.targetAmount - savedAmount
-                                        val remainingText = if (remaining < 0) {
+                                        val remainingText = if (isPrivacyMode) {
+                                            stringResource(R.string.amount_left_simple, "••••••")
+                                        } else if (remaining < 0) {
                                             stringResource(R.string.amount_extra_simple, String.format("%.2f", -remaining))
                                         } else if (remaining == 0.0) {
                                             stringResource(R.string.goal_reached_status)
@@ -314,10 +319,11 @@ fun GoalDetailScreen(
                     avgDaily = avgDaily,
                     estCompletionDate = estCompletionDate,
                     establishedDate = establishedDate,
-                    savedAmount = savedAmount
+                    savedAmount = savedAmount,
+                    isPrivacyMode = isPrivacyMode
                 )
             } else {
-                transactionsContent(transactions = transactions)
+                transactionsContent(transactions = transactions, isPrivacyMode = isPrivacyMode)
             }
             
             item {
@@ -356,7 +362,17 @@ fun GoalDetailScreen(
                     color = TextLight,
                     letterSpacing = 1.sp
                 )
-                Spacer(modifier = Modifier.width(48.dp))
+                IconButton(
+                    onClick = { viewModel.togglePrivacyMode(context) },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isPrivacyMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = "Toggle Privacy",
+                        tint = NavyDark,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -373,7 +389,7 @@ fun GoalDetailScreen(
                 if (savedAmount > goal.targetAmount) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = stringResource(R.string.amount_extra_simple, String.format("%.2f", savedAmount - goal.targetAmount)),
+                        text = if (isPrivacyMode) stringResource(R.string.amount_extra_simple, "••••••") else stringResource(R.string.amount_extra_simple, String.format("%.2f", savedAmount - goal.targetAmount)),
                         color = PinkAccent,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
@@ -385,14 +401,14 @@ fun GoalDetailScreen(
                 verticalAlignment = Alignment.Bottom
             ) {
                 Text(
-                    text = "$${String.format("%.2f", savedAmount)}",
+                    text = if (isPrivacyMode) "$••••••" else "$${String.format("%.2f", savedAmount)}",
                     fontSize = 42.sp,
                     fontWeight = FontWeight.Bold,
                     color = NavyDark
                 )
                 if (goal.targetAmount > 0.0) {
                     Text(
-                        text = " / $${String.format("%.2f", goal.targetAmount)}",
+                        text = if (isPrivacyMode) " / $••••••" else " / $${String.format("%.2f", goal.targetAmount)}",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextLight,
@@ -434,7 +450,7 @@ fun GoalDetailScreen(
                         maxLines = 1
                     )
                     Text(
-                        text = "$${String.format("%.0f", savedAmount)}",
+                        text = if (isPrivacyMode) "$••••••" else "$${String.format("%.0f", savedAmount)}",
                         fontWeight = FontWeight.ExtraBold,
                         color = PinkPrimary,
                         fontSize = 18.sp
@@ -565,7 +581,8 @@ fun LazyListScope.overviewContent(
     avgDaily: Double,
     estCompletionDate: String,
     establishedDate: String,
-    savedAmount: Double
+    savedAmount: Double,
+    isPrivacyMode: Boolean
 ) {
     item {
         MetadataCard(label = stringResource(R.string.established_date_label), value = establishedDate, icon = Icons.Default.Info)
@@ -576,15 +593,15 @@ fun LazyListScope.overviewContent(
         Spacer(modifier = Modifier.height(12.dp))
     }
     item {
-        MetadataCard(label = stringResource(R.string.avg_daily_saving_label), value = "$${String.format("%.2f", avgDaily)}", icon = Icons.AutoMirrored.Filled.TrendingUp)
+        MetadataCard(label = stringResource(R.string.avg_daily_saving_label), value = if (isPrivacyMode) "$••••••" else "$${String.format("%.2f", avgDaily)}", icon = Icons.AutoMirrored.Filled.TrendingUp)
         Spacer(modifier = Modifier.height(12.dp))
     }
     item {
         MetadataCard(
             label = stringResource(R.string.est_completion_date_label), 
-            value = if (savedAmount >= goal.targetAmount && goal.targetAmount > 0) stringResource(R.string.goal_reached_success) else estCompletionDate, 
+            value = if (isPrivacyMode) "••••••" else if (savedAmount >= goal.targetAmount && goal.targetAmount > 0) stringResource(R.string.goal_reached_success) else estCompletionDate, 
             icon = Icons.Default.CheckCircle,
-            valueColor = if (savedAmount >= goal.targetAmount && goal.targetAmount > 0) PinkAccent else NavyDark
+            valueColor = if (!isPrivacyMode && savedAmount >= goal.targetAmount && goal.targetAmount > 0) PinkAccent else NavyDark
         )
     }
 }
@@ -862,7 +879,7 @@ fun axisLabelComponent(
     typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, fontWeight.weight)
 )
 
-fun LazyListScope.transactionsContent(transactions: List<Transaction>) {
+fun LazyListScope.transactionsContent(transactions: List<Transaction>, isPrivacyMode: Boolean) {
     if (transactions.isEmpty()) {
         item {
             EmptyState(message = stringResource(R.string.no_contributions_msg))
@@ -899,7 +916,7 @@ fun LazyListScope.transactionsContent(transactions: List<Transaction>) {
                         Text(txDate, color = TextLight, fontSize = 12.sp)
                     }
                 }
-                Text("+$${String.format("%.2f", tx.amount)}", color = PinkAccent, fontWeight = FontWeight.Bold)
+                Text(if (isPrivacyMode) "+$••••••" else "+$${String.format("%.2f", tx.amount)}", color = PinkAccent, fontWeight = FontWeight.Bold)
             }
         }
     }

@@ -4,7 +4,9 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -12,6 +14,8 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 @Serializable
 data class RemoteMascotItem(
@@ -56,6 +60,7 @@ object PiggyRemoteConfigManager {
     private const val PREFS_NAME = "piggy_remote_config_prefs"
     private const val KEY_REMOTE_URL = "remote_config_url"
     private const val DEFAULT_REMOTE_URL = "https://piggy-assets.vercel.app/piggy_remote_config.json"
+    private const val FALLBACK_GITHUB_RAW_URL = "https://raw.githubusercontent.com/ZiadKhaled999/piggy-assets/main/piggy_remote_config.json"
     private const val CACHE_FILE_NAME = "piggy_remote_config_cache.json"
 
     private val jsonFormatter = Json {
@@ -65,7 +70,11 @@ object PiggyRemoteConfigManager {
     }
 
     private val httpClient by lazy {
-        OkHttpClient.Builder().build()
+        OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .followRedirects(true)
+            .build()
     }
 
     fun getRemoteConfigUrl(context: Context): String {
@@ -79,31 +88,38 @@ object PiggyRemoteConfigManager {
     }
 
     suspend fun fetchAndSyncConfig(context: Context): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val configUrl = getRemoteConfigUrl(context)
-            val request = Request.Builder()
-                .url(configUrl)
-                .build()
+        val urlsToTry = listOf(
+            getRemoteConfigUrl(context),
+            FALLBACK_GITHUB_RAW_URL,
+            DEFAULT_REMOTE_URL
+        ).distinct()
 
-            val response = httpClient.newCall(request).execute()
-            if (response.isSuccessful) {
-                val jsonBody = response.body?.string()
-                if (!jsonBody.isNullOrBlank()) {
-                    val cacheFile = File(context.filesDir, CACHE_FILE_NAME)
-                    cacheFile.writeText(jsonBody)
+        for (configUrl in urlsToTry) {
+            try {
+                Log.d(TAG, "Fetching remote config from: $configUrl")
+                val request = Request.Builder()
+                    .url(configUrl)
+                    .build()
 
-                    // Parse config and pre-download mascot images
-                    val config = jsonFormatter.decodeFromString<PiggyRemoteConfig>(jsonBody)
-                    val allMascots = config.widgetConfig?.categories?.flatMap { it.mascots } ?: emptyList()
-                    downloadMascotImages(context, allMascots)
-                    Log.d(TAG, "Successfully fetched and synced remote config with ${allMascots.size} mascots")
-                    return@withContext true
+                val response = httpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val jsonBody = response.body?.string()
+                    if (!jsonBody.isNullOrBlank()) {
+                        val cacheFile = File(context.filesDir, CACHE_FILE_NAME)
+                        cacheFile.writeText(jsonBody)
+
+                        val config = jsonFormatter.decodeFromString<PiggyRemoteConfig>(jsonBody)
+                        val allMascots = config.widgetConfig?.categories?.flatMap { it.mascots } ?: emptyList()
+                        downloadMascotImages(context, allMascots, config.widgetConfig?.defaultImageUrl)
+                        Log.d(TAG, "Successfully fetched and synced remote config with ${allMascots.size} mascots")
+                        return@withContext true
+                    }
+                } else {
+                    Log.w(TAG, "Fetch from $configUrl returned code ${response.code}")
                 }
-            } else {
-                Log.w(TAG, "HTTP fetch failed with code: ${response.code}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error fetching remote config from $configUrl", e)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error fetching remote config", e)
         }
         return@withContext false
     }
@@ -123,27 +139,45 @@ object PiggyRemoteConfigManager {
         }
     }
 
-    private fun downloadMascotImages(context: Context, mascots: List<RemoteMascotItem>) {
+    private fun downloadMascotImages(context: Context, mascots: List<RemoteMascotItem>, defaultImageUrl: String? = null) {
         val mascotDir = File(context.filesDir, "mascots").apply { if (!exists()) mkdirs() }
-        for (item in mascots) {
-            val url = item.imageUrl ?: continue
-            if (url.isBlank()) continue
+        val allUrls = mascots.mapNotNull { if (!it.imageUrl.isNullOrBlank()) it.imageUrl to it.id else null }.toMutableList()
+        if (!defaultImageUrl.isNullOrBlank()) {
+            allUrls.add(defaultImageUrl to "default_mascot")
+        }
 
-            val fileName = getFileNameFromUrl(url, item.id)
+        for ((url, id) in allUrls) {
+            val fileName = getFileNameFromUrl(url, id)
             val targetFile = File(mascotDir, fileName)
             if (!targetFile.exists() || targetFile.length() == 0L) {
-                try {
-                    val req = Request.Builder().url(url).build()
-                    val resp = httpClient.newCall(req).execute()
-                    if (resp.isSuccessful) {
-                        resp.body?.bytes()?.let { bytes ->
-                            targetFile.writeBytes(bytes)
-                            Log.d(TAG, "Downloaded mascot image: $fileName")
+                downloadSingleImage(context, targetFile, url)
+            }
+        }
+    }
+
+    private fun downloadSingleImage(context: Context?, targetFile: File, url: String) {
+        val urlsToTry = mutableListOf(url)
+        if (url.contains("raw.githubusercontent.com") && url.contains("/main/")) {
+            val path = url.substringAfter("/main/")
+            urlsToTry.add("https://piggy-assets.vercel.app/$path")
+        }
+
+        for (tryUrl in urlsToTry) {
+            try {
+                val req = Request.Builder().url(tryUrl).build()
+                val resp = httpClient.newCall(req).execute()
+                if (resp.isSuccessful) {
+                    resp.body?.use { body ->
+                        targetFile.writeBytes(body.bytes())
+                        Log.d(TAG, "Downloaded image to ${targetFile.name} from $tryUrl")
+                        if (context != null) {
+                            com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
                         }
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed downloading mascot image from $url", e)
+                    return // Success, stop trying other URLs
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed downloading image from $tryUrl", e)
             }
         }
     }
@@ -157,6 +191,10 @@ object PiggyRemoteConfigManager {
             if (targetFile.exists() && targetFile.length() > 0L) {
                 BitmapFactory.decodeFile(targetFile.absolutePath)
             } else {
+                // Trigger asynchronous background download for missing image
+                CoroutineScope(Dispatchers.IO).launch {
+                    downloadSingleImage(context, targetFile, urlOrFileName)
+                }
                 null
             }
         } catch (e: Exception) {
@@ -171,6 +209,22 @@ object PiggyRemoteConfigManager {
             "${mascotId}_$lastSegment"
         } else {
             "${mascotId}_mascot.png"
+        }
+    }
+
+    private fun parseTimeToMinutes(timeStr: String?, defaultMinutes: Int): Int {
+        if (timeStr.isNullOrBlank()) return defaultMinutes
+        return try {
+            val parts = timeStr.trim().split(":")
+            if (parts.size >= 2) {
+                val h = parts[0].toInt()
+                val m = parts[1].toInt()
+                h * 60 + m
+            } else {
+                defaultMinutes
+            }
+        } catch (e: Exception) {
+            defaultMinutes
         }
     }
 
@@ -193,33 +247,42 @@ object PiggyRemoteConfigManager {
             else -> "active"
         }
 
-        // Find the category matching the status
-        val category = config.widgetConfig?.categories?.find { it.statusKey == targetStatusKey }
-        if (category == null || category.mascots.isEmpty()) {
+        val categories = config.widgetConfig?.categories ?: emptyList()
+        if (categories.isEmpty()) return ResolvedMascotResult()
+
+        // Match category by statusKey or fall back to first category
+        val category = categories.find { it.statusKey == targetStatusKey } 
+            ?: categories.find { it.statusKey == "active" } 
+            ?: categories.first()
+
+        val mascots = category.mascots
+        if (mascots.isEmpty()) {
             return ResolvedMascotResult()
         }
-        
-        // Formulate hour string HH:mm for simple comparison
-        val hourStr = String.format("%02d:00", hour)
-        // Day of week (1=Mon..7=Sun). Calendar.DAY_OF_WEEK returns Sun=1..Sat=7.
-        // For our remote JSON: Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6, Sun=7
-        val calendar = java.util.Calendar.getInstance()
-        var currentDay = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
-        if (currentDay == 0) currentDay = 7 // Map Sunday to 7
-        
-        val matchingMascots = category.mascots.filter { item ->
-            val inTimeRange = hourStr >= item.startTime && hourStr <= item.endTime
+
+        val currentMinutes = hour * 60
+        val calendar = Calendar.getInstance()
+        var currentDay = calendar.get(Calendar.DAY_OF_WEEK) - 1
+        if (currentDay == 0) currentDay = 7 // Sunday = 7
+
+        // Filter mascots by time and days of week
+        val matchingMascots = mascots.filter { item ->
+            val startMin = parseTimeToMinutes(item.startTime, 0)
+            val endMin = parseTimeToMinutes(item.endTime, 1439)
+            val inTimeRange = currentMinutes in startMin..endMin
             val inDays = item.daysOfWeek.isEmpty() || item.daysOfWeek.contains(currentDay)
             inTimeRange && inDays
         }
 
-        if (matchingMascots.isEmpty()) {
-            return ResolvedMascotResult()
+        // Selected mascot: filtered match or fallback to first mascot in category
+        val selectedMascot = matchingMascots.firstOrNull() ?: mascots.first()
+        
+        var bitmap = getLocalMascotBitmap(context, selectedMascot.imageUrl, selectedMascot.id)
+        
+        // Fallback to default image URL if available
+        if (bitmap == null && !config.widgetConfig?.defaultImageUrl.isNullOrBlank()) {
+            bitmap = getLocalMascotBitmap(context, config.widgetConfig?.defaultImageUrl, "default_mascot")
         }
-
-        // Pick first or random based on streak seed
-        val selectedMascot = matchingMascots.first()
-        val bitmap = getLocalMascotBitmap(context, selectedMascot.imageUrl, selectedMascot.id)
 
         val statements = category.statements
         val selectedPhrase = if (statements.isNotEmpty()) {

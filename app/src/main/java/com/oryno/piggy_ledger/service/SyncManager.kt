@@ -133,9 +133,22 @@ class SyncManager(private val context: Context) {
 
     private suspend fun syncUserPreferences(userId: String, authHeader: String) {
         val tableName = "user_preferences"
-        val unsynced = dao.getUnsyncedUserPreferences().map { it.copy(userId = userId, isSynced = true) }
+        val rawUnsynced = dao.getUnsyncedUserPreferences()
+        val unsynced = mutableListOf<UserPreferencesEntity>()
+        var hadLocalUser = false
+        
+        for (item in rawUnsynced) {
+            if (item.userId == "local_user") {
+                hadLocalUser = true
+            }
+            unsynced.add(item.copy(userId = userId, isSynced = true))
+        }
+
         if (pushRemote(tableName, authHeader, unsynced)) {
             if (unsynced.isNotEmpty()) dao.insertUserPreferencesList(unsynced)
+            if (hadLocalUser) {
+                dao.deleteUserPreferencesByUserId("local_user")
+            }
         }
         val remote: List<UserPreferencesEntity>? = pullRemote(tableName, authHeader)
         if (remote != null && remote.isNotEmpty()) {
@@ -416,9 +429,25 @@ class SyncManager(private val context: Context) {
 
     private suspend fun syncOnboardingAnswers(userId: String, authHeader: String) {
         val tableName = "onboarding_answers"
-        val unsynced = dao.getUnsyncedOnboardingAnswers().map { it.copy(userId = userId, isSynced = true) }
+        val rawUnsynced = dao.getUnsyncedOnboardingAnswers()
+        val unsynced = mutableListOf<OnboardingAnswer>()
+        val idsToDelete = mutableListOf<String>()
+        
+        for (item in rawUnsynced) {
+            if (item.id.startsWith("local_user_")) {
+                idsToDelete.add(item.id)
+                val newId = item.id.replace("local_user_", "${userId}_")
+                unsynced.add(item.copy(id = newId, userId = userId, isSynced = true))
+            } else {
+                unsynced.add(item.copy(userId = userId, isSynced = true))
+            }
+        }
+
         if (pushRemote(tableName, authHeader, unsynced)) {
             if (unsynced.isNotEmpty()) dao.insertOnboardingAnswers(unsynced)
+            for (oldId in idsToDelete) {
+                dao.deleteOnboardingAnswerById(oldId)
+            }
         }
         val remote: List<OnboardingAnswer>? = pullRemote(tableName, authHeader)
         if (remote != null && remote.isNotEmpty()) {

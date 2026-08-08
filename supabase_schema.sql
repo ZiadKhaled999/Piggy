@@ -169,12 +169,12 @@ CREATE TABLE IF NOT EXISTS ai_chat_messages (
 );
 
 -- 12. Create Onboarding Answers Table
-DROP TABLE IF EXISTS onboarding_answers CASCADE;
 CREATE TABLE IF NOT EXISTS onboarding_answers (
     id TEXT PRIMARY KEY,
     "userId" TEXT NOT NULL,
     "key" TEXT NOT NULL,
     "value" TEXT NOT NULL,
+    "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
     "isSynced" BOOLEAN DEFAULT true
 );

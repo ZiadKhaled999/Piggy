@@ -262,6 +262,8 @@ interface PiggyLedgerDao {
     @Query("SELECT * FROM onboarding_answers WHERE `key` = :key")
     suspend fun getOnboardingAnswerByKey(key: String): OnboardingAnswer?
 
+    @Query("DELETE FROM onboarding_answers WHERE id = :id")
+    suspend fun deleteOnboardingAnswerById(id: String)
 
     @androidx.room.Transaction
     suspend fun resolvePendingTransaction(pendingId: String, accountId: String) {
@@ -313,6 +315,9 @@ interface PiggyLedgerDao {
 
     @Query("SELECT * FROM user_preferences WHERE userId = :userId")
     suspend fun getUserPreferencesByUserId(userId: String): UserPreferencesEntity?
+
+    @Query("DELETE FROM user_preferences WHERE userId = :userId")
+    suspend fun deleteUserPreferencesByUserId(userId: String)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUserPreferences(userPreferences: UserPreferencesEntity)

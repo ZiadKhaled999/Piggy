@@ -1368,8 +1368,8 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
                             customerInfo = info
                             val active = info.entitlements.all.values.any { it.isActive } || info.entitlements["Piggy Ledger Pro"]?.isActive == true
                             isPro = active || isPremiumState
-                            if (active != isPremiumState) {
-                                viewModel.setPremiumStatus(active)
+                            if (active && !isPremiumState) {
+                                viewModel.setPremiumStatus(true)
                             }
                         }
                         override fun onError(error: com.revenuecat.purchases.PurchasesError) {
@@ -1644,12 +1644,14 @@ fun PiggyLedgerPaywall(
     }
 
     val monthlyPackage = packagesList.find { 
+        it.product.id == "piggy-ledger-subscription-monthly" ||
         it.packageType == com.revenuecat.purchases.PackageType.MONTHLY ||
         it.identifier.contains("month", ignoreCase = true) ||
         it.product.id.contains("month", ignoreCase = true)
     } ?: packagesList.getOrNull(0)
 
     val yearlyPackage = packagesList.find { 
+        it.product.id == "piggy-ledger-subscription-yearly" ||
         it.packageType == com.revenuecat.purchases.PackageType.ANNUAL ||
         it.identifier.contains("year", ignoreCase = true) ||
         it.identifier.contains("annual", ignoreCase = true) ||
@@ -1658,6 +1660,7 @@ fun PiggyLedgerPaywall(
     } ?: packagesList.getOrNull(1)
 
     val lifetimePackage = packagesList.find { 
+        it.product.id == "piggy-ledger-subscription-lifetime" ||
         it.packageType == com.revenuecat.purchases.PackageType.LIFETIME ||
         it.identifier.contains("life", ignoreCase = true) ||
         it.identifier.contains("lt", ignoreCase = true) ||
@@ -2025,36 +2028,34 @@ fun PiggyLedgerPaywall(
                                         override fun onCompleted(storeTransaction: com.revenuecat.purchases.models.StoreTransaction, customerInfo: com.revenuecat.purchases.CustomerInfo) {
                                             isPurchasing = false
                                             val active = customerInfo.entitlements.all.values.any { it.isActive } || customerInfo.entitlements["Piggy Ledger Pro"]?.isActive == true
-                                            if (active || customerInfo.entitlements.all.isNotEmpty()) {
+                                            if (active) {
                                                 viewModel.setPremiumStatus(true)
                                                 onPurchaseSuccess(customerInfo)
-                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Welcome to Pro! Pro features unlocked.", android.widget.Toast.LENGTH_SHORT)
+                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Welcome to Pro! All features unlocked.", android.widget.Toast.LENGTH_SHORT)
                                             } else {
-                                                viewModel.setPremiumStatus(true)
-                                                onPurchaseSuccess(customerInfo)
-                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase complete! Unlocking Pro...", android.widget.Toast.LENGTH_SHORT)
+                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase completed.", android.widget.Toast.LENGTH_SHORT)
                                             }
                                         }
                                         override fun onError(error: com.revenuecat.purchases.PurchasesError, userCancelled: Boolean) {
                                             isPurchasing = false
                                             if (!userCancelled) {
-                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase error: ${error.message}", android.widget.Toast.LENGTH_LONG)
+                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Google Play error: ${error.message}", android.widget.Toast.LENGTH_LONG)
                                             }
                                         }
                                     }
                                 )
                             } catch (e: Exception) {
                                 isPurchasing = false
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase error: ${e.message}", android.widget.Toast.LENGTH_LONG)
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase failed: ${e.message}", android.widget.Toast.LENGTH_LONG)
                             }
                         } else {
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "In-App Billing is not available on this device.", Toast.LENGTH_LONG)
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "In-App Billing is not initialized.", android.widget.Toast.LENGTH_LONG)
                         }
                     } else {
                         val msg = when {
-                            isLoadingOfferings -> "Plans are loading from RevenueCat. Please wait a moment..."
-                            fetchError != null -> "RevenueCat error: $fetchError"
-                            packagesList.isEmpty() -> "No active billing products found. Ensure Play Console products are Active & test account added."
+                            isLoadingOfferings -> "Loading plans from Google Play..."
+                            fetchError != null -> "Google Play error: $fetchError"
+                            packagesList.isEmpty() -> "No active billing products found in RevenueCat for package com.oryno.piggy_ledger."
                             else -> "Selected plan is currently unavailable."
                         }
                         com.oryno.piggy_ledger.ui.ToastUtil.show(context, msg, android.widget.Toast.LENGTH_LONG)

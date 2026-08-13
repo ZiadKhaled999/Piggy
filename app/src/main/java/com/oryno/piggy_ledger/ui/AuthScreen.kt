@@ -167,18 +167,27 @@ fun AuthScreen(
                                             onAuthSuccess()
                                             return@launch
                                         }
+                                    } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
+                                        isLoading = false
+                                        return@launch
                                     } catch (e: Exception) {
-                                        Log.e("AuthScreen", "CredentialManager Sign-In failed or cancelled, falling back to Clerk OAuth", e)
+                                        isLoading = false
+                                        val errorMsg = e.message ?: e.toString()
+                                        Log.e("AuthScreen", "CredentialManager Sign-In failed", e)
+                                        android.widget.Toast.makeText(context, "Google Auth Error: $errorMsg", android.widget.Toast.LENGTH_LONG).show()
+                                        return@launch
                                     }
                                 }
 
-                                // Fallback or direct Clerk OAuth flow
+                                // Fallback or direct Clerk OAuth flow (only if native client ID is not configured)
                                 Clerk.auth.signInWithOAuth(OAuthProvider.GOOGLE)
                                     .onSuccess {
                                         // User flow will trigger LaunchedEffect
                                     }
-                                    .onFailure {
+                                    .onFailure { error ->
                                         isLoading = false
+                                        val errorMsg = error?.toString() ?: "Unknown Clerk Error"
+                                        android.widget.Toast.makeText(context, "Clerk Auth Error: $errorMsg", android.widget.Toast.LENGTH_LONG).show()
                                     }
                             }
                         },

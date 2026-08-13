@@ -1,8 +1,3 @@
-==============================================================================
-TEMPORARILY DISABLED: Build Android App Bundle Workflow
-To re-enable this workflow later, simply remove the leading '#' comments below.
-==============================================================================
-
 name: Build Android App Bundle
 
 on:

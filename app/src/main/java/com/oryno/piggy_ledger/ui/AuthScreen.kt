@@ -1,6 +1,6 @@
 package com.oryno.piggy_ledger.ui
-import androidx.compose.ui.res.stringResource
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -12,21 +12,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.testTag
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clerk.api.Clerk
 import com.clerk.api.network.serialization.onFailure
 import com.clerk.api.network.serialization.onSuccess
 import com.clerk.api.sso.OAuthProvider
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.oryno.piggy_ledger.BuildConfig
 import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
-import kotlinx.coroutines.launch
 import com.posthog.PostHog
+import kotlinx.coroutines.launch
 
 @Composable
 fun AuthScreen(
@@ -34,6 +42,7 @@ fun AuthScreen(
     onAuthSuccess: () -> Unit
 ) {
     val user by Clerk.userFlow.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(false) }
 
@@ -129,19 +138,54 @@ fun AuthScreen(
                         onClick = {
                             isLoading = true
                             scope.launch {
+                                val webClientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
+                                if (webClientId.isNotBlank() && webClientId != "GOOGLE_WEB_CLIENT_ID_DEFAULT_VALUE") {
+                                    try {
+                                        val googleIdOption = GetGoogleIdOption.Builder()
+                                            .setServerClientId(webClientId)
+                                            .setFilterByAuthorizedAccounts(false)
+                                            .build()
+
+                                        val request = GetCredentialRequest.Builder()
+                                            .addCredentialOption(googleIdOption)
+                                            .build()
+
+                                        val credentialManager = CredentialManager.create(context)
+                                        val result = credentialManager.getCredential(context, request)
+                                        val credential = result.credential
+
+                                        if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                                            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                                            val email = googleIdTokenCredential.id
+                                            val displayName = googleIdTokenCredential.displayName ?: email
+                                            val photoUrl = googleIdTokenCredential.profilePictureUri?.toString() ?: ""
+
+                                            viewModel.signInWithGoogle(email, displayName, photoUrl)
+                                            viewModel.triggerCloudSync()
+                                            PostHog.capture(event = "user_sign_in", properties = mapOf("method" to "google_credential_manager", "user_id" to email))
+                                            isLoading = false
+                                            onAuthSuccess()
+                                            return@launch
+                                        }
+                                    } catch (e: Exception) {
+                                        Log.e("AuthScreen", "CredentialManager Sign-In failed or cancelled, falling back to Clerk OAuth", e)
+                                    }
+                                }
+
+                                // Fallback or direct Clerk OAuth flow
                                 Clerk.auth.signInWithOAuth(OAuthProvider.GOOGLE)
                                     .onSuccess {
-                                        // User will be updated and LaunchedEffect will trigger
+                                        // User flow will trigger LaunchedEffect
                                     }
                                     .onFailure {
                                         isLoading = false
-                                        // Add error handling if needed
                                     }
                             }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
+                            .height(56.dp)
+                            .testTag("google_sign_in_button"),
                         shape = RoundedCornerShape(100.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             containerColor = Color.White,
@@ -166,8 +210,6 @@ fun AuthScreen(
                             )
                         }
                     }
-
-
                 }
             }
         } else {
@@ -175,3 +217,4 @@ fun AuthScreen(
         }
     }
 }
+

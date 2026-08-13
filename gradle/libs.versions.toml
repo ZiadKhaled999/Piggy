@@ -49,6 +49,8 @@ clerk = "1.0.10"
 biometric = "1.2.0-alpha01"
 lottie = "6.6.2"
 markdownRenderer = "0.27.0"
+credentials = "1.5.0-rc01"
+googleid = "1.1.1"
 
 
 ktor = "3.0.0"
@@ -125,6 +127,9 @@ posthog-android = { group = "com.posthog", name = "posthog-android", version.ref
 clerk-android-ui = { group = "com.clerk", name = "clerk-android-ui", version.ref = "clerk" }
 lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", version.ref = "lottie" }
 markdown-renderer-m3 = { group = "com.mikepenz", name = "multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
+androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
+androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
+googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

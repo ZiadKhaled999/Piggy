@@ -27,6 +27,7 @@ import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
+import kotlinx.coroutines.delay
 
 @Composable
 fun LanguageSelectionScreen(
@@ -94,6 +95,33 @@ fun LanguageSelectionScreen(
             isSelected = selectedLanguage == "ar-EG",
             onClick = { selectedLanguage = "ar-EG" }
         )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        androidx.compose.animation.AnimatedVisibility(visible = selectedLanguage != null) {
+            val message = when(selectedLanguage) {
+                "ar" -> "يمكنك تغيير اللغة لاحقاً من الإعدادات."
+                "ar-EG" -> "تقدر تغير اللغة بعدين من الإعدادات."
+                else -> "You can change this later in settings."
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFDADADA), RoundedCornerShape(25.dp))
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = message,
+                    color = PinkPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 20.sp,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
         
         Spacer(modifier = Modifier.weight(1f))
         

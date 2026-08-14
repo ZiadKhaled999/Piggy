@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS ai_chat_messages (
 -- 12. Create Onboarding Answers Table
 CREATE TABLE IF NOT EXISTS onboarding_answers (
     id TEXT PRIMARY KEY,
-    "userId" TEXT NOT NULL,
+    "userId" TEXT,
     "key" TEXT NOT NULL,
     "value" TEXT NOT NULL,
     "createdAt" BIGINT NOT NULL,

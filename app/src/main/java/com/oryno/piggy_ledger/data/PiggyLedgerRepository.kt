@@ -172,14 +172,13 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
     suspend fun resolvePendingTransaction(pendingId: String, accountId: String) { dao.resolvePendingTransaction(pendingId, accountId); triggerSync() }
 
     suspend fun saveOnboardingAnswer(key: String, value: String) {
-        val user = com.clerk.api.Clerk.userFlow.value
-        val userId = user?.id ?: "local_user"
+        val now = System.currentTimeMillis()
         val answer = OnboardingAnswer(
-            id = "${userId}_$key",
-            userId = userId,
+            id = "${now}_$key",
+            userId = null,
             key = key,
             value = value,
-            updatedAt = System.currentTimeMillis(),
+            updatedAt = now,
             isSynced = false
         )
         dao.insertOnboardingAnswer(answer)
@@ -187,13 +186,11 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
     }
 
     suspend fun saveOnboardingAnswers(answers: Map<String, String>) {
-        val user = com.clerk.api.Clerk.userFlow.value
-        val userId = user?.id ?: "local_user"
         val now = System.currentTimeMillis()
         val list = answers.map { (k, v) ->
             OnboardingAnswer(
-                id = "${userId}_$k",
-                userId = userId,
+                id = "${now}_$k",
+                userId = null,
                 key = k,
                 value = v,
                 updatedAt = now,

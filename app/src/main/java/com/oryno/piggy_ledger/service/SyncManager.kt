@@ -46,33 +46,38 @@ class SyncManager(private val context: Context) {
     suspend fun syncAll() = withContext(Dispatchers.IO) {
         Log.i("SyncManager", "🔥 syncAll() called! Neon API URL: $apiUrl")
         val user = Clerk.userFlow.value
-        if (user == null) {
-            Log.w("SyncManager", "❌ No authenticated user (Clerk.userFlow.value is null). Skipping cloud sync.")
-            return@withContext
-        }
-        val userId = user.id
+        val userId = user?.id
 
         val authHeader = getAuthHeader()
-        if (authHeader == null) {
-            Log.w("SyncManager", "❌ Auth header is null. Skipping cloud sync.")
+
+        // Always attempt to sync onboarding answers, even if unauthenticated
+        try {
+            syncOnboardingAnswers(userId, authHeader)
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Failed to sync onboarding answers", e)
+        }
+
+        if (user == null || authHeader == null) {
+            Log.w("SyncManager", "❌ No authenticated user (Clerk.userFlow.value is null) or Auth header is null. Skipping cloud sync.")
             return@withContext
         }
 
-        Log.i("SyncManager", "✅ Authenticated user found: userId=$userId. Starting syncAll...")
+        val nonNullUserId = user.id
+
+        Log.i("SyncManager", "✅ Authenticated user found: userId=$nonNullUserId. Starting syncAll...")
 
         try {
-            syncUserPreferences(userId, authHeader)
-            syncStreakDates(userId, authHeader)
-            syncGoals(userId, authHeader)
-            syncTransactions(userId, authHeader)
-            syncLoans(userId, authHeader)
-            syncLoanPayments(userId, authHeader)
-            syncAccounts(userId, authHeader)
-            syncAccountTransactions(userId, authHeader)
-            syncPendingTransactions(userId, authHeader)
-            syncAiConversations(userId, authHeader)
-            syncAiChatMessages(userId, authHeader)
-            syncOnboardingAnswers(userId, authHeader)
+            syncUserPreferences(nonNullUserId, authHeader)
+            syncStreakDates(nonNullUserId, authHeader)
+            syncGoals(nonNullUserId, authHeader)
+            syncTransactions(nonNullUserId, authHeader)
+            syncLoans(nonNullUserId, authHeader)
+            syncLoanPayments(nonNullUserId, authHeader)
+            syncAccounts(nonNullUserId, authHeader)
+            syncAccountTransactions(nonNullUserId, authHeader)
+            syncPendingTransactions(nonNullUserId, authHeader)
+            syncAiConversations(nonNullUserId, authHeader)
+            syncAiChatMessages(nonNullUserId, authHeader)
 
             Log.i("SyncManager", "Sync completed successfully.")
         } catch (e: Exception) {
@@ -83,14 +88,16 @@ class SyncManager(private val context: Context) {
 
     private suspend inline fun <reified T : Any> pushRemote(
         tableName: String,
-        authHeader: String,
+        authHeader: String?,
         items: List<T>
     ): Boolean {
         if (items.isEmpty()) return true
         Log.d("SyncManager", "⬆️ Pushing ${items.size} items to $tableName")
         return try {
             val response = ktorClient.post("$apiUrl/sync/push/$tableName") {
-                header(HttpHeaders.Authorization, authHeader)
+                if (authHeader != null) {
+                    header(HttpHeaders.Authorization, authHeader)
+                }
                 contentType(ContentType.Application.Json)
                 setBody(items)
             }
@@ -110,12 +117,14 @@ class SyncManager(private val context: Context) {
 
     private suspend inline fun <reified T : Any> pullRemote(
         tableName: String,
-        authHeader: String
+        authHeader: String?
     ): List<T>? {
         Log.d("SyncManager", "Fetching items from $tableName")
         return try {
             val response = ktorClient.get("$apiUrl/sync/pull/$tableName") {
-                header(HttpHeaders.Authorization, authHeader)
+                if (authHeader != null) {
+                    header(HttpHeaders.Authorization, authHeader)
+                }
             }
             if (response.status.isSuccess()) {
                 val remoteItems: List<T> = response.body()
@@ -427,28 +436,17 @@ class SyncManager(private val context: Context) {
         }
     }
 
-    private suspend fun syncOnboardingAnswers(userId: String, authHeader: String) {
+    private suspend fun syncOnboardingAnswers(userId: String?, authHeader: String?) {
         val tableName = "onboarding_answers"
         val rawUnsynced = dao.getUnsyncedOnboardingAnswers()
-        val unsynced = mutableListOf<OnboardingAnswer>()
-        val idsToDelete = mutableListOf<String>()
-        
-        for (item in rawUnsynced) {
-            if (item.id.startsWith("local_user_")) {
-                idsToDelete.add(item.id)
-                val newId = item.id.replace("local_user_", "${userId}_")
-                unsynced.add(item.copy(id = newId, userId = userId, isSynced = true))
-            } else {
-                unsynced.add(item.copy(userId = userId, isSynced = true))
-            }
-        }
+        val unsynced = rawUnsynced.map { it.copy(isSynced = true) }
 
         if (pushRemote(tableName, authHeader, unsynced)) {
             if (unsynced.isNotEmpty()) dao.insertOnboardingAnswers(unsynced)
-            for (oldId in idsToDelete) {
-                dao.deleteOnboardingAnswerById(oldId)
-            }
         }
+        
+        if (authHeader == null) return
+        
         val remote: List<OnboardingAnswer>? = pullRemote(tableName, authHeader)
         if (remote != null && remote.isNotEmpty()) {
             val localMap = dao.getAllOnboardingAnswersSync().associateBy { it.id }

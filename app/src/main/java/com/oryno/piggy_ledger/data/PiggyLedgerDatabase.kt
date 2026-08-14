@@ -7,12 +7,35 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Goal::class, Transaction::class, Loan::class, LoanPayment::class, Account::class, AccountTransaction::class, PendingTransaction::class, AiChatMessage::class, AiConversation::class, UserPreferencesEntity::class, StreakDateEntity::class, OnboardingAnswer::class], version = 17, exportSchema = false)
+@Database(entities = [Goal::class, Transaction::class, Loan::class, LoanPayment::class, Account::class, AccountTransaction::class, PendingTransaction::class, AiChatMessage::class, AiConversation::class, UserPreferencesEntity::class, StreakDateEntity::class, OnboardingAnswer::class], version = 18, exportSchema = false)
 abstract class PiggyLedgerDatabase : RoomDatabase() {
 
     companion object {
         @Volatile
         private var INSTANCE: PiggyLedgerDatabase? = null
+
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `onboarding_answers_new` (
+                        `id` TEXT NOT NULL, 
+                        `userId` TEXT, 
+                        `key` TEXT NOT NULL DEFAULT '', 
+                        `value` TEXT NOT NULL DEFAULT '', 
+                        `createdAt` INTEGER NOT NULL DEFAULT 0,
+                        `updatedAt` INTEGER NOT NULL DEFAULT 0, 
+                        `isSynced` INTEGER NOT NULL DEFAULT 0, 
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                db.execSQL("""
+                    INSERT INTO `onboarding_answers_new` (`id`, `userId`, `key`, `value`, `createdAt`, `updatedAt`, `isSynced`)
+                    SELECT `id`, `userId`, `key`, `value`, `createdAt`, `updatedAt`, `isSynced` FROM `onboarding_answers`
+                """.trimIndent())
+                db.execSQL("DROP TABLE `onboarding_answers`")
+                db.execSQL("ALTER TABLE `onboarding_answers_new` RENAME TO `onboarding_answers`")
+            }
+        }
 
         val MIGRATION_16_17 = object : Migration(16, 17) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -164,7 +187,7 @@ abstract class PiggyLedgerDatabase : RoomDatabase() {
                     PiggyLedgerDatabase::class.java,
                     "piggy_ledger_db"
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

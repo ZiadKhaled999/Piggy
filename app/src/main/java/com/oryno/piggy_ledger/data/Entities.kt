@@ -226,7 +226,7 @@ data class PendingTransaction(
 @Entity(tableName = "onboarding_answers")
 data class OnboardingAnswer(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
-    val userId: String = "",
+    val userId: String? = null,
     val key: String = "",
     val value: String = "",
     val createdAt: Long = System.currentTimeMillis(),

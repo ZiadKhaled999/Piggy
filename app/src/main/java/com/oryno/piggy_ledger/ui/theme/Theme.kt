@@ -11,12 +11,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val LightColorScheme = lightColorScheme(
-    primary = NavyDark,
-    secondary = AccentBlue,
+    primary = PinkPrimary,
+    onPrimary = androidx.compose.ui.graphics.Color.White,
+    primaryContainer = PinkPrimaryContainer,
+    onPrimaryContainer = OnPinkPrimaryContainer,
+    secondary = NavyDark,
     tertiary = SlateDark,
     background = BackgroundWhite,
     surface = CardWhite,
-    onPrimary = androidx.compose.ui.graphics.Color.White,
     onSecondary = androidx.compose.ui.graphics.Color.White,
     onTertiary = androidx.compose.ui.graphics.Color.White,
     onBackground = TextDark,

@@ -14,11 +14,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.border
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -91,10 +95,11 @@ fun AuthScreen(
     var activeSignUp by remember { mutableStateOf<SignUp?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isCompletingProfile by rememberSaveable { mutableStateOf(false) }
 
     // Auto-login if session exists
-    LaunchedEffect(user) {
-        if (user != null) {
+    LaunchedEffect(user, isCompletingProfile) {
+        if (user != null && !isCompletingProfile) {
             val email = user?.primaryEmailAddress?.emailAddress ?: ""
             val name = listOfNotNull(user?.firstName, user?.lastName)
                 .filter { it.isNotBlank() }
@@ -270,19 +275,20 @@ fun AuthScreen(
                             shape = RoundedCornerShape(100.dp),
                             enabled = !isLoading
                         ) {
-                            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            if (isLoading) ExpressiveLoadingIndicator(size = 24.dp, color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                             else Text("Sign In", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
                 AuthRoute.SU_EMAIL -> {
-                    // Sign Up: Email (Only component on screen)
+                    // Sign Up: Email & Password
                     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
                             IconButton(onClick = { navigateTo(AuthRoute.WELCOME) }) { Icon(Icons.Default.ArrowBack, null) }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("Add your email", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                        Text("Create Account", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                        Text("Enter your email and a strong password", color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
                         Spacer(modifier = Modifier.height(48.dp))
 
                         OutlinedTextField(
@@ -290,7 +296,25 @@ fun AuthScreen(
                             onValueChange = { suEmail = it; errorMessage = null },
                             label = { Text("Email Address") },
                             modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        var pwdVisible by remember { mutableStateOf(false) }
+                        OutlinedTextField(
+                            value = suPassword,
+                            onValueChange = { suPassword = it; errorMessage = null },
+                            label = { Text("Password") },
+                            modifier = Modifier.fillMaxWidth(),
+                            visualTransformation = if (pwdVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { pwdVisible = !pwdVisible }) {
+                                    Icon(if (pwdVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
+                                }
+                            },
                             singleLine = true,
                             shape = RoundedCornerShape(16.dp)
                         )
@@ -302,22 +326,38 @@ fun AuthScreen(
                         Spacer(modifier = Modifier.height(64.dp))
                         Button(
                             onClick = {
-                                if (suEmail.isBlank()) return@Button
+                                if (suEmail.isBlank() || suPassword.isBlank()) {
+                                    errorMessage = "Please enter both email and password"
+                                    return@Button
+                                }
+                                isCompletingProfile = true
                                 isLoading = true
                                 scope.launch {
-                                    Clerk.auth.signUp { 
+                                    Clerk.auth.signUp {
                                         email = suEmail
-                                        password = "TempPassword123!"
-                                        firstName = "Temp"
-                                        lastName = "User"
+                                        password = suPassword
                                     }.onSuccess { su ->
                                         activeSignUp = su
-                                        su.sendEmailCode()
+                                        if (su.status == SignUp.Status.COMPLETE) {
+                                            val sid = su.createdSessionId
+                                            if (!sid.isNullOrBlank()) {
+                                                Clerk.auth.setActive(sid)
+                                            }
+                                            isLoading = false
+                                        } else {
+                                            su.sendEmailCode()
+                                                .onSuccess {
+                                                    isLoading = false
+                                                    navigateTo(AuthRoute.SU_OTP)
+                                                }
+                                                .onFailure { err ->
+                                                    isLoading = false
+                                                    errorMessage = "Failed to send OTP: $err"
+                                                }
+                                        }
+                                    }.onFailure { err ->
                                         isLoading = false
-                                        navigateTo(AuthRoute.SU_OTP)
-                                    }.onFailure {
-                                        isLoading = false
-                                        errorMessage = "Failed to start sign up: $it"
+                                        errorMessage = "Failed to start sign up: $err"
                                     }
                                 }
                             },
@@ -325,13 +365,22 @@ fun AuthScreen(
                             shape = RoundedCornerShape(100.dp),
                             enabled = !isLoading
                         ) {
-                            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            if (isLoading) ExpressiveLoadingIndicator(size = 24.dp, color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                             else Text("Next", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
                 AuthRoute.SU_OTP -> {
                     // Sign Up: OTP
+                    var resendTimer by remember { mutableIntStateOf(30) }
+                    
+                    LaunchedEffect(Unit) {
+                        while (resendTimer > 0) {
+                            delay(1000)
+                            resendTimer--
+                        }
+                    }
+
                     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
                             IconButton(onClick = { navigateTo(AuthRoute.SU_EMAIL) }) { Icon(Icons.Default.ArrowBack, null) }
@@ -341,29 +390,97 @@ fun AuthScreen(
                         Text("We sent an OTP to $suEmail", color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
                         Spacer(modifier = Modifier.height(48.dp))
 
-                        OutlinedTextField(
+                        BasicTextField(
                             value = suOtp,
-                            onValueChange = { suOtp = it; errorMessage = null },
-                            label = { Text("Add the OTP") },
-                            modifier = Modifier.fillMaxWidth(),
+                            onValueChange = { 
+                                if (it.length <= 6 && it.all { char -> char.isDigit() }) {
+                                    suOtp = it
+                                    errorMessage = null
+                                }
+                            },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp)
+                            decorationBox = {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    repeat(6) { index ->
+                                        val char = when {
+                                            index < suOtp.length -> suOtp[index].toString()
+                                            else -> ""
+                                        }
+                                        val isFocused = index == suOtp.length
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .aspectRatio(1f)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                                .border(
+                                                    width = if (isFocused) 2.dp else 1.dp,
+                                                    color = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                                    shape = RoundedCornerShape(12.dp)
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(text = char, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            }
                         )
 
                         if (errorMessage != null) {
                             Text(errorMessage ?: "", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 16.dp))
                         }
 
-                        Spacer(modifier = Modifier.height(64.dp))
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        TextButton(
+                            onClick = {
+                                if (resendTimer == 0) {
+                                    isLoading = true
+                                    scope.launch {
+                                        activeSignUp?.sendEmailCode()
+                                            ?.onSuccess {
+                                                isLoading = false
+                                                resendTimer = 30
+                                                errorMessage = null
+                                            }?.onFailure {
+                                                isLoading = false
+                                                errorMessage = "Failed to resend code"
+                                            }
+                                    }
+                                }
+                            },
+                            enabled = resendTimer == 0 && !isLoading
+                        ) {
+                            Text(
+                                text = if (resendTimer > 0) "Resend code in ${resendTimer}s" else "Resend code",
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (resendTimer > 0) Color.Gray else MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
                         Button(
                             onClick = {
-                                if (suOtp.isBlank()) return@Button
+                                if (suOtp.length < 6) {
+                                    errorMessage = "Please enter the full 6-digit code"
+                                    return@Button
+                                }
                                 isLoading = true
                                 scope.launch {
                                     activeSignUp?.verifyCode(suOtp, VerificationType.EMAIL)
                                         ?.onSuccess { su ->
                                             activeSignUp = su
+                                            if (su.status == SignUp.Status.COMPLETE) {
+                                                val sid = su.createdSessionId
+                                                if (!sid.isNullOrBlank()) {
+                                                    Clerk.auth.setActive(sid)
+                                                }
+                                            }
                                             isLoading = false
                                             navigateTo(AuthRoute.SU_AVATAR)
                                         }?.onFailure {
@@ -376,7 +493,7 @@ fun AuthScreen(
                             shape = RoundedCornerShape(100.dp),
                             enabled = !isLoading
                         ) {
-                            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            if (isLoading) ExpressiveLoadingIndicator(size = 24.dp, color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                             else Text("Next", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         }
                     }
@@ -389,7 +506,7 @@ fun AuthScreen(
 
                     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-                            IconButton(onClick = { navigateTo(AuthRoute.SU_OTP) }) { Icon(Icons.Default.ArrowBack, null) }
+                            IconButton(onClick = { navigateTo(AuthRoute.SU_EMAIL) }) { Icon(Icons.Default.ArrowBack, null) }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("Upload Image Profile", fontSize = 28.sp, fontWeight = FontWeight.Bold)
@@ -445,14 +562,13 @@ fun AuthScreen(
                     }
                 }
                 AuthRoute.SU_NAME -> {
-                    // Sign Up: Name & Password
+                    // Sign Up: Name
                     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
                             IconButton(onClick = { navigateTo(AuthRoute.SU_AVATAR) }) { Icon(Icons.Default.ArrowBack, null) }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("Add your name", fontSize = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                        Text("And set a password to secure your account", color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
                         Spacer(modifier = Modifier.height(32.dp))
 
                         OutlinedTextField(
@@ -460,22 +576,6 @@ fun AuthScreen(
                             onValueChange = { suName = it; errorMessage = null },
                             label = { Text("Full Name") },
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        var pwdVisible by remember { mutableStateOf(false) }
-                        OutlinedTextField(
-                            value = suPassword,
-                            onValueChange = { suPassword = it; errorMessage = null },
-                            label = { Text("Password") },
-                            modifier = Modifier.fillMaxWidth(),
-                            visualTransformation = if (pwdVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            trailingIcon = {
-                                IconButton(onClick = { pwdVisible = !pwdVisible }) {
-                                    Icon(if (pwdVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
-                                }
-                            },
                             singleLine = true,
                             shape = RoundedCornerShape(16.dp)
                         )
@@ -487,8 +587,8 @@ fun AuthScreen(
                         Spacer(modifier = Modifier.height(64.dp))
                         Button(
                             onClick = {
-                                if (suName.isBlank() || suPassword.isBlank()) {
-                                    errorMessage = "Please fill in all fields"
+                                if (suName.isBlank()) {
+                                    errorMessage = "Please enter your name"
                                     return@Button
                                 }
                                 navigateTo(AuthRoute.SU_PREVIEW)
@@ -596,25 +696,18 @@ fun AuthScreen(
                                         activeSignUp?.update {
                                             firstName = first
                                             lastName = last
-                                            password = suPassword
                                         }?.onSuccess { finalSu ->
                                             if (finalSu.status == SignUp.Status.COMPLETE) {
                                                 val sid = finalSu.createdSessionId
                                                 if (!sid.isNullOrBlank()) {
                                                     Clerk.auth.setActive(sid)
                                                 }
-                                                isLoading = false
-                                                // LaunchedEffect auto-handles login
-                                            } else {
-                                                isLoading = false
-                                                errorMessage = "Sign up incomplete: ${finalSu.status}"
                                             }
-                                        }?.onFailure {
                                             isLoading = false
-                                            errorMessage = "Error finishing sign up: $it"
-                                        } ?: run {
+                                            isCompletingProfile = false
+                                        }?.onFailure { err ->
                                             isLoading = false
-                                            errorMessage = "Sign up session lost"
+                                            errorMessage = "Failed to update name: $err"
                                         }
                                     } catch (e: Exception) {
                                         isLoading = false
@@ -626,7 +719,7 @@ fun AuthScreen(
                             shape = RoundedCornerShape(100.dp),
                             enabled = !isLoading
                         ) {
-                            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            if (isLoading) ExpressiveLoadingIndicator(size = 24.dp, color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                             else Text("Finish", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         }
                         Spacer(modifier = Modifier.height(24.dp))

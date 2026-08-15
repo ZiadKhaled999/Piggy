@@ -1,8 +1,8 @@
-package com.oryno.piggy_ledger
-
 import com.clerk.api.Clerk
+import com.clerk.api.user.update
 
 fun test() {
-    val session = Clerk.sessionFlow.value
-    // let's see methods
+    Clerk.userFlow.value?.update {
+        firstName = "Test"
+    }
 }

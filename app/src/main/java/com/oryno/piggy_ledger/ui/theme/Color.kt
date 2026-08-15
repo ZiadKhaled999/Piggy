@@ -10,6 +10,8 @@ val TextDark = Color(0xFF0F172A)
 val TextLight = Color(0xFF64748B)
 
 val PinkPrimary = Color(0xFFF43F5E) 
+val PinkPrimaryContainer = Color(0xFFFFD9E2)
+val OnPinkPrimaryContainer = Color(0xFF3E001D)
 val AccentBlue = Color(0xFF3B82F6) // A cleaner blue to replace the heavy purple
 val PinkAccent = Color(0xFFF43F5E)
 val BlackAccent = Color(0xFF18181B)

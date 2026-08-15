@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">فلوسك يا بيه</string>
+    <string name="app_name">بيجى</string>
     <string name="language">اللغة</string>
     <string name="select_language">اختار اللغة</string>
     <string name="choose_language_desc">اختار لغتك المفضلة عشان تكمل</string>
@@ -84,7 +84,7 @@
     <string name="onboarding_testimonial_1_author">@Tom</string>
     <string name="onboarding_testimonial_2_quote">"سددت ديوني كلها في شهرين.\nتغيير حقيقي لحياتي!"</string>
     <string name="onboarding_testimonial_2_author">@Hannah84</string>
-    <string name="onboarding_testimonial_3_quote">"حققت هدفي المالي\nبفضل دفتر الحصالة!"</string>
+    <string name="onboarding_testimonial_3_quote">"حققت هدفي المالي\nبفضل بيجى!"</string>
     <string name="onboarding_testimonial_3_author">@Tina1974</string>
     
     <!-- Dashboard & UI -->
@@ -110,7 +110,7 @@
     <string name="manage_loans">ظبط مين ليه فلوس ومين عليه.</string>
     <string name="community_feedback">رأي الناس</string>
     <string name="join_community_board">شارك في لوحة المجتمع</string>
-    <string name="help_improve">ساعدنا نحسن فلوسك يا بيه! دوس تحت عشان تطلب مميزات جديدة.</string>
+    <string name="help_improve">ساعدنا نحسن بيجى! دوس تحت عشان تطلب مميزات جديدة.</string>
     <string name="rate_app_title">قيم التطبيق</string>
     <string name="enjoying_piggy_ledger">مبسوط بالحصالة؟ دوس على النجوم عشان تقيم تجربتك.</string>
     <string name="backup_data_title">شيل نسخة من البيانات</string>
@@ -434,56 +434,6 @@
     <string name="group_by_day">باليوم</string>
     <string name="group_by_month">بالشهر</string>
 
-    <!-- Clerk Auth Screen -->
-    <string name="auth_welcome_title_main">فلوسك يا بيه</string>
-    <string name="auth_welcome_subtitle_main">أمان، بسيط، وذكي.</string>
-    <string name="auth_welcome_desc">تابع مصاريفك، حط أهداف، وحوش فلوس من غير مجهود.</string>
-    <string name="auth_welcome_title">يا هلا بيك في فلوسك يا بيه!</string>
-    <string name="auth_welcome_subtitle">بياناتك في الحفظ والصون</string>
-    <string name="auth_clerk_desc">بياناتك وتحاويشك بتتحفظ بشكل آمن عشان متضيعش منك أبداً ومتقلقش على أي قرش.</string>
-    <string name="auth_sign_in_btn">تسجيل دخول</string>
-    <string name="auth_sign_up_btn">حساب جديد</string>
-    <string name="auth_full_name">الاسم بالكامل</string>
-    <string name="auth_full_name_hint">مثال: أحمد محمد</string>
-    <string name="auth_email">الإيميل</string>
-    <string name="auth_email_hint">name@example.com</string>
-    <string name="auth_password">الباسورد</string>
-    <string name="auth_password_hint">اكتب باسورد مظبوط</string>
-    <string name="auth_confirm_password">تأكيد الباسورد</string>
-    <string name="auth_confirm_password_hint">اكتب الباسورد تاني</string>
-    <string name="auth_password_match">الباسوردين متطابقين تمام</string>
-    <string name="auth_password_mismatch">الباسوردين مش زي بعض</string>
-    <string name="auth_password_strength_weak">ضعيف</string>
-    <string name="auth_password_strength_fair">معقول</string>
-    <string name="auth_password_strength_good">كويس</string>
-    <string name="auth_password_strength_strong">جامد جداً</string>
-    <string name="auth_pwd_rule_length">٨ حروف على الأقل</string>
-    <string name="auth_pwd_rule_upper">حرف كابيتال (Capital)</string>
-    <string name="auth_pwd_rule_number">أرقام</string>
-    <string name="auth_pwd_rule_special">علامات خاصة</string>
-    <string name="auth_sign_in_title">يا مراحب، نورتنا!</string>
-    <string name="auth_sign_in_subtitle">سجل دخول لحسابك عشان تتابع فلوسك</string>
-    <string name="auth_sign_up_title">افتح حساب جديد</string>
-    <string name="auth_sign_up_subtitle">سجل معانا وابدأ رحلة تحويش وتظبيط مصاريفك</string>
-    <string name="auth_dont_have_account">معندكش حساب؟ اعمل حساب جديد</string>
-    <string name="auth_already_have_account">عندك حساب بالفعل؟ سجل دخولك</string>
-    <string name="auth_verify_email_title">تأكيد الإيميل بتاعك</string>
-    <string name="auth_verify_email_subtitle">بعتنا كود تأكيد 6 أرقام على إيميلك</string>
-    <string name="auth_otp_hint">اكتب كود الـ OTP الـ 6 أرقام</string>
-    <string name="auth_verify_btn">أكد وفعّل الحساب</string>
-    <string name="auth_resend_code">ابعت الكود تاني</string>
-    <string name="auth_resend_code_in">تقدر تبعت تاني بعد %1$d ثانية</string>
-    <string name="auth_cert_title">شهادة توثيق الإيميل الرسمية</string>
-    <string name="auth_cert_subtitle">ضمان الحماية والتشفير من فلوسك يا بيه</string>
-    <string name="auth_cert_issued_to">صادرة لـ:</string>
-    <string name="auth_cert_verified_badge">متوثق ومشفر 100%</string>
-    <string name="auth_invalid_email">اكتب إيميل مظبوط</string>
-    <string name="auth_invalid_password">الباسورد لازم ميكونش أقل من 8 خانات</string>
-    <string name="auth_invalid_name">اكتب اسمك بالكامل</string>
-    <string name="auth_invalid_otp">اكتب كود الـ OTP الـ 6 أرقام كامل</string>
-    <string name="auth_profile_title">ملفك الشخصي</string>
-    <string name="auth_sign_out">تسجيل خروج</string>
-
     <!-- Sync & Wipe Logout Strings -->
     <string name="logout_sheet_title">متأكد إنك عايز تخرج؟</string>
     <string name="logout_sheet_subtitle_prefix">هنرفع بياناتك وحاجتك على السحابة و </string>
@@ -591,7 +541,7 @@
     <string name="toast_loan_payment_added">الدفعة اتسجلت بنجاح!</string>
     <string name="toast_loan_closed">المعاملة اتقفلت وبقت مدفوعة بالكامل!</string>
     <string name="toast_loan_deleted">المعاملة اتحذفت.</string>
-    <string name="pro_title">فلوسك يا بيه Pro</string>
+    <string name="pro_title">بيجى Pro</string>
     <string name="pro_subtitle">تحكم كامل في حريتك المالية</string>
     <string name="benefit_infinite_sheets">صفحات وحسابات وسجلات من غير ليمت</string>
     <string name="benefit_interactive_charts">رسوم بيانية تفاعلية وتحليلات مالية جامدة</string>
@@ -610,10 +560,10 @@
     <string name="pro_purchase_success">أهلاً بك في برو! كل ميزات البريميوم بقت معاك.</string>
     <string name="purchase_completed">تم الشراء بنجاح!</string>
     <string name="purchase_failed_format">فشل الشراء: %s</string>
-    <string name="upgrade_success">تم الترقية إلى فلوسك يا بيه Pro بنجاح!</string>
+    <string name="upgrade_success">تم الترقية إلى بيجى Pro بنجاح!</string>
     <string name="restore_purchases">استعادة المشتريات</string>
     <string name="pro_restore_success">تم استعادة المشتريات بنجاح!</string>
-    <string name="no_active_subscription">مش لاقيين اشتراك فلوسك يا بيه Pro نشط.</string>
+    <string name="no_active_subscription">مش لاقيين اشتراك بيجى Pro نشط.</string>
     <string name="restore_failed_format">فشل الاستعادة: %s</string>
     <string name="terms_of_service">شروط الخدمة</string>
     <string name="terms_unavailable">رابط الشروط مش متاح حالياً.</string>
@@ -656,7 +606,7 @@
     <string name="source_google_play">جوجل بلاي</string>
     <string name="source_other">حاجة تانية</string>
 
-    <string name="piggy_ledger_brand">فلوسك يا بيه</string>
+    <string name="piggy_ledger_brand">بيجى</string>
     <string name="onboarding_ai_thinking">بفكر...</string>
     <string name="onboarding_ai_sketching">برسم الخطة...</string>
     <string name="onboarding_ai_making_plan">بجهز لك الخطة...</string>
@@ -705,4 +655,54 @@
     <string name="onboarding_habit_letters">ع,ا,د,ة</string>
     <string name="onboarding_streak_days">الخميس,الجمعة,السبت,الأحد</string>
     <string name="paywall_cta_upgrade">روّق على نفسك ودوس</string>
+
+    <!-- Auth Flow (Egyptian Slang) -->
+    <string name="auth_e2e_encrypted">تشفير وأمان عالي</string>
+    <string name="auth_welcome_title">بيجى</string>
+    <string name="auth_welcome_tagline">أمان، سهولة، ودقة في حساباتك.</string>
+    <string name="auth_welcome_description">تابع مصاريفك، حدد أهدافك، وحوش قرشك على جنب من غير أي وجع دماغ.</string>
+    <string name="auth_get_started">يلا نبدأ</string>
+    <string name="auth_sheet_title">منور في بيجى 👋</string>
+    <string name="auth_sign_in_btn">تسجيل دخول</string>
+    <string name="auth_sign_up_btn">حساب جديد</string>
+    <string name="auth_back">رجوع</string>
+    <string name="auth_signin_title">تسجيل الدخول</string>
+    <string name="auth_email_label">الإيميل</string>
+    <string name="auth_email_address_label">البريد الإلكتروني</string>
+    <string name="auth_password_label">الباسورد (كلمة السر)</string>
+    <string name="auth_signin_submit">ادخل لحسابك</string>
+    <string name="auth_error_enter_email_password">يا ريت تكتب الإيميل وكلمة السر صح</string>
+    <string name="auth_error_signin_failed">فشل تسجيل الدخول: %1$s</string>
+    <string name="auth_error_signin_incomplete">معرفناش نكمل الدخول، جرب كمان مرة</string>
+    <string name="auth_signup_title">اعمل حساب جديد</string>
+    <string name="auth_signup_subtitle">اكتب بياناتك ويلا نبدأ نظبط القرشين سوا</string>
+    <string name="auth_fullname_label">اسمك الكريم (الاسم بالكامل)</string>
+    <string name="auth_strength_weak">ضعيفة ⚠️</string>
+    <string name="auth_strength_fair">مش بطالة 👍</string>
+    <string name="auth_strength_good">حلوة وتمام 👌</string>
+    <string name="auth_strength_strong">جامدة وقوية جداً 💪</string>
+    <string name="auth_error_enter_all_fields">من فضلك اكتب اسمك، الإيميل، وكلمة السر</string>
+    <string name="auth_error_signup_failed">فشل إنشاء الحساب: %1$s</string>
+    <string name="auth_error_send_otp_failed">فشل إرسال كود التأكيد: %1$s</string>
+    <string name="auth_otp_title">أكد إيميلك</string>
+    <string name="auth_otp_subtitle">بعتنا كود سري للإيميل %1$s</string>
+    <string name="auth_otp_resend_timer">ابعت الكود تاني بعد %1$d ثانية</string>
+    <string name="auth_otp_resend">ابعتلي كود جديد</string>
+    <string name="auth_otp_error_length">اكتب الكود المكون من 6 أرقام كامل</string>
+    <string name="auth_otp_error_invalid">كود التأكيد مش مظبوط: %1$s</string>
+    <string name="auth_otp_error_resend">فشل إعادة إرسال الكود: %1$s</string>
+    <string name="auth_avatar_title">صورتك الحلوة</string>
+    <string name="auth_avatar_subtitle">حط صورة شخصية عشان تروق على حسابك</string>
+    <string name="auth_avatar_choose">اختار صورة</string>
+    <string name="auth_avatar_change">غيّر الصورة</string>
+    <string name="auth_avatar_finish">يلا بينا يا معلم</string>
+    <string name="auth_avatar_skip">مش دلوقتي، عديها</string>
+    <string name="auth_btn_next">كمل</string>
+    <string name="auth_sign_out">تسجيل خروج</string>
+    <string name="auth_dont_have_account">معندكش حساب؟ اعمل حساب جديد</string>
+    <string name="auth_already_have_account">عندك حساب بالفعل؟ سجل دخولك</string>
+    <string name="auth_sheet_create_desc">ابدأ تظبيط وتحويش فلوسك ومصاريفك بكل سهولة</string>
+    <string name="auth_sheet_signin_desc">سجل دخول عشان تلاقي كل حساباتك متظبطة</string>
+    <string name="auth_sheet_create_short_desc">اعمل حساب جديد</string>
+    <string name="auth_sheet_signin_short_desc">دخول</string>
 </resources>

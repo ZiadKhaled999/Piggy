@@ -373,13 +373,13 @@ class PiggyLedgerViewModel(
         }
     }
 
-    fun signInWithGoogle(email: String, name: String, photoUrl: String) {
+    fun setAuthUser(email: String, name: String, photoUrl: String) {
         viewModelScope.launch {
             userPreferences.saveAuthentication(true, email, name, photoUrl)
             PostHog.identify(email, mapOf("name" to name))
             PostHog.capture(
                 event = "user_sign_in",
-                properties = mapOf("email" to email, "name" to name, "method" to "google")
+                properties = mapOf("email" to email, "name" to name, "method" to "clerk")
             )
             com.oryno.piggy_ledger.ui.NotificationHelper(context).showAuthNotification(true)
         }

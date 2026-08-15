@@ -1,51 +1,98 @@
 package com.oryno.piggy_ledger.ui
 
+import android.net.Uri
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.clerk.api.Clerk
+import com.clerk.api.auth.types.VerificationType
 import com.clerk.api.network.serialization.onFailure
 import com.clerk.api.network.serialization.onSuccess
-import com.clerk.api.sso.OAuthProvider
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.oryno.piggy_ledger.BuildConfig
+import com.clerk.api.signup.SignUp
+import com.clerk.api.signup.sendEmailCode
+import com.clerk.api.signup.update
+import com.clerk.api.signup.verifyCode
 import com.oryno.piggy_ledger.R
-import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.posthog.PostHog
 import kotlinx.coroutines.launch
 
+enum class AuthRoute {
+    WELCOME,
+    SIGN_IN,
+    SU_EMAIL,
+    SU_OTP,
+    SU_AVATAR,
+    SU_NAME,
+    SU_PREVIEW
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
     viewModel: PiggyLedgerViewModel,
     onAuthSuccess: () -> Unit
 ) {
     val user by Clerk.userFlow.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var isLoading by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
+    var currentRoute by remember { mutableStateOf(AuthRoute.WELCOME) }
+    var showActionSheet by remember { mutableStateOf(false) }
+
+    // Form State
+    var siEmail by remember { mutableStateOf("") }
+    var siPassword by remember { mutableStateOf("") }
+
+    var suEmail by remember { mutableStateOf("") }
+    var suOtp by remember { mutableStateOf("") }
+    
+    var suAvatarUri by remember { mutableStateOf<Uri?>(null) }
+    var suAvatarScale by remember { mutableFloatStateOf(1f) }
+    var suAvatarOffset by remember { mutableStateOf(Offset.Zero) }
+
+    var suName by remember { mutableStateOf("") }
+    var suPassword by remember { mutableStateOf("") }
+
+    var activeSignUp by remember { mutableStateOf<SignUp?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Auto-login if session exists
     LaunchedEffect(user) {
         if (user != null) {
             val email = user?.primaryEmailAddress?.emailAddress ?: ""
@@ -53,177 +100,587 @@ fun AuthScreen(
                 .filter { it.isNotBlank() }
                 .joinToString(" ")
                 .ifBlank { user?.firstName ?: "" }
-            val photoUrl = user?.imageUrl ?: ""
-            viewModel.signInWithGoogle(email, name, photoUrl)
+            val photoUrl = user?.imageUrl ?: suAvatarUri?.toString() ?: ""
+            viewModel.setAuthUser(email, name, photoUrl)
             viewModel.triggerCloudSync()
-            PostHog.capture(event = "user_sign_in", properties = mapOf("method" to "google", "user_id" to email))
+            PostHog.capture(event = "user_sign_in", properties = mapOf("method" to "clerk", "user_id" to email))
             onAuthSuccess()
         }
+    }
+
+    // Helper for navigation
+    fun navigateTo(route: AuthRoute) {
+        errorMessage = null
+        currentRoute = route
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .systemBarsPadding(),
-        contentAlignment = Alignment.Center
+            .systemBarsPadding()
     ) {
-        if (user == null && !isLoading) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp, vertical = 48.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Top section with welcome text
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(top = 16.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.auth_welcome_title_main),
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Text(
-                        text = stringResource(R.string.auth_welcome_subtitle_main),
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
+        AnimatedContent(
+            targetState = currentRoute,
+            transitionSpec = {
+                if (targetState.ordinal > initialState.ordinal) {
+                    slideInHorizontally(initialOffsetX = { it }) + fadeIn() togetherWith 
+                    slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+                } else {
+                    slideInHorizontally(initialOffsetX = { -it }) + fadeIn() togetherWith 
+                    slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
                 }
-
-                // Middle section with the image
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(vertical = 32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.auth_illustration_1783784211319),
-                        contentDescription = "Piggy Ledger Auth",
+            },
+            label = "AuthNavigation"
+        ) { route ->
+            when (route) {
+                AuthRoute.WELCOME -> {
+                    // Welcome screen with Get Started button
+                    Column(
                         modifier = Modifier
-                            .fillMaxWidth(0.85f)
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(32.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-
-                // Bottom section with the Continue with Google button
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = stringResource(R.string.auth_welcome_desc),
-                        fontSize = 15.sp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 32.dp)
-                    )
-
-                    OutlinedButton(
-                        onClick = {
-                            isLoading = true
-                            scope.launch {
-                                val webClientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
-                                if (webClientId.isNotBlank() && webClientId != "GOOGLE_WEB_CLIENT_ID_DEFAULT_VALUE") {
-                                    try {
-                                        val googleIdOption = GetGoogleIdOption.Builder()
-                                            .setServerClientId(webClientId)
-                                            .setFilterByAuthorizedAccounts(false)
-                                            .build()
-
-                                        val request = GetCredentialRequest.Builder()
-                                            .addCredentialOption(googleIdOption)
-                                            .build()
-
-                                        val credentialManager = CredentialManager.create(context)
-                                        val result = credentialManager.getCredential(context, request)
-                                        val credential = result.credential
-
-                                        if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                                            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                                            val email = googleIdTokenCredential.id
-                                            val displayName = googleIdTokenCredential.displayName ?: email
-                                            val photoUrl = googleIdTokenCredential.profilePictureUri?.toString() ?: ""
-
-                                            viewModel.signInWithGoogle(email, displayName, photoUrl)
-                                            viewModel.triggerCloudSync()
-                                            PostHog.capture(event = "user_sign_in", properties = mapOf("method" to "google_credential_manager", "user_id" to email))
-                                            isLoading = false
-                                            onAuthSuccess()
-                                            return@launch
-                                        }
-                                    } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
-                                        isLoading = false
-                                        return@launch
-                                    } catch (e: Exception) {
-                                        isLoading = false
-                                        val errorMsg = e.message ?: e.toString()
-                                        Log.e("AuthScreen", "CredentialManager Sign-In failed", e)
-                                        android.widget.Toast.makeText(context, "Google Auth Error: $errorMsg", android.widget.Toast.LENGTH_LONG).show()
-                                        return@launch
-                                    }
-                                }
-
-                                // Fallback or direct Clerk OAuth flow (only if native client ID is not configured)
-                                Clerk.auth.signInWithOAuth(OAuthProvider.GOOGLE)
-                                    .onSuccess {
-                                        // User flow will trigger LaunchedEffect
-                                    }
-                                    .onFailure { error ->
-                                        isLoading = false
-                                        val errorMsg = error?.toString() ?: "Unknown Clerk Error"
-                                        android.widget.Toast.makeText(context, "Clerk Auth Error: $errorMsg", android.widget.Toast.LENGTH_LONG).show()
-                                    }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .testTag("google_sign_in_button"),
-                        shape = RoundedCornerShape(100.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White,
-                            contentColor = Color(0xFF1F1F1F)
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF747775))
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp, vertical = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_google_logo),
-                                contentDescription = "Google Logo",
-                                modifier = Modifier.size(24.dp).padding(end = 8.dp),
-                                tint = Color.Unspecified
-                            )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 16.dp)) {
+                            Surface(
+                                shape = RoundedCornerShape(100.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                                modifier = Modifier.padding(bottom = 10.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(15.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("End-to-End Encrypted", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                            Text("Piggy Ledger", fontSize = 32.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground)
+                            Text("Secure, simple, and smart.", fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f))
+                        }
+
+                        Image(
+                            painter = painterResource(id = R.drawable.auth_illustration_1783784211319),
+                            contentDescription = "Welcome",
+                            modifier = Modifier
+                                .fillMaxWidth(0.9f)
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(28.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = stringResource(R.string.auth_continue_google),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium
+                                text = "Track your expenses, set goals, and save money effortlessly.",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(bottom = 24.dp)
                             )
+                            Button(
+                                onClick = { showActionSheet = true },
+                                modifier = Modifier.fillMaxWidth().height(56.dp),
+                                shape = RoundedCornerShape(100.dp)
+                            ) {
+                                Text("Get Started", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
+                AuthRoute.SIGN_IN -> {
+                    // Sign In Screen
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                            IconButton(onClick = { navigateTo(AuthRoute.WELCOME) }) { Icon(Icons.Default.ArrowBack, "Back") }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Sign In", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        OutlinedTextField(
+                            value = siEmail,
+                            onValueChange = { siEmail = it; errorMessage = null },
+                            label = { Text("Email") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        var pwdVisible by remember { mutableStateOf(false) }
+                        OutlinedTextField(
+                            value = siPassword,
+                            onValueChange = { siPassword = it; errorMessage = null },
+                            label = { Text("Password") },
+                            modifier = Modifier.fillMaxWidth(),
+                            visualTransformation = if (pwdVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { pwdVisible = !pwdVisible }) {
+                                    Icon(if (pwdVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
+                                }
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+
+                        if (errorMessage != null) {
+                            Text(errorMessage ?: "", color = MaterialTheme.colorScheme.error, fontSize = 14.sp, modifier = Modifier.padding(top = 16.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        Button(
+                            onClick = {
+                                if (siEmail.isBlank() || siPassword.isBlank()) {
+                                    errorMessage = "Warning: One of the two fields are wrong"
+                                    return@Button
+                                }
+                                isLoading = true
+                                scope.launch {
+                                    try {
+                                        Clerk.auth.signInWithPassword {
+                                            identifier = siEmail
+                                            password = siPassword
+                                        }.onSuccess { res ->
+                                            val sid = res.createdSessionId
+                                            if (!sid.isNullOrBlank()) {
+                                                Clerk.auth.setActive(sid)
+                                            } else {
+                                                isLoading = false
+                                                errorMessage = "Warning: One of the two fields are wrong"
+                                            }
+                                        }.onFailure {
+                                            isLoading = false
+                                            errorMessage = "Warning: One of the two fields are wrong"
+                                        }
+                                    } catch (e: Exception) {
+                                        isLoading = false
+                                        errorMessage = "An error occurred"
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            shape = RoundedCornerShape(100.dp),
+                            enabled = !isLoading
+                        ) {
+                            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            else Text("Sign In", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                AuthRoute.SU_EMAIL -> {
+                    // Sign Up: Email (Only component on screen)
+                    Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                            IconButton(onClick = { navigateTo(AuthRoute.WELCOME) }) { Icon(Icons.Default.ArrowBack, null) }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Add your email", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(48.dp))
+
+                        OutlinedTextField(
+                            value = suEmail,
+                            onValueChange = { suEmail = it; errorMessage = null },
+                            label = { Text("Email Address") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+
+                        if (errorMessage != null) {
+                            Text(errorMessage ?: "", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 16.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(64.dp))
+                        Button(
+                            onClick = {
+                                if (suEmail.isBlank()) return@Button
+                                isLoading = true
+                                scope.launch {
+                                    Clerk.auth.signUp { 
+                                        email = suEmail
+                                        password = "TempPassword123!"
+                                        firstName = "Temp"
+                                        lastName = "User"
+                                    }.onSuccess { su ->
+                                        activeSignUp = su
+                                        su.sendEmailCode()
+                                        isLoading = false
+                                        navigateTo(AuthRoute.SU_OTP)
+                                    }.onFailure {
+                                        isLoading = false
+                                        errorMessage = "Failed to start sign up: $it"
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            shape = RoundedCornerShape(100.dp),
+                            enabled = !isLoading
+                        ) {
+                            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            else Text("Next", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                AuthRoute.SU_OTP -> {
+                    // Sign Up: OTP
+                    Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                            IconButton(onClick = { navigateTo(AuthRoute.SU_EMAIL) }) { Icon(Icons.Default.ArrowBack, null) }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Verify your email", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                        Text("We sent an OTP to $suEmail", color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+                        Spacer(modifier = Modifier.height(48.dp))
+
+                        OutlinedTextField(
+                            value = suOtp,
+                            onValueChange = { suOtp = it; errorMessage = null },
+                            label = { Text("Add the OTP") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+
+                        if (errorMessage != null) {
+                            Text(errorMessage ?: "", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 16.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(64.dp))
+                        Button(
+                            onClick = {
+                                if (suOtp.isBlank()) return@Button
+                                isLoading = true
+                                scope.launch {
+                                    activeSignUp?.verifyCode(suOtp, VerificationType.EMAIL)
+                                        ?.onSuccess { su ->
+                                            activeSignUp = su
+                                            isLoading = false
+                                            navigateTo(AuthRoute.SU_AVATAR)
+                                        }?.onFailure {
+                                            isLoading = false
+                                            errorMessage = "Invalid OTP"
+                                        }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            shape = RoundedCornerShape(100.dp),
+                            enabled = !isLoading
+                        ) {
+                            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            else Text("Next", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                AuthRoute.SU_AVATAR -> {
+                    // Sign Up: Avatar & Crop
+                    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                        if (uri != null) { suAvatarUri = uri; suAvatarScale = 1f; suAvatarOffset = Offset.Zero }
+                    }
+
+                    Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                            IconButton(onClick = { navigateTo(AuthRoute.SU_OTP) }) { Icon(Icons.Default.ArrowBack, null) }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Upload Image Profile", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                        Text("Choose, crop, and zoom your image", color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .size(240.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .clickable { launcher.launch("image/*") }
+                                .pointerInput(Unit) {
+                                    detectTransformGestures { _, pan, zoom, _ ->
+                                        suAvatarScale = (suAvatarScale * zoom).coerceIn(1f, 5f)
+                                        suAvatarOffset += pan
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (suAvatarUri != null) {
+                                AsyncImage(
+                                    model = suAvatarUri,
+                                    contentDescription = "Avatar",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .graphicsLayer(
+                                            scaleX = suAvatarScale,
+                                            scaleY = suAvatarScale,
+                                            translationX = suAvatarOffset.x,
+                                            translationY = suAvatarOffset.y
+                                        )
+                                )
+                            } else {
+                                Icon(Icons.Default.AddAPhoto, contentDescription = "Add", modifier = Modifier.size(48.dp), tint = Color.Gray)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+                        OutlinedButton(onClick = { launcher.launch("image/*") }) {
+                            Text("Choose Image")
+                        }
+
+                        Spacer(modifier = Modifier.height(48.dp))
+                        Button(
+                            onClick = { navigateTo(AuthRoute.SU_NAME) },
+                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            shape = RoundedCornerShape(100.dp)
+                        ) {
+                            Text("Done", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                AuthRoute.SU_NAME -> {
+                    // Sign Up: Name & Password
+                    Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                            IconButton(onClick = { navigateTo(AuthRoute.SU_AVATAR) }) { Icon(Icons.Default.ArrowBack, null) }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Add your name", fontSize = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                        Text("And set a password to secure your account", color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        OutlinedTextField(
+                            value = suName,
+                            onValueChange = { suName = it; errorMessage = null },
+                            label = { Text("Full Name") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        var pwdVisible by remember { mutableStateOf(false) }
+                        OutlinedTextField(
+                            value = suPassword,
+                            onValueChange = { suPassword = it; errorMessage = null },
+                            label = { Text("Password") },
+                            modifier = Modifier.fillMaxWidth(),
+                            visualTransformation = if (pwdVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { pwdVisible = !pwdVisible }) {
+                                    Icon(if (pwdVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
+                                }
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+
+                        if (errorMessage != null) {
+                            Text(errorMessage ?: "", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 16.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(64.dp))
+                        Button(
+                            onClick = {
+                                if (suName.isBlank() || suPassword.isBlank()) {
+                                    errorMessage = "Please fill in all fields"
+                                    return@Button
+                                }
+                                navigateTo(AuthRoute.SU_PREVIEW)
+                            },
+                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            shape = RoundedCornerShape(100.dp)
+                        ) {
+                            Text("Next", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                AuthRoute.SU_PREVIEW -> {
+                    // Sign Up: Preview
+                    Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                            IconButton(onClick = { navigateTo(AuthRoute.SU_NAME) }) { Icon(Icons.Default.ArrowBack, null) }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Review Details", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                        Text("If anything's wrong, edit now.", color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        // Preview Avatar
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Box(
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (suAvatarUri != null) {
+                                    AsyncImage(
+                                        model = suAvatarUri,
+                                        contentDescription = "Avatar",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .graphicsLayer(
+                                                scaleX = suAvatarScale,
+                                                scaleY = suAvatarScale,
+                                                translationX = suAvatarOffset.x,
+                                                translationY = suAvatarOffset.y
+                                            )
+                                    )
+                                } else {
+                                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color.Gray)
+                                }
+                            }
+                            IconButton(
+                                onClick = { navigateTo(AuthRoute.SU_AVATAR) },
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .offset(x = 40.dp, y = 10.dp)
+                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = "Edit Avatar", tint = Color.White, modifier = Modifier.size(18.dp))
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        // Preview Name
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                                Column {
+                                    Text("Name", fontSize = 12.sp, color = Color.Gray)
+                                    Text(suName, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                }
+                                IconButton(onClick = { navigateTo(AuthRoute.SU_NAME) }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Edit Name", tint = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Preview Email
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                                Column {
+                                    Text("Email", fontSize = 12.sp, color = Color.Gray)
+                                    Text(suEmail, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                }
+                                IconButton(onClick = { navigateTo(AuthRoute.SU_EMAIL) }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Edit Email", tint = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+                        
+                        if (errorMessage != null) {
+                            Text(errorMessage ?: "", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 16.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(48.dp))
+                        Button(
+                            onClick = {
+                                isLoading = true
+                                scope.launch {
+                                    try {
+                                        val parts = suName.trim().split(" ")
+                                        val first = parts.firstOrNull() ?: suName
+                                        val last = if (parts.size > 1) parts.drop(1).joinToString(" ") else ""
+                                        
+                                        activeSignUp?.update {
+                                            firstName = first
+                                            lastName = last
+                                            password = suPassword
+                                        }?.onSuccess { finalSu ->
+                                            if (finalSu.status == SignUp.Status.COMPLETE) {
+                                                val sid = finalSu.createdSessionId
+                                                if (!sid.isNullOrBlank()) {
+                                                    Clerk.auth.setActive(sid)
+                                                }
+                                                isLoading = false
+                                                // LaunchedEffect auto-handles login
+                                            } else {
+                                                isLoading = false
+                                                errorMessage = "Sign up incomplete: ${finalSu.status}"
+                                            }
+                                        }?.onFailure {
+                                            isLoading = false
+                                            errorMessage = "Error finishing sign up: $it"
+                                        } ?: run {
+                                            isLoading = false
+                                            errorMessage = "Sign up session lost"
+                                        }
+                                    } catch (e: Exception) {
+                                        isLoading = false
+                                        errorMessage = "An error occurred"
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            shape = RoundedCornerShape(100.dp),
+                            enabled = !isLoading
+                        ) {
+                            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            else Text("Finish", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+                }
             }
-        } else {
-            ExpressiveLoadingIndicator(size = 40.dp)
+        }
+    }
+
+    // Bottom Sheet for Get Started
+    if (showActionSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showActionSheet = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+            dragHandle = { BottomSheetDefaults.DragHandle() }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("Welcome to Piggy Ledger", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            showActionSheet = false
+                            navigateTo(AuthRoute.SIGN_IN)
+                        },
+                        modifier = Modifier.weight(2f).height(54.dp),
+                        shape = RoundedCornerShape(100.dp)
+                    ) {
+                        Text("Sign In", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                    
+                    OutlinedButton(
+                        onClick = {
+                            showActionSheet = false
+                            navigateTo(AuthRoute.SU_EMAIL)
+                        },
+                        modifier = Modifier.weight(1f).height(54.dp),
+                        shape = RoundedCornerShape(100.dp),
+                        border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("Sign Up", fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }
-

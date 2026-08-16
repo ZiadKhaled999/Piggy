@@ -667,6 +667,10 @@
     <string name="auth_sign_up_btn">حساب جديد</string>
     <string name="auth_back">رجوع</string>
     <string name="auth_signin_title">تسجيل الدخول</string>
+    <string name="auth_signin_subtitle">اكتب إيميلك وهنبعتلك كود تأكيد سري في ثانية</string>
+    <string name="auth_signin_send_code">يلا كمل بالإيميل</string>
+    <string name="auth_error_enter_email">يا ريت تكتب إيميلك الأول</string>
+    <string name="auth_account_not_found">مش لاقيين حساب بالإيميل ده.. اعمل حساب جديد في ثواني</string>
     <string name="auth_email_label">الإيميل</string>
     <string name="auth_email_address_label">البريد الإلكتروني</string>
     <string name="auth_password_label">الباسورد (كلمة السر)</string>

@@ -1,4 +1,4 @@
--- Run this in your Supabase SQL Editor
+-- Run this in your Neon / PostgreSQL SQL Editor
 
 -- If you previously created tables with UUID columns, drop them or alter column types:
 -- DROP TABLE IF EXISTS pending_transactions, account_transactions, accounts, loan_payments, loans, transactions, goals CASCADE;

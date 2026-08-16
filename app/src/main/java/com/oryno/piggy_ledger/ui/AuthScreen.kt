@@ -1093,11 +1093,11 @@ fun AuthScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(IntrinsicSize.Min),
+                            .height(52.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 2/3 Component: Create Account (Sign Up)
+                        // 2/3 Component: Create Account (Sign Up) - Elegant Solid Black with high-contrast White text
                         Surface(
                             onClick = {
                                 showActionSheet = false
@@ -1106,60 +1106,30 @@ fun AuthScreen(
                             modifier = Modifier
                                 .weight(2f)
                                 .fillMaxHeight(),
-                            shape = RoundedCornerShape(20.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            tonalElevation = 3.dp,
-                            shadowElevation = 1.dp
+                            shape = RoundedCornerShape(14.dp),
+                            color = Color(0xFF111827), // Deep sleek black
+                            contentColor = Color.White,
+                            shadowElevation = 2.dp
                         ) {
-                            Row(
+                            Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(horizontal = 14.dp, vertical = 16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(horizontal = 14.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(42.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primary),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.PersonAdd,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = stringResource(R.string.auth_sign_up_btn),
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.auth_sheet_create_short_desc),
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(18.dp)
+                                Text(
+                                    text = stringResource(R.string.auth_sign_up_btn),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.2.sp,
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
 
-                        // 1/3 Component: Sign In (Log In)
+                        // 1/3 Component: Sign In (Log In) - Crisp Clean White with subtle border and bold dark typography
                         Surface(
                             onClick = {
                                 showActionSheet = false
@@ -1168,38 +1138,24 @@ fun AuthScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight(),
-                            shape = RoundedCornerShape(20.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                            shape = RoundedCornerShape(14.dp),
+                            color = Color.White,
+                            contentColor = Color(0xFF111827),
+                            border = BorderStroke(1.2.dp, Color(0xFFE2E8F0)),
+                            shadowElevation = 1.dp
                         ) {
-                            Column(
+                            Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(horizontal = 8.dp, vertical = 14.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
+                                    .padding(horizontal = 8.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surface),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.Login,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = stringResource(R.string.auth_sign_in_btn),
-                                    fontSize = 13.sp,
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface,
+                                    letterSpacing = 0.2.sp,
+                                    color = Color(0xFF111827),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     textAlign = TextAlign.Center

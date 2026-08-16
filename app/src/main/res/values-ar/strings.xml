@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">بيجى</string>
     <string name="onboarding_step_1_title">سجل كل قرش</string>
@@ -83,7 +83,7 @@
     <string name="back_btn">رجوع</string>
 
 
-    <!-- Dashboard Screen -->
+    
     <string name="spent">صرفت</string>
     <string name="payoffs">التسديدات</string>
     <string name="savings_goals">أهداف التحويش</string>
@@ -100,7 +100,7 @@
     <string name="go_ahead">كمل</string>
     <string name="no_goals_set">مفيش أهداف لسه. دوس عشان تبدأ تحوش!</string>
 
-    <!-- Settings Screen (Export/Import) -->
+    
     <string name="export_success">البيانات اتصدرت بنجاح</string>
     <string name="export_failed">التصدير فشل: %1$s</string>
     <string name="restore_success">البيانات استرجعت بنجاح</string>
@@ -122,7 +122,7 @@
     <string name="mic_permission_required">لازم تدي إذن المايك عشان تسجل صوت</string>
     <string name="card_number_placeholder">مثال 1234 5678 9012</string>
 
-    <!-- Auth Screen -->
+    
     <string name="auth_welcome_title_main">بيجى</string>
     <string name="auth_welcome_subtitle_main">أمان، بسيط، وذكي.</string>
     <string name="auth_welcome_desc">تابع مصاريفك، حط أهداف، وحوش فلوس من غير مجهود.</string>
@@ -134,7 +134,7 @@
     <string name="recording_state">بيسجل...</string>
     <string name="hold_anywhere_to_record">دوس في أي حتة هنا عشان تسجل</string>
 
-    <!-- Auto-added missing translations for full localization -->
+    
     <string name="language">اللغة</string>
     <string name="select_language">اختار اللغة</string>
     <string name="choose_language_desc">اختار لغتك المفضلة عشان تكمل</string>
@@ -405,7 +405,7 @@
     <string name="earn_from_placeholder">كسبت من إيه؟</string>
     <string name="transfer_placeholder">حولت إيه؟</string>
     <string name="add_note_placeholder">ضيف ملاحظة أو سياق...</string>
-    <string name="cant_find_it_create_own">مش لاقيها؟ اعمل فئتك المخصصة ></string>
+    <string name="cant_find_it_create_own">مش لاقيها؟ اعمل فئتك المخصصة &gt;</string>
     <string name="category_title">الفئة</string>
     <string name="custom_category">فئة مخصصة</string>
     <string name="enter_custom_category">اكتب اسم الفئة المخصصة:</string>
@@ -439,7 +439,7 @@
     <string name="group_by_day">حسب اليوم</string>
     <string name="group_by_month">حسب الشهر</string>
 
-    <!-- Sync & Wipe Logout Strings -->
+    
     <string name="logout_sheet_title">هل أنت متاكد من تسجيل الخروج؟</string>
     <string name="logout_sheet_subtitle_prefix">سيتم مزامنة تقدمك المحلي و </string>
     <string name="logout_sheet_subtitle_highlight">حذف بياناتك المحلية</string>
@@ -612,7 +612,7 @@
     <string name="toast_loan_payment_added">تم تسجيل الدفعة بنجاح!</string>
     <string name="toast_loan_closed">تم إغلاق المعاملة بالكامل!</string>
     <string name="toast_loan_deleted">تم حذف المعاملة.</string>
-    <string name="pro_title">بيجى Pro</string>
+    <string name="pro_title">بيجي ليدجر برو</string>
     <string name="pro_subtitle">تحكم كامل في حريتك المالية</string>
     <string name="benefit_infinite_sheets">صفحات وحسابات وسجلات غير محدودة</string>
     <string name="benefit_interactive_charts">رسوم بيانية تفاعلية وتحليلات مالية عميقة</string>
@@ -640,7 +640,7 @@
     <string name="terms_unavailable">رابط الشروط غير متاح حالياً.</string>
     <string name="subscription_terms_text">تتجدد الاشتراكات تلقائياً. يمكنك الإلغاء في أي وقت من إعدادات Google Play.</string>
 
-    <!-- Account Identifiers -->
+    
     <string name="account_identifiers">معرفات الحسابات</string>
     <string name="search_provider_placeholder">ابحث عن بنك، محفظة، أو كلمة مفتاحية...</string>
     <string name="category_all">الكل</string>
@@ -654,7 +654,7 @@
     <string name="keywords_placeholder">مثال: %1$s, VF-Cash, 010</string>
     <string name="save_btn">حفظ</string>
     <string name="toast_saved_keywords">تم حفظ الكلمات المفتاحية لـ %1$s</string>
-    <!-- Transaction Processed Notification -->
+    
     <string name="notif_tx_title_deposit">تم استلام إيداع</string>
     <string name="notif_tx_title_withdrawal">سحب نقدي</string>
     <string name="notif_tx_title_transfer">تحويل أموال</string>
@@ -754,7 +754,7 @@
     <string name="preset_palettes">مجموعات الألوان</string>
     <string name="card_color_updated">تم تحديث لون البطاقة بنجاح!</string>
 
-    <!-- Auth Flow (Arabic) -->
+    
     <string name="auth_e2e_encrypted">تشفير وأمان عالي</string>
     <string name="auth_welcome_title">بيجى</string>
     <string name="auth_welcome_tagline">أمان، سهولة، ودقة في حساباتك.</string>
@@ -808,4 +808,4 @@
     <string name="auth_sheet_signin_desc">سجل دخولك لمزامنة دفترك على أجهزتك</string>
     <string name="auth_sheet_create_short_desc">إنشاء حساب جديد</string>
     <string name="auth_sheet_signin_short_desc">دخول</string>
-</resources>
+<string name="pro_member_active">عضو برو نشط</string><string name="pro_desc">تم تفعيل جميع الميزات الاحترافية وهي جاهزة للاستخدام على جهازك.</string><string name="pro_feature_1">حسابات وأهداف ادخار غير محدودة</string><string name="pro_feature_2">ميزانيات وسجلات قروض غير محدودة</string><string name="pro_feature_3">تحليلات ورسوم بيانية مالية متقدمة</string><string name="pro_feature_4">تصدير البيانات ومزامنة سحابية</string><string name="pro_feature_5">حماية لقطة الشاشة وفئات مخصصة</string><string name="plan_monthly">شهري</string><string name="plan_monthly_desc">استمر في التتبع مع وصول موسع وتحكم غير محدود</string><string name="plan_monthly_renew">يُجدد بـ %s/شهر. الإلغاء في أي وقت.</string><string name="upgrade_monthly">ترقية شهرية</string><string name="plan_yearly">سنوي</string><string name="plan_yearly_desc">وفر 40% مع الدفع السنوي</string><string name="plan_yearly_renew">يُجدد بـ %s/سنة. الإلغاء في أي وقت.</string><string name="upgrade_yearly">ترقية سنوية</string><string name="plan_lifetime">مدى الحياة</string><string name="plan_lifetime_desc">دفعة لمرة واحدة لوصول دائم</string><string name="plan_lifetime_renew">ادفع مرة واحدة، ملكك للأبد.</string><string name="upgrade_lifetime">احصل على وصول مدى الحياة</string><string name="tag_popular">الأكثر شعبية</string><string name="tag_best_value">أفضل قيمة</string><string name="start_free_trial">ابدأ فترة تجريبية مجانية</string><string name="unlock_premium_now">افتح النسخة الاحترافية الآن</string><string name="restore_subscription">استعادة الاشتراك</string><string name="pro_toast_desc">بيجي ليدجر برو يوفر قدرات كاملة لإدارة الشؤون المالية.</string><string name="comp_acc_goals">الحسابات والأهداف</string><string name="comp_budgets_loans">الميزانيات والقروض</string><string name="comp_adv_analytics">تحليلات متقدمة</string><string name="comp_export">تصدير البيانات (CSV/PDF)</string><string name="comp_custom_categories">فئات مخصصة</string><string name="comp_screenshot_protect">حماية لقطة الشاشة</string><string name="comp_cloud_sync">نسخ احتياطي ومزامنة سحابية</string><string name="comp_priority_support">أولوية الدعم</string><string name="two_max">2 كحد أقصى</string><string name="plan_lifetime_desc_2">وصول دائم لجميع الميزات الحالية والمستقبلية</string><string name="plan_lifetime_renew_2">دفعة واحدة بقيمة %s. بدون تجديد أو رسوم خفية.</string><string name="upgrade_lifetime_2">ترقية مدى الحياة</string><string name="best_value_caps">أفضل قيمة</string><string name="piggy_ledger_pro">بيجي ليدجر برو</string></resources>

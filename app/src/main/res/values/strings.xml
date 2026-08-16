@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">Piggy Ledger</string>
     <string name="hold_anywhere_to_record">Hold anywhere to record</string>
@@ -20,7 +20,7 @@
     <string name="share_app">Share App</string>
     <string name="give_feedback">Give Feedback</string>
 
-    <!-- Onboarding -->
+    
     <string name="onboarding_step_1_title">Track Every Penny</string>
     <string name="onboarding_step_1_desc">No more guessing where your money went. Piggy Ledger keeps everything organized.</string>
     <string name="onboarding_step_2_title">Set Big Goals</string>
@@ -28,7 +28,7 @@
     <string name="onboarding_step_3_title">Stay Consistent</string>
     <string name="onboarding_step_3_desc">Build healthy financial habits with daily streak tracking and friendly reminders.</string>
     
-    <!-- Dashboard & UI -->
+    
     <string name="welcome_back">Welcome Back!</string>
     <string name="dashboard_title">Dashboard</string>
     <string name="your_balance">Your Balance</string>
@@ -37,7 +37,7 @@
     <string name="view_all">View All</string>
     <string name="go_straight_dashboard">Go straight to Dashboard</string>
     
-    <!-- Bottom Nav -->
+    
     <string name="nav_home">Home</string>
     <string name="nav_goals">Goals</string>
     <string name="nav_loans">Loans</string>
@@ -110,7 +110,7 @@
     <string name="onboarding_notif_granted">Notifications enabled successfully!</string>
     <string name="onboarding_notif_denied">Notifications skipped. You can enable them in system settings later.</string>
 
-    <!-- Personalization Onboarding -->
+    
     <string name="onboarding_personalize_intent_title">What\'s your primary focus?</string>
     <string name="onboarding_personalize_intent_subtitle">Select your main goal. We\'ll customize your dashboard, alerts, and saving formulas.</string>
     <string name="onboarding_personalize_intent_group">Group Savings Pool</string>
@@ -288,7 +288,7 @@
     <string name="widget_amount_saved">%1$s saved</string>
     <string name="widget_open_label">OPEN</string>
 
-    <!-- Streak Statements -->
+    
     <string-array name="streak_statements_success">
         <item>You\'re on fire!</item>
         <item>Unstoppable!</item>
@@ -417,7 +417,7 @@
     <string name="select_provider">Select Provider</string>
     <string name="select_currency">Select Currency</string>
 
-    <!-- New Transaction Screen Strings -->
+    
     <string name="new_transaction">New Transaction</string>
     <string name="expense">Expense</string>
     <string name="transfer">Transfer</string>
@@ -438,7 +438,7 @@
     <string name="enter_custom_category">Enter custom category name:</string>
     <string name="eg_subscription">e.g. Gym, Subscriptions</string>
 
-    <!-- Categories in English -->
+    
     <string name="cat_atm_withdrawal">ATM Withdrawal</string>
     <string name="cat_bonus">Bonus</string>
     <string name="cat_cashback">Cashback</string>
@@ -464,13 +464,13 @@
     <string name="cat_utilities">Utilities</string>
     <string name="cat_work">Work</string>
 
-    <!-- Analytics Grouping Modes -->
+    
     <string name="group_by_category">By Category</string>
     <string name="group_by_account">By Account</string>
     <string name="group_by_day">By Day</string>
     <string name="group_by_month">By Month</string>
 
-    <!-- Sync & Wipe Logout Strings -->
+    
     <string name="logout_sheet_title">Are you sure you want to sign out?</string>
     <string name="logout_sheet_subtitle_prefix">This will sync your local progress and </string>
     <string name="logout_sheet_subtitle_highlight">delete your local data</string>
@@ -485,7 +485,7 @@
     <string name="logout_sync_failed">Sync failed. Please check your connection and try again.</string>
     <string name="logout_retry">Retry Sync</string>
 
-    <!-- Edit Account Strings -->
+    
     <string name="edit_account">Edit Account</string>
     <string name="current_balance">Current Balance</string>
     <string name="credit_card_details">Credit Card Details</string>
@@ -498,7 +498,7 @@
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
 
-    <!-- Months -->
+    
     <string name="month_january">January</string>
     <string name="month_february">February</string>
     <string name="month_march">March</string>
@@ -512,7 +512,7 @@
     <string name="month_november">November</string>
     <string name="month_december">December</string>
 
-    <!-- Accounts & Analytics Screen Strings -->
+    
     <string name="total_spent">Total Spent</string>
     <string name="percent_used">%1$d%% Used</string>
     <string name="transactions">Transactions</string>
@@ -570,7 +570,7 @@
     <string name="invalid_pin">Invalid PIN</string>
     <string name="incorrect_pin">Incorrect PIN. Please try again.</string>
 
-    <!-- Pending Transactions Strings -->
+    
     <string name="pending_transactions">Pending Transactions</string>
     <string name="pending_transactions_desc">View and resolve unrouted or ambiguous SMS transactions.</string>
     <string name="pending_sms_detected">New SMS Transaction Detected</string>
@@ -594,7 +594,7 @@
     <string name="reset_confirm_msg">Are you sure you want to reset? This will sign you out and take you back to the language selection and onboarding screens so you can re-experience them.</string>
 
 
-    <!-- Dashboard Screen -->
+    
     <string name="spent">Spent</string>
     <string name="payoffs">Payoffs</string>
     <string name="savings_goals">Savings Goals</string>
@@ -611,7 +611,7 @@
     <string name="go_ahead">Go Ahead</string>
     <string name="no_goals_set">No goals set yet. Tap to start saving!</string>
 
-    <!-- Settings Screen (Export/Import) -->
+    
     <string name="csv_export_success">CSV exported successfully</string>
     <string name="csv_export_failed">CSV export failed: %1$s</string>
     <string name="excel_export_success">Excel exported successfully</string>
@@ -624,7 +624,7 @@
     <string name="close">Close</string>
     <string name="card_number_placeholder">e.g. 4567</string>
 
-    <!-- Auth Screen -->
+    
     <string name="auth_welcome_title_main">Piggy Ledger</string>
     <string name="auth_welcome_subtitle_main">Secure, simple, and smart.</string>
     <string name="auth_welcome_desc">Track your expenses, set goals, and save money effortlessly.</string>
@@ -685,7 +685,7 @@
     <string name="terms_unavailable">Terms link is currently unavailable.</string>
     <string name="subscription_terms_text">Subscriptions automatically renew. Cancel anytime inside Google Play Settings.</string>
 
-    <!-- Account Identifiers -->
+    
     <string name="account_identifiers">Account Identifiers</string>
     <string name="search_provider_placeholder">Search bank, e-wallet, or SMS keyword...</string>
     <string name="category_all">All</string>
@@ -699,7 +699,7 @@
     <string name="keywords_placeholder">e.g. %1$s, VF-Cash, 010</string>
     <string name="save_btn">Save</string>
     <string name="toast_saved_keywords">Saved keywords for %1$s</string>
-    <!-- Transaction Processed Notification -->
+    
     <string name="notif_tx_title_deposit">Deposit Received</string>
     <string name="notif_tx_title_withdrawal">Cash Withdrawal</string>
     <string name="notif_tx_title_transfer">Money Transfer</string>
@@ -799,7 +799,7 @@
     <string name="preset_palettes">Preset Palettes</string>
     <string name="card_color_updated">Card color updated successfully!</string>
 
-    <!-- Auth Flow -->
+    
     <string name="auth_e2e_encrypted">End-to-End Encrypted</string>
     <string name="auth_welcome_title">Piggy Ledger</string>
     <string name="auth_welcome_tagline">Secure, simple, and smart.</string>
@@ -853,4 +853,4 @@
     <string name="auth_sheet_signin_desc">Log in to sync your ledger across devices</string>
     <string name="auth_sheet_create_short_desc">Create new account</string>
     <string name="auth_sheet_signin_short_desc">Log in</string>
-</resources>
+<string name="pro_member_active">PRO MEMBER ACTIVE</string><string name="pro_desc">All premium features are unlocked and active on your device.</string><string name="pro_feature_1">Unlimited Accounts &amp; Savings Goals</string><string name="pro_feature_2">Unlimited Budgets &amp; Loan Ledgers</string><string name="pro_feature_3">Advanced Financial Analytics &amp; Charts</string><string name="pro_feature_4">Data Export (CSV/PDF) &amp; Cloud Sync</string><string name="pro_feature_5">Screenshot Protection &amp; Custom Categories</string><string name="plan_monthly">Monthly</string><string name="plan_monthly_desc">Keep tracking with expanded access &amp; unlimited control</string><string name="plan_monthly_renew">Renews for %s/month. Cancel anytime.</string><string name="upgrade_monthly">Upgrade Monthly</string><string name="plan_yearly">Yearly</string><string name="plan_yearly_desc">Save 40% with annual billing</string><string name="plan_yearly_renew">Renews for %s/year. Cancel anytime.</string><string name="upgrade_yearly">Upgrade Yearly</string><string name="plan_lifetime">Lifetime</string><string name="plan_lifetime_desc">One-time payment for forever access</string><string name="plan_lifetime_renew">Pay once, yours forever.</string><string name="upgrade_lifetime">Get Lifetime Access</string><string name="tag_popular">Most Popular</string><string name="tag_best_value">Best Value</string><string name="start_free_trial">Start Free Trial</string><string name="unlock_premium_now">Unlock Premium Now</string><string name="restore_subscription">Restore subscription</string><string name="pro_toast_desc">Piggy Ledger Pro provides complete financial management capabilities.</string><string name="comp_acc_goals">Accounts &amp; Goals</string><string name="comp_budgets_loans">Budgets &amp; Loans</string><string name="comp_adv_analytics">Advanced Analytics</string><string name="comp_export">Data Export (CSV/PDF)</string><string name="comp_custom_categories">Custom Categories</string><string name="comp_screenshot_protect">Screenshot Protection</string><string name="comp_cloud_sync">Cloud Backup &amp; Sync</string><string name="comp_priority_support">Priority Support</string><string name="two_max">2 Max</string><string name="plan_lifetime_desc_2">Unlock lifetime unlimited access &amp; all future features</string><string name="plan_lifetime_renew_2">One-time payment of %s. No renewal or hidden fees.</string><string name="upgrade_lifetime_2">Upgrade Lifetime</string><string name="best_value_caps">BEST VALUE</string></resources>

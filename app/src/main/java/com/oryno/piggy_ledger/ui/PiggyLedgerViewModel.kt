@@ -215,81 +215,6 @@ class PiggyLedgerViewModel(
         }
     }
 
-    fun importData(jsonString: String, onComplete: () -> Unit, onError: (String) -> Unit) {
-        viewModelScope.launch {
-            try {
-                val data = json.decodeFromString<BackupData>(jsonString)
-                repository.restoreBackup(data)
-                com.oryno.piggy_ledger.data.StreakManager.setActionDates(context, data.streakDates)
-                com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
-                com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
-                com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
-                try {
-                    PostHog.capture(
-                        event = "data_imported",
-                        properties = mapOf(
-                            "success" to true,
-                            "total_goals" to data.goals.size,
-                            "total_loans" to data.loans.size,
-                            "total_transactions" to data.transactions.size
-                        )
-                    )
-                } catch (e: Exception) {
-                    android.util.Log.e("PostHog", "Failed to capture data imported success", e)
-                }
-                onComplete()
-            } catch (e: Exception) {
-                try {
-                    PostHog.capture(
-                        event = "data_imported",
-                        properties = mapOf(
-                            "success" to false,
-                            "error" to (e.message ?: "Unknown error")
-                        )
-                    )
-                } catch (e: Exception) {
-                    android.util.Log.e("PostHog", "Failed to capture data imported error", e)
-                }
-                onError(e.message ?: "Unknown error during import")
-            }
-        }
-    }
-
-    fun importCSVData(csvString: String, onComplete: () -> Unit, onError: (String) -> Unit) {
-        viewModelScope.launch {
-            try {
-                val data = com.oryno.piggy_ledger.data.BackupHelper.parseFullCsv(csvString)
-                repository.restoreFullDatabaseBackup(data)
-                com.oryno.piggy_ledger.data.StreakManager.setActionDates(context, data.streakDates)
-                com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
-                com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
-                com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
-                PostHog.capture(
-                    event = "csv_data_imported",
-                    properties = mapOf(
-                        "success" to true,
-                        "total_goals" to data.goals.size,
-                        "total_loans" to data.loans.size,
-                        "total_transactions" to data.transactions.size,
-                        "total_accounts" to data.accounts.size,
-                        "total_account_transactions" to data.accountTransactions.size,
-                        "total_pending_transactions" to data.pendingTransactions.size
-                    )
-                )
-                onComplete()
-            } catch (e: Exception) {
-                PostHog.capture(
-                    event = "csv_data_imported",
-                    properties = mapOf(
-                        "success" to false,
-                        "error" to (e.message ?: "Unknown error")
-                    )
-                )
-                onError(e.message ?: "Unknown error during CSV import")
-            }
-        }
-    }
-
     val hasOnboarded = userPreferences.hasOnboarded.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
     )
@@ -373,7 +298,7 @@ class PiggyLedgerViewModel(
         }
     }
 
-    fun setAuthUser(email: String, name: String, photoUrl: String) {
+    fun setAuthUser(email: String, name: String, photoUrl: String, clerkUserId: String = "") {
         viewModelScope.launch {
             userPreferences.saveAuthentication(true, email, name, photoUrl)
             PostHog.identify(email, mapOf("name" to name))
@@ -382,6 +307,30 @@ class PiggyLedgerViewModel(
                 properties = mapOf("email" to email, "name" to name, "method" to "clerk")
             )
             com.oryno.piggy_ledger.ui.NotificationHelper(context).showAuthNotification(true)
+
+            if (clerkUserId.isNotBlank()) {
+                try {
+                    if (com.revenuecat.purchases.Purchases.isConfigured) {
+                        com.revenuecat.purchases.Purchases.sharedInstance.logIn(
+                            clerkUserId,
+                            object : com.revenuecat.purchases.interfaces.LogInCallback {
+                                override fun onReceived(
+                                    customerInfo: com.revenuecat.purchases.CustomerInfo,
+                                    created: Boolean
+                                ) {
+                                    val isProActive = customerInfo.entitlements["Piggy Ledger Pro"]?.isActive == true || customerInfo.entitlements.all.values.any { it.isActive }
+                                    setPremiumStatus(isProActive)
+                                }
+                                override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                                    android.util.Log.e("PiggyLedgerVM", "RevenueCat logIn error: ${error.message}")
+                                }
+                            }
+                        )
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("PiggyLedgerVM", "RevenueCat logIn exception", e)
+                }
+            }
         }
     }
 
@@ -422,6 +371,23 @@ class PiggyLedgerViewModel(
                     com.clerk.api.Clerk.auth.signOut()
                 } catch (e: Exception) {
                     android.util.Log.e("PiggyLedgerViewModel", "Clerk sign out failed", e)
+                }
+                
+                try {
+                    if (com.revenuecat.purchases.Purchases.isConfigured) {
+                        com.revenuecat.purchases.Purchases.sharedInstance.logOut(
+                            object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
+                                override fun onReceived(customerInfo: com.revenuecat.purchases.CustomerInfo) {
+                                    setPremiumStatus(false)
+                                }
+                                override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                                    android.util.Log.e("PiggyLedgerViewModel", "RevenueCat logOut error: ${error.message}")
+                                }
+                            }
+                        )
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("PiggyLedgerViewModel", "RevenueCat logOut failed", e)
                 }
                 userPreferences.saveAuthentication(false, "", "", "")
                 PostHog.capture("user_sign_out")

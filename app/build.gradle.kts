@@ -19,8 +19,8 @@ android {
     applicationId = "com.oryno.piggy_ledger"
     minSdk = 24
     targetSdk = 36
-    versionCode = 723
-    versionName = "3.12.2"
+    versionCode = 724
+    versionName = "3.12.3"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

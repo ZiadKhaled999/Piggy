@@ -118,16 +118,6 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
         )
     }
 
-    suspend fun restoreBackup(data: BackupData) {
-        dao.clearGoals()
-        dao.clearTransactions()
-        dao.clearLoans()
-        dao.clearLoanPayments()
-        dao.insertGoals(data.goals)
-        dao.insertTransactions(data.transactions)
-        dao.insertLoans(data.loans)
-        dao.insertLoanPayments(data.loanPayments)
-    }
 
     suspend fun getFullDatabaseBackup(streakDates: Set<String>): FullBackupData {
         return FullBackupData(
@@ -142,23 +132,6 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
         )
     }
 
-    suspend fun restoreFullDatabaseBackup(data: FullBackupData) {
-        dao.clearGoals()
-        dao.clearTransactions()
-        dao.clearLoans()
-        dao.clearLoanPayments()
-        dao.clearAccounts()
-        dao.clearAccountTransactions()
-        dao.clearPendingTransactions()
-
-        dao.insertGoals(data.goals)
-        dao.insertTransactions(data.transactions)
-        dao.insertLoans(data.loans)
-        dao.insertLoanPayments(data.loanPayments)
-        dao.insertAccounts(data.accounts)
-        dao.insertAccountTransactions(data.accountTransactions)
-        dao.insertPendingTransactions(data.pendingTransactions)
-    }
 
     val allPendingTransactions: Flow<List<PendingTransaction>> = dao.getAllPendingTransactionsFlow()
     suspend fun insertPendingTransaction(transaction: PendingTransaction) {

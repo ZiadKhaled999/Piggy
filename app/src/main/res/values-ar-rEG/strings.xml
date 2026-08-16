@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">بيجى</string>
     <string name="language">اللغة</string>
@@ -19,7 +19,7 @@
     <string name="share_app">شارك التطبيق</string>
     <string name="give_feedback">قول رأيك</string>
 
-    <!-- Onboarding -->
+    
     <string name="onboarding_welcome_to">أهلاً بيك في</string>
     <string name="onboarding_subtitle_1">طريقتك الحديثة عشان تحوش وتجمع مواردك\nمع أصحابك وعيلتك.</string>
     <string name="onboarding_pool_your">جمع</string>
@@ -51,7 +51,7 @@
     <string name="onboarding_notif_granted">تم تفعيل الإشعارات بنجاح!</string>
     <string name="onboarding_notif_denied">تم تخطي الإشعارات. تقدر تفعلها من إعدادات الموبايل في أي وقت.</string>
 
-    <!-- Personalization Onboarding -->
+    
     <string name="onboarding_personalize_intent_title">إيه تركيزك المالي الأساسي دلوقتي؟</string>
     <string name="onboarding_personalize_intent_subtitle">اختار هدفك الأساسي وهنظبطلك لوحة التحكم، التنبيهات، وحسابات الادخار على مقاسك.</string>
     <string name="onboarding_personalize_intent_group">جمعية أو حصالة مشتركة</string>
@@ -87,7 +87,7 @@
     <string name="onboarding_testimonial_3_quote">"حققت هدفي المالي\nبفضل بيجى!"</string>
     <string name="onboarding_testimonial_3_author">@Tina1974</string>
     
-    <!-- Dashboard & UI -->
+    
     <string name="welcome_back">نورت تاني!</string>
     <string name="dashboard_title">لوحة الحساب</string>
     <string name="your_balance">رصيدك</string>
@@ -96,7 +96,7 @@
     <string name="view_all">شوف الكل</string>
     <string name="go_straight_dashboard">خش على الحساب قوام</string>
     
-    <!-- Bottom Nav -->
+    
     <string name="nav_home">الرئيسية</string>
     <string name="nav_goals">الأهداف</string>
     <string name="nav_loans">الديون</string>
@@ -264,7 +264,7 @@
     <string name="widget_amount_saved">حوشت %1$s</string>
     <string name="widget_open_label">شغال</string>
 
-    <!-- Streak Statements -->
+    
     <string-array name="streak_statements_success">
         <item>وحش الكون!</item>
         <item>محدش هيعرف يحصلك!</item>
@@ -306,7 +306,7 @@
         <item>ارجع للعبتك قوام!</item>
     </string-array>
 
-    <!-- Accounts, Transactions & Budget in true Egyptian Colloquial -->
+    
     <string name="target_account">الحساب اللي هتحوش فيه</string>
     <string name="select_account">اختار الحساب</string>
     <string name="total_net_worth">ثروتك الصافية كلها</string>
@@ -381,7 +381,7 @@
     <string name="select_provider">اختار الشركة</string>
     <string name="select_currency">اختار العملة</string>
 
-    <!-- New Transaction Screen Strings in true Egyptian Colloquial -->
+    
     <string name="new_transaction">عملية جديدة</string>
     <string name="expense">مصروف</string>
     <string name="transfer">تحويل</string>
@@ -402,7 +402,7 @@
     <string name="enter_custom_category">اكتب اسم التصنيف الجديد:</string>
     <string name="eg_subscription">مثلاً: جيم، اشتراكات...</string>
 
-    <!-- Categories in Egyptian Colloquial -->
+    
     <string name="cat_atm_withdrawal">كاش من الـ ATM</string>
     <string name="cat_bonus">مكافأة وبونص</string>
     <string name="cat_cashback">كاش باك</string>
@@ -428,13 +428,13 @@
     <string name="cat_utilities">فواتير (كهربا ومية وغاز)</string>
     <string name="cat_work">بيزنس وشغل</string>
 
-    <!-- خيارات تجميع التحليلات باللهجة المصرية -->
+    
     <string name="group_by_category">بالتصنيف</string>
     <string name="group_by_account">بالحساب</string>
     <string name="group_by_day">باليوم</string>
     <string name="group_by_month">بالشهر</string>
 
-    <!-- Sync & Wipe Logout Strings -->
+    
     <string name="logout_sheet_title">متأكد إنك عايز تخرج؟</string>
     <string name="logout_sheet_subtitle_prefix">هنرفع بياناتك وحاجتك على السحابة و </string>
     <string name="logout_sheet_subtitle_highlight">هنمسح بياناتك المحفوطة هنا</string>
@@ -450,7 +450,7 @@
     <string name="logout_retry">جرب مزامنة تاني</string>
     <string name="auth_logged_in_as">داخل بحساب: %1$s</string>
 
-    <!-- Edit Account Strings in Egyptian Arabic -->
+    
     <string name="edit_account">تعديل الحساب</string>
     <string name="current_balance">الرصيد الحالي</string>
     <string name="credit_card_details">تفاصيل الكارت الائتماني</string>
@@ -463,7 +463,7 @@
     <string name="delete">امسح</string>
     <string name="cancel">إلغاء</string>
 
-    <!-- Months in Egyptian Colloquial -->
+    
     <string name="month_january">يناير</string>
     <string name="month_february">فبراير</string>
     <string name="month_march">مارس</string>
@@ -477,7 +477,7 @@
     <string name="month_november">نوفمبر</string>
     <string name="month_december">ديسمبر</string>
 
-    <!-- Accounts & Analytics Screen Strings in Egyptian Colloquial -->
+    
     <string name="total_spent">كل اللي صرفته</string>
     <string name="percent_used">طيرت %1$d%% منه</string>
     <string name="transactions">العمليات</string>
@@ -507,7 +507,7 @@
     <string name="amount_with_currency">%1$s %2$s</string>
     <string name="balance_label">الرصيد الحالي: %1$s</string>
 
-    <!-- Pending Transactions Strings -->
+    
     <string name="pending_transactions">عمليات معلقة</string>
     <string name="pending_transactions_desc">شوف ووجه رسايل الـ SMS اللي مش واضحة أو محتاجة اختيار حساب.</string>
     <string name="pending_sms_detected">لقينا رسالة عملية جديدة</string>
@@ -541,7 +541,7 @@
     <string name="toast_loan_payment_added">الدفعة اتسجلت بنجاح!</string>
     <string name="toast_loan_closed">المعاملة اتقفلت وبقت مدفوعة بالكامل!</string>
     <string name="toast_loan_deleted">المعاملة اتحذفت.</string>
-    <string name="pro_title">بيجى Pro</string>
+    <string name="pro_title">بيجي ليدجر برو</string>
     <string name="pro_subtitle">تحكم كامل في حريتك المالية</string>
     <string name="benefit_infinite_sheets">صفحات وحسابات وسجلات من غير ليمت</string>
     <string name="benefit_interactive_charts">رسوم بيانية تفاعلية وتحليلات مالية جامدة</string>
@@ -569,7 +569,7 @@
     <string name="terms_unavailable">رابط الشروط مش متاح حالياً.</string>
     <string name="subscription_terms_text">الاشتراكات بتتجدد تلقائياً. ممكن تلغي في أي وقت من إعدادات متجر جوجل.</string>
 
-    <!-- Account Identifiers -->
+    
     <string name="account_identifiers">معرفات الحسابات والمحافظ</string>
     <string name="search_provider_placeholder">دور على بنك، محفظة، أو كلمة...</string>
     <string name="category_all">الكل</string>
@@ -583,7 +583,7 @@
     <string name="keywords_placeholder">مثال: %1$s, VF-Cash, 010</string>
     <string name="save_btn">حفظ</string>
     <string name="toast_saved_keywords">اتحفظت الكلمات لـ %1$s</string>
-    <!-- Transaction Processed Notification -->
+    
     <string name="notif_tx_title_deposit">تم استلام إيداع</string>
     <string name="notif_tx_title_withdrawal">سحب نقدي</string>
     <string name="notif_tx_title_transfer">تحويل أموال</string>
@@ -656,7 +656,7 @@
     <string name="onboarding_streak_days">الخميس,الجمعة,السبت,الأحد</string>
     <string name="paywall_cta_upgrade">روّق على نفسك ودوس</string>
 
-    <!-- Auth Flow (Egyptian Slang) -->
+    
     <string name="auth_e2e_encrypted">تشفير وأمان عالي</string>
     <string name="auth_welcome_title">بيجى</string>
     <string name="auth_welcome_tagline">أمان، سهولة، ودقة في حساباتك.</string>
@@ -709,4 +709,4 @@
     <string name="auth_sheet_signin_desc">سجل دخول عشان تلاقي كل حساباتك متظبطة</string>
     <string name="auth_sheet_create_short_desc">اعمل حساب جديد</string>
     <string name="auth_sheet_signin_short_desc">دخول</string>
-</resources>
+<string name="pro_member_active">بريميم شغال</string><string name="pro_desc">كل مميزات البرو متفعلة وشغالة معاك على الموبايل.</string><string name="pro_feature_1">حسابات وحصالات مفتوحة من غير ليميت</string><string name="pro_feature_2">ميزانيات وسجلات ديون مفتوحة براحتك</string><string name="pro_feature_3">رسومات وتحليلات مالية متقدمة</string><string name="pro_feature_4">طلع بياناتك واعملها سينك على الكلاود</string><string name="pro_feature_5">حماية سكرين شوت وتصنيفات بمزاجك</string><string name="plan_monthly">كل شهر</string><string name="plan_monthly_desc">كمل متابعة بمميزات اكتر وتحكم براحتك خالص</string><string name="plan_monthly_renew">هيتجدد بـ %s في الشهر. وتقدر تلغي في أي وقت.</string><string name="upgrade_monthly">رقي اشتراكك الشهري</string><string name="plan_yearly">كل سنة</string><string name="plan_yearly_desc">وفر 40% مع الدفع السنوي</string><string name="plan_yearly_renew">هيتجدد بـ %s في السنة. وتقدر تلغي في أي وقت.</string><string name="upgrade_yearly">رقي اشتراكك السنوي</string><string name="plan_lifetime">مدى الحياة</string><string name="plan_lifetime_desc">ادفع مرة واحدة واستمتع على طول</string><string name="plan_lifetime_renew">ادفع مرة واحدة، ويفضل بتاعك العمر كله.</string><string name="upgrade_lifetime">اشترك مدى الحياة</string><string name="tag_popular">الأكثر طلباً</string><string name="tag_best_value">اللقطة</string><string name="start_free_trial">جرب ببلاش الأول</string><string name="unlock_premium_now">افتح البرو دلوقتي</string><string name="restore_subscription">رجع اشتراكك</string><string name="pro_toast_desc">بيجي ليدجر برو بتقدملك مميزات كاملة عشان تدير مصاريفك براحتك.</string><string name="comp_acc_goals">الحسابات والحصالات</string><string name="comp_budgets_loans">الميزانيات والسلفيات</string><string name="comp_adv_analytics">تحليلات متقدمة</string><string name="comp_export">تصدير البيانات (CSV/PDF)</string><string name="comp_custom_categories">تصنيفات بمزاجك</string><string name="comp_screenshot_protect">حماية سكرين شوت</string><string name="comp_cloud_sync">نسخة احتياطية وسينك</string><string name="comp_priority_support">أولوية الدعم</string><string name="two_max">أخرك ٢</string><string name="plan_lifetime_desc_2">وصول دائم ومفتوح لكل المميزات الحالية والمستقبلية</string><string name="plan_lifetime_renew_2">دفع مرة واحدة %s. مفيش تجديد أو مصاريف مخفية.</string><string name="upgrade_lifetime_2">رقي لمدى الحياة</string><string name="best_value_caps">اللقطة</string><string name="piggy_ledger_pro">بيجي ليدجر برو</string></resources>

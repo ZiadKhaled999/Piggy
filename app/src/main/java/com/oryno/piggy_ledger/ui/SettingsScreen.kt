@@ -226,29 +226,6 @@ fun SettingsScreen(
         }
     }
 
-    val openDocumentLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let {
-            try {
-                context.contentResolver.openInputStream(it)?.use { stream ->
-                    val jsonString = stream.bufferedReader().use { it.readText() }
-                    viewModel.importData(
-                        jsonString = jsonString,
-                        onComplete = {
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.restore_success), Toast.LENGTH_SHORT)
-                        },
-                        onError = { error ->
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.restore_failed, error), Toast.LENGTH_LONG)
-                        }
-                    )
-                }
-            } catch (e: Exception) {
-                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.read_file_failed, e.message ?: ""), Toast.LENGTH_LONG)
-            }
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -287,8 +264,7 @@ fun SettingsScreen(
                             settingsMode = SettingsMode.MAIN
                         }
                     },
-                    createDocumentLauncher = createDocumentLauncher,
-                    openDocumentLauncher = openDocumentLauncher
+                    createDocumentLauncher = createDocumentLauncher
                 )
             }
         }
@@ -301,6 +277,7 @@ fun SettingsMainContent(
     onNavigateToPendingTransactions: () -> Unit,
     onSignOutClick: (() -> Unit)? = null
 ) {
+    val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SettingsItem(
             title = stringResource(R.string.pending_transactions),
@@ -326,7 +303,14 @@ fun SettingsMainContent(
         SettingsItem(
             title = stringResource(R.string.give_feedback),
             iconRes = R.drawable.img_settings_feedback,
-            onClick = { onModeChange(SettingsMode.FEEDBACK) }
+            onClick = {
+                try {
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://piggy-ledger.featureos.app"))
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.browser_error), android.widget.Toast.LENGTH_SHORT)
+                }
+            }
         )
         
         SettingsItem(
@@ -341,12 +325,6 @@ fun SettingsMainContent(
             onClick = { onModeChange(SettingsMode.BACKUP) }
         )
         
-        SettingsItem(
-            title = stringResource(R.string.restore_data),
-            iconRes = R.drawable.img_settings_restore,
-            onClick = { onModeChange(SettingsMode.RESTORE) }
-        )
-
         SettingsItem(
             title = stringResource(R.string.security),
             iconRes = R.drawable.img_settings_security,
@@ -429,8 +407,7 @@ fun DetailSettingsView(
     mode: SettingsMode,
     viewModel: PiggyLedgerViewModel,
     onBack: () -> Unit,
-    createDocumentLauncher: androidx.activity.result.ActivityResultLauncher<String>,
-    openDocumentLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>
+    createDocumentLauncher: androidx.activity.result.ActivityResultLauncher<String>
 ) {
     android.util.Log.d("DetailSettingsView", "Entering DetailSettingsView with mode: $mode")
     val context = LocalContext.current
@@ -455,7 +432,6 @@ fun DetailSettingsView(
                     SettingsMode.FEEDBACK -> stringResource(R.string.community_feedback)
                     SettingsMode.RATING -> stringResource(R.string.rate_app_title)
                     SettingsMode.BACKUP -> stringResource(R.string.backup_data_title)
-                    SettingsMode.RESTORE -> stringResource(R.string.restore_data_title)
                     SettingsMode.SECURITY -> stringResource(R.string.security)
                     SettingsMode.PRO -> stringResource(R.string.piggy_ledger_pro)
                     SettingsMode.ACCOUNT_IDENTIFIERS -> stringResource(R.string.account_identifiers)
@@ -666,408 +642,7 @@ fun DetailSettingsView(
                 }
             }
             SettingsMode.BACKUP -> {
-                val createCsvLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.CreateDocument("text/csv")
-                ) { uri ->
-                    uri?.let {
-                        viewModel.exportCSVData { csvString ->
-                            try {
-                                context.contentResolver.openOutputStream(it)?.use { stream ->
-                                    stream.write(csvString.toByteArray())
-                                }
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.csv_export_success), Toast.LENGTH_SHORT)
-                            } catch (e: Exception) {
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.csv_export_failed, e.message ?: ""), Toast.LENGTH_LONG)
-                            }
-                        }
-                    }
-                }
-
-                val createExcelLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.CreateDocument("application/vnd.ms-excel")
-                ) { uri ->
-                    uri?.let {
-                        viewModel.exportExcelData { excelString ->
-                            try {
-                                context.contentResolver.openOutputStream(it)?.use { stream ->
-                                    stream.write(excelString.toByteArray())
-                                }
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.excel_export_success), Toast.LENGTH_SHORT)
-                            } catch (e: Exception) {
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.excel_export_failed, e.message ?: ""), Toast.LENGTH_LONG)
-                            }
-                        }
-                    }
-                }
-
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxWidth().weight(1f)
-                ) {
-                    item {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(110.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.img_settings_backup),
-                                contentDescription = stringResource(R.string.backup_illustration),
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .clip(RoundedCornerShape(16.dp)),
-                                contentScale = ContentScale.Fit
-                            )
-                        }
-                    }
-
-                    item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(PinkPrimary.copy(alpha = 0.06f), RoundedCornerShape(16.dp))
-                                .padding(16.dp)
-                        ) {
-                            Text(
-                                stringResource(R.string.secure_local_export),
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = NavyDark
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                stringResource(R.string.export_screen_desc),
-                                fontSize = 13.sp,
-                                color = TextLight,
-                                lineHeight = 18.sp
-                            )
-                        }
-                    }
-
-                    // Card 1: Beautiful Excel File
-                    item {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.TableChart,
-                                        contentDescription = null,
-                                        tint = AccentBlue,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        stringResource(R.string.export_excel_subtitle),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        color = NavyDark
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    stringResource(R.string.export_excel_desc),
-                                    fontSize = 12.sp,
-                                    color = TextLight,
-                                    lineHeight = 16.sp
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = {
-                                        if (isPremium) {
-                                            createExcelLauncher.launch("piggy_ledger_backup.xls")
-                                        } else {
-                                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Upgrade to Pro to export your data", Toast.LENGTH_SHORT)
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxWidth().height(40.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = AccentBlue,
-                                        contentColor = Color.White
-                                    )
-                                ) {
-                                    Text(stringResource(R.string.export_excel_title), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-
-                    // Card 2: Porting CSV File
-                    item {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Article,
-                                        contentDescription = null,
-                                        tint = PinkPrimary,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        stringResource(R.string.export_csv_subtitle),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        color = NavyDark
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    stringResource(R.string.export_csv_desc),
-                                    fontSize = 12.sp,
-                                    color = TextLight,
-                                    lineHeight = 16.sp
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = {
-                                        if (isPremium) {
-                                            createCsvLauncher.launch("piggy_ledger_backup.csv")
-                                        } else {
-                                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Upgrade to Pro to export your data", Toast.LENGTH_SHORT)
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxWidth().height(40.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = PinkPrimary,
-                                        contentColor = Color.White
-                                    )
-                                ) {
-                                    Text(stringResource(R.string.export_csv_title), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-
-                    // Card 3: Standard JSON Backup
-                    item {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Backup,
-                                        contentDescription = null,
-                                        tint = Color(0xFF64748B),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        stringResource(R.string.export_json_subtitle),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        color = NavyDark
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    stringResource(R.string.export_json_desc),
-                                    fontSize = 12.sp,
-                                    color = TextLight,
-                                    lineHeight = 16.sp
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = {
-                                        if (isPremium) {
-                                            createDocumentLauncher.launch("piggy_ledger_backup.json")
-                                        } else {
-                                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Upgrade to Pro to export your data", Toast.LENGTH_SHORT)
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxWidth().height(40.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF64748B),
-                                        contentColor = Color.White
-                                    )
-                                ) {
-                                    Text(stringResource(R.string.create_backup_file), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            SettingsMode.RESTORE -> {
-                val openCsvLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.OpenDocument()
-                ) { uri ->
-                    uri?.let {
-                        try {
-                            context.contentResolver.openInputStream(it)?.use { stream ->
-                                val csvString = stream.bufferedReader().use { it.readText() }
-                                viewModel.importCSVData(
-                                    csvString = csvString,
-                                    onComplete = {
-                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.csv_restore_success), Toast.LENGTH_SHORT)
-                                    },
-                                    onError = { error ->
-                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.csv_restore_failed, error), Toast.LENGTH_LONG)
-                                    }
-                                )
-                            }
-                        } catch (e: Exception) {
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.csv_restore_failed, e.message ?: ""), Toast.LENGTH_LONG)
-                        }
-                    }
-                }
-
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxWidth().weight(1f)
-                ) {
-                    item {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(110.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.img_settings_restore),
-                                contentDescription = stringResource(R.string.restore_illustration),
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .clip(RoundedCornerShape(16.dp)),
-                                contentScale = ContentScale.Fit
-                            )
-                        }
-                    }
-
-                    item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(AccentBlue.copy(alpha = 0.06f), RoundedCornerShape(16.dp))
-                                .padding(16.dp)
-                        ) {
-                            Text(
-                                stringResource(R.string.import_json_backup),
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = NavyDark
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                stringResource(R.string.restoring_data_replace),
-                                fontSize = 13.sp,
-                                color = TextLight,
-                                lineHeight = 18.sp
-                            )
-                        }
-                    }
-
-                    // Card 1: Restore from CSV File
-                    item {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Article,
-                                        contentDescription = null,
-                                        tint = PinkPrimary,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        stringResource(R.string.restore_csv_subtitle),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        color = NavyDark
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    stringResource(R.string.restore_csv_desc),
-                                    fontSize = 12.sp,
-                                    color = TextLight,
-                                    lineHeight = 16.sp
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = {
-                                        openCsvLauncher.launch(arrayOf("*/*"))
-                                    },
-                                    modifier = Modifier.fillMaxWidth().height(40.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = PinkPrimary,
-                                        contentColor = Color.White
-                                    )
-                                ) {
-                                    Text(stringResource(R.string.select_csv_file), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-
-                    // Card 2: Restore from Legacy JSON File
-                    item {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Backup,
-                                        contentDescription = null,
-                                        tint = Color(0xFF64748B),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        stringResource(R.string.restore_json_subtitle),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        color = NavyDark
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    stringResource(R.string.restore_json_desc),
-                                    fontSize = 12.sp,
-                                    color = TextLight,
-                                    lineHeight = 16.sp
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = {
-                                        openDocumentLauncher.launch(arrayOf("application/json"))
-                                    },
-                                    modifier = Modifier.fillMaxWidth().height(40.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF64748B),
-                                        contentColor = Color.White
-                                    )
-                                ) {
-                                    Text(stringResource(R.string.select_backup_file), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-                }
+                BackupSettingsView(viewModel = viewModel, isPremium = isPremium, createJsonLauncher = createDocumentLauncher)
             }
             SettingsMode.SECURITY -> {
                 SecuritySettingsView(viewModel = viewModel)
@@ -1436,7 +1011,7 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
                         border = BorderStroke(1.dp, Color(0xFFBFDBFE))
                     ) {
                         Text(
-                            text = "PRO MEMBER ACTIVE",
+                            text = stringResource(R.string.pro_member_active),
                             color = Color(0xFF1D4ED8),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -1448,7 +1023,7 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "Piggy Ledger Pro",
+                        text = stringResource(R.string.pro_title),
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Black,
                         color = Color(0xFF0F172A)
@@ -1457,7 +1032,7 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "All premium features are unlocked and active on your device.",
+                        text = stringResource(R.string.pro_desc),
                         fontSize = 14.sp,
                         color = Color(0xFF64748B),
                         textAlign = TextAlign.Center
@@ -1474,11 +1049,11 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         listOf(
-                            "Unlimited Accounts & Savings Goals",
-                            "Unlimited Budgets & Loan Ledgers",
-                            "Advanced Financial Analytics & Charts",
-                            "Data Export (CSV/PDF) & Cloud Sync",
-                            "Screenshot Protection & Custom Categories"
+                            stringResource(R.string.pro_feature_1),
+                            stringResource(R.string.pro_feature_2),
+                            stringResource(R.string.pro_feature_3),
+                            stringResource(R.string.pro_feature_4),
+                            stringResource(R.string.pro_feature_5)
                         ).forEach { feature ->
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -1670,12 +1245,12 @@ fun PiggyLedgerPaywall(
 
     val planMeta = when (selectedPlan) {
         PaywallPlan.MONTHLY -> PlanMetadata(
-            tabLabel = "Monthly",
-            badgeName = "Monthly",
-            headerSubtitle = "Keep tracking with expanded access & unlimited control",
+            tabLabel = stringResource(R.string.plan_monthly),
+            badgeName = stringResource(R.string.plan_monthly),
+            headerSubtitle = stringResource(R.string.plan_monthly_desc),
             priceText = monthlyPackage?.product?.price?.formatted ?: "$9.99 / mo",
-            renewalCaption = "Renews for ${monthlyPackage?.product?.price?.formatted ?: "$9.99"}/month. Cancel anytime.",
-            ctaText = "Upgrade Monthly",
+            renewalCaption = stringResource(R.string.plan_monthly_renew, monthlyPackage?.product?.price?.formatted ?: "$9.99"),
+            ctaText = stringResource(R.string.upgrade_monthly),
             accentColor = Color(0xFF2563EB)
         )
         PaywallPlan.YEARLY -> PlanMetadata(
@@ -1689,26 +1264,26 @@ fun PiggyLedgerPaywall(
             accentColor = Color(0xFF7C3AED)
         )
         PaywallPlan.LIFETIME -> PlanMetadata(
-            tabLabel = "Lifetime",
-            badgeName = "Lifetime",
-            headerSubtitle = "Unlock lifetime unlimited access & all future features",
+            tabLabel = stringResource(R.string.plan_lifetime),
+            badgeName = stringResource(R.string.plan_lifetime),
+            headerSubtitle = stringResource(R.string.plan_lifetime_desc_2),
             priceText = lifetimePackage?.product?.price?.formatted ?: "$299.99",
-            renewalCaption = "One-time payment of ${lifetimePackage?.product?.price?.formatted ?: "$299.99"}. No renewal or hidden fees.",
-            ctaText = "Upgrade Lifetime",
-            tag = "BEST VALUE",
+            renewalCaption = stringResource(R.string.plan_lifetime_renew_2, lifetimePackage?.product?.price?.formatted ?: "$299.99"),
+            ctaText = stringResource(R.string.upgrade_lifetime_2),
+            tag = stringResource(R.string.best_value_caps),
             accentColor = PinkPrimary
         )
     }
 
     val comparisonFeatures = listOf(
-        FeatureComparisonRow("Accounts & Goals", FeatureStatus.TextValue("2 Max"), FeatureStatus.Check),
-        FeatureComparisonRow("Budgets & Loans", FeatureStatus.TextValue("2 Max"), FeatureStatus.Check),
-        FeatureComparisonRow("Advanced Analytics", FeatureStatus.Dash, FeatureStatus.Check),
-        FeatureComparisonRow("Data Export (CSV/PDF)", FeatureStatus.Dash, FeatureStatus.Check),
-        FeatureComparisonRow("Custom Categories", FeatureStatus.Dash, FeatureStatus.Check),
-        FeatureComparisonRow("Screenshot Protection", FeatureStatus.Dash, FeatureStatus.Check),
-        FeatureComparisonRow("Cloud Backup & Sync", FeatureStatus.Dash, FeatureStatus.Check),
-        FeatureComparisonRow("Priority Support", FeatureStatus.Dash, FeatureStatus.Check)
+        FeatureComparisonRow(stringResource(R.string.comp_acc_goals), FeatureStatus.TextValue(stringResource(R.string.two_max)), FeatureStatus.Check),
+        FeatureComparisonRow(stringResource(R.string.comp_budgets_loans), FeatureStatus.TextValue(stringResource(R.string.two_max)), FeatureStatus.Check),
+        FeatureComparisonRow(stringResource(R.string.comp_adv_analytics), FeatureStatus.Dash, FeatureStatus.Check),
+        FeatureComparisonRow(stringResource(R.string.comp_export), FeatureStatus.Dash, FeatureStatus.Check),
+        FeatureComparisonRow(stringResource(R.string.comp_custom_categories), FeatureStatus.Dash, FeatureStatus.Check),
+        FeatureComparisonRow(stringResource(R.string.comp_screenshot_protect), FeatureStatus.Dash, FeatureStatus.Check),
+        FeatureComparisonRow(stringResource(R.string.comp_cloud_sync), FeatureStatus.Dash, FeatureStatus.Check),
+        FeatureComparisonRow(stringResource(R.string.comp_priority_support), FeatureStatus.Dash, FeatureStatus.Check)
     )
 
     Box(
@@ -1970,7 +1545,7 @@ fun PiggyLedgerPaywall(
 
             // Restore subscription button
             Text(
-                text = "Restore subscription",
+                text = stringResource(R.string.restore_subscription),
                 color = Color(0xFF475569),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -2119,7 +1694,7 @@ fun PiggyLedgerPaywall(
                     color = planMeta.accentColor,
                     textDecoration = TextDecoration.Underline,
                     modifier = Modifier.clickable {
-                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Piggy Ledger Pro provides complete financial management capabilities.", Toast.LENGTH_LONG)
+                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.pro_toast_desc), Toast.LENGTH_LONG)
                     }
                 )
             }

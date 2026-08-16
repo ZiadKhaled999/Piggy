@@ -42,6 +42,8 @@ import com.clerk.api.Clerk
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.data.AccountType
 import com.oryno.piggy_ledger.ui.theme.*
@@ -439,7 +441,7 @@ fun DashboardScreen(
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Text(
-                                            text = "Piggy Ledger Pro",
+                                            text = stringResource(R.string.piggy_ledger_pro),
                                             fontSize = 16.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = NavyDark
@@ -1157,12 +1159,13 @@ fun PremiumAvatar(
         }
 
         if (isPro) {
+            val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .offset(x = (-2).dp, y = (-2).dp)
-                    .rotate(22f)
-                    .size((size * 0.45f).coerceAtLeast(18.dp))
+                    .offset(x = (-4).dp, y = (-12).dp)
+                    .rotate(if (isRtl) -22f else 22f)
+                    .size((size * 0.65f).coerceAtLeast(26.dp))
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val w = this.size.width

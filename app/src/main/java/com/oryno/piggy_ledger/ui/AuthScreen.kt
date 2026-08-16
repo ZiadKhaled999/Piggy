@@ -112,7 +112,8 @@ fun AuthScreen(
                 .joinToString(" ")
                 .ifBlank { user?.firstName ?: "" }
             val photoUrl = user?.imageUrl ?: suAvatarUri?.toString() ?: ""
-            viewModel.setAuthUser(email, name, photoUrl)
+            val clerkUserId = user?.id ?: ""
+            viewModel.setAuthUser(email, name, photoUrl, clerkUserId)
             viewModel.triggerCloudSync()
             PostHog.capture(event = "user_sign_in", properties = mapOf("method" to "clerk", "user_id" to email))
             onAuthSuccess()

@@ -820,7 +820,12 @@ fun DrawerSettingsContent(
                     title = stringResource(R.string.give_feedback),
                     onClick = {
                         onClose()
-                        appNavController.navigate(Screen.Settings(SettingsMode.FEEDBACK.name))
+                        try {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://piggy-ledger.featureos.app"))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.browser_error), android.widget.Toast.LENGTH_SHORT)
+                        }
                     }
                 ),
                 DrawerMenuItem(
@@ -835,13 +840,6 @@ fun DrawerSettingsContent(
                     onClick = {
                         onClose()
                         appNavController.navigate(Screen.Settings(SettingsMode.BACKUP.name))
-                    }
-                ),
-                DrawerMenuItem(
-                    title = stringResource(R.string.restore_data),
-                    onClick = {
-                        onClose()
-                        appNavController.navigate(Screen.Settings(SettingsMode.RESTORE.name))
                     }
                 ),
                 DrawerMenuItem(

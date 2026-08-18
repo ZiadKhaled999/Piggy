@@ -60,7 +60,8 @@ fun DashboardScreen(
     onNavigateToAccounts: () -> Unit,
     onNavigateToAnalytics: () -> Unit,
     onNavigateToSettingsPro: () -> Unit = {},
-    onNavigateToStreak: () -> Unit = {}
+    onNavigateToStreak: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val streakCount = remember { com.oryno.piggy_ledger.data.StreakManager.getStreak(context) }
@@ -188,6 +189,16 @@ fun DashboardScreen(
                             streakCount = streakCount,
                             onClick = onNavigateToStreak
                         )
+                        
+                        IconButton(
+                            onClick = onNotificationsClick,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(Color.White, CircleShape)
+                                .border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                        ) {
+                            Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = NavyDark, modifier = Modifier.size(20.dp))
+                        }
 
                         PremiumAvatar(
                             imageUrl = userPhotoUrl,

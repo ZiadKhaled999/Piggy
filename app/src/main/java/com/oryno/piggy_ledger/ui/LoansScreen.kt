@@ -176,7 +176,7 @@ fun LoansScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .padding(top = 16.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
@@ -188,12 +188,15 @@ fun LoansScreen(
             ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_icon), tint = NavyDark, modifier = Modifier.size(20.dp))
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(stringResource(R.string.loans_payoffs_title), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark)
                 Text(stringResource(R.string.keep_tabs_subtitle), fontSize = 14.sp, color = TextLight, fontWeight = FontWeight.Medium)
             }
-            Spacer(modifier = Modifier.weight(1f))
             IconButton(
                 onClick = { viewModel.togglePrivacyMode(screenContext) },
                 modifier = Modifier

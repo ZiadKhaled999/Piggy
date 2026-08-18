@@ -54,9 +54,16 @@ import android.content.Intent
 import android.widget.Toast
 
 @Composable
-fun PiggyLedgerApp(factory: ViewModelFactory) {
+fun PiggyLedgerApp(
+    factory: ViewModelFactory,
+    openNotificationId: String? = null,
+    shortcutAction: String? = null,
+    onConsumeShortcut: () -> Unit = {}
+) {
     val navController = rememberNavController()
     val viewModel: PiggyLedgerViewModel = viewModel(factory = factory)
+    
+    val isPremium by viewModel.isPremium.collectAsState()
     
     val hasOnboarded by viewModel.hasOnboarded.collectAsState()
     val hasLanguageSelected by viewModel.hasLanguageSelected.collectAsState()
@@ -94,25 +101,30 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
             NavHost(navController = navController, startDestination = Screen.Splash) {
                 composable<Screen.Splash> {
                     LaunchedEffect(hasOnboarded, hasLanguageSelected, hasHeardAboutUs, isAuthenticated) {
-                        if (hasLanguageSelected == false) {
-                            navController.navigate(Screen.LanguageSelection) {
-                                popUpTo(Screen.Splash) { inclusive = true }
-                            }
-                        } else if (hasHeardAboutUs == false) {
-                            navController.navigate(Screen.HearAboutUs) {
-                                popUpTo(Screen.Splash) { inclusive = true }
-                            }
-                        } else if (hasOnboarded == false) {
-                            navController.navigate(Screen.Onboarding) {
-                                popUpTo(Screen.Splash) { inclusive = true }
-                            }
-                        } else if (isAuthenticated == false) {
-                            navController.navigate(Screen.Auth) {
-                                popUpTo(Screen.Splash) { inclusive = true }
-                            }
-                        } else if (hasOnboarded == true && hasLanguageSelected == true && hasHeardAboutUs == true && isAuthenticated == true) {
-                            navController.navigate(Screen.MainContainer) {
-                                popUpTo(Screen.Splash) { inclusive = true }
+                        if (hasLanguageSelected != null && hasHeardAboutUs != null && hasOnboarded != null && isAuthenticated != null) {
+                            if (hasLanguageSelected == false) {
+                                navController.navigate(Screen.LanguageSelection) {
+                                    popUpTo(Screen.Splash) { inclusive = true }
+                                }
+                            } else if (hasHeardAboutUs == false) {
+                                navController.navigate(Screen.HearAboutUs) {
+                                    popUpTo(Screen.Splash) { inclusive = true }
+                                }
+                            } else if (hasOnboarded == false) {
+                                navController.navigate(Screen.Onboarding) {
+                                    popUpTo(Screen.Splash) { inclusive = true }
+                                }
+                            } else if (isAuthenticated == false) {
+                                navController.navigate(Screen.Auth) {
+                                    popUpTo(Screen.Splash) { inclusive = true }
+                                }
+                            } else {
+                                navController.navigate(Screen.MainContainer) {
+                                    popUpTo(Screen.Splash) { inclusive = true }
+                                }
+                                if (openNotificationId != null) {
+                                    navController.navigate(Screen.Notifications)
+                                }
                             }
                         }
                     }
@@ -200,6 +212,8 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                     MainContainer(
                         viewModel = viewModel,
                         appNavController = navController,
+                        shortcutAction = shortcutAction,
+                        onConsumeShortcut = onConsumeShortcut,
                         onSignOutClick = { showSignOutBottomSheet = true }
                     )
                 }
@@ -291,6 +305,17 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
                     )
                 }
 
+                composable<Screen.Notifications> {
+                    LaunchedEffect(Unit) {
+                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Notifications"))
+                    }
+                    NotificationsScreen(
+                        onBack = { navController.popBackStack() },
+                        isPremium = isPremium,
+                        openNotificationId = openNotificationId
+                    )
+                }
+
                 composable<Screen.Settings> { backStackEntry ->
                     val screen = backStackEntry.toRoute<Screen.Settings>()
                     val mode = remember(screen.modeName) {
@@ -324,11 +349,52 @@ fun PiggyLedgerApp(factory: ViewModelFactory) {
 fun MainContainer(
     viewModel: PiggyLedgerViewModel,
     appNavController: NavHostController,
+    shortcutAction: String? = null,
+    onConsumeShortcut: () -> Unit = {},
     onSignOutClick: () -> Unit = {}
 ) {
     val bottomNavController = rememberNavController()
     val overdueLoans by viewModel.overdueLoans.collectAsState()
+    val allAccounts by viewModel.allAccounts.collectAsState()
     var dismissedAlerts by remember { mutableStateOf(setOf<String>()) }
+    var showAddTransactionSheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(shortcutAction) {
+        if (shortcutAction != null) {
+            when (shortcutAction) {
+                "add_transaction" -> {
+                    bottomNavController.navigate(Screen.Dashboard) {
+                        popUpTo(bottomNavController.graph.findStartDestination().id) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                    showAddTransactionSheet = true
+                    onConsumeShortcut()
+                }
+                "savings_goals" -> {
+                    bottomNavController.navigate(Screen.MyGoals) {
+                        popUpTo(bottomNavController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                    onConsumeShortcut()
+                }
+                "analytics" -> {
+                    bottomNavController.navigate(Screen.Analytics) {
+                        popUpTo(bottomNavController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                    onConsumeShortcut()
+                }
+            }
+        }
+    }
     
     val activeOverdue = overdueLoans.filter { it.id !in dismissedAlerts }
 
@@ -430,7 +496,8 @@ fun MainContainer(
                                 onNavigateToAccounts = { bottomNavController.navigate(Screen.Accounts) },
                                 onNavigateToAnalytics = { bottomNavController.navigate(Screen.Analytics) },
                                 onNavigateToSettingsPro = { appNavController.navigate(Screen.Settings(SettingsMode.PRO.name)) },
-                                onNavigateToStreak = { appNavController.navigate(Screen.StreakAchievements) }
+                                onNavigateToStreak = { appNavController.navigate(Screen.StreakAchievements) },
+                                onNotificationsClick = { appNavController.navigate(Screen.Notifications) }
                             )
                         }
                         
@@ -539,6 +606,19 @@ fun MainContainer(
                     }
                 )
             }
+        }
+
+        if (showAddTransactionSheet) {
+            AddTransactionScreen(
+                viewModel = viewModel,
+                selectedAccountId = null,
+                accounts = allAccounts,
+                onDismiss = { showAddTransactionSheet = false },
+                onNavigateToAddAccount = {
+                    showAddTransactionSheet = false
+                    appNavController.navigate(Screen.AddAccount)
+                }
+            )
         }
     }
 }

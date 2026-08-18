@@ -44,7 +44,41 @@ object NotificationRemoteManager {
     private const val TAG = "NotificationRemoteMgr"
     private const val PREFS_NAME = "piggy_notifications_prefs"
     private const val KEY_SEEN_IDS = "seen_notification_ids"
-    
+    private const val KEY_READ_IDS = "read_notification_ids"
+    private const val KEY_DISMISSED_IDS = "dismissed_notification_ids"
+    private const val KEY_NOTIFICATIONS_JSON = "notifications_json"
+
+    fun getReadIds(context: Context): Set<String> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getStringSet(KEY_READ_IDS, emptySet()) ?: emptySet()
+    }
+
+    fun getDismissedIds(context: Context): Set<String> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getStringSet(KEY_DISMISSED_IDS, emptySet()) ?: emptySet()
+    }
+
+    fun markAsDismissed(context: Context, id: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val dismissedIds = prefs.getStringSet(KEY_DISMISSED_IDS, emptySet())?.toMutableSet() ?: mutableSetOf()
+        dismissedIds.add(id)
+        prefs.edit().putStringSet(KEY_DISMISSED_IDS, dismissedIds).apply()
+    }
+
+    fun markAsRead(context: Context, id: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val readIds = prefs.getStringSet(KEY_READ_IDS, emptySet())?.toMutableSet() ?: mutableSetOf()
+        readIds.add(id)
+        prefs.edit().putStringSet(KEY_READ_IDS, readIds).apply()
+    }
+
+    fun markAllAsRead(context: Context, ids: List<String>) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val readIds = prefs.getStringSet(KEY_READ_IDS, emptySet())?.toMutableSet() ?: mutableSetOf()
+        readIds.addAll(ids)
+        prefs.edit().putStringSet(KEY_READ_IDS, readIds).apply()
+    }
+
     private const val DEFAULT_REMOTE_URL = "https://piggy-assets.vercel.app/notifications_config.json"
     private const val FALLBACK_GITHUB_RAW_URL = "https://raw.githubusercontent.com/ZiadKhaled999/piggy-assets/main/notifications_config.json"
 
@@ -76,6 +110,8 @@ object NotificationRemoteManager {
                 if (response.isSuccessful) {
                     val jsonBody = response.body?.string()
                     if (!jsonBody.isNullOrBlank()) {
+                        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        prefs.edit().putString(KEY_NOTIFICATIONS_JSON, jsonBody).apply()
                         val config = jsonFormatter.decodeFromString<NotificationConfigResponse>(jsonBody)
                         processNotifications(context, config.notifications, isPremium)
                         return@withContext true
@@ -88,6 +124,40 @@ object NotificationRemoteManager {
             }
         }
         return@withContext false
+    }
+
+    fun getSavedNotifications(context: Context, isPremium: Boolean): List<NotificationItem> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val jsonString = prefs.getString(KEY_NOTIFICATIONS_JSON, null) ?: return emptyList()
+        try {
+            val config = jsonFormatter.decodeFromString<NotificationConfigResponse>(jsonString)
+            return config.notifications.filter { item ->
+                if (item.status != "active") return@filter false
+                
+                // Check expiry
+                if (!item.expiresAt.isNullOrBlank()) {
+                    try {
+                        val format = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                        val expiryDate = format.parse(item.expiresAt)
+                        if (expiryDate != null && Date().after(expiryDate)) {
+                            return@filter false
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Date parse error for ${item.id}", e)
+                    }
+                }
+                
+                // Target audience check
+                val target = item.targetAudience.lowercase()
+                if (target == "pro" && !isPremium) return@filter false
+                if (target == "free" && isPremium) return@filter false
+                
+                true
+            }.reversed() // Show newest first (assuming array order is chronological, or reverse it)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing saved notifications", e)
+        }
+        return emptyList()
     }
 
     private fun processNotifications(context: Context, notifications: List<NotificationItem>, isPremium: Boolean) {
@@ -134,6 +204,7 @@ object NotificationRemoteManager {
         
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("open_notification_id", item.id)
         }
         val pendingIntent = PendingIntent.getActivity(
             context, 
@@ -143,13 +214,14 @@ object NotificationRemoteManager {
         )
         
         val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-
-        // Using app icon as fallback if no specific small icon exists
         val iconRes = context.resources.getIdentifier("ic_notification", "drawable", context.packageName).takeIf { it != 0 } 
             ?: R.mipmap.ic_launcher
+            
+        val largeIcon = android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.img_app_logo)
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(iconRes)
+            .setLargeIcon(largeIcon)
             .setContentTitle(item.title)
             .setContentText(item.body)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

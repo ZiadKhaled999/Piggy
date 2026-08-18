@@ -855,4 +855,12 @@
     <string name="export_action">EXPORT</string>
     <string name="export_found_transactions">FOUND %1$d TRANSACTIONS</string>
     <string name="export_upgrade_pro">Upgrade to Pro to export your data</string>
+
+    <!-- App Launcher Shortcuts -->
+    <string name="shortcut_add_transaction_short">Add Transaction</string>
+    <string name="shortcut_add_transaction_long">Add Expense or Income</string>
+    <string name="shortcut_goals_short">Savings Goals</string>
+    <string name="shortcut_goals_long">My Piggy Targets &amp; Goals</string>
+    <string name="shortcut_analytics_short">Insights</string>
+    <string name="shortcut_analytics_long">Monthly Spending Analytics</string>
 </resources>

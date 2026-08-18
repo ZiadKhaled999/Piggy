@@ -1,0 +1,17 @@
+    observeSecuritySettings()
+    observeAuthentication()
+
+    setContent {
+      PiggyLedgerTheme {
+        val isLocked = (isBiometricCheckComplete && !isAuthenticatedByBiometric)
+
+        if (isBiometricCheckComplete) {
+            if (!isLocked) {
+                PiggyLedgerApp(factory)
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(

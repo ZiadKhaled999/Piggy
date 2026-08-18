@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Background Circle -->
+    <path
+        android:pathData="M24,2 A22,22 0 1,0 46,24 A22,22 0 0,0 24,2 Z"
+        android:fillColor="#FF2E93" />
+
+    <!-- Target / Bullseye icon -->
+    <path
+        android:pathData="M24,14 A10,10 0 1,0 34,24 A10,10 0 0,0 24,14 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5" />
+    <path
+        android:pathData="M24,19 A5,5 0 1,0 29,24 A5,5 0 0,0 24,19 Z"
+        android:fillColor="#FFFFFF" />
+</vector>

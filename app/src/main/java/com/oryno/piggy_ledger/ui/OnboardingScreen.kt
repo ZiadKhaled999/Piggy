@@ -1406,6 +1406,12 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
 
                     val stepProgress = progressAnim.value
                     val roadmapScrollState = rememberScrollState()
+                    
+                    LaunchedEffect(roadmapScrollState.maxValue) {
+                        if (roadmapScrollState.maxValue > 0) {
+                            roadmapScrollState.animateScrollTo(roadmapScrollState.maxValue)
+                        }
+                    }
 
                     Column(
                         modifier = Modifier
@@ -1418,7 +1424,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
 
                         Text(
                             text = stringResource(R.string.onboarding_personalize_roadmap_title),
-                            fontSize = if (isSmallScreen) 22.sp else 26.sp,
+                            fontSize = if (isSmallScreen) 20.sp else 26.sp,
                             fontWeight = FontWeight.Bold,
                             color = NavyDark,
                             textAlign = TextAlign.Center
@@ -1428,7 +1434,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
 
                         Text(
                             text = stringResource(R.string.onboarding_personalize_roadmap_subtitle),
-                            fontSize = if (isSmallScreen) 12.sp else 14.sp,
+                            fontSize = if (isSmallScreen) 11.sp else 14.sp,
                             fontWeight = FontWeight.Normal,
                             color = TextLight,
                             textAlign = TextAlign.Center
@@ -1470,7 +1476,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                         ) {
                                             Text(
                                                 text = title,
-                                                fontSize = if (isSmallScreen) 13.5.sp else 15.sp,
+                                                fontSize = if (isSmallScreen) 12.sp else 15.sp,
                                                 fontWeight = if (isActive || isFinished) FontWeight.Bold else FontWeight.Medium,
                                                 color = if (isActive || isFinished) NavyDark else Color(0xFF64748B),
                                                 modifier = Modifier.weight(1f)

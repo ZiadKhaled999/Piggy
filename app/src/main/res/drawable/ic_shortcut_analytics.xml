@@ -1,0 +1,27 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Background Circle -->
+    <path
+        android:pathData="M24,2 A22,22 0 1,0 46,24 A22,22 0 0,0 24,2 Z"
+        android:fillColor="#0F172A" />
+
+    <!-- Bar Chart Glyphs in crisp white & pink -->
+    <path
+        android:pathData="M14,32 L14,24"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M24,32 L24,16"
+        android:strokeColor="#FF2E93"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M34,32 L34,20"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+</vector>

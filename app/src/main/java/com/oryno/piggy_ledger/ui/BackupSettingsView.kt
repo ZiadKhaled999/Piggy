@@ -23,6 +23,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalConfiguration
 import com.oryno.piggy_ledger.R
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.scale
@@ -108,6 +109,9 @@ fun BackupSettingsView(
             targetValue = if (exportType == "CSV") 1.05f else if (exportType == "JSON") 0.95f else 1f,
             animationSpec = tween(300)
         )
+        val configuration = LocalConfiguration.current
+        val isSmallScreen = configuration.screenWidthDp < 360
+
         // Logo
         Box(
             modifier = Modifier.size(100.dp, 120.dp).scale(scale),
@@ -130,7 +134,7 @@ fun BackupSettingsView(
                     text = exportType,
                     color = currentColor,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 24.sp
+                    fontSize = if (isSmallScreen) 20.sp else 24.sp
                 )
             }
         }
@@ -139,7 +143,7 @@ fun BackupSettingsView(
         
         Text(
             text = stringResource(R.string.export_data_title),
-            fontSize = 24.sp,
+            fontSize = if (isSmallScreen) 20.sp else 24.sp,
             fontWeight = FontWeight.Bold,
             color = NavyDark
         )
@@ -148,7 +152,7 @@ fun BackupSettingsView(
         
         Text(
             text = stringResource(R.string.export_data_subtitle),
-            fontSize = 14.sp,
+            fontSize = if (isSmallScreen) 12.sp else 14.sp,
             color = TextLight,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 32.dp),

@@ -26,4 +26,5 @@ sealed class Screen {
     @Serializable data object PendingTransactions : Screen()
     @Serializable data object StreakAchievements : Screen()
     @Serializable data object AiChat : Screen()
+    @Serializable data object Notifications : Screen()
 }

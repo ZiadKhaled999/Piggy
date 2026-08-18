@@ -840,4 +840,12 @@
     <string name="export_action">تصدير</string>
     <string name="export_found_transactions">لقينا %1$d معاملة</string>
     <string name="export_upgrade_pro">اشترك في برو عشان تصدر بياناتك</string>
+
+    <!-- App Launcher Shortcuts -->
+    <string name="shortcut_add_transaction_short">إضافة معاملة</string>
+    <string name="shortcut_add_transaction_long">تسجيل مصروف أو دخل جديد</string>
+    <string name="shortcut_goals_short">أهداف الادخار</string>
+    <string name="shortcut_goals_long">أهداف وحصالة الادخار</string>
+    <string name="shortcut_analytics_short">التحليلات</string>
+    <string name="shortcut_analytics_long">تحليلات وإحصائيات المصروفات</string>
 </resources>

@@ -90,6 +90,7 @@ import androidx.compose.ui.graphics.Color
 
 import androidx.compose.ui.layout.ContentScale
 
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 
 import androidx.compose.ui.res.painterResource
@@ -1340,7 +1341,7 @@ fun PiggyLedgerPaywall(
                             append(planMeta.badgeName)
                         }
                     },
-                    fontSize = 30.sp,
+                    fontSize = if (LocalConfiguration.current.screenWidthDp < 360) 24.sp else 30.sp,
                     fontWeight = FontWeight.Black,
                     color = Color(0xFF0F172A),
                     letterSpacing = (-0.5).sp
@@ -1350,9 +1351,9 @@ fun PiggyLedgerPaywall(
 
                 Text(
                     text = planMeta.headerSubtitle,
-                    fontSize = 15.sp,
+                    fontSize = if (LocalConfiguration.current.screenWidthDp < 360) 13.sp else 15.sp,
                     color = Color(0xFF64748B),
-                    lineHeight = 22.sp
+                    lineHeight = if (LocalConfiguration.current.screenWidthDp < 360) 18.sp else 22.sp
                 )
             }
 

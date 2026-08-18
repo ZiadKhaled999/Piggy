@@ -2,6 +2,7 @@ package com.oryno.piggy_ledger
 
 import android.os.Bundle
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
@@ -93,6 +94,8 @@ class MainActivity : AppCompatActivity() {
 
   private var isAuthenticatedByBiometric by mutableStateOf(false)
   private var isBiometricCheckComplete by mutableStateOf(false)
+  private var activeShortcutAction by mutableStateOf<String?>(null)
+  private var activeOpenNotificationId by mutableStateOf<String?>(null)
   private lateinit var userPreferences: UserPreferences
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -129,13 +132,21 @@ class MainActivity : AppCompatActivity() {
     observeSecuritySettings()
     observeAuthentication()
 
+    activeOpenNotificationId = intent?.getStringExtra("open_notification_id")
+    activeShortcutAction = intent?.getStringExtra("shortcut_action")
+
     setContent {
       PiggyLedgerTheme {
         val isLocked = (isBiometricCheckComplete && !isAuthenticatedByBiometric)
 
         if (isBiometricCheckComplete) {
             if (!isLocked) {
-                PiggyLedgerApp(factory)
+                PiggyLedgerApp(
+                    factory = factory,
+                    openNotificationId = activeOpenNotificationId,
+                    shortcutAction = activeShortcutAction,
+                    onConsumeShortcut = { activeShortcutAction = null }
+                )
             } else {
                 Box(
                     modifier = Modifier.fillMaxSize().background(Color.White),
@@ -318,6 +329,13 @@ class MainActivity : AppCompatActivity() {
               isBiometricCheckComplete = true
           }
       }
+  }
+
+  override fun onNewIntent(intent: Intent) {
+      super.onNewIntent(intent)
+      setIntent(intent)
+      intent.getStringExtra("open_notification_id")?.let { activeOpenNotificationId = it }
+      intent.getStringExtra("shortcut_action")?.let { activeShortcutAction = it }
   }
 }
 

@@ -271,7 +271,7 @@ class AiChatViewModel(
                     val errorMsg = SovereignAiResponse(
                         thinkingProcess = kotlinx.serialization.json.JsonPrimitive("Error analyzing request."),
                         currentArchetype = "",
-                        archetypeRationale = "# ⚠️ No connection..\n\n<mark>$cleanUserError</mark>",
+                        archetypeRationale = "# ⚠️ No connection..",
                         uiBlocks = listOf(
                             UiBlock.ActionBannerBlock(cleanUserError, "RETRY")
                         )

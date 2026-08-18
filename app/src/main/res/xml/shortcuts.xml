@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="shortcut_add_transaction"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_add_transaction"
+        android:shortcutShortLabel="@string/shortcut_add_transaction_short"
+        android:shortcutLongLabel="@string/shortcut_add_transaction_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.oryno.piggy_ledger"
+            android:targetClass="com.oryno.piggy_ledger.MainActivity">
+            <extra
+                android:name="shortcut_action"
+                android:value="add_transaction" />
+        </intent>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_savings_goals"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_goals"
+        android:shortcutShortLabel="@string/shortcut_goals_short"
+        android:shortcutLongLabel="@string/shortcut_goals_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.oryno.piggy_ledger"
+            android:targetClass="com.oryno.piggy_ledger.MainActivity">
+            <extra
+                android:name="shortcut_action"
+                android:value="savings_goals" />
+        </intent>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_analytics"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_analytics"
+        android:shortcutShortLabel="@string/shortcut_analytics_short"
+        android:shortcutLongLabel="@string/shortcut_analytics_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.oryno.piggy_ledger"
+            android:targetClass="com.oryno.piggy_ledger.MainActivity">
+            <extra
+                android:name="shortcut_action"
+                android:value="analytics" />
+        </intent>
+    </shortcut>
+</shortcuts>

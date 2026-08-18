@@ -587,8 +587,15 @@ fun DeadlineInAppAlert(
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
+                val formattedAmount = remember(amount) {
+                    try {
+                        String.format(java.util.Locale.US, "%.2f", amount)
+                    } catch (e: Exception) {
+                        amount.toString()
+                    }
+                }
                 Text(
-                    text = stringResource(R.string.repayment_deadline_over, loanName, "$$amount"),
+                    text = stringResource(R.string.repayment_deadline_over, loanName, "$$formattedAmount"),
                     color = Color.White,
                     fontSize = 13.sp,
                     maxLines = 2

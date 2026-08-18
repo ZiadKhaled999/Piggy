@@ -65,25 +65,42 @@ class NotificationHelper(private val context: Context) {
     }
 
     fun showDeadlineNotification(contactName: String, amount: Double) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val title = context.getString(R.string.deadline_title)
-        val message = context.getString(R.string.repayment_deadline_over, contactName, "$$amount")
-        val logoBitmap = getAppLogoBitmap()
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+            val title = try {
+                context.getString(R.string.deadline_title)
+            } catch (e: Exception) {
+                "Deadline Over!"
+            }
+            val formattedAmount = try {
+                String.format(java.util.Locale.US, "%.2f", amount)
+            } catch (e: Exception) {
+                amount.toString()
+            }
+            val message = try {
+                context.getString(R.string.repayment_deadline_over, contactName, "$$formattedAmount")
+            } catch (e: Exception) {
+                "The repayment deadline for $contactName is over. Outstanding amount: $$formattedAmount"
+            }
+            val logoBitmap = getAppLogoBitmap()
 
-        val builder = NotificationCompat.Builder(context, CHANNEL_DEADLINE_ID)
-            .setSmallIcon(R.drawable.img_app_logo)
-            .apply { if (logoBitmap != null) setLargeIcon(logoBitmap) }
-            .setContentTitle(title)
-            .setContentText(message)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setColor(androidx.core.content.ContextCompat.getColor(context, R.color.pink_primary))
-            .setContentIntent(getMainActivityPendingIntent())
-            .setAutoCancel(true)
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            val builder = NotificationCompat.Builder(context, CHANNEL_DEADLINE_ID)
+                .setSmallIcon(R.drawable.img_app_logo)
+                .apply { if (logoBitmap != null) setLargeIcon(logoBitmap) }
+                .setContentTitle(title)
+                .setContentText(message)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setColor(androidx.core.content.ContextCompat.getColor(context, R.color.pink_primary))
+                .setContentIntent(getMainActivityPendingIntent())
+                .setAutoCancel(true)
+                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
-        notificationManager.notify(contactName.hashCode(), builder.build())
+            notificationManager.notify(contactName.hashCode(), builder.build())
+        } catch (e: Throwable) {
+            android.util.Log.e("NotificationHelper", "Failed to show deadline notification", e)
+        }
     }
 
     fun showStreakWarningNotification() {

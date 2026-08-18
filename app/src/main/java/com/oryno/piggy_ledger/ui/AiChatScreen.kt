@@ -1,16 +1,16 @@
 package com.oryno.piggy_ledger.ui
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,6 +37,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -46,11 +47,17 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -58,6 +65,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import androidx.compose.ui.focus.FocusRequester
@@ -67,7 +81,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
@@ -91,18 +105,23 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
-// Minimalist Light Theme Colors
-private val AiBackground = Color(0xFFFAFAFA)
-private val AiSurface = Color(0xFFFFFFFF)
-private val AiBorder = Color(0xFFEBEBEB)
-private val AiAccent = Color(0xFF000000)
-private val AiText = Color(0xFF111111)
-private val AiDimText = Color(0xFF717171)
-private val AiUserBubble = Color(0xFFF5F5F5)
+// Light Theme Gemini-inspired Aesthetic Colors with Piggy Ledger Pink Accent
+private val AiLightBackground = Color(0xFFFFFFFF)
+private val AiLightSurface = Color(0xFFF9FAFB)
+private val AiLightPillBackground = Color(0xFFDADADA)
+private val AiLightBorder = Color(0xFFE2E8F0)
+private val AiUserBubbleColor = Color(0xFFFCE7F3) // Light theme pink background for user messages
+private val AiUserBubbleTextColor = Color(0xFF1E293B) // Dark text for light pink bubble
+private val AiTextPrimary = Color(0xFF1E293B)
+private val AiTextSecondary = Color(0xFF64748B)
+private val AiPiggyPink = Color(0xFFF43F5E) // Piggy Ledger primary pink
+private val AiPiggyPinkDark = Color(0xFFDB2777)
+private val AiGeminiBlue = Color(0xFF1A73E8)
+private val AiGeminiPurple = Color(0xFF8E51FF)
+private val AiPinkAccent = Color(0xFFEC4899)
+private val AiPinkGlowStart = Color(0xFFFDF2F8)
+private val AiPinkGlowMid = Color(0xFFFCE7F3)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,13 +134,17 @@ fun AiChatScreen(
     val activeConversationId by viewModel.activeConversationId.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val userName by viewModel.userName.collectAsStateWithLifecycle()
     
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    var showHistorySheet by remember { mutableStateOf(false) }
+    val historySheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val coroutineScope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
+
+    var showOverflowMenu by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     var speechLang by remember { mutableStateOf(if (java.util.Locale.getDefault().language == "ar") "ar-EG" else "en-US") }
@@ -148,169 +171,196 @@ fun AiChatScreen(
     // Position automatically to bottom on opening or new messages
     LaunchedEffect(chatHistory.size) {
         if (chatHistory.isNotEmpty()) {
-            listState.scrollToItem(chatHistory.size - 1)
+            listState.animateScrollToItem(chatHistory.size - 1)
         }
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet(
-                drawerContainerColor = Color(0xFFFAFAFA),
-                drawerContentColor = Color(0xFF0F172A),
-                modifier = Modifier.width(320.dp)
-            ) {
-                ChatHistoryDrawerContent(
-                    conversations = conversations,
-                    activeConversationId = activeConversationId,
-                    searchQuery = searchQuery,
-                    onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                    onSelectConversation = { id ->
-                        viewModel.selectConversation(id)
-                        coroutineScope.launch { drawerState.close() }
-                    },
-                    onNewChatClick = {
-                        viewModel.createNewConversation()
-                        coroutineScope.launch { drawerState.close() }
-                    },
-                    onDeleteConversation = { id ->
-                        viewModel.deleteConversation(id)
-                    },
-                    onTogglePinConversation = { id, pinned ->
-                        viewModel.togglePinConversation(id, pinned)
-                    },
-                    onRenameConversation = { id, title ->
-                        viewModel.renameConversation(id, title)
+    val isConversationActive = chatHistory.isNotEmpty() || isLoading
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Surface(
+                        color = Color(0xFFFCE7F3),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, Color(0xFFFBCFE8))
+                    ) {
+                        Text(
+                            text = "Beta",
+                            color = Color(0xFFDB2777),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            letterSpacing = 0.5.sp,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
                     }
-                )
-            }
-        }
-    ) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { 
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Piggy AI", color = AiText, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, letterSpacing = (-0.5).sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = Color(0xFF6366F1).copy(alpha = 0.12f),
-                                border = BorderStroke(1.dp, Color(0xFF6366F1).copy(alpha = 0.35f))
-                            ) {
-                                Text(
-                                    text = "Beta",
-                                    color = Color(0xFF4F46E5),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                    letterSpacing = 0.5.sp
-                                )
-                            }
-                        }
-                    },
-                    navigationIcon = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
-                                Icon(Icons.Default.Menu, contentDescription = "Chat History", tint = AiText)
-                            }
-                            IconButton(onClick = onNavigateBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = AiText)
-                            }
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { viewModel.createNewConversation() }) {
-                            Icon(Icons.Default.Add, contentDescription = "New Chat", tint = Color(0xFF4F46E5))
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = AiBackground,
-                        titleContentColor = AiText,
-                        navigationIconContentColor = AiText
-                    )
-                )
-            },
-            containerColor = AiBackground,
-            contentWindowInsets = WindowInsets(0, 0, 0, 0)
-        ) { innerPadding ->
-            Box(modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .imePadding()
-                ) {
-                    if (chatHistory.isEmpty() && !isLoading) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                        ) {
-                            EmptyChatState(
-                                onSuggestionClick = { query ->
-                                    viewModel.sendMessage(query)
-                                }
-                            )
-                        }
-                    } else {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(20.dp),
-                            contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp)
-                        ) {
-                            itemsIndexed(
-                                items = chatHistory,
-                                key = { _, msg -> msg.id }
-                            ) { _, message ->
-                                val isInitial = initialHistoryIds?.contains(message.id) == true
-                                val isAnimated = animatedMessageIds.contains(message.id)
-                                ChatMessageItem(
-                                    message = message,
-                                    shouldStream = !isInitial && !isAnimated,
-                                    onAnimationComplete = { animatedMessageIds.add(message.id) },
-                                    onCtaClick = { cta -> viewModel.sendMessage(cta) }
-                                )
-                            }
-                            if (isLoading) {
-                                item {
-                                    ThinkingIndicator()
-                                }
-                            }
-                        }
+                },
+                navigationIcon = {
+                    IconButton(onClick = { showHistorySheet = true }) {
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = "Chat History",
+                            tint = AiTextPrimary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                },
+                actions = {
+                    // New Chat / Compose button
+                    IconButton(onClick = { viewModel.createNewConversation() }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = "New Chat",
+                            tint = AiTextPrimary,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
 
-                    // Material Design 3 Expressive Prompt Bar
-                    Surface(
-                        color = Color.White,
-                        shape = RoundedCornerShape(36.dp),
-                        shadowElevation = 6.dp,
+                    // Overflow Options (3 dots) triggering Centered Blur Menu
+                    IconButton(onClick = { showOverflowMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "More options",
+                            tint = AiTextPrimary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = AiLightBackground,
+                    titleContentColor = AiTextPrimary,
+                    navigationIconContentColor = AiTextPrimary
+                )
+            )
+        },
+        containerColor = AiLightBackground,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = innerPadding.calculateTopPadding())
+        ) {
+            // Intense Atmospheric Pink Glow rising from the bottom of the screen (visible only before active conversation)
+            AnimatedVisibility(
+                visible = !isConversationActive,
+                enter = fadeIn(tween(400)),
+                exit = fadeOut(tween(400)),
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(480.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color(0xFFFDF2F8).copy(alpha = 0.20f),
+                                    Color(0xFFFCE7F3).copy(alpha = 0.65f),
+                                    Color(0xFFFBCFE8).copy(alpha = 0.95f),
+                                    Color(0xFFF9A8D4).copy(alpha = 1.0f)
+                                )
+                            )
+                        )
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .imePadding()
+            ) {
+                if (chatHistory.isEmpty() && !isLoading) {
+                    Box(
                         modifier = Modifier
+                            .weight(1f)
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
-                            .navigationBarsPadding()
+                    ) {
+                        EmptyChatState(
+                            userName = userName,
+                            onSuggestionClick = { query ->
+                                viewModel.sendMessage(query)
+                            }
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
+                    ) {
+                        itemsIndexed(
+                            items = chatHistory,
+                            key = { _, msg -> msg.id }
+                        ) { _, message ->
+                            val isInitial = initialHistoryIds?.contains(message.id) == true
+                            val isAnimated = animatedMessageIds.contains(message.id)
+                            ChatMessageItem(
+                                message = message,
+                                shouldStream = !isInitial && !isAnimated,
+                                onAnimationComplete = { animatedMessageIds.add(message.id) },
+                                onCtaClick = { cta -> viewModel.sendMessage(cta) }
+                            )
+                        }
+                        if (isLoading) {
+                            item(key = "thinking_indicator") {
+                                ThinkingIndicator()
+                            }
+                        }
+                    }
+                }
+
+                // Floating Prompt Pill with Animated Dynamic Width
+                // First time / empty conversation: compact pill (88% width)
+                // Active conversation: expands to full width (100%)
+                val targetPillWidthFraction = if (isConversationActive) 1f else 0.88f
+                val animatedWidthFraction by animateFloatAsState(
+                    targetValue = targetPillWidthFraction,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessLow
+                    ),
+                    label = "prompt_pill_width"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .navigationBarsPadding(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Surface(
+                        color = Color(0xFFDADADA),
+                        shape = RoundedCornerShape(36.dp),
+                        border = BorderStroke(1.dp, Color(0xFFCACACA)),
+                        shadowElevation = 4.dp,
+                        modifier = Modifier.fillMaxWidth(animatedWidthFraction)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                                .padding(horizontal = 18.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Middle Text Prompt Input
+                            // Text Input Field
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                    .padding(vertical = 4.dp),
                                 contentAlignment = Alignment.CenterStart
                             ) {
                                 if (inputText.isEmpty()) {
                                     Text(
                                         text = "Ask Piggy AI...",
-                                        color = Color(0xFF475569),
-                                        fontSize = 16.sp,
+                                        color = Color(0xFF555555),
+                                        fontSize = 17.sp,
                                         fontWeight = FontWeight.Normal
                                     )
                                 }
@@ -318,12 +368,12 @@ fun AiChatScreen(
                                     value = inputText,
                                     onValueChange = { inputText = it },
                                     textStyle = TextStyle(
-                                        color = Color(0xFF0F172A),
-                                        fontSize = 16.sp,
+                                        color = Color(0xFF1E293B),
+                                        fontSize = 17.sp,
                                         fontWeight = FontWeight.Normal,
                                         lineHeight = 22.sp
                                     ),
-                                    maxLines = 4,
+                                    maxLines = 5,
                                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                                     keyboardActions = KeyboardActions(
                                         onSend = {
@@ -333,72 +383,103 @@ fun AiChatScreen(
                                             }
                                         }
                                     ),
-                                    cursorBrush = SolidColor(Color(0xFF00B0FF)),
+                                    cursorBrush = SolidColor(Color(0xFF1E293B)),
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .focusRequester(focusRequester)
                                 )
                             }
 
-                            // Rightmost Cyan Action Pill (Send/Mic Button)
+                            Spacer(modifier = Modifier.width(8.dp))
+
                             val isInputEmpty = inputText.isBlank()
-                            
-                            if (isInputEmpty) {
-                                Text(
-                                    text = if (speechLang == "ar-EG") "AR" else "EN",
-                                    color = Color(0xFF64748B),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
+
+                            // If loading, show Stop button
+                            if (isLoading) {
+                                Box(
                                     modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable {
-                                            speechLang = if (speechLang == "ar-EG") "en-US" else "ar-EG"
-                                        }
-                                        .padding(8.dp)
-                                )
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        if (!isInputEmpty && !isLoading) Color(0xFF00B0FF) else if (isInputEmpty && !isLoading) Color(0xFFE2E8F0) else Color(0xFFE2E8F0),
-                                        CircleShape
-                                    )
-                                    .clip(CircleShape)
-                                    .clickable {
-                                        if (!isInputEmpty && !isLoading) {
-                                            viewModel.sendMessage(inputText)
-                                            inputText = ""
-                                        } else if (isInputEmpty && !isLoading) {
-                                            try {
-                                                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, speechLang)
-                                                    putExtra(RecognizerIntent.EXTRA_SUPPORTED_LANGUAGES, arrayOf("ar-EG", "en-US", "ar-SA"))
-                                                }
-                                                speechRecognizerLauncher.launch(intent)
-                                            } catch (e: Exception) {
-                                                Toast.makeText(context, "Speech recognition not supported on this device.", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (isInputEmpty) {
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF202124))
+                                        .clickable { viewModel.stopGeneration() },
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Icon(
-                                        imageVector = Icons.Default.Mic,
-                                        contentDescription = "Voice Input",
-                                        tint = if (!isLoading) Color(0xFF475569) else Color(0xFF94A3B8),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.Send,
-                                        contentDescription = "Send",
-                                        tint = if (!isLoading) Color(0xFF0F172A) else Color(0xFF94A3B8),
+                                        imageVector = Icons.Default.Stop,
+                                        contentDescription = "Stop generation",
+                                        tint = Color.White,
                                         modifier = Modifier.size(20.dp)
                                     )
+                                }
+                            } else {
+                                // Right actions when not generating
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    if (isInputEmpty) {
+                                        // Language toggle AR / EN for voice
+                                        Text(
+                                            text = if (speechLang == "ar-EG") "AR" else "EN",
+                                            color = Color(0xFF333333),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .clickable {
+                                                    speechLang = if (speechLang == "ar-EG") "en-US" else "ar-EG"
+                                                }
+                                                .padding(horizontal = 6.dp, vertical = 4.dp)
+                                        )
+
+                                        // Mic Icon
+                                        IconButton(
+                                            onClick = {
+                                                try {
+                                                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, speechLang)
+                                                        putExtra(RecognizerIntent.EXTRA_SUPPORTED_LANGUAGES, arrayOf("ar-EG", "en-US", "ar-SA"))
+                                                    }
+                                                    speechRecognizerLauncher.launch(intent)
+                                                } catch (e: Exception) {
+                                                    Toast.makeText(context, "Speech recognition not supported on this device.", Toast.LENGTH_SHORT).show()
+                                                }
+                                            },
+                                            modifier = Modifier.size(40.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Mic,
+                                                contentDescription = "Voice Input",
+                                                tint = Color(0xFF2B2B2B),
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
+                                    } else {
+                                        // Send button
+                                        Box(
+                                            modifier = Modifier
+                                                .size(44.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(0xFF2563EB))
+                                                .clickable {
+                                                    if (inputText.isNotBlank() && !isLoading) {
+                                                        viewModel.sendMessage(inputText)
+                                                        inputText = ""
+                                                    }
+                                                },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                                contentDescription = "Send",
+                                                tint = Color.White,
+                                                modifier = Modifier
+                                                    .size(20.dp)
+                                                    .rotate(-45f)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -407,6 +488,163 @@ fun AiChatScreen(
             }
         }
     }
+
+    // Centered Menu for Top Bar 3-dots
+    if (showOverflowMenu) {
+        CenteredMenuDialog(
+            onDismissRequest = { showOverflowMenu = false },
+            title = "Chat Options",
+            items = listOf(
+                CenteredMenuItem(
+                    title = "Chat History",
+                    onClick = {
+                        showOverflowMenu = false
+                        showHistorySheet = true
+                    }
+                ),
+                CenteredMenuItem(
+                    title = "Clear Current Chat",
+                    isDestructive = true,
+                    onClick = {
+                        showOverflowMenu = false
+                        viewModel.clearChat()
+                    }
+                )
+            )
+        )
+    }
+
+    // ModalBottomSheet for Chat History Menu
+    if (showHistorySheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showHistorySheet = false },
+            sheetState = historySheetState,
+            containerColor = Color(0xFFFAFAFC),
+            contentColor = AiTextPrimary,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            dragHandle = {
+                BottomSheetDefaults.DragHandle(
+                    color = Color(0xFFCBD5E1),
+                    width = 40.dp,
+                    height = 4.dp
+                )
+            }
+        ) {
+            ChatHistorySheetContent(
+                conversations = conversations,
+                activeConversationId = activeConversationId,
+                searchQuery = searchQuery,
+                onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                onSelectConversation = { id ->
+                    viewModel.selectConversation(id)
+                    coroutineScope.launch {
+                        historySheetState.hide()
+                        showHistorySheet = false
+                    }
+                },
+                onNewChatClick = {
+                    viewModel.createNewConversation()
+                    coroutineScope.launch {
+                        historySheetState.hide()
+                        showHistorySheet = false
+                    }
+                },
+                onDeleteConversation = { id ->
+                    viewModel.deleteConversation(id)
+                },
+                onDeleteAllConversations = {
+                    viewModel.clearAllConversations()
+                },
+                onTogglePinConversation = { id, pinned ->
+                    viewModel.togglePinConversation(id, pinned)
+                },
+                onRenameConversation = { id, title ->
+                    viewModel.renameConversation(id, title)
+                },
+                onCloseSheet = {
+                    coroutineScope.launch {
+                        historySheetState.hide()
+                        showHistorySheet = false
+                    }
+                }
+            )
+        }
+    }
+}
+
+/**
+ * Custom Gemini 4-Sparkle Cluster Icon matching the uploaded design
+ */
+@Composable
+fun GeminiSparkleIcon(
+    modifier: Modifier = Modifier,
+    color: Color = Color(0xFF1E293B),
+    isPulsing: Boolean = false
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "sparkle_anim")
+    val alpha by if (isPulsing) {
+        infiniteTransition.animateFloat(
+            initialValue = 0.4f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(700, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "alpha"
+        )
+    } else {
+        remember { mutableFloatStateOf(1f) }
+    }
+
+    val scale by if (isPulsing) {
+        infiniteTransition.animateFloat(
+            initialValue = 0.92f,
+            targetValue = 1.08f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(700, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "scale"
+        )
+    } else {
+        remember { mutableFloatStateOf(1f) }
+    }
+
+    Canvas(
+        modifier = modifier
+            .scale(scale)
+            .graphicsLayer { this.alpha = alpha }
+    ) {
+        val w = size.width
+        val h = size.height
+        val cx = w * 0.45f
+        val cy = h * 0.5f
+        val mainRadius = minOf(w, h) * 0.38f
+
+        // Central 4-pointed star
+        val path = Path().apply {
+            moveTo(cx, cy - mainRadius)
+            quadraticTo(cx, cy, cx + mainRadius, cy)
+            quadraticTo(cx, cy, cx, cy + mainRadius)
+            quadraticTo(cx, cy, cx - mainRadius, cy)
+            quadraticTo(cx, cy, cx, cy - mainRadius)
+            close()
+        }
+        drawPath(path, color = color)
+
+        // Upper satellite dot
+        drawCircle(
+            color = color,
+            radius = mainRadius * 0.22f,
+            center = Offset(cx + mainRadius * 0.9f, cy - mainRadius * 0.7f)
+        )
+        // Lower satellite dot
+        drawCircle(
+            color = color,
+            radius = mainRadius * 0.16f,
+            center = Offset(cx + mainRadius * 0.8f, cy + mainRadius * 0.8f)
+        )
+    }
 }
 
 data class ConversationGroup(
@@ -414,9 +652,9 @@ data class ConversationGroup(
     val items: List<AiConversation>
 )
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun ChatHistoryDrawerContent(
+fun ChatHistorySheetContent(
     conversations: List<AiConversation>,
     activeConversationId: String,
     searchQuery: String,
@@ -424,12 +662,16 @@ fun ChatHistoryDrawerContent(
     onSelectConversation: (String) -> Unit,
     onNewChatClick: () -> Unit,
     onDeleteConversation: (String) -> Unit,
+    onDeleteAllConversations: () -> Unit,
     onTogglePinConversation: (String, Boolean) -> Unit,
-    onRenameConversation: (String, String) -> Unit
+    onRenameConversation: (String, String) -> Unit,
+    onCloseSheet: () -> Unit
 ) {
     var conversationToRename by remember { mutableStateOf<AiConversation?>(null) }
     var renameInputText by remember { mutableStateOf("") }
-    var menuConversationId by remember { mutableStateOf<String?>(null) }
+    var selectedConvForMenu by remember { mutableStateOf<AiConversation?>(null) }
+    var showSheetSettingsMenu by remember { mutableStateOf(false) }
+    var showConfirmClearAllDialog by remember { mutableStateOf(false) }
 
     val conversationGroups = remember(conversations, searchQuery) {
         val filtered = if (searchQuery.isBlank()) conversations
@@ -470,13 +712,91 @@ fun ChatHistoryDrawerContent(
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFFAFAFA))
-            .padding(16.dp)
+            .fillMaxWidth()
+            .fillMaxHeight(0.85f)
+            .background(Color(0xFFFAFAFC))
+            .padding(horizontal = 20.dp, vertical = 8.dp)
     ) {
+        // Sheet Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = null,
+                    tint = AiTextPrimary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Chat History",
+                    color = AiTextPrimary,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // New Conversation Action
+                Surface(
+                    onClick = onNewChatClick,
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFFFF1F6),
+                    border = BorderStroke(1.dp, Color(0xFFFCE7F3))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "New Chat",
+                            tint = Color(0xFFDB2777),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "New Chat",
+                            color = Color(0xFFDB2777),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                // 3 Vertical Dots for BottomSheet Settings
+                Surface(
+                    onClick = { showSheetSettingsMenu = true },
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFFFF1F6),
+                    border = BorderStroke(1.dp, Color(0xFFFCE7F3))
+                ) {
+                    Box(
+                        modifier = Modifier.padding(6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "History Settings",
+                            tint = Color(0xFFDB2777),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
         // Search bar
         Surface(
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(16.dp),
             color = Color(0xFFF1F5F9),
             border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
             modifier = Modifier.fillMaxWidth()
@@ -488,22 +808,22 @@ fun ChatHistoryDrawerContent(
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Search",
-                    tint = Color(0xFF64748B),
+                    tint = AiTextSecondary,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 TextField(
                     value = searchQuery,
                     onValueChange = onSearchQueryChange,
-                    placeholder = { Text("Search chat content...", color = Color(0xFF94A3B8), fontSize = 14.sp) },
+                    placeholder = { Text("Search conversations...", color = Color(0xFF94A3B8), fontSize = 14.sp) },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         disabledContainerColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color(0xFF0F172A),
-                        unfocusedTextColor = Color(0xFF0F172A)
+                        focusedTextColor = AiTextPrimary,
+                        unfocusedTextColor = AiTextPrimary
                     ),
                     singleLine = true,
                     modifier = Modifier.weight(1f)
@@ -511,32 +831,7 @@ fun ChatHistoryDrawerContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // "New Chat" button inside history menu
-        Surface(
-            onClick = onNewChatClick,
-            shape = RoundedCornerShape(16.dp),
-            color = Color(0xFF6366F1),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "New Conversation",
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         HorizontalDivider(color = Color(0xFFE2E8F0))
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -547,7 +842,16 @@ fun ChatHistoryDrawerContent(
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No previous chats", color = Color(0xFF94A3B8), fontSize = 14.sp)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Outlined.ChatBubbleOutline,
+                        contentDescription = null,
+                        tint = Color(0xFFCBD5E1),
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("No previous chats", color = Color(0xFF94A3B8), fontSize = 14.sp)
+                }
             }
         } else if (conversationGroups.isEmpty()) {
             Box(
@@ -561,51 +865,59 @@ fun ChatHistoryDrawerContent(
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(bottom = 24.dp)
             ) {
                 conversationGroups.forEach { group ->
                     item(key = "header_${group.title}") {
                         Text(
                             text = group.title,
-                            color = Color(0xFF64748B),
+                            color = AiTextSecondary,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(start = 4.dp, top = 4.dp, bottom = 4.dp)
+                            modifier = Modifier.padding(start = 4.dp, top = 4.dp, bottom = 2.dp)
                         )
                     }
                     items(group.items, key = { it.id }) { conv ->
                         val isSelected = conv.id == activeConversationId
-                        val showDropdown = menuConversationId == conv.id
 
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) Color(0xFFE2E8F0) else Color.Transparent,
-                                border = if (isSelected) BorderStroke(1.dp, Color(0xFFCBD5E1)) else null,
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (isSelected) Color(0xFFFFF1F6) else Color.White,
+                                border = BorderStroke(1.dp, if (isSelected) Color(0xFFFBCFE8) else Color(0xFFF1F5F9)),
+                                shadowElevation = if (isSelected) 0.dp else 1.dp,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(14.dp))
                                     .combinedClickable(
                                         onClick = { onSelectConversation(conv.id) },
-                                        onLongClick = { menuConversationId = conv.id }
+                                        onLongClick = { selectedConvForMenu = conv }
                                     )
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Chat,
+                                        contentDescription = null,
+                                        tint = if (isSelected) Color(0xFFDB2777) else AiTextSecondary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
                                     if (conv.isPinned) {
                                         Icon(
                                             imageVector = Icons.Default.PushPin,
                                             contentDescription = "Pinned",
-                                            tint = Color(0xFF6366F1),
+                                            tint = Color(0xFFE11D48),
                                             modifier = Modifier.size(14.dp)
                                         )
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
                                     }
                                     Text(
                                         text = conv.title,
-                                        color = if (isSelected) Color(0xFF0F172A) else Color(0xFF334155),
+                                        color = if (isSelected) Color(0xFFDB2777) else AiTextPrimary,
                                         fontSize = 14.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                         maxLines = 1,
@@ -613,56 +925,17 @@ fun ChatHistoryDrawerContent(
                                         modifier = Modifier.weight(1f)
                                     )
                                     IconButton(
-                                        onClick = { menuConversationId = conv.id },
+                                        onClick = { selectedConvForMenu = conv },
                                         modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.MoreVert,
                                             contentDescription = "Options",
-                                            tint = Color(0xFF64748B),
+                                            tint = AiTextSecondary,
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
                                 }
-                            }
-
-                            DropdownMenu(
-                                expanded = showDropdown,
-                                onDismissRequest = { menuConversationId = null },
-                                modifier = Modifier.background(Color.White)
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Rename", color = Color(0xFF0F172A)) },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(18.dp))
-                                    },
-                                    onClick = {
-                                        menuConversationId = null
-                                        renameInputText = conv.title
-                                        conversationToRename = conv
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(if (conv.isPinned) "Unpin" else "Pin", color = Color(0xFF0F172A)) },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.PushPin, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(18.dp))
-                                    },
-                                    onClick = {
-                                        menuConversationId = null
-                                        onTogglePinConversation(conv.id, conv.isPinned)
-                                    }
-                                )
-                                HorizontalDivider(color = Color(0xFFF1F5F9))
-                                DropdownMenuItem(
-                                    text = { Text("Delete", color = Color(0xFFEF4444)) },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(18.dp))
-                                    },
-                                    onClick = {
-                                        menuConversationId = null
-                                        onDeleteConversation(conv.id)
-                                    }
-                                )
                             }
                         }
                     }
@@ -671,57 +944,448 @@ fun ChatHistoryDrawerContent(
         }
     }
 
-    if (conversationToRename != null) {
+    // Centered Menu for Conversation Item 3-dots
+    if (selectedConvForMenu != null) {
+        val targetConv = selectedConvForMenu!!
+        CenteredMenuDialog(
+            onDismissRequest = { selectedConvForMenu = null },
+            title = targetConv.title,
+            items = listOf(
+                CenteredMenuItem(
+                    title = "Rename",
+                    onClick = {
+                        val conv = targetConv
+                        selectedConvForMenu = null
+                        renameInputText = conv.title
+                        conversationToRename = conv
+                    }
+                ),
+                CenteredMenuItem(
+                    title = if (targetConv.isPinned) "Unpin from Top" else "Pin to Top",
+                    onClick = {
+                        val conv = targetConv
+                        selectedConvForMenu = null
+                        onTogglePinConversation(conv.id, conv.isPinned)
+                    }
+                ),
+                CenteredMenuItem(
+                    title = "Delete Conversation",
+                    isDestructive = true,
+                    onClick = {
+                        val conv = targetConv
+                        selectedConvForMenu = null
+                        onDeleteConversation(conv.id)
+                    }
+                )
+            )
+        )
+    }
+
+    // Centered Menu for BottomSheet Settings 3-dots
+    if (showSheetSettingsMenu) {
+        CenteredMenuDialog(
+            onDismissRequest = { showSheetSettingsMenu = false },
+            title = "History Settings",
+            statCount = conversations.size,
+            statLabel = if (conversations.size == 1) "conversation saved" else "conversations saved",
+            items = listOf(
+                CenteredMenuItem(
+                    title = "New Conversation",
+                    onClick = {
+                        showSheetSettingsMenu = false
+                        onNewChatClick()
+                    }
+                ),
+                CenteredMenuItem(
+                    title = "Clear All History",
+                    isDestructive = true,
+                    onClick = {
+                        showSheetSettingsMenu = false
+                        showConfirmClearAllDialog = true
+                    }
+                ),
+                CenteredMenuItem(
+                    title = "Close History",
+                    onClick = {
+                        showSheetSettingsMenu = false
+                        onCloseSheet()
+                    }
+                )
+            )
+        )
+    }
+
+    // Clear All History Confirmation Dialog
+    if (showConfirmClearAllDialog) {
         AlertDialog(
+            onDismissRequest = { showConfirmClearAllDialog = false },
+            title = { Text("Clear All History?", fontWeight = FontWeight.Bold, color = Color(0xFF1E293B)) },
+            text = { Text("This will permanently delete all your conversation history. This action cannot be undone.", color = Color(0xFF64748B), fontSize = 14.sp) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showConfirmClearAllDialog = false
+                        onDeleteAllConversations()
+                    }
+                ) {
+                    Text("Delete All", fontWeight = FontWeight.Bold, color = Color(0xFFE11D48))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmClearAllDialog = false }) {
+                    Text("Cancel", color = Color(0xFF64748B))
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(24.dp)
+        )
+    }
+
+    if (conversationToRename != null) {
+        val renameSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
             onDismissRequest = { conversationToRename = null },
-            title = { Text("Rename Conversation", fontWeight = FontWeight.Bold) },
-            text = {
+            sheetState = renameSheetState,
+            containerColor = Color.White,
+            contentColor = Color(0xFF1E293B),
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFFE2E8F0)) }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 32.dp, top = 8.dp)
+            ) {
+                Text(
+                    text = "Rename Conversation",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1E293B)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
                 OutlinedTextField(
                     value = renameInputText,
                     onValueChange = { renameInputText = it },
                     singleLine = true,
-                    label = { Text("Title") },
+                    label = { Text("Conversation Title") },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFDB2777),
+                        unfocusedBorderColor = Color(0xFFE2E8F0),
+                        focusedLabelColor = Color(0xFFDB2777)
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val target = conversationToRename
-                        if (target != null && renameInputText.isNotBlank()) {
-                            onRenameConversation(target.id, renameInputText.trim())
-                        }
-                        conversationToRename = null
-                    }
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("Save", fontWeight = FontWeight.Bold, color = Color(0xFF6366F1))
+                    OutlinedButton(
+                        onClick = { conversationToRename = null },
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Text("Cancel", color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
+                    }
+                    Button(
+                        onClick = {
+                            val target = conversationToRename
+                            if (target != null && renameInputText.isNotBlank()) {
+                                onRenameConversation(target.id, renameInputText.trim())
+                            }
+                            conversationToRename = null
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDB2777)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Text("Save", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { conversationToRename = null }) {
-                    Text("Cancel", color = Color(0xFF64748B))
-                }
-            },
-            containerColor = Color.White
-        )
+            }
+        }
     }
 }
 
+data class CenteredMenuItem(
+    val title: String,
+    val isSelected: Boolean = false,
+    val isDestructive: Boolean = false,
+    val onClick: () -> Unit
+)
+
+@Composable
+fun CenteredMenuDialog(
+    onDismissRequest: () -> Unit,
+    title: String? = null,
+    statCount: Int? = null,
+    statLabel: String? = null,
+    items: List<CenteredMenuItem>
+) {
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White.copy(alpha = 0.88f)) // Transparent frosted light background
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismissRequest
+                )
+        ) {
+            // Absolute Top Title in H3 style
+            if (title != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .padding(top = 54.dp, start = 24.dp, end = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = title,
+                        color = Color(0xFF1E293B),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        letterSpacing = (-0.4).sp
+                    )
+                }
+            }
+
+            // Soft Piggy Pink Ambient Glow in the center
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(360.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                Color(0xFFFCE7F3).copy(alpha = 0.80f),
+                                Color(0xFFFFF1F6).copy(alpha = 0.35f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+
+            // Centered Vertically Stacked Content (No white cards, pure typography)
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .padding(horizontal = 28.dp)
+                    .padding(top = 64.dp, bottom = 84.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // "X conversations saved" Big Pink Stat Display
+                if (statCount != null) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(bottom = 32.dp)
+                    ) {
+                        Text(
+                            text = "$statCount",
+                            fontSize = 54.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFFDB2777),
+                            lineHeight = 56.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = statLabel ?: if (statCount == 1) "conversation saved" else "conversations saved",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF64748B),
+                            letterSpacing = 0.4.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                // Vertical list of text elements displayed below each other with small nice hr dividers
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items.forEachIndexed { index, item ->
+                        val isHighlighted = item.isSelected
+                        val textColor = when {
+                            item.isDestructive -> Color(0xFFE11D48)
+                            isHighlighted -> Color(0xFFDB2777)
+                            else -> Color(0xFF1E293B)
+                        }
+                        val fontSize = if (isHighlighted) 22.sp else 19.sp
+                        val fontWeight = if (isHighlighted) FontWeight.ExtraBold else FontWeight.SemiBold
+
+                        Box(
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable(onClick = item.onClick)
+                                .padding(vertical = 10.dp, horizontal = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = item.title,
+                                color = textColor,
+                                fontSize = fontSize,
+                                fontWeight = fontWeight,
+                                textAlign = TextAlign.Center,
+                                letterSpacing = if (isHighlighted) (-0.3).sp else (-0.1).sp
+                            )
+                        }
+
+                        // Small nice hr between elements (slightly longer than text, not full width)
+                        if (index < items.lastIndex) {
+                            Box(
+                                modifier = Modifier
+                                    .width(160.dp)
+                                    .height(1.dp)
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            colors = listOf(
+                                                Color.Transparent,
+                                                Color(0xFFDB2777).copy(alpha = 0.25f),
+                                                Color(0xFFDB2777).copy(alpha = 0.25f),
+                                                Color.Transparent
+                                            )
+                                        )
+                                    )
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Bottom Floating White Circular Close "X" Button (matching screenshot)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 44.dp)
+            ) {
+                Surface(
+                    onClick = onDismissRequest,
+                    shape = CircleShape,
+                    color = Color.White,
+                    shadowElevation = 10.dp,
+                    border = BorderStroke(1.5.dp, Color(0xFFFCE7F3)),
+                    modifier = Modifier.size(58.dp)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = Color(0xFF1E293B),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+sealed interface LoadingPattern {
+    data class TwoStep(val step1: String, val step2: String) : LoadingPattern
+    data class SinglePulse(val phrase: String) : LoadingPattern
+}
+
+private val LOADING_PATTERNS = listOf(
+    // 2-Step Rapid Cycles (Swap copy at 1.5 seconds)
+    LoadingPattern.TwoStep("Analyzing request...", "Almost ready..."),
+    LoadingPattern.TwoStep("Gathering details...", "Finishing up..."),
+    LoadingPattern.TwoStep("On it...", "Here it comes!"),
+    LoadingPattern.TwoStep("Connecting the dots...", "Polishing answer..."),
+    LoadingPattern.TwoStep("Quickly reading...", "Just a second..."),
+
+    // Single-Pulse Statuses (Static 3-second display)
+    // Professional & Crisp
+    LoadingPattern.SinglePulse("Processing request..."),
+    LoadingPattern.SinglePulse("Generating output..."),
+    LoadingPattern.SinglePulse("Synthesizing..."),
+    // Casual & Friendly
+    LoadingPattern.SinglePulse("Cooking up an answer..."),
+    LoadingPattern.SinglePulse("Sorting things out..."),
+    LoadingPattern.SinglePulse("Working on it..."),
+    // Action-Focused
+    LoadingPattern.SinglePulse("Fetching insights..."),
+    LoadingPattern.SinglePulse("Building response..."),
+    LoadingPattern.SinglePulse("Putting it together...")
+)
+
+/**
+ * Thinking / Status Indicator with punchy 2-to-4 word loading copy:
+ * Supports 2-Step Rapid Cycles (swap at 1.5s) and Single-Pulse Statuses
+ */
 @Composable
 fun ThinkingIndicator() {
+    val pattern = remember { LOADING_PATTERNS.random() }
+    var currentText by remember {
+        mutableStateOf(
+            when (pattern) {
+                is LoadingPattern.TwoStep -> pattern.step1
+                is LoadingPattern.SinglePulse -> pattern.phrase
+            }
+        )
+    }
+
+    LaunchedEffect(pattern) {
+        if (pattern is LoadingPattern.TwoStep) {
+            delay(1500L) // Single swap limit: change text at 1.5s mark
+            currentText = pattern.step2
+        }
+    }
+
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ExpressiveLoadingIndicator(size = 28.dp)
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = "Piggy AI is analyzing Knowledge Hub...",
-            color = AiDimText,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
+        GeminiSparkleIcon(
+            modifier = Modifier.size(24.dp),
+            color = Color(0xFFDB2777),
+            isPulsing = true
         )
+        Spacer(modifier = Modifier.width(12.dp))
+        AnimatedContent(
+            targetState = currentText,
+            transitionSpec = {
+                (fadeIn(animationSpec = tween(220)) + slideInVertically(animationSpec = tween(220)) { it / 3 })
+                    .togetherWith(fadeOut(animationSpec = tween(180)) + slideOutVertically(animationSpec = tween(180)) { -it / 3 })
+            },
+            label = "ThinkingIndicatorTextAnimation"
+        ) { text ->
+            Text(
+                text = text,
+                color = AiTextPrimary,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = (-0.2).sp
+            )
+        }
     }
 }
 
@@ -733,6 +1397,7 @@ data class CategoryPillData(
 
 @Composable
 fun EmptyChatState(
+    userName: String = "",
     onSuggestionClick: (String) -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -741,65 +1406,97 @@ fun EmptyChatState(
         visible = true
     }
 
+    val annotatedPhrase = remember(userName) {
+        val displayName = if (userName.isNotBlank()) userName.trim() else "there"
+        val dayOfYear = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR)
+        val templates = listOf(
+            Pair("the mic is with you, ", ""),
+            Pair("it's up to you, ", ""),
+            Pair("how can we grow your wealth, ", "?"),
+            Pair("ready to master your numbers, ", "?"),
+            Pair("what's on your financial mind, ", "?"),
+            Pair("let's optimize your spending, ", ""),
+            Pair("your money co-pilot is ready, ", "")
+        )
+        val selected = templates[dayOfYear % templates.size]
+
+        buildAnnotatedString {
+            append(selected.first)
+            withStyle(
+                style = SpanStyle(
+                    color = Color(0xFFDB2777),
+                    fontWeight = FontWeight.ExtraBold
+                )
+            ) {
+                append(displayName)
+            }
+            if (selected.second.isNotEmpty()) {
+                append(selected.second)
+            }
+        }
+    }
+
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(800)) + slideInVertically(tween(800)) { it / 4 },
+        enter = fadeIn(tween(600)) + slideInVertically(tween(600)) { it / 4 },
         exit = fadeOut()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(vertical = 16.dp),
+                .padding(vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            // Rotating catchy daily phrase with highlighted pink username
             Text(
-                text = "Find what Piggy AI knows",
-                color = AiText,
-                fontSize = 22.sp,
+                text = annotatedPhrase,
+                color = AiTextPrimary,
+                fontSize = 23.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = (-0.5).sp,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 24.dp)
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // Row 1 Infinite Looping Slider
+            // Row 1 Infinite Looping Slider in Light Theme
             val row1Pills = remember {
                 listOf(
-                    CategoryPillData("🎤", "go-to savings goals", "What are my current savings goals progress?"),
-                    CategoryPillData("💡", "audit recent spending", "Audit my recent spending transactions"),
-                    CategoryPillData("👑", "most successful runway", "What is my current runway and budget balance?"),
+                    CategoryPillData("🎯", "savings goals progress", "What are my current savings goals progress?"),
+                    CategoryPillData("💡", "audit spending", "Audit my recent spending transactions"),
+                    CategoryPillData("👑", "runway and budget", "What is my current runway and budget balance?"),
                     CategoryPillData("📈", "cash flow trends", "What are my recent cash flow trends?")
                 )
             }
-            InfinitePillRow(pills = row1Pills, initialOffset = 1000, scrollSpeed = 1.0f, onSuggestionClick = onSuggestionClick)
+            InfinitePillRow(pills = row1Pills, initialOffset = 1000, scrollSpeed = 0.9f, onSuggestionClick = onSuggestionClick)
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Row 2 Infinite Looping Slider
+            // Row 2 Infinite Looping Slider in Light Theme
             val row2Pills = remember {
                 listOf(
-                    CategoryPillData("💻", "expense shortcuts", "How can I optimize my monthly expenses?"),
+                    CategoryPillData("⚡", "expense shortcuts", "How can I optimize my monthly expenses?"),
                     CategoryPillData("📊", "cash flow forecast", "Show my cash flow forecast"),
-                    CategoryPillData("💳", "loan repayment status", "What is my loan repayment status?"),
+                    CategoryPillData("💳", "loan repayments", "What is my loan repayment status?"),
                     CategoryPillData("🏷️", "top spending category", "Which category do I spend the most on?")
                 )
             }
-            InfinitePillRow(pills = row2Pills, initialOffset = 3000, scrollSpeed = 0.8f, onSuggestionClick = onSuggestionClick)
+            InfinitePillRow(pills = row2Pills, initialOffset = 3000, scrollSpeed = 0.7f, onSuggestionClick = onSuggestionClick)
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Row 3 Infinite Looping Slider
+            // Row 3 Infinite Looping Slider in Light Theme
             val row3Pills = remember {
                 listOf(
-                    CategoryPillData("📱", "review pending SMS logs", "Are there any pending SMS transactions to review?"),
+                    CategoryPillData("📱", "review pending SMS", "Are there any pending SMS transactions to review?"),
                     CategoryPillData("💰", "account balances", "Show all my account balances"),
-                    CategoryPillData("⚡", "instant pay fees summary", "Summary of instant pay fees across my accounts"),
-                    CategoryPillData("🎯", "goal milestones", "Which savings goals are closest to completion?")
+                    CategoryPillData("✨", "streaks and habits", "What is my logging streak status?"),
+                    CategoryPillData("🏦", "total liquidity", "Which account holds my largest liquidity?")
                 )
             }
-            InfinitePillRow(pills = row3Pills, initialOffset = 5000, scrollSpeed = 1.2f, onSuggestionClick = onSuggestionClick)
+            InfinitePillRow(pills = row3Pills, initialOffset = 5000, scrollSpeed = 1.0f, onSuggestionClick = onSuggestionClick)
         }
     }
 }
@@ -813,7 +1510,6 @@ fun InfinitePillRow(
 ) {
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialOffset)
 
-    // Gentle auto-scroll continuous slider effect
     LaunchedEffect(Unit) {
         while (isActive) {
             delay(16)
@@ -848,8 +1544,8 @@ fun CategoryPill(
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
-        color = Color(0xFF1E293B),
-        border = BorderStroke(1.dp, Color(0xFF334155))
+        color = Color(0xFFF1F5F9),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
@@ -859,7 +1555,7 @@ fun CategoryPill(
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = label,
-                color = Color.White,
+                color = AiTextPrimary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -916,7 +1612,7 @@ fun parseResponseTextAndNextSteps(rawText: String): ProcessedResponse {
         }
     }
 
-    // Contextual CTA follow-up questions when explicit next steps header is not returned
+    // Contextual CTA follow-up questions
     val lowerText = text.lowercase()
     val contextualNextSteps = when {
         lowerText.contains("goal") || lowerText.contains("save") || lowerText.contains("target") -> listOf(
@@ -949,6 +1645,9 @@ fun parseResponseTextAndNextSteps(rawText: String): ProcessedResponse {
     return ProcessedResponse(mainText = text, nextSteps = contextualNextSteps)
 }
 
+/**
+ * Chat Message Item with Pill-shaped User Bubble and Clean Gemini Layout
+ */
 @Composable
 fun ChatMessageItem(
     message: AiChatMessage,
@@ -968,24 +1667,25 @@ fun ChatMessageItem(
     }
 
     if (message.role == "user") {
+        // User Pill Bubble (Image 1 style)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.Bottom
+            verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
                 onClick = {
                     clipboardManager.setText(AnnotatedString(message.content))
                     Toast.makeText(context, "Question copied to clipboard", Toast.LENGTH_SHORT).show()
                 },
-                modifier = Modifier.size(28.dp).padding(bottom = 4.dp)
+                modifier = Modifier.size(28.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.ContentCopy,
                     contentDescription = "Copy question",
-                    tint = AiDimText,
+                    tint = AiTextSecondary,
                     modifier = Modifier.size(14.dp)
                 )
             }
@@ -993,13 +1693,14 @@ fun ChatMessageItem(
             SelectionContainer {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp))
-                        .background(Color(0xFF1E293B))
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(AiUserBubbleColor)
+                        .border(BorderStroke(1.dp, Color(0xFFFBCFE8)), RoundedCornerShape(24.dp))
+                        .padding(horizontal = 20.dp, vertical = 12.dp)
                 ) {
                     Text(
                         text = message.content,
-                        color = Color.White,
+                        color = AiUserBubbleTextColor,
                         fontSize = 15.sp,
                         lineHeight = 22.sp,
                         fontWeight = FontWeight.Medium
@@ -1008,6 +1709,7 @@ fun ChatMessageItem(
             }
         }
     } else {
+        // AI Response Layout (Image 1 style: Sparkle icon + Clean Answer Typography)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1015,6 +1717,16 @@ fun ChatMessageItem(
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.Top
         ) {
+            GeminiSparkleIcon(
+                modifier = Modifier
+                    .size(22.dp)
+                    .padding(top = 4.dp),
+                color = Color(0xFF1E293B),
+                isPulsing = false
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 val json = remember { Json { ignoreUnknownKeys = true; isLenient = true; classDiscriminator = "type" } }
                 val decodedResponse: SovereignAiResponse? = remember(message.content) {
@@ -1053,70 +1765,59 @@ fun ChatMessageItem(
                     mainAnswerText.take(charCount)
                 }
 
-                Surface(
-                    color = Color(0xFFF8FAFC),
-                    shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        // Wrap text response in SelectionContainer for manual highlight & copy
-                        SelectionContainer {
-                            Column {
-                                if (displayedText.isNotBlank()) {
-                                    FormattedMarkdownText(displayedText)
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                }
-
-                                // Render UI Blocks
-                                decodedResponse?.uiBlocks?.forEach { block ->
-                                    when (block) {
-                                        is UiBlock.KpiCardBlock -> KpiCard(block)
-                                        is UiBlock.StreakStatusBlock -> StreakStatus(block)
-                                        is UiBlock.MetricGridBlock -> MetricGrid(block)
-                                        is UiBlock.InteractiveChartBlock -> InteractiveChart(block)
-                                        is UiBlock.ReflectivePollBlock -> ReflectivePoll(block)
-                                        is UiBlock.LedgerItemBlock -> LedgerItem(block)
-                                        is UiBlock.ActionBannerBlock -> ActionBanner(block)
-                                    }
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                }
-                            }
+                // AI Answer Content in clean, high-contrast light typography
+                SelectionContainer {
+                    Column {
+                        if (displayedText.isNotBlank()) {
+                            FormattedMarkdownText(displayedText)
+                            Spacer(modifier = Modifier.height(10.dp))
                         }
 
-                        // Action row with Copy button inside card footer
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp),
-                            horizontalArrangement = Arrangement.End,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(
-                                onClick = {
-                                    val textToCopy = mainAnswerText.ifBlank { message.content }
-                                    clipboardManager.setText(AnnotatedString(textToCopy))
-                                    isCopied = true
-                                    Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
-                                },
-                                modifier = Modifier.size(24.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
-                                    contentDescription = "Copy response",
-                                    tint = if (isCopied) Color(0xFF10B981) else AiDimText,
-                                    modifier = Modifier.size(13.dp)
-                                )
+                        // Render UI Blocks
+                        decodedResponse?.uiBlocks?.forEach { block ->
+                            when (block) {
+                                is UiBlock.KpiCardBlock -> KpiCard(block)
+                                is UiBlock.StreakStatusBlock -> StreakStatus(block)
+                                is UiBlock.MetricGridBlock -> MetricGrid(block)
+                                is UiBlock.InteractiveChartBlock -> InteractiveChart(block)
+                                is UiBlock.ReflectivePollBlock -> ReflectivePoll(block)
+                                is UiBlock.LedgerItemBlock -> LedgerItem(block)
+                                is UiBlock.ActionBannerBlock -> ActionBanner(block)
                             }
+                            Spacer(modifier = Modifier.height(10.dp))
                         }
                     }
                 }
 
-                // Render Next Steps as CTA pill buttons outside response card
+                // Bottom actions row with Copy action
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = {
+                            val textToCopy = mainAnswerText.ifBlank { message.content }
+                            clipboardManager.setText(AnnotatedString(textToCopy))
+                            isCopied = true
+                            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
+                            contentDescription = "Copy response",
+                            tint = if (isCopied) Color(0xFF10B981) else AiTextSecondary,
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                }
+
+                // Render Next Steps as CTA pill buttons
                 if (nextStepsList.isNotEmpty() && charCount >= mainAnswerText.length) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
@@ -1124,26 +1825,26 @@ fun ChatMessageItem(
                         nextStepsList.forEach { stepText ->
                             Surface(
                                 onClick = { onCtaClick(stepText) },
-                                shape = RoundedCornerShape(14.dp),
-                                color = Color(0xFFEEF2FF),
-                                border = BorderStroke(1.dp, Color(0xFFC7D2FE)),
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color(0xFFF1F5F9),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
                                         text = stepText,
-                                        color = Color(0xFF312E81),
+                                        color = AiTextPrimary,
                                         fontSize = 13.sp,
-                                        fontWeight = FontWeight.SemiBold,
+                                        fontWeight = FontWeight.Medium,
                                         modifier = Modifier.weight(1f)
                                     )
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                         contentDescription = null,
-                                        tint = Color(0xFF6366F1),
+                                        tint = AiGeminiBlue,
                                         modifier = Modifier.size(14.dp)
                                     )
                                 }
@@ -1159,8 +1860,8 @@ fun ChatMessageItem(
 @Composable
 fun FormattedMarkdownText(text: String) {
     val blocks = remember(text) { parseMarkdownBlocks(text) }
-    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         blocks.forEach { block ->
@@ -1204,7 +1905,7 @@ fun FormattedMarkdownText(text: String) {
                                 Text(
                                     text = block.text,
                                     color = Color(0xFFDC2626),
-                                    fontSize = 20.sp,
+                                    fontSize = 18.sp,
                                     fontWeight = FontWeight.Black,
                                     letterSpacing = (-0.5).sp
                                 )
@@ -1214,11 +1915,11 @@ fun FormattedMarkdownText(text: String) {
                         Markdown(
                             content = "#".repeat(block.level) + " " + block.text,
                             colors = markdownColor(
-                                text = AiText,
-                                codeText = Color(0xFFE2E8F0),
-                                inlineCodeText = Color(0xFF4F46E5),
-                                inlineCodeBackground = Color(0xFFEEF2FF),
-                                dividerColor = Color(0xFFE5E7EB)
+                                text = AiTextPrimary,
+                                codeText = Color(0xFF1E293B),
+                                inlineCodeText = AiGeminiBlue,
+                                inlineCodeBackground = Color(0xFFF1F5F9),
+                                dividerColor = Color(0xFFE2E8F0)
                             )
                         )
                     }
@@ -1228,9 +1929,9 @@ fun FormattedMarkdownText(text: String) {
                 }
                 is MarkdownBlock.HorizontalRule -> {
                     HorizontalDivider(
-                        color = Color(0xFFE5E7EB),
+                        color = Color(0xFFE2E8F0),
                         thickness = 1.dp,
-                        modifier = Modifier.padding(vertical = 10.dp)
+                        modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
                 is MarkdownBlock.Table -> {
@@ -1240,11 +1941,11 @@ fun FormattedMarkdownText(text: String) {
                     Markdown(
                         content = block.rawMarkdown,
                         colors = markdownColor(
-                            text = AiText,
-                            codeText = Color(0xFFE2E8F0),
-                            inlineCodeText = Color(0xFF4F46E5),
-                            inlineCodeBackground = Color(0xFFEEF2FF),
-                            dividerColor = Color(0xFFE5E7EB)
+                            text = AiTextPrimary,
+                            codeText = Color(0xFF1E293B),
+                            inlineCodeText = AiGeminiBlue,
+                            inlineCodeBackground = Color(0xFFF1F5F9),
+                            dividerColor = Color(0xFFE2E8F0)
                         )
                     )
                 }
@@ -1252,11 +1953,11 @@ fun FormattedMarkdownText(text: String) {
                     Markdown(
                         content = block.text,
                         colors = markdownColor(
-                            text = AiText,
-                            codeText = Color(0xFFE2E8F0),
-                            inlineCodeText = Color(0xFF4F46E5),
-                            inlineCodeBackground = Color(0xFFEEF2FF),
-                            dividerColor = Color(0xFFE5E7EB)
+                            text = AiTextPrimary,
+                            codeText = Color(0xFF1E293B),
+                            inlineCodeText = AiGeminiBlue,
+                            inlineCodeBackground = Color(0xFFF1F5F9),
+                            dividerColor = Color(0xFFE2E8F0)
                         )
                     )
                 }
@@ -1264,11 +1965,11 @@ fun FormattedMarkdownText(text: String) {
                     Markdown(
                         content = "- " + block.text,
                         colors = markdownColor(
-                            text = AiText,
-                            codeText = Color(0xFFE2E8F0),
-                            inlineCodeText = Color(0xFF4F46E5),
-                            inlineCodeBackground = Color(0xFFEEF2FF),
-                            dividerColor = Color(0xFFE5E7EB)
+                            text = AiTextPrimary,
+                            codeText = Color(0xFF1E293B),
+                            inlineCodeText = AiGeminiBlue,
+                            inlineCodeBackground = Color(0xFFF1F5F9),
+                            dividerColor = Color(0xFFE2E8F0)
                         )
                     )
                 }
@@ -1285,7 +1986,7 @@ fun RenderCodeBlock(
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color(0xFF0F172A),
+        color = Color(0xFF1E293B),
         border = BorderStroke(1.dp, Color(0xFF334155)),
         modifier = Modifier
             .fillMaxWidth()
@@ -1296,18 +1997,18 @@ fun RenderCodeBlock(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF1E293B))
+                    .background(Color(0xFF0F172A))
                     .padding(horizontal = 14.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    color = Color(0xFF312E81),
+                    color = Color(0xFF1E3A8A),
                     shape = RoundedCornerShape(6.dp)
                 ) {
                     Text(
                         text = language.uppercase(),
-                        color = Color(0xFFA5B4FC),
+                        color = Color(0xFF93C5FD),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -1381,13 +2082,13 @@ fun RenderProgressCard(block: MarkdownBlock.CustomProgress) {
                     text = block.title,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
-                    color = Color(0xFF0F172A)
+                    color = AiTextPrimary
                 )
                 Text(
                     text = "$pct%",
                     fontWeight = FontWeight.Black,
                     fontSize = 14.sp,
-                    color = Color(0xFF4F46E5)
+                    color = AiGeminiBlue
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -1397,7 +2098,7 @@ fun RenderProgressCard(block: MarkdownBlock.CustomProgress) {
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
-                color = Color(0xFF6366F1),
+                color = AiGeminiBlue,
                 trackColor = Color(0xFFE0E7FF)
             )
         }
@@ -1548,7 +2249,7 @@ fun RenderMarkdownTable(headers: List<String>, rows: List<List<String>>) {
                     ) {
                         Text(
                             text = parseAnnotatedString(headerText),
-                            color = AiText,
+                            color = AiTextPrimary,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -1578,7 +2279,7 @@ fun RenderMarkdownTable(headers: List<String>, rows: List<List<String>>) {
                         ) {
                             Text(
                                 text = parseAnnotatedString(cellText),
-                                color = AiText,
+                                color = AiTextPrimary,
                                 fontSize = 13.sp,
                                 lineHeight = 17.sp
                             )
@@ -1621,7 +2322,7 @@ fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
             continue
         }
         
-        // 0. Code block check: ```lang ... ```
+        // Code block check: ```lang ... ```
         if (line.startsWith("```")) {
             val language = line.removePrefix("```").trim()
             val codeLines = mutableListOf<String>()
@@ -1637,7 +2338,7 @@ fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
             continue
         }
 
-        // 0.1 :::progress
+        // :::progress
         if (line.startsWith(":::progress")) {
             i++
             var title = "Progress"
@@ -1655,7 +2356,7 @@ fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
             continue
         }
 
-        // 0.2 :::steps
+        // :::steps
         if (line.startsWith(":::steps")) {
             i++
             var title = "Steps"
@@ -1675,7 +2376,7 @@ fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
             continue
         }
         
-        // 1. Table check (starts with | or contains | with markdown table formatting)
+        // Table check
         if (line.startsWith("|") && line.endsWith("|") && line.length >= 2) {
             val tableLines = mutableListOf<String>()
             while (i < lines.size && lines[i].trim().startsWith("|") && lines[i].trim().endsWith("|") && lines[i].trim().length >= 2) {
@@ -1692,7 +2393,6 @@ fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
                 val bodyRows = mutableListOf<List<String>>()
                 for (rowIndex in 1 until tableLines.size) {
                     val rowStr = tableLines[rowIndex]
-                    // Skip separator row like |---|---|
                     val contentWithoutPipes = rowStr.replace("|", "").replace("-", "").replace(":", "").trim()
                     if (contentWithoutPipes.isEmpty()) {
                         continue
@@ -1708,14 +2408,14 @@ fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
             continue
         }
         
-        // 2. Horizontal Rule check
+        // Horizontal Rule check
         if (line.all { it == '-' || it == '*' || it == '_' } && line.length >= 3) {
             blocks.add(MarkdownBlock.HorizontalRule())
             i++
             continue
         }
         
-        // 3. Callout / Blockquote
+        // Callout / Blockquote
         if (line.startsWith(">")) {
             val calloutLines = mutableListOf<String>()
             while (i < lines.size && lines[i].trim().startsWith(">")) {
@@ -1726,7 +2426,7 @@ fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
             continue
         }
         
-        // 4. Headers
+        // Headers
         if (line.startsWith("#")) {
             val level = line.takeWhile { it == '#' }.length
             val title = line.dropWhile { it == '#' }.trim()
@@ -1735,7 +2435,7 @@ fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
             continue
         }
         
-        // 5. Bullet items
+        // Bullet items
         if (line.startsWith("- ") || line.startsWith("* ") || line.startsWith("• ")) {
             val bulletText = line.substring(2).trim()
             blocks.add(MarkdownBlock.BulletItem(bulletText))
@@ -1750,7 +2450,7 @@ fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
             continue
         }
         
-        // 6. Regular Paragraph / Standard markdown chunk
+        // Regular Paragraph
         blocks.add(MarkdownBlock.StandardMarkdown(line))
         i++
     }
@@ -1758,7 +2458,7 @@ fun parseMarkdownBlocks(text: String): List<MarkdownBlock> {
     return blocks
 }
 
-private fun parseAnnotatedString(text: String): androidx.compose.ui.text.AnnotatedString {
+private fun parseAnnotatedString(text: String): AnnotatedString {
     return buildAnnotatedString {
         val cleanText = text
         if (cleanText.contains("<mark>") && cleanText.contains("</mark>")) {
@@ -1800,17 +2500,17 @@ private fun androidx.compose.ui.text.AnnotatedString.Builder.appendBoldParts(tex
 @Composable
 fun KpiCard(block: UiBlock.KpiCardBlock) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = AiSurface),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, AiBorder),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(block.title, color = AiDimText, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(block.primaryValue, color = AiText, fontSize = 32.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp)
+        Column(modifier = Modifier.padding(18.dp)) {
+            Text(block.title, color = AiTextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(block.primaryValue, color = AiTextPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(block.subValue, color = AiDimText, fontSize = 14.sp)
+            Text(block.subValue, color = AiTextSecondary, fontSize = 13.sp)
         }
     }
 }
@@ -1818,25 +2518,25 @@ fun KpiCard(block: UiBlock.KpiCardBlock) {
 @Composable
 fun StreakStatus(block: UiBlock.StreakStatusBlock) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = AiSurface),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, AiBorder),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(18.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text("Discipline Streak", color = AiDimText, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text("Discipline Streak", color = AiTextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text("${block.currentStreak}", color = AiText, fontSize = 28.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp)
-                    Text(" days", color = AiDimText, fontSize = 15.sp, modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
+                    Text("${block.currentStreak}", color = AiTextPrimary, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                    Text(" days", color = AiTextSecondary, fontSize = 14.sp, modifier = Modifier.padding(bottom = 3.dp, start = 4.dp))
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(block.statusMessage, color = AiText, fontSize = 13.sp)
+                Text(block.statusMessage, color = AiTextPrimary, fontSize = 13.sp)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 repeat(block.streakFreezesAvailable) {
@@ -1844,10 +2544,10 @@ fun StreakStatus(block: UiBlock.StreakStatusBlock) {
                         modifier = Modifier
                             .size(16.dp)
                             .clip(CircleShape)
-                            .background(AiBorder),
+                            .background(Color(0xFFE2E8F0)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(AiDimText))
+                        Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(AiGeminiBlue))
                     }
                 }
             }
@@ -1858,14 +2558,14 @@ fun StreakStatus(block: UiBlock.StreakStatusBlock) {
 @Composable
 fun MetricGrid(block: UiBlock.MetricGridBlock) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = AiSurface),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, AiBorder),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(block.title, color = AiText, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-            Spacer(modifier = Modifier.height(16.dp))
+        Column(modifier = Modifier.padding(18.dp)) {
+            Text(block.title, color = AiTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(14.dp))
             val chunked = block.metrics.chunked(2)
             chunked.forEachIndexed { index, rowMetrics ->
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -1873,16 +2573,16 @@ fun MetricGrid(block: UiBlock.MetricGridBlock) {
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .background(AiBackground, RoundedCornerShape(12.dp))
-                                .padding(16.dp)
+                                .background(Color(0xFFF8FAFC), RoundedCornerShape(12.dp))
+                                .padding(14.dp)
                         ) {
-                            Text(metric.label, color = AiDimText, fontSize = 13.sp)
+                            Text(metric.label, color = AiTextSecondary, fontSize = 12.sp)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(metric.value, color = AiText, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                            Text(metric.value, color = AiTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
-                if (index < chunked.size - 1) Spacer(modifier = Modifier.height(12.dp))
+                if (index < chunked.size - 1) Spacer(modifier = Modifier.height(10.dp))
             }
         }
     }
@@ -1891,20 +2591,19 @@ fun MetricGrid(block: UiBlock.MetricGridBlock) {
 @Composable
 fun InteractiveChart(block: UiBlock.InteractiveChartBlock) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = AiSurface),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, AiBorder),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(block.title, color = AiText, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-            Spacer(modifier = Modifier.height(24.dp))
+        Column(modifier = Modifier.padding(18.dp)) {
+            Text(block.title, color = AiTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(20.dp))
             
-            // Minimalist Chart
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp),
+                    .height(90.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
@@ -1914,13 +2613,13 @@ fun InteractiveChart(block: UiBlock.InteractiveChartBlock) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
                         Box(
                             modifier = Modifier
-                                .width(28.dp)
-                                .fillMaxHeight(heightRatio)
+                                .width(26.dp)
+                                .fillMaxHeight(heightRatio.coerceAtLeast(0.05f))
                                 .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                .background(AiText)
+                                .background(AiGeminiBlue)
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(point.label.take(3), color = AiDimText, fontSize = 11.sp)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(point.label.take(3), color = AiTextSecondary, fontSize = 11.sp)
                     }
                 }
             }
@@ -1931,20 +2630,20 @@ fun InteractiveChart(block: UiBlock.InteractiveChartBlock) {
 @Composable
 fun ReflectivePoll(block: UiBlock.ReflectivePollBlock) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = AiSurface),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, AiBorder),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(block.promptMessage, color = AiText, fontSize = 15.sp, lineHeight = 22.sp)
-            Spacer(modifier = Modifier.height(20.dp))
+        Column(modifier = Modifier.padding(18.dp)) {
+            Text(block.promptMessage, color = AiTextPrimary, fontSize = 15.sp, lineHeight = 22.sp)
+            Spacer(modifier = Modifier.height(16.dp))
             block.options.forEach { option ->
                 Button(
-                    onClick = { /* TODO */ },
-                    colors = ButtonDefaults.buttonColors(containerColor = AiBackground, contentColor = AiText),
+                    onClick = { /* Option click */ },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1F5F9), contentColor = AiTextPrimary),
                     shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, AiBorder),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp)
                 ) {
@@ -1958,25 +2657,25 @@ fun ReflectivePoll(block: UiBlock.ReflectivePollBlock) {
 @Composable
 fun LedgerItem(block: UiBlock.LedgerItemBlock) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = AiSurface),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, AiBorder),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(block.merchant, color = AiText, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                Text(block.merchant, color = AiTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(block.flagReason, color = AiDimText, fontSize = 13.sp, lineHeight = 18.sp)
+                Text(block.flagReason, color = AiTextSecondary, fontSize = 13.sp, lineHeight = 18.sp)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(horizontalAlignment = Alignment.End) {
-                Text(block.amount, color = AiText, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                Text(block.amount, color = AiTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(block.impactOnRunway, color = AiDimText, fontSize = 11.sp)
+                Text(block.impactOnRunway, color = AiTextSecondary, fontSize = 11.sp)
             }
         }
     }
@@ -1985,124 +2684,28 @@ fun LedgerItem(block: UiBlock.LedgerItemBlock) {
 @Composable
 fun ActionBanner(block: UiBlock.ActionBannerBlock) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = AiText),
+        colors = CardDefaults.cardColors(containerColor = AiUserBubbleColor),
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth().clickable { /* TODO Action */ }
+        modifier = Modifier.fillMaxWidth().clickable { /* Action */ }
     ) {
         Row(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 block.message,
-                color = AiSurface,
-                fontSize = 15.sp,
+                color = Color.White,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.weight(1f),
-                lineHeight = 22.sp
+                lineHeight = 20.sp
             )
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(14.dp))
             Icon(
-                Icons.AutoMirrored.Filled.ArrowBack, 
+                Icons.AutoMirrored.Filled.ArrowForward, 
                 contentDescription = "Action", 
-                tint = AiSurface, 
-                modifier = Modifier.scale(scaleX = -1f, scaleY = 1f).size(20.dp)
-            )
-        }
-    }
-}
-
-enum class GeometricShapeType {
-    SparkleStar,
-    OctagramStar,
-    Hexagon
-}
-
-@Composable
-fun RotatingGeometricShape(
-    modifier: Modifier = Modifier,
-    shapeType: GeometricShapeType = GeometricShapeType.SparkleStar,
-    colors: List<Color> = listOf(Color(0xFF8B5CF6), Color(0xFF3B82F6), Color(0xFF10B981), Color(0xFFF59E0B)),
-    rotationDurationMs: Int = 8000
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "geometric_rotation")
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = rotationDurationMs, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "angle"
-    )
-
-    val brush = Brush.sweepGradient(colors)
-
-    Canvas(modifier = modifier.rotate(angle)) {
-        val w = size.width
-        val h = size.height
-        val cx = w / 2f
-        val cy = h / 2f
-        val radius = kotlin.math.min(w, h) / 2f
-
-        when (shapeType) {
-            GeometricShapeType.SparkleStar -> {
-                val path = Path().apply {
-                    moveTo(cx, cy - radius)
-                    quadraticTo(cx, cy, cx + radius, cy)
-                    quadraticTo(cx, cy, cx, cy + radius)
-                    quadraticTo(cx, cy, cx - radius, cy)
-                    quadraticTo(cx, cy, cx, cy - radius)
-                    close()
-                }
-                drawPath(path = path, brush = brush)
-            }
-            GeometricShapeType.OctagramStar -> {
-                val path = Path()
-                val numPoints = 8
-                val innerRadius = radius * 0.45f
-                for (i in 0 until numPoints * 2) {
-                    val r = if (i % 2 == 0) radius else innerRadius
-                    val a = (i * Math.PI / numPoints).toFloat()
-                    val x = cx + r * kotlin.math.cos(a)
-                    val y = cy + r * kotlin.math.sin(a)
-                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-                }
-                path.close()
-                drawPath(path = path, brush = brush, style = Stroke(width = 2.5.dp.toPx()))
-            }
-            GeometricShapeType.Hexagon -> {
-                val path = Path()
-                for (i in 0 until 6) {
-                    val a = (i * Math.PI / 3).toFloat()
-                    val x = cx + radius * kotlin.math.cos(a)
-                    val y = cy + radius * kotlin.math.sin(a)
-                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-                }
-                path.close()
-                drawPath(path = path, brush = brush, style = Stroke(width = 2.dp.toPx()))
-            }
-        }
-    }
-}
-
-@Composable
-fun WaveformAudioIcon(
-    modifier: Modifier = Modifier,
-    barColor: Color = Color(0xFF0F172A)
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val heights = listOf(10.dp, 18.dp, 12.dp, 16.dp)
-        heights.forEach { h ->
-            Box(
-                modifier = Modifier
-                    .width(3.5.dp)
-                    .height(h)
-                    .background(barColor, RoundedCornerShape(2.dp))
+                tint = Color.White, 
+                modifier = Modifier.size(18.dp)
             )
         }
     }

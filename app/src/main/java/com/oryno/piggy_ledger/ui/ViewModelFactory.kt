@@ -21,7 +21,7 @@ class ViewModelFactory(
         if (modelClass.isAssignableFrom(com.oryno.piggy_ledger.ai.AiChatViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             val chatRepo = com.oryno.piggy_ledger.ai.AiChatRepository(database.piggyLedgerDao())
-            return com.oryno.piggy_ledger.ai.AiChatViewModel(chatRepo, context.applicationContext) as T
+            return com.oryno.piggy_ledger.ai.AiChatViewModel(chatRepo, context.applicationContext, userPreferences) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

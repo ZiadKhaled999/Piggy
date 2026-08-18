@@ -645,9 +645,17 @@ class PiggyLedgerViewModel(
         viewModelScope.launch {
             delay(5000)
             while (true) {
-                val currentOverdue = overdueLoans.value
-                currentOverdue.forEach {
-                    NotificationHelper(context).showDeadlineNotification(it.contactName, it.amount)
+                try {
+                    val currentOverdue = overdueLoans.value
+                    currentOverdue.forEach {
+                        try {
+                            NotificationHelper(context).showDeadlineNotification(it.contactName, it.amount)
+                        } catch (e: Throwable) {
+                            android.util.Log.e("PiggyLedgerVM", "Failed to show deadline notification", e)
+                        }
+                    }
+                } catch (e: Throwable) {
+                    android.util.Log.e("PiggyLedgerVM", "Error in overdue notifications loop", e)
                 }
                 delay(60000 * 60) // Check every hour
             }

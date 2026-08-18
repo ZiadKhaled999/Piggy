@@ -141,7 +141,7 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
     suspend fun getAiResponse(messages: List<ChatMessageRequest>): Result<SovereignAiResponse> = withContext(Dispatchers.IO) {
         try {
             val isGroq = apiKey.startsWith("gsk_")
-            val modelName = if (isGroq) "llama-3.1-8b-instant" else "deepseek-reasoner"
+            val modelName = if (isGroq) "qwen/qwen3.6-27b" else "deepseek-reasoner"
             val endpointUrl = if (isGroq) "https://api.groq.com/openai/v1/chat/completions" else "https://api.deepseek.com/chat/completions"
             
             val requestBody = GroqRequest(

@@ -19,7 +19,6 @@
     <string name="onboarding_ready_to">جاهز</string>
     <string name="onboarding_start">تبدأ؟</string>
     <string name="onboarding_subtitle_4">يلا نظبط أول هدف ليك ونبدأ\nرحلتك للتحويش الذكي سوا.</string>
-    
     <string name="onboarding_sms_title">تتبع تلقائي ذكي</string>
     <string name="onboarding_sms_subtitle">فعّل قراية الرسايل بأمان عشان تتبع المحافظ زي (فودافون كاش، أورانج كاش) لحظة بلحظة.</string>
     <string name="onboarding_messages_header">الرسائل</string>
@@ -29,7 +28,6 @@
     <string name="onboarding_sms_skip">مش دلوقتي</string>
     <string name="onboarding_sms_granted">تتبع الرسايل اتفعّل بنجاح!</string>
     <string name="onboarding_sms_denied">تخطينا التتبع. تقدر تفعله بعدين من الإعدادات.</string>
-    
     <string name="onboarding_notif_title">حقّق أهدافك أسرع وأسهل</string>
     <string name="onboarding_notif_subtitle">فعّل الإشعارات حتى لا تنسى تسجيل مصاريفك. إنها أسهل طريقة لبناء عادات مالية صحية والوصول لأهدافك!</string>
     <string name="onboarding_notif_card_title">معك ثانية لتسجيل مصاريفك؟</string>
@@ -38,7 +36,6 @@
     <string name="onboarding_notif_skip">ليس الآن</string>
     <string name="onboarding_notif_granted">تم تفعيل الإشعارات بنجاح!</string>
     <string name="onboarding_notif_denied">تم تخطي الإشعارات. يمكنك تفعيلها لاحقاً من الإعدادات.</string>
-    
     <string name="onboarding_personalize_intent_title">إيه تركيزك الأساسي؟</string>
     <string name="onboarding_personalize_intent_subtitle">اختار هدفك الأساسي وهنظبطلك الواجهة، الإشعارات، وطرق التحويش.</string>
     <string name="onboarding_personalize_intent_group">تحويش جماعي (جمعية)</string>
@@ -49,7 +46,6 @@
     <string name="onboarding_personalize_intent_loans_desc">تابع الفلوس اللي ليك واللي عليك وظبط مواعيد السداد صح.</string>
     <string name="onboarding_personalize_intent_auto">تتبع تلقائي</string>
     <string name="onboarding_personalize_intent_auto_desc">تتبع تحويلات المحافظ (فودافون، أورانج كاش) من غير أي مجهود.</string>
-    
     <string name="onboarding_personalize_intensity_title">اختار قوة التحويش</string>
     <string name="onboarding_personalize_intensity_subtitle">حابب تشيل قد إيه من دخلك؟</string>
     <string name="onboarding_personalize_intensity_casual">محوش على الهادي</string>
@@ -58,7 +54,6 @@
     <string name="onboarding_personalize_intensity_balanced_desc" formatted="false">١٥٪ - ٢٠٪ من الدخل. نمو مستقر لأهداف ثابتة.</string>
     <string name="onboarding_personalize_intensity_aggressive">تركيز ليزر</string>
     <string name="onboarding_personalize_intensity_aggressive_desc">٣٠٪+ من الدخل. أقصى سرعة تحويش عشان تكسر أهدافك.</string>
-    
     <string name="onboarding_personalize_roadmap_title">إعداد خطتك المالية</string>
     <string name="onboarding_personalize_roadmap_subtitle">دليلك الشخصي المصمم لتحقيق أهدافك المالية بسهولة.</string>
     <string name="onboarding_roadmap_step1">تحليل قدرتك المالية المذهلة</string>
@@ -73,7 +68,6 @@
     <string name="onboarding_testimonial_2_author">@Hannah84</string>
     <string name="onboarding_testimonial_3_quote">"حققت هدفي المالي\nبفضل بيجى!"</string>
     <string name="onboarding_testimonial_3_author">@Tina1974</string>
-
     <string name="repayment_deadline_header">ميعاد السداد</string>
     <string name="repayment_deadline_over">ميعاد السداد لـ %1$s خلص. المبلغ المتبقي: %2$s.</string>
     <string name="deadline_channel_name">تفكرات ميعاد السداد</string>
@@ -81,9 +75,6 @@
     <string name="deadline_title">الميعاد خلص!</string>
     <string name="no_deadline_set">مفيش ميعاد سداد</string>
     <string name="back_btn">رجوع</string>
-
-
-    
     <string name="spent">صرفت</string>
     <string name="payoffs">التسديدات</string>
     <string name="savings_goals">أهداف التحويش</string>
@@ -99,10 +90,8 @@
     <string name="correct">صح</string>
     <string name="go_ahead">كمل</string>
     <string name="no_goals_set">مفيش أهداف لسه. دوس عشان تبدأ تحوش!</string>
-
-    
-    <string name="export_success">البيانات اتصدرت بنجاح</string>
-    <string name="export_failed">التصدير فشل: %1$s</string>
+    <string name="export_success">تم التصدير لـ %1$s بنجاح</string>
+    <string name="export_failed">فشل التصدير: %1$s</string>
     <string name="restore_success">البيانات استرجعت بنجاح</string>
     <string name="restore_failed">الاسترجاع فشل: %1$s</string>
     <string name="read_file_failed">فشل قراية الملف: %1$s</string>
@@ -121,20 +110,14 @@
     <string name="close">قفل</string>
     <string name="mic_permission_required">لازم تدي إذن المايك عشان تسجل صوت</string>
     <string name="card_number_placeholder">مثال 1234 5678 9012</string>
-
-    
     <string name="auth_welcome_title_main">بيجى</string>
     <string name="auth_welcome_subtitle_main">أمان، بسيط، وذكي.</string>
     <string name="auth_welcome_desc">تابع مصاريفك، حط أهداف، وحوش فلوس من غير مجهود.</string>
     <string name="please_select_option">من فضلك اختار عشان تكمل</string>
-
-
     <string name="release_to_cancel">سيب عشان تلغي</string>
     <string name="slide_up_to_pause">اسحب لفوق عشان توقف/تلغي</string>
     <string name="recording_state">بيسجل...</string>
     <string name="hold_anywhere_to_record">دوس في أي حتة هنا عشان تسجل</string>
-
-    
     <string name="language">اللغة</string>
     <string name="select_language">اختار اللغة</string>
     <string name="choose_language_desc">اختار لغتك المفضلة عشان تكمل</string>
@@ -438,8 +421,6 @@
     <string name="group_by_account">حسب الحساب</string>
     <string name="group_by_day">حسب اليوم</string>
     <string name="group_by_month">حسب الشهر</string>
-
-    
     <string name="logout_sheet_title">هل أنت متاكد من تسجيل الخروج؟</string>
     <string name="logout_sheet_subtitle_prefix">سيتم مزامنة تقدمك المحلي و </string>
     <string name="logout_sheet_subtitle_highlight">حذف بياناتك المحلية</string>
@@ -639,8 +620,6 @@
     <string name="terms_of_service">شروط الخدمة</string>
     <string name="terms_unavailable">رابط الشروط غير متاح حالياً.</string>
     <string name="subscription_terms_text">تتجدد الاشتراكات تلقائياً. يمكنك الإلغاء في أي وقت من إعدادات Google Play.</string>
-
-    
     <string name="account_identifiers">معرفات الحسابات</string>
     <string name="search_provider_placeholder">ابحث عن بنك، محفظة، أو كلمة مفتاحية...</string>
     <string name="category_all">الكل</string>
@@ -654,19 +633,16 @@
     <string name="keywords_placeholder">مثال: %1$s, VF-Cash, 010</string>
     <string name="save_btn">حفظ</string>
     <string name="toast_saved_keywords">تم حفظ الكلمات المفتاحية لـ %1$s</string>
-    
     <string name="notif_tx_title_deposit">تم استلام إيداع</string>
     <string name="notif_tx_title_withdrawal">سحب نقدي</string>
     <string name="notif_tx_title_transfer">تحويل أموال</string>
     <string name="notif_tx_title_purchase">عملية شراء ناجحة</string>
     <string name="notif_tx_title_unknown">تم تسجيل معاملة</string>
-    
     <string name="notif_tx_msg_deposit">لقد استلمت %1$.2f %2$s في حساب %3$s الخاص بك.</string>
     <string name="notif_tx_msg_withdrawal">لقد قمت بسحب %1$.2f %2$s من حساب %3$s الخاص بك.</string>
     <string name="notif_tx_msg_transfer">لقد قمت بتحويل %1$.2f %2$s من حساب %3$s الخاص بك.</string>
     <string name="notif_tx_msg_purchase">لقد دفعت %1$.2f %2$s باستخدام حساب %3$s الخاص بك.</string>
     <string name="notif_tx_msg_unknown">تم تسجيل معاملة بقيمة %1$.2f %2$s في حساب %3$s الخاص بك.</string>
-
     <string name="how_did_you_hear_about_us">كيف سمعت عن %1$s؟</string>
     <string name="source_facebook">فيسبوك</string>
     <string name="source_tiktok">تيك توك</string>
@@ -676,7 +652,6 @@
     <string name="source_search_engine">محرك بحث (مثل جوجل)</string>
     <string name="source_google_play">جوجل بلاي</string>
     <string name="source_other">غير ذلك</string>
-
     <string name="piggy_ledger_brand">بيجى</string>
     <string name="onboarding_ai_thinking">جاري التفكير...</string>
     <string name="onboarding_ai_sketching">جاري الرسم والتخطيط...</string>
@@ -700,27 +675,23 @@
     <string name="onboarding_step_milestone_desc_auto">أكمل أول تحويل ودع أتمتة التطبيق تتكفل بالباقي.</string>
     <string name="onboarding_choose_pace_title">اختر سرعتك</string>
     <string name="onboarding_choose_pace_subtitle">حدد الكيفية والسرعة التي تريد بها تحقيق أهدافك المالية.</string>
-
     <string name="onboarding_supercharge_title">ضاعف سرعة ادخارك</string>
     <string name="onboarding_supercharge_subtitle">التوجيه الذكي والتلقائي يساعدك على تحقيق أهدافك أسرع بـ 7 أضعاف مقارنة بالتتبع اليدوي.</string>
     <string name="onboarding_supercharge_solo">بمفردك</string>
     <string name="onboarding_supercharge_faster">أسرع</string>
     <string name="onboarding_supercharge_with_piggy">مع %1$s</string>
-
     <string name="onboarding_relatable_header">هل تتفق مع العبارة التالية؟</string>
     <string name="onboarding_relatable_statement_1">"كل ما أقبض، بحس إن الفلوس دي مش بتاعتي أصلاً بسبب الديون اللي عليا."</string>
     <string name="onboarding_relatable_statement_2">"فلوسي متوزعة على حسابات كتير لدرجة إني ماببقاش عارف أنا معايا كام بالظبط وأقدر أصرف إيه."</string>
     <string name="onboarding_relatable_statement_3">"كل ما أبدأ أحوش مبلغ، تطلعلي مصيبة فجأة ترجعني للصفر تاني."</string>
     <string name="yes_label">نعم</string>
     <string name="no_label">لا</string>
-
     <string name="onboarding_step_debt_title">خطة تسديد الديون</string>
     <string name="onboarding_step_debt_desc">سنعتمد طريقة كرة الثلج لبناء دافع معنوي وتحقيق إنجازات سريعة.</string>
     <string name="onboarding_step_accounts_title">ربط الحسابات</string>
     <string name="onboarding_step_accounts_desc">سنوجهك لربط جميع حساباتك المتفرقة بأمان أولاً.</string>
     <string name="onboarding_step_emergency_title">صندوق الطوارئ</string>
     <string name="onboarding_step_emergency_desc">هدفك الادخاري الأول سيكون بناء صندوق طوارئ لمنع الانتكاسات.</string>
-
     <string name="onboarding_streak_title">الاستمرارية تبني العادة</string>
     <string name="onboarding_streak_subtitle">لتحقيق أهدافك والسيطرة على ميزانيتك، ضع روتيناً واكتسب عادات مالية صحية. تحدَّ نفسك وسجل يومياً لبناء سلسلة إنجازاتك.</string>
     <string name="onboarding_habit_letters">ع,ا,د,ة</string>
@@ -753,8 +724,6 @@
     <string name="hex_code">رمز اللون HEX</string>
     <string name="preset_palettes">مجموعات الألوان</string>
     <string name="card_color_updated">تم تحديث لون البطاقة بنجاح!</string>
-
-    
     <string name="auth_e2e_encrypted">تشفير وأمان عالي</string>
     <string name="auth_welcome_title">بيجى</string>
     <string name="auth_welcome_tagline">أمان، سهولة، ودقة في حساباتك.</string>
@@ -808,4 +777,67 @@
     <string name="auth_sheet_signin_desc">سجل دخولك لمزامنة دفترك على أجهزتك</string>
     <string name="auth_sheet_create_short_desc">إنشاء حساب جديد</string>
     <string name="auth_sheet_signin_short_desc">دخول</string>
-<string name="pro_member_active">عضو برو نشط</string><string name="pro_desc">تم تفعيل جميع الميزات الاحترافية وهي جاهزة للاستخدام على جهازك.</string><string name="pro_feature_1">حسابات وأهداف ادخار غير محدودة</string><string name="pro_feature_2">ميزانيات وسجلات قروض غير محدودة</string><string name="pro_feature_3">تحليلات ورسوم بيانية مالية متقدمة</string><string name="pro_feature_4">تصدير البيانات ومزامنة سحابية</string><string name="pro_feature_5">حماية لقطة الشاشة وفئات مخصصة</string><string name="plan_monthly">شهري</string><string name="plan_monthly_desc">استمر في التتبع مع وصول موسع وتحكم غير محدود</string><string name="plan_monthly_renew">يُجدد بـ %s/شهر. الإلغاء في أي وقت.</string><string name="upgrade_monthly">ترقية شهرية</string><string name="plan_yearly">سنوي</string><string name="plan_yearly_desc">وفر 40% مع الدفع السنوي</string><string name="plan_yearly_renew">يُجدد بـ %s/سنة. الإلغاء في أي وقت.</string><string name="upgrade_yearly">ترقية سنوية</string><string name="plan_lifetime">مدى الحياة</string><string name="plan_lifetime_desc">دفعة لمرة واحدة لوصول دائم</string><string name="plan_lifetime_renew">ادفع مرة واحدة، ملكك للأبد.</string><string name="upgrade_lifetime">احصل على وصول مدى الحياة</string><string name="tag_popular">الأكثر شعبية</string><string name="tag_best_value">أفضل قيمة</string><string name="start_free_trial">ابدأ فترة تجريبية مجانية</string><string name="unlock_premium_now">افتح النسخة الاحترافية الآن</string><string name="restore_subscription">استعادة الاشتراك</string><string name="pro_toast_desc">بيجي ليدجر برو يوفر قدرات كاملة لإدارة الشؤون المالية.</string><string name="comp_acc_goals">الحسابات والأهداف</string><string name="comp_budgets_loans">الميزانيات والقروض</string><string name="comp_adv_analytics">تحليلات متقدمة</string><string name="comp_export">تصدير البيانات (CSV/PDF)</string><string name="comp_custom_categories">فئات مخصصة</string><string name="comp_screenshot_protect">حماية لقطة الشاشة</string><string name="comp_cloud_sync">نسخ احتياطي ومزامنة سحابية</string><string name="comp_priority_support">أولوية الدعم</string><string name="two_max">2 كحد أقصى</string><string name="plan_lifetime_desc_2">وصول دائم لجميع الميزات الحالية والمستقبلية</string><string name="plan_lifetime_renew_2">دفعة واحدة بقيمة %s. بدون تجديد أو رسوم خفية.</string><string name="upgrade_lifetime_2">ترقية مدى الحياة</string><string name="best_value_caps">أفضل قيمة</string><string name="piggy_ledger_pro">بيجي ليدجر برو</string></resources>
+    <string name="pro_member_active">عضو برو نشط</string>
+    <string name="pro_desc">تم تفعيل جميع الميزات الاحترافية وهي جاهزة للاستخدام على جهازك.</string>
+    <string name="pro_feature_1">حسابات وأهداف ادخار غير محدودة</string>
+    <string name="pro_feature_2">ميزانيات وسجلات قروض غير محدودة</string>
+    <string name="pro_feature_3">تحليلات ورسوم بيانية مالية متقدمة</string>
+    <string name="pro_feature_4">تصدير البيانات ومزامنة سحابية</string>
+    <string name="pro_feature_5">حماية لقطة الشاشة وفئات مخصصة</string>
+    <string name="plan_monthly">شهري</string>
+    <string name="plan_monthly_desc">استمر في التتبع مع وصول موسع وتحكم غير محدود</string>
+    <string name="plan_monthly_renew">يُجدد بـ %s/شهر. الإلغاء في أي وقت.</string>
+    <string name="upgrade_monthly">ترقية شهرية</string>
+    <string name="plan_yearly">سنوي</string>
+    <string name="plan_yearly_desc">وفر 40% مع الدفع السنوي</string>
+    <string name="plan_yearly_renew">يُجدد بـ %s/سنة. الإلغاء في أي وقت.</string>
+    <string name="upgrade_yearly">ترقية سنوية</string>
+    <string name="plan_lifetime">مدى الحياة</string>
+    <string name="plan_lifetime_desc">دفعة لمرة واحدة لوصول دائم</string>
+    <string name="plan_lifetime_renew">ادفع مرة واحدة، ملكك للأبد.</string>
+    <string name="upgrade_lifetime">احصل على وصول مدى الحياة</string>
+    <string name="tag_popular">الأكثر شعبية</string>
+    <string name="tag_best_value">أفضل قيمة</string>
+    <string name="start_free_trial">ابدأ فترة تجريبية مجانية</string>
+    <string name="unlock_premium_now">افتح النسخة الاحترافية الآن</string>
+    <string name="restore_subscription">استعادة الاشتراك</string>
+    <string name="pro_toast_desc">بيجي ليدجر برو يوفر قدرات كاملة لإدارة الشؤون المالية.</string>
+    <string name="comp_acc_goals">الحسابات والأهداف</string>
+    <string name="comp_budgets_loans">الميزانيات والقروض</string>
+    <string name="comp_adv_analytics">تحليلات متقدمة</string>
+    <string name="comp_export">تصدير البيانات (CSV/PDF)</string>
+    <string name="comp_custom_categories">فئات مخصصة</string>
+    <string name="comp_screenshot_protect">حماية لقطة الشاشة</string>
+    <string name="comp_cloud_sync">نسخ احتياطي ومزامنة سحابية</string>
+    <string name="comp_priority_support">أولوية الدعم</string>
+    <string name="two_max">2 كحد أقصى</string>
+    <string name="plan_lifetime_desc_2">وصول دائم لجميع الميزات الحالية والمستقبلية</string>
+    <string name="plan_lifetime_renew_2">دفعة واحدة بقيمة %s. بدون تجديد أو رسوم خفية.</string>
+    <string name="upgrade_lifetime_2">ترقية مدى الحياة</string>
+    <string name="best_value_caps">أفضل قيمة</string>
+    <string name="piggy_ledger_pro">بيجي ليدجر برو</string>
+    <string name="streak_achievements_title">الإنجازات</string>
+    <string name="streak_days_streak">عامل ستريك %1$s يوم!</string>
+    <string name="streak_week_wins">أسبوع كله مكاسب! خلينا نحافظ على الستريك ده مولع 🔥</string>
+    <string name="streak_great_consistency">عاش جداً! خليك مكمل وسجل مصاريفك كل يوم</string>
+    <string name="streak_start_today">ابدأ الستريك بتاعك النهاردة وسجل أي معاملة!</string>
+    <string name="streak_legend_streak">الستريك</string>
+    <string name="streak_legend_frozen">متجمد</string>
+    <string name="streak_legend_missed">راح عليك</string>
+    <string name="longest_streak">🏆 %1$s يوم</string>
+    <string name="share_my_streak">شير الستريك بتاعي</string>
+    <string name="share_your_streak">شير الستريك بتاعك</string>
+    <string name="share_messages">رسائل</string>
+    <string name="save_image">حفظ الصورة</string>
+    <string name="share_more">المزيد</string>
+    <string name="saved_to_gallery">اتحفظت في المعرض! 📸</string>
+    <string name="failed_to_save_image">فشل حفظ الصورة</string>
+    <string name="export_data_title">تصدير البيانات</string>
+    <string name="export_data_subtitle">صدر بياناتك لملفات الإكسيل والجداول الخارجية.</string>
+    <string name="export_include_pending">ضِيف المعاملات المعلقة</string>
+    <string name="export_include_balances">ضِيف أرصدة الحسابات</string>
+    <string name="export_include_goals">ضِيف سجل الأهداف</string>
+    <string name="export_action">تصدير</string>
+    <string name="export_found_transactions">لقينا %1$d معاملة</string>
+    <string name="export_upgrade_pro">اشترك في برو عشان تصدر بياناتك</string>
+</resources>

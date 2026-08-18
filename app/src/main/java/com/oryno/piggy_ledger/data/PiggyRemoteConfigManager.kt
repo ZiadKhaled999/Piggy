@@ -156,13 +156,18 @@ object PiggyRemoteConfigManager {
     }
 
     private fun downloadSingleImage(context: Context?, targetFile: File, url: String) {
-        val urlsToTry = mutableListOf(url)
+        val urlsToTry = mutableListOf<String>()
+        val filename = url.substringAfterLast('/').substringBefore('?')
+        if (filename.isNotBlank()) {
+            urlsToTry.add("https://piggy-assets.vercel.app/mascots/$filename")
+        }
+        urlsToTry.add(url)
         if (url.contains("raw.githubusercontent.com") && url.contains("/main/")) {
             val path = url.substringAfter("/main/")
             urlsToTry.add("https://piggy-assets.vercel.app/$path")
         }
 
-        for (tryUrl in urlsToTry) {
+        for (tryUrl in urlsToTry.distinct()) {
             try {
                 val req = Request.Builder().url(tryUrl).build()
                 val resp = httpClient.newCall(req).execute()

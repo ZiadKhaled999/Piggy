@@ -19,8 +19,15 @@ import java.util.UUID
 @OptIn(ExperimentalCoroutinesApi::class)
 class AiChatViewModel(
     private val repository: AiChatRepository,
-    private val context: android.content.Context? = null
+    private val context: android.content.Context? = null,
+    private val userPreferences: com.oryno.piggy_ledger.data.UserPreferences? = null
 ) : ViewModel() {
+
+    val userName: StateFlow<String> = (userPreferences?.authUserName ?: flowOf("")).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ""
+    )
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true; classDiscriminator = "type" }
 
@@ -98,6 +105,21 @@ class AiChatViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _selectedModel = MutableStateFlow("Flash Extended")
+    val selectedModel: StateFlow<String> = _selectedModel.asStateFlow()
+
+    fun setSelectedModel(model: String) {
+        _selectedModel.value = model
+    }
+
+    private var activeGenerationJob: kotlinx.coroutines.Job? = null
+
+    fun stopGeneration() {
+        activeGenerationJob?.cancel()
+        activeGenerationJob = null
+        _isLoading.value = false
+    }
+
     private val systemPrompt = """
         You are Piggy AI, an intelligent, warm, friendly, and financially astute co-pilot for Piggy Ledger.
 
@@ -168,101 +190,105 @@ class AiChatViewModel(
     }
 
     fun sendMessage(userText: String) {
-        viewModelScope.launch {
-            var convId = activeConversationId.value
-            if (convId.isBlank()) {
-                val newId = UUID.randomUUID().toString()
-                val newConv = AiConversation(id = newId, title = "New Chat")
-                repository.saveConversation(newConv)
-                _activeConversationId.value = newId
-                convId = newId
-            }
+        activeGenerationJob?.cancel()
+        activeGenerationJob = viewModelScope.launch {
+            try {
+                var convId = activeConversationId.value
+                if (convId.isBlank()) {
+                    val newId = UUID.randomUUID().toString()
+                    val newConv = AiConversation(id = newId, title = "New Chat")
+                    repository.saveConversation(newConv)
+                    _activeConversationId.value = newId
+                    convId = newId
+                }
 
-            _isLoading.value = true
-            
-            val currentHistory = chatHistory.value
-            val isFirstMessage = currentHistory.isEmpty()
-            
-            // 1. Save user message with active conversation ID
-            repository.saveMessage(role = "user", content = userText, conversationId = convId)
-            
-            val contextData = repository.fetchContextData(context)
-            
-            // 2. Prepare clean message history for API call
-            val apiMessages = mutableListOf<ChatMessageRequest>()
-            
-            // System prompt + context
-            val fullSystemPrompt = "$systemPrompt\n\n### USER KNOWLEDGE HUB SNAPSHOT\n$contextData"
-            apiMessages.add(ChatMessageRequest(role = "system", content = fullSystemPrompt))
-            
-            // Add previous history with cleaned text content
-            currentHistory.forEach { msg ->
-                val cleanedText = if (msg.role == "assistant") {
-                    try {
-                        val parsed = json.decodeFromString<SovereignAiResponse>(msg.content)
-                        parsed.archetypeRationale.ifBlank { msg.content }
-                    } catch (e: Exception) {
+                _isLoading.value = true
+                
+                val currentHistory = chatHistory.value
+                val isFirstMessage = currentHistory.isEmpty()
+                
+                // 1. Save user message with active conversation ID
+                repository.saveMessage(role = "user", content = userText, conversationId = convId)
+                
+                val contextData = repository.fetchContextData(context)
+                
+                // 2. Prepare clean message history for API call
+                val apiMessages = mutableListOf<ChatMessageRequest>()
+                
+                // System prompt + context
+                val fullSystemPrompt = "$systemPrompt\n\n### USER KNOWLEDGE HUB SNAPSHOT\n$contextData"
+                apiMessages.add(ChatMessageRequest(role = "system", content = fullSystemPrompt))
+                
+                // Add previous history with cleaned text content
+                currentHistory.forEach { msg ->
+                    val cleanedText = if (msg.role == "assistant") {
+                        try {
+                            val parsed = json.decodeFromString<SovereignAiResponse>(msg.content)
+                            parsed.archetypeRationale.ifBlank { msg.content }
+                        } catch (e: Exception) {
+                            msg.content
+                        }
+                    } else {
                         msg.content
                     }
-                } else {
-                    msg.content
+                    apiMessages.add(ChatMessageRequest(role = msg.role, content = cleanedText))
                 }
-                apiMessages.add(ChatMessageRequest(role = msg.role, content = cleanedText))
-            }
-            
-            // Add current user message
-            apiMessages.add(ChatMessageRequest(role = "user", content = userText))
+                
+                // Add current user message
+                apiMessages.add(ChatMessageRequest(role = "user", content = userText))
 
-            // 3. Call API
-            val responseResult = repository.getAiResponse(apiMessages)
-            var responseTextForTitle = ""
-            
-            if (responseResult.isSuccess) {
-                val response = responseResult.getOrNull()
-                if (response != null) {
-                    val finalResponse = if (response.archetypeRationale.isNotBlank()) {
-                        response
-                    } else {
-                        SovereignAiResponse(archetypeRationale = "I analyzed your ledger data, but could not format the output. Please try asking again.")
+                // 3. Call API
+                val responseResult = repository.getAiResponse(apiMessages)
+                var responseTextForTitle = ""
+                
+                if (responseResult.isSuccess) {
+                    val response = responseResult.getOrNull()
+                    if (response != null) {
+                        val finalResponse = if (response.archetypeRationale.isNotBlank()) {
+                            response
+                        } else {
+                            SovereignAiResponse(archetypeRationale = "I analyzed your ledger data, but could not format the output. Please try asking again.")
+                        }
+                        responseTextForTitle = finalResponse.archetypeRationale
+                        val jsonString = json.encodeToString(SovereignAiResponse.serializer(), finalResponse)
+                        repository.saveMessage(role = "assistant", content = jsonString, conversationId = convId)
                     }
-                    responseTextForTitle = finalResponse.archetypeRationale
-                    val jsonString = json.encodeToString(SovereignAiResponse.serializer(), finalResponse)
-                    repository.saveMessage(role = "assistant", content = jsonString, conversationId = convId)
-                }
-            } else {
-                val rawError = responseResult.exceptionOrNull()?.message ?: ""
-                val cleanUserError = when {
-                    rawError.contains("Unable to resolve host", ignoreCase = true) ||
-                    rawError.contains("UnknownHostException", ignoreCase = true) ||
-                    rawError.contains("No address associated with hostname", ignoreCase = true) ||
-                    rawError.contains("Failed to connect", ignoreCase = true) ||
-                    rawError.contains("SocketTimeoutException", ignoreCase = true) ||
-                    rawError.contains("connection", ignoreCase = true) -> 
-                        "No internet connection. Please check your network and try again."
-                    rawError.isNotBlank() && !rawError.contains("<html>", ignoreCase = true) && !rawError.contains("API", ignoreCase = true) -> 
-                        rawError
-                    else -> 
-                        "Please check your internet connection and try again."
-                }
-                val errorMsg = SovereignAiResponse(
-                    thinkingProcess = kotlinx.serialization.json.JsonPrimitive("Error analyzing request."),
-                    currentArchetype = "",
-                    archetypeRationale = "# ⚠️ No connection..\n\n<mark>$cleanUserError</mark>",
-                    uiBlocks = listOf(
-                        UiBlock.ActionBannerBlock(cleanUserError, "RETRY")
+                } else {
+                    val rawError = responseResult.exceptionOrNull()?.message ?: ""
+                    val cleanUserError = when {
+                        rawError.contains("Unable to resolve host", ignoreCase = true) ||
+                        rawError.contains("UnknownHostException", ignoreCase = true) ||
+                        rawError.contains("No address associated with hostname", ignoreCase = true) ||
+                        rawError.contains("Failed to connect", ignoreCase = true) ||
+                        rawError.contains("SocketTimeoutException", ignoreCase = true) ||
+                        rawError.contains("connection", ignoreCase = true) -> 
+                            "No internet connection. Please check your network and try again."
+                        rawError.isNotBlank() && !rawError.contains("<html>", ignoreCase = true) && !rawError.contains("API", ignoreCase = true) -> 
+                            rawError
+                        else -> 
+                            "Please check your internet connection and try again."
+                    }
+                    val errorMsg = SovereignAiResponse(
+                        thinkingProcess = kotlinx.serialization.json.JsonPrimitive("Error analyzing request."),
+                        currentArchetype = "",
+                        archetypeRationale = "# ⚠️ No connection..\n\n<mark>$cleanUserError</mark>",
+                        uiBlocks = listOf(
+                            UiBlock.ActionBannerBlock(cleanUserError, "RETRY")
+                        )
                     )
-                )
-                responseTextForTitle = errorMsg.archetypeRationale
-                repository.saveMessage(role = "assistant", content = json.encodeToString(SovereignAiResponse.serializer(), errorMsg), conversationId = convId)
-            }
+                    responseTextForTitle = errorMsg.archetypeRationale
+                    repository.saveMessage(role = "assistant", content = json.encodeToString(SovereignAiResponse.serializer(), errorMsg), conversationId = convId)
+                }
 
-            // 4. Summarize first question & response into automatic conversation title
-            if (isFirstMessage) {
-                val autoTitle = generateTitleFromQuestion(userText, responseTextForTitle)
-                repository.updateConversationTitle(convId, autoTitle)
+                // 4. Summarize first question & response into automatic conversation title
+                if (isFirstMessage) {
+                    val autoTitle = generateTitleFromQuestion(userText, responseTextForTitle)
+                    repository.updateConversationTitle(convId, autoTitle)
+                }
+            } finally {
+                _isLoading.value = false
+                activeGenerationJob = null
             }
-            
-            _isLoading.value = false
         }
     }
 
@@ -275,6 +301,18 @@ class AiChatViewModel(
         } else {
             val shortSubject = words.take(5).joinToString(" ")
             shortSubject.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        }
+    }
+
+    fun clearAllConversations() {
+        viewModelScope.launch {
+            val all = conversations.value
+            all.forEach { conv ->
+                if (context != null) {
+                    repository.deleteConversation(context, conv.id)
+                }
+            }
+            createNewConversation()
         }
     }
 

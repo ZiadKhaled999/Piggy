@@ -11,6 +11,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Article
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+
+import androidx.compose.animation.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -18,6 +22,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.oryno.piggy_ledger.R
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.clip
@@ -54,9 +60,9 @@ fun BackupSettingsView(
                     context.contentResolver.openOutputStream(it)?.use { stream ->
                         stream.write(csvString.toByteArray())
                     }
-                    ToastUtil.show(context, "Data exported successfully to CSV", android.widget.Toast.LENGTH_SHORT)
+                    ToastUtil.show(context, context.getString(R.string.export_success, "CSV"), android.widget.Toast.LENGTH_SHORT)
                 } catch (e: Exception) {
-                    ToastUtil.show(context, "Export failed: ${e.message}", android.widget.Toast.LENGTH_LONG)
+                    ToastUtil.show(context, context.getString(R.string.export_failed, e.message.toString()), android.widget.Toast.LENGTH_LONG)
                 }
             }
         }
@@ -71,9 +77,9 @@ fun BackupSettingsView(
                     context.contentResolver.openOutputStream(it)?.use { stream ->
                         stream.write(excelString.toByteArray())
                     }
-                    ToastUtil.show(context, "Data exported successfully to EXCEL", android.widget.Toast.LENGTH_SHORT)
+                    ToastUtil.show(context, context.getString(R.string.export_success, "EXCEL"), android.widget.Toast.LENGTH_SHORT)
                 } catch (e: Exception) {
-                    ToastUtil.show(context, "Export failed: ${e.message}", android.widget.Toast.LENGTH_LONG)
+                    ToastUtil.show(context, context.getString(R.string.export_failed, e.message.toString()), android.widget.Toast.LENGTH_LONG)
                 }
             }
         }
@@ -89,9 +95,14 @@ fun BackupSettingsView(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(top = 24.dp)
     ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
 
         val scale by animateFloatAsState(
             targetValue = if (exportType == "CSV") 1.05f else if (exportType == "JSON") 0.95f else 1f,
@@ -127,7 +138,7 @@ fun BackupSettingsView(
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
-            text = "Export data",
+            text = stringResource(R.string.export_data_title),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = NavyDark
@@ -136,7 +147,7 @@ fun BackupSettingsView(
         Spacer(modifier = Modifier.height(8.dp))
         
         Text(
-            text = "Export your data for external spreadsheets.",
+            text = stringResource(R.string.export_data_subtitle),
             fontSize = 14.sp,
             color = TextLight,
             textAlign = TextAlign.Center,
@@ -195,33 +206,40 @@ fun BackupSettingsView(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .background(Color.White, RoundedCornerShape(16.dp))
-                .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(16.dp))
+                .background(Color.White)
         ) {
-            ExportOptionRow("Include Pending Transactions", includePending) { includePending = it }
+            Divider(color = Color(0xFFEEEEEE), thickness = 1.dp)
+            ExportOptionRow(stringResource(R.string.export_include_pending), includePending) { includePending = it }
             Divider(color = Color(0xFFEEEEEE), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
-            ExportOptionRow("Include Account Balances", includeBalances) { includeBalances = it }
+            ExportOptionRow(stringResource(R.string.export_include_balances), includeBalances) { includeBalances = it }
             Divider(color = Color(0xFFEEEEEE), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
-            ExportOptionRow("Include Goal History", includeGoals) { includeGoals = it }
+            ExportOptionRow(stringResource(R.string.export_include_goals), includeGoals) { includeGoals = it }
+            Divider(color = Color(0xFFEEEEEE), thickness = 1.dp)
         }
         
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(24.dp))
+        } // End of scrollable column
         
-        Text(
-            text = "FOUND ${transactions.size} TRANSACTIONS",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextLight,
-            letterSpacing = 1.sp
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Button(
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(R.string.export_found_transactions, transactions.size),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextLight,
+                letterSpacing = 1.sp
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Button(
             onClick = {
                 if (!isPremium) {
-                    ToastUtil.show(context, "Upgrade to Pro to export your data", android.widget.Toast.LENGTH_SHORT)
+                    ToastUtil.show(context, context.getString(R.string.export_upgrade_pro), android.widget.Toast.LENGTH_SHORT)
                     return@Button
                 }
                 
@@ -244,11 +262,12 @@ fun BackupSettingsView(
                 contentColor = Color.White
             )
         ) {
-            Text("EXPORT", fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+            Text(text = stringResource(R.string.export_action), fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
         }
         
         Spacer(modifier = Modifier.height(32.dp))
     }
+}
 }
 
 @Composable

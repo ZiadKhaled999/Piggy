@@ -21,6 +21,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 
 import androidx.appcompat.app.AppCompatDelegate
 
+import com.oryno.piggy_ledger.BuildConfig
 import androidx.compose.foundation.Image
 
 import androidx.compose.foundation.background

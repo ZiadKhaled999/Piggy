@@ -9,6 +9,7 @@ import com.clerk.api.ClerkConfigurationOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlin.coroutines.resume
 
 class PiggyLedgerApplication : Application() {
     override fun onCreate() {
@@ -60,6 +61,44 @@ class PiggyLedgerApplication : Application() {
             com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
         } catch (e: Exception) {
             Log.e("PiggyLedgerApp", "Failed to initialize NotificationScheduler", e)
+        }
+
+        
+        // Schedule Custom Push Notifications Pull
+        try {
+            // Immediate startup sync
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val isPremium = if (com.revenuecat.purchases.Purchases.isConfigured) {
+                        kotlin.coroutines.suspendCoroutine { continuation ->
+                            com.revenuecat.purchases.Purchases.sharedInstance.getCustomerInfo(
+                                object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
+                                    override fun onReceived(customerInfo: com.revenuecat.purchases.CustomerInfo) {
+                                        continuation.resume(customerInfo.entitlements["pro"]?.isActive == true)
+                                    }
+                                    override fun onError(error: com.revenuecat.purchases.PurchasesError) {
+                                        continuation.resume(false)
+                                    }
+                                }
+                            )
+                        }
+                    } else false
+                    com.oryno.piggy_ledger.data.NotificationRemoteManager.fetchAndShowNotifications(this@PiggyLedgerApplication, isPremium)
+                } catch (e: Exception) {
+                    Log.e("PiggyLedgerApp", "Immediate notification fetch error", e)
+                }
+            }
+
+            val periodicNotifSync = androidx.work.PeriodicWorkRequestBuilder<com.oryno.piggy_ledger.data.NotificationWorker>(
+                4, java.util.concurrent.TimeUnit.HOURS
+            ).build()
+            androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "CustomPushNotificationsSync",
+                androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                periodicNotifSync
+            )
+        } catch (e: Exception) {
+            Log.e("PiggyLedgerApp", "Failed to schedule NotificationWorker", e)
         }
 
         // Schedule Remote Config & Mascot Asset Sync

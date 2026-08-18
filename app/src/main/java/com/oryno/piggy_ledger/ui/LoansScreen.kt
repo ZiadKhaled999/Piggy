@@ -534,9 +534,18 @@ fun LoansScreen(
                                         overflow = TextOverflow.Ellipsis,
                                         textDecoration = if (isPaidOff) TextDecoration.LineThrough else null
                                     )
-                                    val dateText = if (loan.deadline != null) {
-                                        val sdf = java.text.SimpleDateFormat("MMM dd", java.util.Locale.getDefault())
-                                        stringResource(R.string.due_date, sdf.format(java.util.Date(loan.deadline)))
+                                    val formattedDate = remember(loan.deadline) {
+                                        if (loan.deadline != null) {
+                                            try {
+                                                val sdf = java.text.SimpleDateFormat("MMM dd", java.util.Locale.getDefault())
+                                                sdf.format(java.util.Date(loan.deadline))
+                                            } catch (e: Exception) {
+                                                ""
+                                            }
+                                        } else ""
+                                    }
+                                    val dateText = if (formattedDate.isNotBlank()) {
+                                        stringResource(R.string.due_date, formattedDate)
                                     } else {
                                         stringResource(R.string.open_ended)
                                     }
@@ -612,8 +621,30 @@ fun LoansScreen(
         var note by remember { mutableStateOf("") }
         var hasDeadline by remember { mutableStateOf(false) }
         var deadlineDate by remember { mutableStateOf<Long?>(null) }
-        var showDatePicker by remember { mutableStateOf(false) }
         val context = LocalContext.current
+        val showDeadlinePicker = {
+            val calendar = java.util.Calendar.getInstance()
+            deadlineDate?.let { calendar.timeInMillis = it }
+            val datePickerDialog = android.app.DatePickerDialog(
+                context,
+                { _, year, month, dayOfMonth ->
+                    val selectedCal = java.util.Calendar.getInstance().apply {
+                        set(java.util.Calendar.YEAR, year)
+                        set(java.util.Calendar.MONTH, month)
+                        set(java.util.Calendar.DAY_OF_MONTH, dayOfMonth)
+                        set(java.util.Calendar.HOUR_OF_DAY, 23)
+                        set(java.util.Calendar.MINUTE, 59)
+                        set(java.util.Calendar.SECOND, 59)
+                        set(java.util.Calendar.MILLISECOND, 999)
+                    }
+                    deadlineDate = selectedCal.timeInMillis
+                },
+                calendar.get(java.util.Calendar.YEAR),
+                calendar.get(java.util.Calendar.MONTH),
+                calendar.get(java.util.Calendar.DAY_OF_MONTH)
+            )
+            datePickerDialog.show()
+        }
         var hasPermission by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) }
         val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             hasPermission = isGranted
@@ -1103,7 +1134,7 @@ fun LoansScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { showDatePicker = true },
+                                .clickable { showDeadlinePicker() },
                             colors = CardDefaults.cardColors(containerColor = Color.White),
                             shape = RoundedCornerShape(12.dp),
                             border = BorderStroke(1.dp, Color(0xFFE2E8F0))
@@ -1117,9 +1148,18 @@ fun LoansScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(stringResource(R.string.repayment_deadline), fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 13.sp)
-                                    val dateText = if (deadlineDate != null) {
-                                        val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
-                                        stringResource(R.string.due_prefix, sdf.format(java.util.Date(deadlineDate!!)))
+                                    val formattedDeadline = remember(deadlineDate) {
+                                        if (deadlineDate != null) {
+                                            try {
+                                                val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
+                                                sdf.format(java.util.Date(deadlineDate!!))
+                                            } catch (e: Exception) {
+                                                ""
+                                            }
+                                        } else ""
+                                    }
+                                    val dateText = if (formattedDeadline.isNotBlank()) {
+                                        stringResource(R.string.due_prefix, formattedDeadline)
                                     } else {
                                         stringResource(R.string.no_deadline_set)
                                     }
@@ -1128,31 +1168,13 @@ fun LoansScreen(
                                 Checkbox(
                                     checked = deadlineDate != null,
                                     onCheckedChange = { 
-                                        if (it) showDatePicker = true 
+                                        if (it) showDeadlinePicker() 
                                         else deadlineDate = null 
                                     },
                                     colors = CheckboxDefaults.colors(checkedColor = themeColor, uncheckedColor = TextLight)
                                 )
                             }
                         }
-                    }
-                }
-
-                if (showDatePicker) {
-                    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = System.currentTimeMillis())
-                    DatePickerDialog(
-                        onDismissRequest = { showDatePicker = false },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                deadlineDate = datePickerState.selectedDateMillis
-                                showDatePicker = false
-                            }) { Text(stringResource(R.string.confirm_btn), color = themeColor, fontWeight = FontWeight.Bold) }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel_btn), color = TextLight) }
-                        }
-                    ) {
-                        DatePicker(state = datePickerState)
                     }
                 }
 
@@ -1495,9 +1517,19 @@ fun LoansScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     
                     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
-                            val (deadlineLabel, dateValue) = if (selectedLoan!!.deadline != null) {
-                                val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
-                                stringResource(R.string.repayment_deadline_header) to stringResource(R.string.due_prefix, sdf.format(java.util.Date(selectedLoan!!.deadline!!)))
+                            val formattedDetailDeadline = remember(selectedLoan?.deadline) {
+                                val deadline = selectedLoan?.deadline
+                                if (deadline != null) {
+                                    try {
+                                        val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
+                                        sdf.format(java.util.Date(deadline))
+                                    } catch (e: Exception) {
+                                        ""
+                                    }
+                                } else ""
+                            }
+                            val (deadlineLabel, dateValue) = if (formattedDetailDeadline.isNotBlank()) {
+                                stringResource(R.string.repayment_deadline_header) to stringResource(R.string.due_prefix, formattedDetailDeadline)
                             } else {
                                 stringResource(R.string.repayment_deadline_header) to stringResource(R.string.no_strict_deadline)
                             }

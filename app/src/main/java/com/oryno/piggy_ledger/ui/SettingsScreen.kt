@@ -1703,7 +1703,12 @@ fun PiggyLedgerPaywall(
                     color = planMeta.accentColor,
                     textDecoration = TextDecoration.Underline,
                     modifier = Modifier.clickable {
-                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.pro_toast_desc), Toast.LENGTH_LONG)
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://piggy-app.pages.dev/pricing"))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Could not open link", Toast.LENGTH_SHORT)
+                        }
                     }
                 )
             }

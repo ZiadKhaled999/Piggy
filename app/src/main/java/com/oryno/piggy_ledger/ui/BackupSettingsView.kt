@@ -114,7 +114,7 @@ fun BackupSettingsView(
 
         // Logo
         Box(
-            modifier = Modifier.size(100.dp, 120.dp).scale(scale),
+            modifier = Modifier.size(68.dp, 80.dp).scale(scale),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -126,47 +126,47 @@ fun BackupSettingsView(
             Box(
                 modifier = Modifier
                     .background(Color.White)
-                    .border(4.dp, currentColor, RoundedCornerShape(4.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .border(2.5.dp, currentColor, RoundedCornerShape(4.dp))
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = exportType,
                     color = currentColor,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = if (isSmallScreen) 20.sp else 24.sp
+                    fontSize = if (isSmallScreen) 12.sp else 14.sp
                 )
             }
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(10.dp))
         
         Text(
             text = stringResource(R.string.export_data_title),
-            fontSize = if (isSmallScreen) 20.sp else 24.sp,
+            fontSize = if (isSmallScreen) 16.sp else 18.sp,
             fontWeight = FontWeight.Bold,
             color = NavyDark
         )
         
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         
         Text(
             text = stringResource(R.string.export_data_subtitle),
-            fontSize = if (isSmallScreen) 12.sp else 14.sp,
+            fontSize = if (isSmallScreen) 11.sp else 12.sp,
             color = TextLight,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 32.dp),
-            lineHeight = 20.sp
+            modifier = Modifier.padding(horizontal = 24.dp),
+            lineHeight = 16.sp
         )
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         
         // Export Type Selector
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             listOf("JSON", "CSV", "EXCEL").forEach { type ->
                 val isSelected = exportType == type
@@ -187,24 +187,24 @@ fun BackupSettingsView(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .background(bgColor, RoundedCornerShape(12.dp))
-                        .border(1.5.dp, borderColor, RoundedCornerShape(12.dp))
-                        .clip(RoundedCornerShape(12.dp))
+                        .background(bgColor, RoundedCornerShape(10.dp))
+                        .border(1.dp, borderColor, RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .clickable { exportType = type }
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = type,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                         color = textColor,
-                        fontSize = 15.sp
+                        fontSize = 12.sp
                     )
                 }
             }
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         
         // Useful and enjoyable options
         Column(
@@ -221,24 +221,24 @@ fun BackupSettingsView(
             Divider(color = Color(0xFFEEEEEE), thickness = 1.dp)
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         } // End of scrollable column
         
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 24.dp),
+                .padding(vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = stringResource(R.string.export_found_transactions, transactions.size),
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextLight,
-                letterSpacing = 1.sp
+                letterSpacing = 0.8.sp
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             
             Button(
             onClick = {
@@ -259,17 +259,17 @@ fun BackupSettingsView(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .height(56.dp),
-            shape = RoundedCornerShape(28.dp),
+                .height(46.dp),
+            shape = RoundedCornerShape(23.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = PinkPrimary,
                 contentColor = Color.White
             )
         ) {
-            Text(text = stringResource(R.string.export_action), fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+            Text(text = stringResource(R.string.export_action), fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
         
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 }
@@ -284,13 +284,13 @@ fun ExportOptionRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onCheckedChange(!checked) }
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             text = title,
-            fontSize = 15.sp,
+            fontSize = 13.sp,
             color = NavyDark,
             fontWeight = FontWeight.Medium
         )

@@ -1410,7 +1410,7 @@ fun EmptyChatState(
         val displayName = if (userName.isNotBlank()) userName.trim() else "there"
         val dayOfYear = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR)
         val templates = listOf(
-            Pair("the mic is with you, ", ""),
+            Pair("the mic is yours, ", ""),
             Pair("it's up to you, ", ""),
             Pair("how can we grow your wealth, ", "?"),
             Pair("ready to master your numbers, ", "?"),

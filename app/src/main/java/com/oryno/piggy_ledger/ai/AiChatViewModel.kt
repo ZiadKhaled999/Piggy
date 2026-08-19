@@ -254,24 +254,29 @@ class AiChatViewModel(
                         repository.saveMessage(role = "assistant", content = jsonString, conversationId = convId)
                     }
                 } else {
-                    val rawError = responseResult.exceptionOrNull()?.message ?: ""
+                    val rawError = responseResult.exceptionOrNull()?.message.orEmpty()
+                    val isNetworkIssue = rawError.contains("Unable to resolve host", ignoreCase = true) ||
+                            rawError.contains("UnknownHostException", ignoreCase = true) ||
+                            rawError.contains("No address associated with hostname", ignoreCase = true) ||
+                            rawError.contains("Failed to connect", ignoreCase = true) ||
+                            rawError.contains("SocketTimeoutException", ignoreCase = true) ||
+                            rawError.contains("internet connection", ignoreCase = true)
+
                     val cleanUserError = when {
-                        rawError.contains("Unable to resolve host", ignoreCase = true) ||
-                        rawError.contains("UnknownHostException", ignoreCase = true) ||
-                        rawError.contains("No address associated with hostname", ignoreCase = true) ||
-                        rawError.contains("Failed to connect", ignoreCase = true) ||
-                        rawError.contains("SocketTimeoutException", ignoreCase = true) ||
-                        rawError.contains("connection", ignoreCase = true) -> 
-                            "No internet connection. Please check your network and try again."
-                        rawError.isNotBlank() && !rawError.contains("<html>", ignoreCase = true) && !rawError.contains("API", ignoreCase = true) -> 
+                        isNetworkIssue ->
+                            "Unable to reach the server. Please check your internet connection and try again."
+                        rawError.isNotBlank() && !rawError.contains("<html>", ignoreCase = true) ->
                             rawError
-                        else -> 
-                            "Please check your internet connection and try again."
+                        else ->
+                            "AI service is temporarily busy. Please tap Retry to attempt again."
                     }
+
+                    val headerTitle = if (isNetworkIssue) "# ⚠️ Connection Issue" else "# ⚠️ Service Notice"
+
                     val errorMsg = SovereignAiResponse(
                         thinkingProcess = kotlinx.serialization.json.JsonPrimitive("Error analyzing request."),
                         currentArchetype = "",
-                        archetypeRationale = "# ⚠️ No connection..",
+                        archetypeRationale = headerTitle,
                         uiBlocks = listOf(
                             UiBlock.ActionBannerBlock(cleanUserError, "RETRY")
                         )

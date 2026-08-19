@@ -139,78 +139,103 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
     }
 
     suspend fun getAiResponse(messages: List<ChatMessageRequest>): Result<SovereignAiResponse> = withContext(Dispatchers.IO) {
-        try {
-            val isGroq = apiKey.startsWith("gsk_")
-            val modelName = if (isGroq) "qwen/qwen3.6-27b" else "deepseek-reasoner"
-            val endpointUrl = if (isGroq) "https://api.groq.com/openai/v1/chat/completions" else "https://api.deepseek.com/chat/completions"
-            
-            val requestBody = GroqRequest(
-                model = modelName,
-                messages = messages,
-                temperature = 0.5
-            )
-            
-            val requestStr = json.encodeToString(requestBody)
-            val request = Request.Builder()
-                .url(endpointUrl)
-                .addHeader("Authorization", "Bearer $apiKey")
-                .post(requestStr.toRequestBody("application/json".toMediaType()))
-                .build()
+        if (apiKey.isBlank() || apiKey == "YOUR_GROQ_API_KEY") {
+            return@withContext Result.failure(Exception("AI service key is not configured. Please ensure GROQ_API_KEY is set in your configuration."))
+        }
 
-            val response = client.newCall(request).execute()
-            val responseBody = response.body?.string() ?: return@withContext Result.failure(Exception("Empty response body"))
-            
-            if (response.isSuccessful) {
-                val groqResponse = json.decodeFromString<GroqResponse>(responseBody)
-                val rawContent = groqResponse.choices.firstOrNull()?.message?.content ?: return@withContext Result.failure(Exception("No content in response"))
-                
-                // Clean up any DeepSeek <think> tags if present
-                val cleanedContent = if (rawContent.contains("</think>")) {
-                    val thinkParts = rawContent.split("</think>")
-                    val thinkingStr = thinkParts[0].replace("<think>", "").trim()
-                    val actualAnswer = thinkParts.getOrElse(1) { "" }.trim()
-                    if (actualAnswer.isNotBlank()) {
-                        actualAnswer
+        val isGroq = apiKey.startsWith("gsk_") || !apiKey.startsWith("sk-")
+        val candidateModels = if (isGroq) {
+            listOf("llama-3.3-70b-versatile", "llama-3.1-8b-instant", "qwen-2.5-32b")
+        } else {
+            listOf("deepseek-chat", "deepseek-reasoner")
+        }
+        val endpointUrl = if (isGroq) "https://api.groq.com/openai/v1/chat/completions" else "https://api.deepseek.com/chat/completions"
+
+        var lastException: Exception? = null
+
+        for (modelName in candidateModels) {
+            try {
+                val requestBody = GroqRequest(
+                    model = modelName,
+                    messages = messages,
+                    temperature = 0.5
+                )
+
+                val requestStr = json.encodeToString(requestBody)
+                val request = Request.Builder()
+                    .url(endpointUrl)
+                    .addHeader("Authorization", "Bearer $apiKey")
+                    .post(requestStr.toRequestBody("application/json".toMediaType()))
+                    .build()
+
+                val response = client.newCall(request).execute()
+                val responseBody = response.body?.string().orEmpty()
+
+                if (response.isSuccessful && responseBody.isNotBlank()) {
+                    val groqResponse = json.decodeFromString<GroqResponse>(responseBody)
+                    val rawContent = groqResponse.choices.firstOrNull()?.message?.content
+                        ?: return@withContext Result.failure(Exception("AI did not produce text content. Please try again."))
+
+                    // Clean up any DeepSeek <think> tags if present
+                    val cleanedContent = if (rawContent.contains("</think>")) {
+                        val thinkParts = rawContent.split("</think>")
+                        val thinkingStr = thinkParts[0].replace("<think>", "").trim()
+                        val actualAnswer = thinkParts.getOrElse(1) { "" }.trim()
+                        if (actualAnswer.isNotBlank()) actualAnswer else thinkingStr
                     } else {
-                        thinkingStr
+                        rawContent
                     }
-                } else {
-                    rawContent
-                }
 
-                val jsonStr = extractJson(cleanedContent)
-                val parsed = if (jsonStr.isNotBlank() && jsonStr.contains("archetype_rationale")) {
-                    try {
-                        json.decodeFromString<SovereignAiResponse>(jsonStr)
-                    } catch (e: Exception) {
+                    val jsonStr = extractJson(cleanedContent)
+                    val parsed = if (jsonStr.isNotBlank() && jsonStr.contains("archetype_rationale")) {
+                        try {
+                            json.decodeFromString<SovereignAiResponse>(jsonStr)
+                        } catch (e: Exception) {
+                            SovereignAiResponse(
+                                archetypeRationale = cleanedContent,
+                                currentArchetype = "",
+                                uiBlocks = emptyList()
+                            )
+                        }
+                    } else {
                         SovereignAiResponse(
                             archetypeRationale = cleanedContent,
                             currentArchetype = "",
                             uiBlocks = emptyList()
                         )
                     }
+                    return@withContext Result.success(parsed)
                 } else {
-                    SovereignAiResponse(
-                        archetypeRationale = cleanedContent,
-                        currentArchetype = "",
-                        uiBlocks = emptyList()
-                    )
+                    android.util.Log.e("AiChat", "Model $modelName API Error ${response.code}: $responseBody")
+                    val message = when (response.code) {
+                        401 -> "AI Authentication failed. Please check your API key."
+                        403 -> "AI Access forbidden. Please verify your account access."
+                        404 -> "AI Model not found ($modelName). Trying fallback model..."
+                        429 -> "AI Rate limit reached. Please wait a few moments."
+                        in 500..599 -> "AI Server is temporarily overloaded. Trying fallback..."
+                        else -> "AI service response error (${response.code})."
+                    }
+                    lastException = Exception(message)
+                    // If 404 or 5xx, continue to next model in loop
+                    if (response.code == 404 || response.code in 500..599) {
+                        continue
+                    } else {
+                        return@withContext Result.failure(lastException)
+                    }
                 }
-                Result.success(parsed)
-            } else {
-                android.util.Log.e("AiChat", "API Error: ${response.code} - $responseBody")
-                val friendlyMessage = when (response.code) {
-                    401, 403 -> "Service temporarily unavailable. Please try again later."
-                    429 -> "Service is busy right now. Please wait a moment and try again."
-                    500, 502, 503 -> "Service is temporarily unavailable. Please try again later."
-                    else -> "Unable to complete request. Please check your connection and try again."
-                }
-                Result.failure(Exception(friendlyMessage))
+            } catch (e: java.net.UnknownHostException) {
+                android.util.Log.e("AiChat", "DNS/Network issue: ${e.message}")
+                return@withContext Result.failure(Exception("Unable to connect to AI server. Please check your internet connection."))
+            } catch (e: java.net.SocketTimeoutException) {
+                android.util.Log.e("AiChat", "Timeout: ${e.message}")
+                return@withContext Result.failure(Exception("AI request timed out. Please check your connection and retry."))
+            } catch (e: Exception) {
+                android.util.Log.e("AiChat", "Exception: ${e.message}", e)
+                lastException = e
             }
-        } catch (e: Exception) {
-            android.util.Log.e("AiChat", "Exception: ${e.message}", e)
-            Result.failure(e)
         }
+
+        Result.failure(lastException ?: Exception("Unable to get AI response. Please try again."))
     }
 
     fun getAllAccounts(): Flow<List<com.oryno.piggy_ledger.data.Account>> {

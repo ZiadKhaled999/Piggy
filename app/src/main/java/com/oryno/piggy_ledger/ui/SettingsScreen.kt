@@ -1182,10 +1182,13 @@ fun PiggyLedgerPaywall(
     var offerings: com.revenuecat.purchases.Offerings? by remember { mutableStateOf(null) }
     var isLoadingOfferings by remember { mutableStateOf(true) }
     var fetchError by remember { mutableStateOf<String?>(null) }
+    var refreshBillingTrigger by remember { mutableIntStateOf(0) }
     var selectedPlan by remember { mutableStateOf(PaywallPlan.YEARLY) }
     var isPurchasing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(refreshBillingTrigger) {
+        isLoadingOfferings = true
+        fetchError = null
         try {
             if (com.revenuecat.purchases.Purchases.isConfigured) {
                 com.revenuecat.purchases.Purchases.sharedInstance.getOfferings(
@@ -1193,6 +1196,7 @@ fun PiggyLedgerPaywall(
                         override fun onReceived(offeringsResult: com.revenuecat.purchases.Offerings) {
                             isLoadingOfferings = false
                             offerings = offeringsResult
+                            fetchError = null
                         }
                         override fun onError(error: com.revenuecat.purchases.PurchasesError) {
                             isLoadingOfferings = false
@@ -1203,7 +1207,7 @@ fun PiggyLedgerPaywall(
                 )
             } else {
                 isLoadingOfferings = false
-                fetchError = "In-App Billing is not available on this device."
+                fetchError = "In-App Billing is not configured."
             }
         } catch (e: Exception) {
             isLoadingOfferings = false
@@ -1221,29 +1225,26 @@ fun PiggyLedgerPaywall(
     }
 
     val monthlyPackage = packagesList.find { 
-        it.product.id == "piggy-ledger-subscription-monthly" ||
         it.packageType == com.revenuecat.purchases.PackageType.MONTHLY ||
         it.identifier.contains("month", ignoreCase = true) ||
         it.product.id.contains("month", ignoreCase = true)
     } ?: packagesList.getOrNull(0)
 
     val yearlyPackage = packagesList.find { 
-        it.product.id == "piggy-ledger-subscription-yearly" ||
         it.packageType == com.revenuecat.purchases.PackageType.ANNUAL ||
         it.identifier.contains("year", ignoreCase = true) ||
         it.identifier.contains("annual", ignoreCase = true) ||
         it.product.id.contains("year", ignoreCase = true) ||
         it.product.id.contains("annual", ignoreCase = true)
-    } ?: packagesList.getOrNull(1)
+    } ?: packagesList.find { it != monthlyPackage } ?: packagesList.getOrNull(0)
 
     val lifetimePackage = packagesList.find { 
-        it.product.id == "piggy-ledger-subscription-lifetime" ||
         it.packageType == com.revenuecat.purchases.PackageType.LIFETIME ||
         it.identifier.contains("life", ignoreCase = true) ||
         it.identifier.contains("lt", ignoreCase = true) ||
         it.product.id.contains("life", ignoreCase = true) ||
         it.product.id.contains("lt", ignoreCase = true)
-    } ?: packagesList.getOrNull(2)
+    } ?: packagesList.find { it != monthlyPackage && it != yearlyPackage } ?: packagesList.getOrNull(0)
 
     val planMeta = when (selectedPlan) {
         PaywallPlan.MONTHLY -> PlanMetadata(
@@ -1593,7 +1594,8 @@ fun PiggyLedgerPaywall(
                         PaywallPlan.MONTHLY -> monthlyPackage
                         PaywallPlan.YEARLY -> yearlyPackage
                         PaywallPlan.LIFETIME -> lifetimePackage
-                    }
+                    } ?: packagesList.firstOrNull()
+
                     val activity = context.findActivity()
                     if (packageToBuy != null && activity != null) {
                         if (com.revenuecat.purchases.Purchases.isConfigured) {
@@ -1604,7 +1606,10 @@ fun PiggyLedgerPaywall(
                                     object : com.revenuecat.purchases.interfaces.PurchaseCallback {
                                         override fun onCompleted(storeTransaction: com.revenuecat.purchases.models.StoreTransaction, customerInfo: com.revenuecat.purchases.CustomerInfo) {
                                             isPurchasing = false
-                                            val active = customerInfo.entitlements.all.values.any { it.isActive } || customerInfo.entitlements["Piggy Ledger Pro"]?.isActive == true
+                                            val active = customerInfo.entitlements.all.values.any { it.isActive } || 
+                                                         customerInfo.entitlements["Piggy Ledger Pro"]?.isActive == true ||
+                                                         customerInfo.entitlements["pro"]?.isActive == true ||
+                                                         customerInfo.entitlements["premium"]?.isActive == true
                                             if (active) {
                                                 viewModel.setPremiumStatus(true)
                                                 onPurchaseSuccess(customerInfo)
@@ -1626,16 +1631,18 @@ fun PiggyLedgerPaywall(
                                 com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase failed: ${e.message}", android.widget.Toast.LENGTH_LONG)
                             }
                         } else {
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "In-App Billing is not initialized.", android.widget.Toast.LENGTH_LONG)
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Google Play Billing is initializing. Please try again in a moment.", android.widget.Toast.LENGTH_LONG)
+                            refreshBillingTrigger++
                         }
                     } else {
                         val msg = when {
                             isLoadingOfferings -> "Loading plans from Google Play..."
                             fetchError != null -> "Google Play error: $fetchError"
-                            packagesList.isEmpty() -> "No active billing products found in RevenueCat for package com.oryno.piggy_ledger."
+                            packagesList.isEmpty() -> "No active billing products found in Google Play."
                             else -> "Selected plan is currently unavailable."
                         }
                         com.oryno.piggy_ledger.ui.ToastUtil.show(context, msg, android.widget.Toast.LENGTH_LONG)
+                        refreshBillingTrigger++
                     }
                 },
                 modifier = Modifier

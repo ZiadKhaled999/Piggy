@@ -143,87 +143,101 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
             return@withContext Result.failure(Exception("AI service key is not configured. Please ensure GROQ_API_KEY is set in your configuration."))
         }
 
-        val isGroq = apiKey.startsWith("gsk_") || !apiKey.startsWith("sk-")
-        val candidateModels = if (isGroq) {
-            listOf("llama-3.3-70b-versatile", "llama-3.1-8b-instant", "qwen-2.5-32b")
-        } else {
-            listOf("deepseek-chat", "deepseek-reasoner")
+        val sanitizedMessages = messages.filter { it.content.isNotBlank() }
+        if (sanitizedMessages.isEmpty()) {
+            return@withContext Result.failure(Exception("Please enter a message to send."))
         }
+
+        val isGroq = apiKey.startsWith("gsk_") || !apiKey.startsWith("sk-")
         val endpointUrl = if (isGroq) "https://api.groq.com/openai/v1/chat/completions" else "https://api.deepseek.com/chat/completions"
 
         var lastException: Exception? = null
 
-        for (modelName in candidateModels) {
-            try {
-                val requestBody = GroqRequest(
-                    model = modelName,
-                    messages = messages,
-                    temperature = 0.5
-                )
+        // Primary model as requested by user
+        val primaryModel = "qwen/qwen3.6-27b"
 
-                val requestStr = json.encodeToString(requestBody)
-                val request = Request.Builder()
-                    .url(endpointUrl)
-                    .addHeader("Authorization", "Bearer $apiKey")
-                    .post(requestStr.toRequestBody("application/json".toMediaType()))
-                    .build()
+        try {
+            val requestBody = GroqRequest(
+                model = primaryModel,
+                messages = sanitizedMessages,
+                temperature = 0.6,
+                maxCompletionTokens = 2048,
+                topP = 0.95,
+                stream = false, // Current UI handles non-streaming result parsing
+                reasoningEffort = "default"
+            )
 
-                val response = client.newCall(request).execute()
-                val responseBody = response.body?.string().orEmpty()
+            val requestStr = json.encodeToString(requestBody)
+            val request = Request.Builder()
+                .url(endpointUrl)
+                .addHeader("Authorization", "Bearer $apiKey")
+                .post(requestStr.toRequestBody("application/json".toMediaType()))
+                .build()
 
-                if (response.isSuccessful && responseBody.isNotBlank()) {
-                    val groqResponse = json.decodeFromString<GroqResponse>(responseBody)
-                    val rawContent = groqResponse.choices.firstOrNull()?.message?.content
-                        ?: return@withContext Result.failure(Exception("AI did not produce text content. Please try again."))
+            val response = client.newCall(request).execute()
+            val responseBody = response.body?.string().orEmpty()
 
-                    // Clean up any DeepSeek <think> tags if present
-                    val cleanedContent = if (rawContent.contains("</think>")) {
-                        val thinkParts = rawContent.split("</think>")
-                        val thinkingStr = thinkParts[0].replace("<think>", "").trim()
-                        val actualAnswer = thinkParts.getOrElse(1) { "" }.trim()
-                        if (actualAnswer.isNotBlank()) actualAnswer else thinkingStr
-                    } else {
-                        rawContent
-                    }
+            if (response.isSuccessful && responseBody.isNotBlank()) {
+                val groqResponse = json.decodeFromString<GroqResponse>(responseBody)
+                val rawContent = groqResponse.choices.firstOrNull()?.message?.content
+                    ?: return@withContext Result.failure(Exception("AI did not produce text content. Please try again."))
 
-                    val jsonStr = extractJson(cleanedContent)
-                    val parsed = if (jsonStr.isNotBlank() && jsonStr.contains("archetype_rationale")) {
-                        try {
-                            json.decodeFromString<SovereignAiResponse>(jsonStr)
-                        } catch (e: Exception) {
-                            SovereignAiResponse(
-                                archetypeRationale = cleanedContent,
-                                currentArchetype = "",
-                                uiBlocks = emptyList()
-                            )
-                        }
-                    } else {
+                // Clean up any DeepSeek <think> tags if present
+                val cleanedContent = if (rawContent.contains("</think>")) {
+                    val thinkParts = rawContent.split("</think>")
+                    val thinkingStr = thinkParts[0].replace("<think>", "").trim()
+                    val actualAnswer = thinkParts.getOrElse(1) { "" }.trim()
+                    if (actualAnswer.isNotBlank()) actualAnswer else thinkingStr
+                } else {
+                    rawContent
+                }
+
+                val jsonStr = extractJson(cleanedContent)
+                val parsed = if (jsonStr.isNotBlank() && jsonStr.contains("archetype_rationale")) {
+                    try {
+                        json.decodeFromString<SovereignAiResponse>(jsonStr)
+                    } catch (e: Exception) {
                         SovereignAiResponse(
                             archetypeRationale = cleanedContent,
                             currentArchetype = "",
                             uiBlocks = emptyList()
                         )
                     }
-                    return@withContext Result.success(parsed)
                 } else {
-                    android.util.Log.e("AiChat", "Model $modelName API Error ${response.code}: $responseBody")
-                    val message = when (response.code) {
-                        401 -> "AI Authentication failed. Please check your API key."
-                        403 -> "AI Access forbidden. Please verify your account access."
-                        404 -> "AI Model not found ($modelName). Trying fallback model..."
-                        429 -> "AI Rate limit reached. Please wait a few moments."
-                        in 500..599 -> "AI Server is temporarily overloaded. Trying fallback..."
-                        else -> "AI service response error (${response.code})."
-                    }
-                    lastException = Exception(message)
-                    // If 404 or 5xx, continue to next model in loop
-                    if (response.code == 404 || response.code in 500..599) {
-                        continue
-                    } else {
-                        return@withContext Result.failure(lastException)
-                    }
+                    SovereignAiResponse(
+                        archetypeRationale = cleanedContent,
+                        currentArchetype = "",
+                        uiBlocks = emptyList()
+                    )
                 }
-            } catch (e: java.net.UnknownHostException) {
+                return@withContext Result.success(parsed)
+            } else {
+                android.util.Log.e("AiChat", "Model $primaryModel API Error ${response.code}: $responseBody")
+
+                // Extract detailed error message from response json if available
+                val errorDetail = try {
+                    val parsedObj = json.parseToJsonElement(responseBody)
+                    val errObj = parsedObj.toString()
+                    if (errObj.contains("\"message\"")) {
+                        val msgPart = errObj.substringAfter("\"message\":\"").substringBefore("\"")
+                        if (msgPart.isNotBlank() && !msgPart.contains("{")) msgPart else null
+                    } else null
+                } catch (e: Exception) {
+                    null
+                }
+
+                val message = when (response.code) {
+                    401 -> "AI Authentication failed. Please check your API key."
+                    403 -> "AI Access forbidden. Please verify your account access."
+                    404 -> errorDetail ?: "AI Model not found ($primaryModel)."
+                    429 -> "AI Rate limit reached. Please wait a few moments."
+                    in 500..599 -> "AI Server is temporarily overloaded."
+                    else -> errorDetail ?: "AI service response error (${response.code})."
+                }
+                lastException = Exception(message)
+                return@withContext Result.failure(lastException)
+            }
+        } catch (e: java.net.UnknownHostException) {
                 android.util.Log.e("AiChat", "DNS/Network issue: ${e.message}")
                 return@withContext Result.failure(Exception("Unable to connect to AI server. Please check your internet connection."))
             } catch (e: java.net.SocketTimeoutException) {
@@ -233,7 +247,6 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
                 android.util.Log.e("AiChat", "Exception: ${e.message}", e)
                 lastException = e
             }
-        }
 
         Result.failure(lastException ?: Exception("Unable to get AI response. Please try again."))
     }

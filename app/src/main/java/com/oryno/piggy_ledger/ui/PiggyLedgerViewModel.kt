@@ -258,6 +258,10 @@ class PiggyLedgerViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5000), false
     )
 
+    val aiMessagesCount = userPreferences.aiMessagesCount.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), 0
+    )
+
     fun setPremiumStatus(isPremium: Boolean) {
         viewModelScope.launch {
             userPreferences.savePremiumStatus(isPremium)
@@ -961,6 +965,7 @@ class PiggyLedgerViewModel(
     fun canAddLoan(currentCount: Int): Boolean = isPremium.value || currentCount < 2
     fun canAccessFullAnalytics(): Boolean = isPremium.value
     fun canExportData(): Boolean = isPremium.value
+    fun canSendAiMessage(): Boolean = isPremium.value || (aiMessagesCount.value < 3)
 
     private val _isPrivacyModeEnabled = MutableStateFlow<Boolean>(false)
     val isPrivacyModeEnabled: StateFlow<Boolean> = _isPrivacyModeEnabled.asStateFlow()

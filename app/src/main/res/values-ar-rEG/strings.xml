@@ -734,4 +734,38 @@
     <string name="shortcut_goals_long">أهدافك وتحويش الحصالة</string>
     <string name="shortcut_analytics_short">المصاريف والإحصائيات</string>
     <string name="shortcut_analytics_long">تحليلات ومصاريف الشهر بالتفصيل</string>
+
+    <!-- Subscription BottomSheet Strings -->
+    <string name="subscription_plan_label">نوع الاشتراك</string>
+    <string name="remaining_time_label">الوقت الفاضل</string>
+    <string name="status_label">الحالة</string>
+    <string name="pro_yearly_plan">برو (سنوي)</string>
+    <string name="pro_monthly_plan">برو (شهري)</string>
+    <string name="time_expired">خلصان</string>
+    <string name="days_left_format">فاضل %1$d يوم</string>
+    <string name="hours_left_format">فاضل %1$d ساعة</string>
+    <string name="minutes_left_format">فاضل %1$d دقيقة</string>
+    <string name="not_available">مش متاح</string>
+    <string name="billing_period_remaining_format">فاضل %1$d%% من مدة الاشتراك</string>
+    <string name="standard_membership">العضوية العادية</string>
+    <string name="plan_tier_label">مستوى الخطة</string>
+    <string name="free_edition_label">النسخة المجانية (الدفتر الأساسي)</string>
+    <string name="features_enabled_label">المميزات المفتوحة</string>
+    <string name="free_features_desc">✓ تسجيل المصاريف الأساسية ومتابعة الحصالة على موبايلك\n✓ أمان كامل وحفظ لبياناتك أوفلاين</string>
+    <string name="upgrade_to_premium_pro">رقي لبيجي ليدجر برو</string>
+    <string name="manage_plan_billing">إدارة الخطة والاشتراك</string>
+    <string name="more_accounts_btn">+ حسابات تانية</string>
+    <string name="total_balance_card_label">إجمالي الفلوس</string>
+    <string name="account_balance_card_format">رصيد %1$s</string>
+    <string name="close_btn">قفل</string>
+    <string name="save_17_percent">وفر 17%</string>
+    <string name="pro_feature_ai">مساعد بيجي الذكي للتحليل المالي بلا حدود</string>
+    <string name="comp_piggy_ai">مساعد بيجي الذكي (AI)</string>
+    <string name="comp_piggy_ai_free">3 رسائل</string>
+    <string name="comp_piggy_ai_pro">غير محدود</string>
+    <string name="ai_free_messages_badge">%1$d/3 رسائل مجانية</string>
+    <string name="ai_pro_badge">برو • ذكاء اصطناعي بلا حدود</string>
+    <string name="ai_upgrade_to_pro">رقي لبرو</string>
+    <string name="ai_limit_reached_title">خلصت الـ 3 رسائل المجانية</string>
+    <string name="ai_limit_reached_desc">استخدمت كل الرسايل المجانية. رقي لبيجي ليدجر برو عشان تفتح مساعد بيجي الذكي وتحليلات مصاريفك بلا حدود.</string>
 </resources>

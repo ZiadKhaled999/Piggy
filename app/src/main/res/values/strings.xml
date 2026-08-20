@@ -800,6 +800,15 @@
     <string name="pro_feature_3">Advanced Financial Analytics &amp; Charts</string>
     <string name="pro_feature_4">Data Export (CSV/PDF) &amp; Cloud Sync</string>
     <string name="pro_feature_5">Screenshot Protection &amp; Custom Categories</string>
+    <string name="pro_feature_ai">Unlimited Piggy AI Financial Co-Pilot &amp; Insights</string>
+    <string name="comp_piggy_ai">Piggy AI Financial Assistant</string>
+    <string name="comp_piggy_ai_free">3 Messages</string>
+    <string name="comp_piggy_ai_pro">Unlimited</string>
+    <string name="ai_free_messages_badge">%1$d/3 Free Messages</string>
+    <string name="ai_pro_badge">Pro • Unlimited AI</string>
+    <string name="ai_upgrade_to_pro">Upgrade to Pro</string>
+    <string name="ai_limit_reached_title">Free AI Limit Reached (3/3)</string>
+    <string name="ai_limit_reached_desc">You\'ve used your 3 free messages. Upgrade to Piggy Ledger Pro for unlimited AI conversations and full ledger analysis.</string>
     <string name="plan_monthly">Monthly</string>
     <string name="plan_monthly_desc">Keep tracking with expanded access &amp; unlimited control</string>
     <string name="plan_monthly_renew">Renews for %s/month. Cancel anytime.</string>
@@ -863,4 +872,29 @@
     <string name="shortcut_goals_long">My Piggy Targets &amp; Goals</string>
     <string name="shortcut_analytics_short">Insights</string>
     <string name="shortcut_analytics_long">Monthly Spending Analytics</string>
+
+    <!-- Subscription BottomSheet Strings -->
+    <string name="subscription_plan_label">Subscription Plan</string>
+    <string name="remaining_time_label">Remaining Time</string>
+    <string name="status_label">Status</string>
+    <string name="pro_yearly_plan">Pro (Yearly)</string>
+    <string name="pro_monthly_plan">Pro (Monthly)</string>
+    <string name="time_expired">Expired</string>
+    <string name="days_left_format">%1$d days left</string>
+    <string name="hours_left_format">%1$d hours left</string>
+    <string name="minutes_left_format">%1$d minutes left</string>
+    <string name="not_available">N/A</string>
+    <string name="billing_period_remaining_format">%1$d%% of billing period remaining</string>
+    <string name="standard_membership">Standard Membership</string>
+    <string name="plan_tier_label">Plan Tier</string>
+    <string name="free_edition_label">Free Edition (Standard Ledger)</string>
+    <string name="features_enabled_label">Features Enabled</string>
+    <string name="free_features_desc">✓ Basic ledger entry &amp; local savings tracking\n✓ Offline data isolation &amp; device security</string>
+    <string name="upgrade_to_premium_pro">Upgrade to Premium Pro</string>
+    <string name="manage_plan_billing">Manage Plan &amp; Billing</string>
+    <string name="more_accounts_btn">+ More Accounts</string>
+    <string name="total_balance_card_label">TOTAL BALANCE</string>
+    <string name="account_balance_card_format">%1$s BALANCE</string>
+    <string name="close_btn">Close</string>
+    <string name="save_17_percent">SAVE 17%</string>
 </resources>

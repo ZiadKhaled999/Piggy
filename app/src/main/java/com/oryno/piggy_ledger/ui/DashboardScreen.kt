@@ -365,54 +365,33 @@ fun DashboardScreen(
                 ) {
                     // 2. Subscription Details Card
                     if (isProUser) {
-                        val originalDate = entitlement?.originalPurchaseDate
-                        val latestDate = entitlement?.latestPurchaseDate
+                        val latestDate = entitlement?.latestPurchaseDate ?: entitlement?.originalPurchaseDate
                         val expirationDate = entitlement?.expirationDate
 
                         val prodId = entitlement?.productIdentifier?.lowercase() ?: "pro"
                         val planType = when {
-                            prodId.contains("lifetime") || prodId.contains("life") || prodId.contains("lt") || expirationDate == null -> "Piggy Ledger Pro"
-                            prodId.contains("yearly") || prodId.contains("annual") || prodId.contains("yr") -> "Pro (Yearly)"
-                            prodId.contains("monthly") || prodId.contains("mth") || prodId.contains("mo") -> "Pro (Monthly)"
-                            else -> "Piggy Ledger Pro"
+                            prodId.contains("lifetime") || prodId.contains("life") || prodId.contains("lt") || expirationDate == null -> stringResource(R.string.piggy_ledger_pro)
+                            prodId.contains("yearly") || prodId.contains("annual") || prodId.contains("yr") -> stringResource(R.string.pro_yearly_plan)
+                            prodId.contains("monthly") || prodId.contains("mth") || prodId.contains("mo") -> stringResource(R.string.pro_monthly_plan)
+                            else -> stringResource(R.string.piggy_ledger_pro)
                         }
 
-                        val isLifetime = planType.contains("Lifetime")
+                        val isLifetime = prodId.contains("lifetime") || prodId.contains("life") || prodId.contains("lt") || expirationDate == null
 
-                        val isVeryShortCycle = remember(originalDate, latestDate, expirationDate) {
-                            val start = latestDate ?: originalDate ?: java.util.Date()
-                            val end = expirationDate
-                            end != null && (end.time - start.time < 24L * 60L * 60L * 1000L)
-                        }
-
-                        val dateFormat = remember(isVeryShortCycle) {
-                            if (isVeryShortCycle) {
-                                java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault())
-                            } else {
-                                java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
-                            }
-                        }
-
-                        val latestDateStr = remember(latestDate, originalDate, dateFormat) { 
-                            val d = latestDate ?: originalDate
-                            d?.let { dateFormat.format(it) } ?: "N/A" 
-                        }
-                        val expirationDateStr = remember(expirationDate, dateFormat) { expirationDate?.let { dateFormat.format(it) } ?: "N/A" }
-
-                        val remainingTimeStr = remember(expirationDate) {
+                        val remainingTimeStr = remember(expirationDate, context) {
                             expirationDate?.let { expDate ->
                                 val diffMs = expDate.time - System.currentTimeMillis()
                                 when {
-                                    diffMs <= 0 -> "Expired"
-                                    diffMs >= 24L * 60L * 60L * 1000L -> "${diffMs / (24L * 60L * 60L * 1000L)} days left"
-                                    diffMs >= 60L * 60L * 1000L -> "${diffMs / (60L * 60L * 1000L)} hours left"
-                                    else -> "${diffMs / (60L * 1000L)} minutes left"
+                                    diffMs <= 0 -> context.getString(R.string.time_expired)
+                                    diffMs >= 24L * 60L * 60L * 1000L -> context.getString(R.string.days_left_format, diffMs / (24L * 60L * 60L * 1000L))
+                                    diffMs >= 60L * 60L * 1000L -> context.getString(R.string.hours_left_format, diffMs / (60L * 60L * 1000L))
+                                    else -> context.getString(R.string.minutes_left_format, diffMs / (60L * 1000L))
                                 }
-                            } ?: "N/A"
+                            } ?: context.getString(R.string.not_available)
                         }
 
-                        val progress = remember(latestDate, originalDate, expirationDate) {
-                            val start = latestDate ?: originalDate
+                        val progress = remember(latestDate, expirationDate) {
+                            val start = latestDate
                             if (start != null && expirationDate != null) {
                                 val totalMs = expirationDate.time - start.time
                                 val remainingMs = expirationDate.time - System.currentTimeMillis()
@@ -426,19 +405,19 @@ fun DashboardScreen(
                             }
                         }
 
-                        OutlinedCard(
+                        Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF5F6)), // Light coral pink tint
-                            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFFD1D5)),
                             shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
-                                modifier = Modifier.padding(20.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Row(
@@ -458,45 +437,31 @@ fun DashboardScreen(
                                             color = NavyDark
                                         )
                                     }
-                                    
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(PinkPrimary)
-                                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                                    ) {
-                                        Text(
-                                            text = "ACTIVE",
-                                            color = Color.White,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            letterSpacing = 0.5.sp
-                                        )
-                                    }
                                 }
 
                                 HorizontalDivider(color = Color(0xFFFFD1D5), thickness = 1.dp)
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column {
-                                        Text("Subscription Plan", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
+                                    Column(modifier = Modifier.weight(1f, fill = false)) {
+                                        Text(stringResource(R.string.subscription_plan_label), fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(planType, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                                     }
                                     if (!isLifetime) {
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text("Remaining Time", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
+                                        Column(horizontalAlignment = Alignment.End, modifier = Modifier.weight(1f, fill = false)) {
+                                            Text(stringResource(R.string.remaining_time_label), fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(remainingTimeStr, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
                                         }
                                     } else {
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text("Status", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
+                                        Column(horizontalAlignment = Alignment.End, modifier = Modifier.weight(1f, fill = false)) {
+                                            Text(stringResource(R.string.status_label), fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
                                             Spacer(modifier = Modifier.height(2.dp))
-                                            Text("Lifetime Access", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
+                                            Text(stringResource(R.string.lifetime_access), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PinkPrimary)
                                         }
                                     }
                                 }
@@ -514,48 +479,30 @@ fun DashboardScreen(
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "${(progress * 100).toInt()}% of billing period remaining",
+                                            text = stringResource(R.string.billing_period_remaining_format, (progress * 100).toInt()),
                                             fontSize = 11.sp,
                                             color = TextLight,
                                             modifier = Modifier.align(Alignment.End)
                                         )
                                     }
                                 }
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Column {
-                                        Text("Subscription Date", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(latestDateStr, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = NavyDark)
-                                    }
-                                    if (!isLifetime) {
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text("Expiration Date", fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.SemiBold)
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(expirationDateStr, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = NavyDark)
-                                        }
-                                    }
-                                }
                             }
                         }
                     } else {
                         // Standard Free Plan
-                        OutlinedCard(
+                        Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)), // Slate light background
-                            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE2E8F0)),
                             shape = RoundedCornerShape(20.dp)
                         ) {
                             Column(
-                                modifier = Modifier.padding(20.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Row(
@@ -569,25 +516,10 @@ fun DashboardScreen(
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Text(
-                                            text = "Standard Membership",
+                                            text = stringResource(R.string.standard_membership),
                                             fontSize = 16.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = NavyDark
-                                        )
-                                    }
-                                    
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(Color(0xFFE2E8F0))
-                                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                                    ) {
-                                        Text(
-                                            text = "FREE",
-                                            color = Color(0xFF64748B),
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            letterSpacing = 0.5.sp
                                         )
                                     }
                                 }
@@ -596,13 +528,13 @@ fun DashboardScreen(
 
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text(
-                                        text = "Plan Tier",
+                                        text = stringResource(R.string.plan_tier_label),
                                         fontSize = 11.sp,
                                         color = TextLight,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Text(
-                                        text = "Free Edition (Standard Ledger)",
+                                        text = stringResource(R.string.free_edition_label),
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = NavyDark
@@ -611,13 +543,13 @@ fun DashboardScreen(
                                 
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(
-                                        text = "Features Enabled",
+                                        text = stringResource(R.string.features_enabled_label),
                                         fontSize = 11.sp,
                                         color = TextLight,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Text(
-                                        text = "✓ Basic ledger entry & local savings tracking\n✓ Offline data isolation & device security",
+                                        text = stringResource(R.string.free_features_desc),
                                         fontSize = 13.sp,
                                         color = NavyDark,
                                         fontWeight = FontWeight.Medium,
@@ -649,7 +581,7 @@ fun DashboardScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Upgrade to Premium Pro", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.upgrade_to_premium_pro), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
                     } else {
                         Button(
@@ -669,7 +601,7 @@ fun DashboardScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Manage Plan & Billing", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.manage_plan_billing), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
                         
                         Spacer(modifier = Modifier.height(10.dp))
@@ -680,7 +612,7 @@ fun DashboardScreen(
                                 .fillMaxWidth()
                                 .height(48.dp)
                         ) {
-                            Text("Close", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextLight)
+                            Text(stringResource(R.string.close_btn), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextLight)
                         }
                     }
                 }
@@ -823,7 +755,7 @@ fun PendingTransactionDashboardCard(
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) {
                         Text(
-                            text = "+ More Accounts",
+                            text = stringResource(R.string.more_accounts_btn),
                             color = PinkPrimary,
                             fontWeight = FontWeight.Bold
                         )

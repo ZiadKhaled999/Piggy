@@ -335,8 +335,8 @@ fun SettingsMainContent(
         
         SettingsItem(
             title = stringResource(R.string.piggy_ledger_pro),
-            iconRes = null,
-            iconVector = Icons.Default.Star,
+            iconRes = R.drawable.piggy_pro,
+            iconVector = null,
             onClick = { onModeChange(SettingsMode.PRO) }
         )
 
@@ -967,118 +967,130 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
             ExpressiveLoadingIndicator(size = 40.dp)
         }
     } else if (isPro == true) {
+        val configuration = LocalConfiguration.current
+        val isCompact = configuration.screenWidthDp < 360
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFF8FAFC))
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp),
+                .padding(horizontal = if (isCompact) 12.dp else 16.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Surface(
+            // 1. Top Hero Image
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                shadowElevation = 2.dp
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(if (isCompact) 180.dp else 220.dp)
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.piggy_pro),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 2. Full-Width Clean Content Container (No Box Borders)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
+                        .padding(if (isCompact) 16.dp else 20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .background(Color(0xFFECFDF5), CircleShape)
-                            .border(1.dp, Color(0xFFA7F3D0), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            tint = Color(0xFF10B981),
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFEFF6FF),
-                        border = BorderStroke(1.dp, Color(0xFFBFDBFE))
-                    ) {
-                        Text(
-                            text = stringResource(R.string.pro_member_active),
-                            color = Color(0xFF1D4ED8),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
                     Text(
                         text = stringResource(R.string.pro_title),
-                        fontSize = 22.sp,
+                        fontSize = if (isCompact) 20.sp else 24.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color(0xFF0F172A)
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = stringResource(R.string.pro_desc),
-                        fontSize = 14.sp,
-                        color = Color(0xFF64748B),
+                        color = Color(0xFF0F172A),
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9))
+                    Text(
+                        text = stringResource(R.string.pro_desc),
+                        fontSize = if (isCompact) 13.sp else 14.sp,
+                        color = Color(0xFF64748B),
+                        textAlign = TextAlign.Center,
+                        lineHeight = if (isCompact) 18.sp else 20.sp
+                    )
 
                     Spacer(modifier = Modifier.height(20.dp))
 
+                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 3. Full-Width Features List
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        listOf(
+                        val features = listOf(
+                            stringResource(R.string.pro_feature_ai),
                             stringResource(R.string.pro_feature_1),
                             stringResource(R.string.pro_feature_2),
                             stringResource(R.string.pro_feature_3),
                             stringResource(R.string.pro_feature_4),
                             stringResource(R.string.pro_feature_5)
-                        ).forEach { feature ->
+                        )
+
+                        features.forEach { feature ->
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Start
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFFF8FAFC))
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = Color(0xFF10B981),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .background(PinkPrimary.copy(alpha = 0.12f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = PinkPrimary,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
                                 Text(
                                     text = feature,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF334155)
+                                    fontSize = if (isCompact) 13.sp else 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF334155),
+                                    modifier = Modifier.weight(1f)
                                 )
                             }
                         }
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     } else {
         PiggyLedgerPaywall(
@@ -1257,13 +1269,13 @@ fun PiggyLedgerPaywall(
             accentColor = Color(0xFF2563EB)
         )
         PaywallPlan.YEARLY -> PlanMetadata(
-            tabLabel = "Yearly",
-            badgeName = "Yearly",
-            headerSubtitle = "Get full access with advanced intelligence & complete analytics",
+            tabLabel = stringResource(R.string.plan_yearly),
+            badgeName = stringResource(R.string.plan_yearly),
+            headerSubtitle = stringResource(R.string.plan_yearly_desc),
             priceText = yearlyPackage?.product?.price?.formatted ?: "$99.99 / yr",
-            renewalCaption = "Renews for ${yearlyPackage?.product?.price?.formatted ?: "$99.99"}/year. Cancel anytime.",
-            ctaText = "Upgrade Yearly",
-            tag = "SAVE 17%",
+            renewalCaption = stringResource(R.string.plan_yearly_renew, yearlyPackage?.product?.price?.formatted ?: "$99.99"),
+            ctaText = stringResource(R.string.upgrade_yearly),
+            tag = stringResource(R.string.save_17_percent),
             accentColor = Color(0xFF7C3AED)
         )
         PaywallPlan.LIFETIME -> PlanMetadata(
@@ -1279,6 +1291,7 @@ fun PiggyLedgerPaywall(
     }
 
     val comparisonFeatures = listOf(
+        FeatureComparisonRow(stringResource(R.string.comp_piggy_ai), FeatureStatus.TextValue(stringResource(R.string.comp_piggy_ai_free)), FeatureStatus.TextValue(stringResource(R.string.comp_piggy_ai_pro))),
         FeatureComparisonRow(stringResource(R.string.comp_acc_goals), FeatureStatus.TextValue(stringResource(R.string.two_max)), FeatureStatus.Check),
         FeatureComparisonRow(stringResource(R.string.comp_budgets_loans), FeatureStatus.TextValue(stringResource(R.string.two_max)), FeatureStatus.Check),
         FeatureComparisonRow(stringResource(R.string.comp_adv_analytics), FeatureStatus.Dash, FeatureStatus.Check),

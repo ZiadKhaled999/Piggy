@@ -301,7 +301,10 @@ fun PiggyLedgerApp(
                     val aiChatViewModel: com.oryno.piggy_ledger.ai.AiChatViewModel = viewModel(factory = factory)
                     AiChatScreen(
                         viewModel = aiChatViewModel,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToPaywall = {
+                            navController.navigate(Screen.Settings(modeName = SettingsMode.PRO.name))
+                        }
                     )
                 }
 

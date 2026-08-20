@@ -156,6 +156,8 @@ data class UserPreferencesEntity(
     val isBiometricLockEnabled: Boolean = false,
     val isScreenshotProtectionEnabled: Boolean = false,
     val isPremium: Boolean = false,
+    val premiumExpiryTimestamp: Long = 0L,
+    val isLifetimePremium: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false

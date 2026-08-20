@@ -29,6 +29,29 @@ class AiChatViewModel(
         initialValue = ""
     )
 
+    val isPremium: StateFlow<Boolean> = (userPreferences?.isPremium ?: flowOf(false)).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
+    val aiMessagesCount: StateFlow<Int> = (userPreferences?.aiMessagesCount ?: flowOf(0)).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0
+    )
+
+    private val _showPaywallPrompt = MutableStateFlow(false)
+    val showPaywallPrompt: StateFlow<Boolean> = _showPaywallPrompt.asStateFlow()
+
+    fun triggerPaywallPrompt() {
+        _showPaywallPrompt.value = true
+    }
+
+    fun dismissPaywallPrompt() {
+        _showPaywallPrompt.value = false
+    }
+
     private val json = Json { ignoreUnknownKeys = true; isLenient = true; classDiscriminator = "type" }
 
     val conversations: StateFlow<List<AiConversation>> = repository.getAllConversations().stateIn(
@@ -202,6 +225,30 @@ class AiChatViewModel(
                     convId = newId
                 }
 
+                // Check 3-message limit for free users
+                val isPro = isPremium.value
+                val usedCount = aiMessagesCount.value
+                if (!isPro && usedCount >= 3) {
+                    _showPaywallPrompt.value = true
+                    val limitMsg = SovereignAiResponse(
+                        archetypeRationale = "# 👑 Free AI Limit Reached (3/3)\n\nYou have used your 3 free Piggy AI messages. Upgrade to **Piggy Ledger Pro** to unlock **Unlimited AI Financial Assistant**, smart budget queries, and deep transaction insights across all your accounts.",
+                        currentArchetype = "",
+                        uiBlocks = listOf(
+                            UiBlock.ActionBannerBlock(
+                                message = "Upgrade to Piggy Ledger Pro for unlimited AI conversations and full ledger analysis.",
+                                actionPayload = "UPGRADE_PRO"
+                            )
+                        )
+                    )
+                    repository.saveMessage(role = "user", content = userText, conversationId = convId)
+                    repository.saveMessage(
+                        role = "assistant",
+                        content = json.encodeToString(SovereignAiResponse.serializer(), limitMsg),
+                        conversationId = convId
+                    )
+                    return@launch
+                }
+
                 _isLoading.value = true
                 
                 val currentHistory = chatHistory.value
@@ -252,6 +299,11 @@ class AiChatViewModel(
                         responseTextForTitle = finalResponse.archetypeRationale
                         val jsonString = json.encodeToString(SovereignAiResponse.serializer(), finalResponse)
                         repository.saveMessage(role = "assistant", content = jsonString, conversationId = convId)
+                        
+                        // Increment free messages count for non-premium users
+                        if (!isPro) {
+                            userPreferences?.incrementAiMessagesCount()
+                        }
                     }
                 } else {
                     val rawError = responseResult.exceptionOrNull()?.message.orEmpty()

@@ -96,6 +96,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.widget.Toast
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
+import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.ai.AiChatViewModel
 import com.oryno.piggy_ledger.ai.SovereignAiResponse
 import com.oryno.piggy_ledger.ai.UiBlock
@@ -127,7 +129,8 @@ private val AiPinkGlowMid = Color(0xFFFCE7F3)
 @Composable
 fun AiChatScreen(
     viewModel: AiChatViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToPaywall: () -> Unit = {}
 ) {
     val chatHistory by viewModel.chatHistory.collectAsStateWithLifecycle()
     val conversations by viewModel.conversations.collectAsStateWithLifecycle()
@@ -135,6 +138,9 @@ fun AiChatScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val userName by viewModel.userName.collectAsStateWithLifecycle()
+    val isPremium by viewModel.isPremium.collectAsStateWithLifecycle()
+    val aiMessagesCount by viewModel.aiMessagesCount.collectAsStateWithLifecycle()
+    val showPaywallPrompt by viewModel.showPaywallPrompt.collectAsStateWithLifecycle()
     
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -181,19 +187,44 @@ fun AiChatScreen(
         topBar = {
             TopAppBar(
                 title = { 
-                    Surface(
-                        color = Color(0xFFFCE7F3),
-                        shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.dp, Color(0xFFFBCFE8))
-                    ) {
-                        Text(
-                            text = "Beta",
-                            color = Color(0xFFDB2777),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            letterSpacing = 0.5.sp,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
+                    if (isPremium) {
+                        Surface(
+                            color = Color(0xFFFDF2F8),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFBCFE8))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "👑 Pro • Unlimited AI",
+                                    color = Color(0xFFDB2777),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.5.sp,
+                                    letterSpacing = 0.2.sp
+                                )
+                            }
+                        }
+                    } else {
+                        Surface(
+                            color = if (aiMessagesCount >= 3) Color(0xFFFEE2E2) else Color(0xFFF1F5F9),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, if (aiMessagesCount >= 3) Color(0xFFFCA5A5) else Color(0xFFE2E8F0)),
+                            modifier = Modifier.clickable { onNavigateToPaywall() }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (aiMessagesCount >= 3) "3/3 Free • Upgrade" else "${aiMessagesCount}/3 Free AI",
+                                    color = if (aiMessagesCount >= 3) Color(0xFFDC2626) else Color(0xFF475569),
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
                     }
                 },
                 navigationIcon = {
@@ -305,7 +336,8 @@ fun AiChatScreen(
                                 message = message,
                                 shouldStream = !isInitial && !isAnimated,
                                 onAnimationComplete = { animatedMessageIds.add(message.id) },
-                                onCtaClick = { cta -> viewModel.sendMessage(cta) }
+                                onCtaClick = { cta -> viewModel.sendMessage(cta) },
+                                onNavigateToPaywall = onNavigateToPaywall
                             )
                         }
                         if (isLoading) {
@@ -512,6 +544,85 @@ fun AiChatScreen(
                 )
             )
         )
+    }
+
+    val paywallSheetState = rememberModalBottomSheetState()
+
+    // Paywall / Limit Reached Bottom Sheet
+    if (showPaywallPrompt) {
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.dismissPaywallPrompt() },
+            sheetState = paywallSheetState,
+            containerColor = Color.White,
+            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+            dragHandle = { BottomSheetDefaults.DragHandle() }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .navigationBarsPadding(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Sad Piggy Image
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_piggy_sad),
+                    contentDescription = "Sad Piggy",
+                    modifier = Modifier
+                        .size(160.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Text(
+                    text = stringResource(R.string.ai_limit_reached_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = Color(0xFF1E293B)
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Text(
+                    text = stringResource(R.string.ai_limit_reached_desc),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    color = Color(0xFF64748B),
+                    lineHeight = 24.sp
+                )
+                
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                Button(
+                    onClick = {
+                        viewModel.dismissPaywallPrompt()
+                        onNavigateToPaywall()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDB2777)),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.ai_upgrade_to_pro),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                }
+                
+                TextButton(
+                    onClick = { viewModel.dismissPaywallPrompt() },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.close_btn),
+                        color = Color(0xFF64748B)
+                    )
+                }
+            }
+        }
     }
 
     // ModalBottomSheet for Chat History Menu
@@ -1653,7 +1764,8 @@ fun ChatMessageItem(
     message: AiChatMessage,
     shouldStream: Boolean,
     onAnimationComplete: () -> Unit,
-    onCtaClick: (String) -> Unit
+    onCtaClick: (String) -> Unit,
+    onNavigateToPaywall: () -> Unit = {}
 ) {
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
@@ -1773,19 +1885,19 @@ fun ChatMessageItem(
                             Spacer(modifier = Modifier.height(10.dp))
                         }
 
-                        // Render UI Blocks
-                        decodedResponse?.uiBlocks?.forEach { block ->
-                            when (block) {
-                                is UiBlock.KpiCardBlock -> KpiCard(block)
-                                is UiBlock.StreakStatusBlock -> StreakStatus(block)
-                                is UiBlock.MetricGridBlock -> MetricGrid(block)
-                                is UiBlock.InteractiveChartBlock -> InteractiveChart(block)
-                                is UiBlock.ReflectivePollBlock -> ReflectivePoll(block)
-                                is UiBlock.LedgerItemBlock -> LedgerItem(block)
-                                is UiBlock.ActionBannerBlock -> ActionBanner(block)
-                            }
-                            Spacer(modifier = Modifier.height(10.dp))
-                        }
+                // Render UI Blocks
+                decodedResponse?.uiBlocks?.forEach { block ->
+                    when (block) {
+                        is UiBlock.KpiCardBlock -> KpiCard(block)
+                        is UiBlock.StreakStatusBlock -> StreakStatus(block)
+                        is UiBlock.MetricGridBlock -> MetricGrid(block)
+                        is UiBlock.InteractiveChartBlock -> InteractiveChart(block)
+                        is UiBlock.ReflectivePollBlock -> ReflectivePoll(block)
+                        is UiBlock.LedgerItemBlock -> LedgerItem(block)
+                        is UiBlock.ActionBannerBlock -> ActionBanner(block, onNavigateToPaywall)
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
                     }
                 }
 
@@ -2682,11 +2794,18 @@ fun LedgerItem(block: UiBlock.LedgerItemBlock) {
 }
 
 @Composable
-fun ActionBanner(block: UiBlock.ActionBannerBlock) {
+fun ActionBanner(block: UiBlock.ActionBannerBlock, onUpgradeClick: () -> Unit = {}) {
     Card(
         colors = CardDefaults.cardColors(containerColor = AiUserBubbleColor),
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth().clickable { /* Action */ }
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                if (block.message.contains("upgrade", ignoreCase = true) || 
+                    block.message.contains("pro", ignoreCase = true)) {
+                    onUpgradeClick()
+                }
+            }
     ) {
         Row(
             modifier = Modifier.padding(18.dp),

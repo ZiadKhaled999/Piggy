@@ -28,6 +28,9 @@ class UserPreferences(private val context: Context) {
         val LAST_EXIT_TIME = longPreferencesKey("last_exit_time")
         val IS_SCREENSHOT_PROTECTION_ENABLED = booleanPreferencesKey("is_screenshot_protection_enabled")
         val IS_PREMIUM = booleanPreferencesKey("is_premium")
+        val PREMIUM_EXPIRY_TIMESTAMP = longPreferencesKey("premium_expiry_timestamp")
+        val IS_LIFETIME_PREMIUM = booleanPreferencesKey("is_lifetime_premium")
+        val AI_MESSAGES_COUNT = intPreferencesKey("ai_messages_count")
         val PERSONALIZED_INTENT = intPreferencesKey("personalized_intent")
         val PERSONALIZED_INTENSITY = intPreferencesKey("personalized_intensity")
         val SAVING_MODE = stringPreferencesKey("saving_mode")
@@ -95,7 +98,30 @@ class UserPreferences(private val context: Context) {
     }
 
     val isPremium: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[IS_PREMIUM] ?: false
+        val isPremiumFlag = prefs[IS_PREMIUM] ?: false
+        val expiry = prefs[PREMIUM_EXPIRY_TIMESTAMP] ?: 0L
+        val isLifetime = prefs[IS_LIFETIME_PREMIUM] ?: false
+        
+        if (isLifetime) return@map true
+        if (isPremiumFlag && expiry > System.currentTimeMillis()) return@map true
+        false
+    }
+
+    val aiMessagesCount: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[AI_MESSAGES_COUNT] ?: 0
+    }
+
+    suspend fun incrementAiMessagesCount() {
+        context.dataStore.edit { prefs ->
+            val current = prefs[AI_MESSAGES_COUNT] ?: 0
+            prefs[AI_MESSAGES_COUNT] = current + 1
+        }
+    }
+
+    suspend fun resetAiMessagesCount() {
+        context.dataStore.edit { prefs ->
+            prefs[AI_MESSAGES_COUNT] = 0
+        }
     }
 
     suspend fun saveOnboarding(completed: Boolean) {
@@ -155,9 +181,11 @@ class UserPreferences(private val context: Context) {
         syncPreferencesToDb()
     }
 
-    suspend fun savePremiumStatus(isPremium: Boolean) {
+    suspend fun savePremiumStatus(isPremium: Boolean, expiryTimestamp: Long = 0L, isLifetime: Boolean = false) {
         context.dataStore.edit { prefs ->
             prefs[IS_PREMIUM] = isPremium
+            prefs[PREMIUM_EXPIRY_TIMESTAMP] = expiryTimestamp
+            prefs[IS_LIFETIME_PREMIUM] = isLifetime
         }
         syncPreferencesToDb()
     }
@@ -195,6 +223,8 @@ class UserPreferences(private val context: Context) {
                 isBiometricLockEnabled = prefs[IS_BIOMETRIC_LOCK_ENABLED] ?: false,
                 isScreenshotProtectionEnabled = prefs[IS_SCREENSHOT_PROTECTION_ENABLED] ?: false,
                 isPremium = prefs[IS_PREMIUM] ?: false,
+                premiumExpiryTimestamp = prefs[PREMIUM_EXPIRY_TIMESTAMP] ?: 0L,
+                isLifetimePremium = prefs[IS_LIFETIME_PREMIUM] ?: false,
                 updatedAt = System.currentTimeMillis(),
                 isSynced = false
             )
@@ -218,6 +248,8 @@ class UserPreferences(private val context: Context) {
             prefs[IS_BIOMETRIC_LOCK_ENABLED] = entity.isBiometricLockEnabled
             prefs[IS_SCREENSHOT_PROTECTION_ENABLED] = entity.isScreenshotProtectionEnabled
             prefs[IS_PREMIUM] = entity.isPremium
+            prefs[PREMIUM_EXPIRY_TIMESTAMP] = entity.premiumExpiryTimestamp
+            prefs[IS_LIFETIME_PREMIUM] = entity.isLifetimePremium
         }
     }
 

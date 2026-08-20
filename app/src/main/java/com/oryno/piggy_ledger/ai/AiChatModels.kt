@@ -94,9 +94,14 @@ data class ChatMessageRequest(
 
 @Serializable
 data class GroqRequest(
-    val model: String = "deepseek-r1-distill-qwen-32b",
+    val model: String = "qwen/qwen3.6-27b",
     val messages: List<ChatMessageRequest>,
-    val temperature: Double = 0.7
+    val temperature: Double? = 0.6,
+    @SerialName("max_completion_tokens") val maxCompletionTokens: Int? = 2048,
+    @SerialName("top_p") val topP: Double? = 0.95,
+    val stream: Boolean = true,
+    @SerialName("reasoning_effort") val reasoningEffort: String? = "default",
+    val stop: String? = null
 )
 
 @Serializable

@@ -19,8 +19,8 @@ android {
     applicationId = "com.oryno.piggy_ledger"
     minSdk = 24
     targetSdk = 36
-    versionCode = 805
-    versionName = "4.2.7"
+    versionCode = 806
+    versionName = "4.2.8"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -107,8 +107,9 @@ android {
 
   buildTypes {
     release {
-      isCrunchPngs = false
-      isMinifyEnabled = false
+      isCrunchPngs = true
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
 
       val releaseConfig = signingConfigs.findByName("release")
@@ -166,6 +167,7 @@ googleServices {
 // Some unused dependencies are commented out below instead of being removed.
 // This makes it easy to add them back in the future if needed.
 dependencies {
+    implementation("com.vanniktech:android-image-cropper:4.6.0")
   implementation(libs.revenuecat.purchases)
   implementation(libs.revenuecat.purchases.ui)
   implementation(platform(libs.androidx.compose.bom))

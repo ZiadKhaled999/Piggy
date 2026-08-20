@@ -87,6 +87,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 
 import androidx.compose.ui.layout.ContentScale
 
@@ -231,9 +232,11 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .then(if (settingsMode != SettingsMode.PRO) Modifier.padding(horizontal = 24.dp) else Modifier)
+            .then(if (settingsMode != SettingsMode.PRO && settingsMode != SettingsMode.PROFILE) Modifier.padding(horizontal = 24.dp) else Modifier)
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
+        if (settingsMode != SettingsMode.PROFILE) {
+            Spacer(modifier = Modifier.height(24.dp))
+        }
         
         when (settingsMode) {
             SettingsMode.MAIN -> {
@@ -415,6 +418,35 @@ fun DetailSettingsView(
     val context = LocalContext.current
     val isPremium by viewModel.isPremium.collectAsState()
     
+    if (mode == SettingsMode.PROFILE) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            ProfileSettingsView(viewModel = viewModel)
+            
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, top = 24.dp)
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back_icon),
+                        tint = NavyDark
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.profile_title),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = NavyDark
+                )
+            }
+        }
+        return
+    }
+    
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -437,6 +469,7 @@ fun DetailSettingsView(
                     SettingsMode.SECURITY -> stringResource(R.string.security)
                     SettingsMode.PRO -> stringResource(R.string.piggy_ledger_pro)
                     SettingsMode.ACCOUNT_IDENTIFIERS -> stringResource(R.string.account_identifiers)
+                    SettingsMode.PROFILE -> stringResource(R.string.profile_title)
                     else -> ""
                 },
                 fontSize = 20.sp,
@@ -975,7 +1008,7 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
                 .fillMaxSize()
                 .background(Color(0xFFF8FAFC))
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = if (isCompact) 12.dp else 16.dp, vertical = 12.dp),
+                .padding(vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 1. Top Hero Image
@@ -1006,7 +1039,7 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
             // 2. Full-Width Clean Content Container (No Box Borders)
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
+                shape = RectangleShape,
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
@@ -1433,9 +1466,7 @@ fun PiggyLedgerPaywall(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .background(Color.White, RoundedCornerShape(20.dp))
-                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(20.dp))
+                    .background(Color.White)
                     .padding(16.dp)
             ) {
                 Column {
@@ -1460,7 +1491,7 @@ fun PiggyLedgerPaywall(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.width(54.dp)
+                            modifier = Modifier.width(72.dp)
                         )
 
                         Spacer(modifier = Modifier.width(12.dp))
@@ -1471,7 +1502,7 @@ fun PiggyLedgerPaywall(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.width(54.dp)
+                            modifier = Modifier.width(72.dp)
                         )
                     }
 
@@ -1497,7 +1528,7 @@ fun PiggyLedgerPaywall(
 
                             // Free Column Value
                             Box(
-                                modifier = Modifier.width(54.dp),
+                                modifier = Modifier.width(72.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 when (val f = row.freeValue) {
@@ -1527,7 +1558,7 @@ fun PiggyLedgerPaywall(
 
                             // Pro Column Value
                             Box(
-                                modifier = Modifier.width(54.dp),
+                                modifier = Modifier.width(72.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 when (val p = row.proValue) {

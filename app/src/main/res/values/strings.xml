@@ -865,7 +865,7 @@
     <string name="export_found_transactions">FOUND %1$d TRANSACTIONS</string>
     <string name="export_upgrade_pro">Upgrade to Pro to export your data</string>
 
-    <!-- App Launcher Shortcuts -->
+    
     <string name="shortcut_add_transaction_short">Add Transaction</string>
     <string name="shortcut_add_transaction_long">Add Expense or Income</string>
     <string name="shortcut_goals_short">Savings Goals</string>
@@ -873,7 +873,7 @@
     <string name="shortcut_analytics_short">Insights</string>
     <string name="shortcut_analytics_long">Monthly Spending Analytics</string>
 
-    <!-- Subscription BottomSheet Strings -->
+    
     <string name="subscription_plan_label">Subscription Plan</string>
     <string name="remaining_time_label">Remaining Time</string>
     <string name="status_label">Status</string>
@@ -897,4 +897,4 @@
     <string name="account_balance_card_format">%1$s BALANCE</string>
     <string name="close_btn">Close</string>
     <string name="save_17_percent">SAVE 17%</string>
-</resources>
+<string name="profile_title">Edit Profile</string><string name="profile_edit_details">Edit Details</string><string name="profile_user">User</string><string name="profile_change_photo">Change Photo</string><string name="profile_browse">Browse</string></resources>

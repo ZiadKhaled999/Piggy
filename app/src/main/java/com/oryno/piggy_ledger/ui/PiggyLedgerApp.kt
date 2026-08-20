@@ -844,7 +844,11 @@ fun DrawerSettingsContent(
                         .size(48.dp)
                         .clip(CircleShape)
                         .background(Color.White.copy(alpha = 0.15f))
-                        .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape),
+                        .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
+                        .clickable {
+                            onClose()
+                            appNavController.navigate(Screen.Settings(SettingsMode.PROFILE.name))
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     if (authUserPhotoUrl.isNotBlank()) {

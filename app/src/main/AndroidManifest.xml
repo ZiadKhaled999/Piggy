@@ -126,6 +126,11 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <activity
+            android:name="com.canhub.cropper.CropImageActivity"
+            android:theme="@style/Theme.MyApplication.Cropper"
+            android:exported="true" />
     </application>
 
 </manifest>

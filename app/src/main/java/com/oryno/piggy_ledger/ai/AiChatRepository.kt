@@ -17,7 +17,7 @@ import com.oryno.piggy_ledger.data.AiConversation
 
 class AiChatRepository(private val dao: PiggyLedgerDao) {
 
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true; classDiscriminator = "type" }
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true; classDiscriminator = "type"; encodeDefaults = true }
     private val client = OkHttpClient()
     
     // We get the key from BuildConfig (requires GROQ_API_KEY in .env)

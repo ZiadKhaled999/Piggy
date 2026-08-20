@@ -727,7 +727,7 @@
     <string name="export_found_transactions">لقينا %1$d معاملة</string>
     <string name="export_upgrade_pro">اشترك في برو عشان تصدر بياناتك</string>
 
-    <!-- App Launcher Shortcuts -->
+    
     <string name="shortcut_add_transaction_short">سجّل معاملة</string>
     <string name="shortcut_add_transaction_long">سجّل مصاريفك أو دخلك بسرعة</string>
     <string name="shortcut_goals_short">حصالة وأهداف</string>
@@ -735,7 +735,7 @@
     <string name="shortcut_analytics_short">المصاريف والإحصائيات</string>
     <string name="shortcut_analytics_long">تحليلات ومصاريف الشهر بالتفصيل</string>
 
-    <!-- Subscription BottomSheet Strings -->
+    
     <string name="subscription_plan_label">نوع الاشتراك</string>
     <string name="remaining_time_label">الوقت الفاضل</string>
     <string name="status_label">الحالة</string>
@@ -768,4 +768,4 @@
     <string name="ai_upgrade_to_pro">رقي لبرو</string>
     <string name="ai_limit_reached_title">خلصت الـ 3 رسائل المجانية</string>
     <string name="ai_limit_reached_desc">استخدمت كل الرسايل المجانية. رقي لبيجي ليدجر برو عشان تفتح مساعد بيجي الذكي وتحليلات مصاريفك بلا حدود.</string>
-</resources>
+<string name="profile_title">تعديل الملف الشخصي</string><string name="profile_edit_details">تعديل البيانات</string><string name="profile_user">مستخدم</string><string name="profile_change_photo">تغيير الصورة</string><string name="profile_browse">تصفح</string></resources>

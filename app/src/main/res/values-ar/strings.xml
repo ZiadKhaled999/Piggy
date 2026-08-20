@@ -850,7 +850,7 @@
     <string name="export_found_transactions">لقينا %1$d معاملة</string>
     <string name="export_upgrade_pro">اشترك في برو عشان تصدر بياناتك</string>
 
-    <!-- App Launcher Shortcuts -->
+    
     <string name="shortcut_add_transaction_short">إضافة معاملة</string>
     <string name="shortcut_add_transaction_long">تسجيل مصروف أو دخل جديد</string>
     <string name="shortcut_goals_short">أهداف الادخار</string>
@@ -858,7 +858,7 @@
     <string name="shortcut_analytics_short">التحليلات</string>
     <string name="shortcut_analytics_long">تحليلات وإحصائيات المصروفات</string>
 
-    <!-- Subscription BottomSheet Strings -->
+    
     <string name="subscription_plan_label">خطة الاشتراك</string>
     <string name="remaining_time_label">الوقت المتبقي</string>
     <string name="status_label">الحالة</string>
@@ -882,4 +882,4 @@
     <string name="account_balance_card_format">رصيد %1$s</string>
     <string name="close_btn">إغلاق</string>
     <string name="save_17_percent">وفر 17%</string>
-</resources>
+<string name="profile_title">تعديل الملف الشخصي</string><string name="profile_edit_details">تعديل البيانات</string><string name="profile_user">مستخدم</string><string name="profile_change_photo">تغيير الصورة</string><string name="profile_browse">تصفح</string></resources>

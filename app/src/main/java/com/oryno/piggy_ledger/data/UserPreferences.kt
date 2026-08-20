@@ -103,7 +103,7 @@ class UserPreferences(private val context: Context) {
         val isLifetime = prefs[IS_LIFETIME_PREMIUM] ?: false
         
         if (isLifetime) return@map true
-        if (isPremiumFlag && expiry > System.currentTimeMillis()) return@map true
+        if (isPremiumFlag && (expiry == 0L || expiry > System.currentTimeMillis())) return@map true
         false
     }
 
@@ -238,9 +238,9 @@ class UserPreferences(private val context: Context) {
 
     suspend fun applyFromEntity(entity: UserPreferencesEntity) {
         context.dataStore.edit { prefs ->
-            prefs[HAS_ONBOARDED] = entity.hasOnboarded
-            prefs[HAS_LANGUAGE_SELECTED] = entity.hasLanguageSelected
-            prefs[HAS_HEARD_ABOUT_US] = entity.hasHeardAboutUs
+            if (entity.hasOnboarded) prefs[HAS_ONBOARDED] = true
+            if (entity.hasLanguageSelected) prefs[HAS_LANGUAGE_SELECTED] = true
+            if (entity.hasHeardAboutUs) prefs[HAS_HEARD_ABOUT_US] = true
             prefs[PERSONALIZED_INTENT] = entity.personalizedIntent
             prefs[PERSONALIZED_INTENSITY] = entity.personalizedIntensity
             prefs[SAVING_MODE] = entity.savingMode

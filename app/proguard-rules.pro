@@ -17,9 +17,23 @@
 -keep class com.revenuecat.purchases.** { *; }
 
 # OkHttp & Ktor
+-dontwarn java.lang.management.**
+-dontwarn io.ktor.**
 -dontwarn okhttp3.**
 -dontwarn okio.**
 -keep class okhttp3.** { *; }
 -keep interface okhttp3.** { *; }
 -keep class io.ktor.** { *; }
+
+# Clerk
+-dontwarn com.clerk.**
+-keep class com.clerk.** { *; }
+
+# CanHub Cropper
+-dontwarn com.canhub.cropper.**
+-keep class com.canhub.cropper.** { *; }
+
+# Google Play Services & Firebase
+-dontwarn com.google.android.gms.**
+-dontwarn com.google.firebase.**
 

@@ -408,7 +408,7 @@ fun AccountsScreen(
 
                             // Parse category and description
                             val isParsed = tx.merchant.contains("|")
-                            val (txTitle, txIcon, txSubtext) = if (isParsed) {
+                            val (catDisplayName, txIcon, txDesc) = if (isParsed) {
                                 val parts = tx.merchant.split("|", limit = 2)
                                 val key = parts[0]
                                 val desc = parts.getOrNull(1) ?: ""
@@ -422,13 +422,10 @@ fun AccountsScreen(
                                 }
                                 val icon = cat?.icon ?: Icons.Default.Category
                                 
-                                val title = if (desc.isNotBlank()) desc else localizedCatName
-                                val sub = if (desc.isNotBlank()) localizedCatName else ""
-                                
-                                Triple(title, icon, sub)
+                                Triple(localizedCatName, icon, desc)
                             } else {
                                 val legacyMeta = getCategoryAndIconForMerchant(tx.merchant)
-                                Triple(tx.merchant, legacyMeta.second, legacyMeta.first)
+                                Triple(legacyMeta.first, legacyMeta.second, tx.merchant)
                             }
 
                             Card(
@@ -442,7 +439,7 @@ fun AccountsScreen(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(12.dp),
+                                        .padding(14.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     // Transaction Category Icon
@@ -465,49 +462,35 @@ fun AccountsScreen(
 
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = txTitle,
+                                            text = catDisplayName,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 15.sp,
-                                            color = NavyDark
+                                            color = NavyDark,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                         )
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            if (txSubtext.isNotBlank()) {
-                                                Text(
-                                                    text = txSubtext,
-                                                    fontSize = 12.sp,
-                                                    color = TextLight,
-                                                    fontWeight = FontWeight.Medium
-                                                )
-                                                Text(
-                                                    text = "•",
-                                                    fontSize = 12.sp,
-                                                    color = TextLight
-                                                )
-                                            }
-                                            Text(
-                                                text = formattedDate,
-                                                fontSize = 12.sp,
-                                                color = TextLight
-                                            )
-                                        }
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = formattedDate,
+                                            fontSize = 12.sp,
+                                            color = TextLight,
+                                            maxLines = 1
+                                        )
                                     }
 
-                                    // Amount
-                                    val amountText = if (tx.amount < 0) {
-                                        "-$currencySymbol ${String.format("%,.2f", -tx.amount)}"
-                                    } else {
-                                        "+$currencySymbol ${String.format("%,.2f", tx.amount)}"
-                                    }
+                                    // Amount without currency symbol, only sign + formatted amount
+                                    val amountFormatted = String.format(Locale.getDefault(), "%,.2f", if (tx.amount < 0) -tx.amount else tx.amount)
+                                    val amountText = if (tx.amount < 0) "-$amountFormatted" else "+$amountFormatted"
                                     val amountColor = if (tx.amount < 0) NavyDark else Color(0xFF10B981)
 
                                     Text(
                                         text = if (isBalanceVisible) amountText else "••••••",
                                         fontWeight = FontWeight.Black,
                                         fontSize = 15.sp,
-                                        color = amountColor
+                                        color = amountColor,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        modifier = Modifier.padding(start = 8.dp)
                                     )
                                 }
                             }

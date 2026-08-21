@@ -706,7 +706,7 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
         colors = CardDefaults.cardColors(containerColor = CardBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(Modifier.padding(20.dp)) {
+        Column(Modifier.padding(16.dp)) {
             // Header Row: Section Title and Compact Period Selector
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -787,37 +787,43 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
 
             Spacer(Modifier.height(16.dp))
 
-            // Tiny Insights Row
+            // Responsive Insights Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFF9FAFB), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                    .background(Color(0xFFF9FAFB), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
                     Box(
                         modifier = Modifier
                             .size(8.dp)
                             .background(PinkPrimary, CircleShape)
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(6.dp))
                     Text(
                         text = "Average: ${format.format(avgValue).replace(".00", "")} $periodAvgUnit",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = TextPrimary
+                        color = TextPrimary,
+                        maxLines = 1
                     )
                 }
 
                 if (peakPoint != null && peakPoint.value > 0) {
                     val peakStr = format.format(peakPoint.value).replace(".00", "")
+                    Spacer(Modifier.width(6.dp))
                     Text(
                         text = "Highest: ${peakPoint.label} · $peakStr",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = TextSecondary
+                        color = TextSecondary,
+                        maxLines = 1
                     )
                 }
             }

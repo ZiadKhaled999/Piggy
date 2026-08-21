@@ -170,18 +170,20 @@ fun GoalDetailScreen(
                         ) {
                             Text(stringResource(R.string.your_budget_title), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                             
-                            val isCompleted = goal.targetAmount > 0.0 && savedAmount >= goal.targetAmount
-                            Surface(
-                                color = if (isCompleted) androidx.compose.ui.graphics.Color(0xFFDCFCE7) else if (goal.targetAmount <= 0.0) androidx.compose.ui.graphics.Color(0xFFEFF6FF) else androidx.compose.ui.graphics.Color(0xFFE0E7FF),
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
-                                Text(
-                                    text = if (isCompleted) stringResource(R.string.completed_status) else if (goal.targetAmount <= 0.0) stringResource(R.string.open_savings).uppercase() else stringResource(R.string.in_progress_status),
-                                    color = if (isCompleted) androidx.compose.ui.graphics.Color(0xFF15803D) else if (goal.targetAmount <= 0.0) androidx.compose.ui.graphics.Color(0xFF1D4ED8) else androidx.compose.ui.graphics.Color(0xFF4338CA),
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                )
+                            if (goal.targetAmount > 0.0) {
+                                val isCompleted = savedAmount >= goal.targetAmount
+                                Surface(
+                                    color = if (isCompleted) androidx.compose.ui.graphics.Color(0xFFDCFCE7) else androidx.compose.ui.graphics.Color(0xFFE0E7FF),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Text(
+                                        text = if (isCompleted) stringResource(R.string.completed_status) else stringResource(R.string.in_progress_status),
+                                        color = if (isCompleted) androidx.compose.ui.graphics.Color(0xFF15803D) else androidx.compose.ui.graphics.Color(0xFF4338CA),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                }
                             }
                         }
                         
@@ -194,63 +196,7 @@ fun GoalDetailScreen(
                             border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0))
                         ) {
                             Column(modifier = Modifier.padding(20.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .background(androidx.compose.ui.graphics.Color.White, androidx.compose.foundation.shape.CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(Icons.Default.Add, contentDescription = null, tint = NavyDark) // Placeholder icon
-                                    }
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Column {
-                                        Text(goal.name, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                                        if (goal.targetAmount > 0.0) {
-                                            Text(if (isPrivacyMode) "$•••••• / $••••••" else "$${String.format("%.2f", savedAmount)} / $${String.format("%.2f", goal.targetAmount)}", color = TextLight, fontSize = 14.sp)
-                                        } else {
-                                            Text(if (isPrivacyMode) stringResource(R.string.amount_saved_simple, "••••••") + " (" + stringResource(R.string.open_savings) + ")" else stringResource(R.string.amount_saved_simple, String.format("%.2f", savedAmount)) + " (" + stringResource(R.string.open_savings) + ")", color = TextLight, fontSize = 14.sp)
-                                        }
-                                    }
-                                }
-                                
-                                if (goal.targetAmount > 0.0) {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    
-                                    LinearProgressIndicator(
-                                        progress = { if (isPrivacyMode) 0f else progress },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(8.dp)
-                                            .clip(RoundedCornerShape(4.dp)),
-                                        color = NavyDark,
-                                        trackColor = Color(0xFFCBD5E1)
-                                    )
-                                    
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(if (isPrivacyMode) "••%" else "${(progress * 100).toInt()}%", color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                        val remaining = goal.targetAmount - savedAmount
-                                        val remainingText = if (isPrivacyMode) {
-                                            stringResource(R.string.amount_left_simple, "••••••")
-                                        } else if (remaining < 0) {
-                                            stringResource(R.string.amount_extra_simple, String.format("%.2f", -remaining))
-                                        } else if (remaining == 0.0) {
-                                            stringResource(R.string.goal_reached_status)
-                                        } else {
-                                            stringResource(R.string.amount_left_simple, String.format("%.2f", remaining))
-                                        }
-                                        Text(remainingText, color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                                
                                 if (goal.targetAmount <= 0.0 || savedAmount < goal.targetAmount) {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    
                                     Button(
                                         onClick = { showDepositDialog = true },
                                         modifier = Modifier
@@ -264,8 +210,6 @@ fun GoalDetailScreen(
                                         Text(stringResource(R.string.add_deposit), fontWeight = FontWeight.Bold)
                                     }
                                 } else {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    
                                     Card(
                                         modifier = Modifier.fillMaxWidth(),
                                         colors = CardDefaults.cardColors(containerColor = PinkAccent.copy(alpha = 0.2f)),
@@ -414,15 +358,6 @@ fun GoalDetailScreen(
                         color = TextLight,
                         modifier = Modifier.padding(bottom = 6.dp)
                     )
-                } else {
-                    Text(
-                        text =  "\n(" + stringResource(R.string.open_savings) + ")",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = TextLight,
-                        modifier = Modifier.padding(bottom = 6.dp),
-                        textAlign = TextAlign.Center
-                    )
                 }
             }
         }
@@ -534,9 +469,19 @@ fun GoalDetailScreen(
                 
                 OutlinedTextField(
                     value = note,
-                    onValueChange = { note = it },
-                    label = { Text(stringResource(R.string.note_required_label), fontWeight = FontWeight.Bold) },
+                    onValueChange = { if (it.length <= 20) note = it },
+                    label = { Text(stringResource(R.string.payment_note), fontWeight = FontWeight.Bold) },
                     placeholder = { Text(stringResource(R.string.monthly_contribution_placeholder)) },
+                    supportingText = {
+                        Text(
+                            text = "${note.length}/20",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End,
+                            color = TextLight,
+                            fontSize = 11.sp
+                        )
+                    },
+                    singleLine = true,
                     textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -897,26 +842,64 @@ fun LazyListScope.transactionsContent(transactions: List<Transaction>, isPrivacy
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(PinkAccent.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.CallMade, contentDescription = null, tint = PinkAccent, modifier = Modifier.size(20.dp))
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(PinkAccent.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.CallMade,
+                        contentDescription = null,
+                        tint = PinkAccent,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    val noteText = tx.note.trim().takeIf { it.isNotBlank() } ?: stringResource(R.string.deposit_tx_note)
+                    Text(
+                        text = noteText,
+                        fontWeight = FontWeight.SemiBold,
+                        color = NavyDark,
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    val txDate = remember(tx.timestamp) {
+                        SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(tx.timestamp))
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(tx.note.takeIf { it.isNotBlank() } ?: stringResource(R.string.deposit_tx_note), fontWeight = FontWeight.SemiBold, color = NavyDark)
-                        val txDate = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(tx.timestamp))
-                        Text(txDate, color = TextLight, fontSize = 12.sp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = txDate,
+                            color = TextLight,
+                            fontSize = 12.sp,
+                            maxLines = 1
+                        )
+                        Text(
+                            text = "|",
+                            color = TextLight.copy(alpha = 0.6f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Light
+                        )
+                        val amountFormatted = String.format(Locale.getDefault(), "%,.2f", tx.amount)
+                        val amountStr = if (isPrivacyMode) "+$••••••" else "+$$amountFormatted"
+                        Text(
+                            text = amountStr,
+                            color = PinkAccent,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            softWrap = false
+                        )
                     }
                 }
-                Text(if (isPrivacyMode) "+$••••••" else "+$${String.format("%.2f", tx.amount)}", color = PinkAccent, fontWeight = FontWeight.Bold)
             }
         }
     }

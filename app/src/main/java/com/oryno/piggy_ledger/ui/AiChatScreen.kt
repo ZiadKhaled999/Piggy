@@ -73,6 +73,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.mikepenz.markdown.m3.Markdown
+import com.oryno.piggy_ledger.ai.ActiveChatState
 import com.mikepenz.markdown.m3.markdownColor
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -134,6 +135,7 @@ fun AiChatScreen(
 ) {
     val chatHistory by viewModel.chatHistory.collectAsStateWithLifecycle()
     val conversations by viewModel.conversations.collectAsStateWithLifecycle()
+    val activeChatState by viewModel.activeChatState.collectAsStateWithLifecycle()
     val activeConversationId by viewModel.activeConversationId.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -643,6 +645,7 @@ fun AiChatScreen(
         ) {
             ChatHistorySheetContent(
                 conversations = conversations,
+                activeChatState = activeChatState,
                 activeConversationId = activeConversationId,
                 searchQuery = searchQuery,
                 onSearchQueryChange = { viewModel.setSearchQuery(it) },
@@ -767,6 +770,7 @@ data class ConversationGroup(
 @Composable
 fun ChatHistorySheetContent(
     conversations: List<AiConversation>,
+    activeChatState: ActiveChatState = ActiveChatState.Draft,
     activeConversationId: String,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
@@ -990,7 +994,7 @@ fun ChatHistorySheetContent(
                         )
                     }
                     items(group.items, key = { it.id }) { conv ->
-                        val isSelected = conv.id == activeConversationId
+                        val isSelected = activeChatState is ActiveChatState.Existing && activeChatState.chatId == conv.id
 
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Surface(
@@ -1895,6 +1899,8 @@ fun ChatMessageItem(
                         is UiBlock.ReflectivePollBlock -> ReflectivePoll(block)
                         is UiBlock.LedgerItemBlock -> LedgerItem(block)
                         is UiBlock.ActionBannerBlock -> ActionBanner(block, onNavigateToPaywall)
+                        is UiBlock.HighlightTextBlock -> HighlightedText(block)
+                        is UiBlock.GroupBlock -> GroupBlockRenderer(block)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                 }
@@ -2826,6 +2832,77 @@ fun ActionBanner(block: UiBlock.ActionBannerBlock, onUpgradeClick: () -> Unit = 
                 tint = Color.White, 
                 modifier = Modifier.size(18.dp)
             )
+        }
+    }
+}
+
+@Composable
+fun HighlightedText(block: UiBlock.HighlightTextBlock) {
+    Surface(
+        color = Color(0xFFFCE7F3),
+        shape = RoundedCornerShape(4.dp),
+        modifier = Modifier.padding(vertical = 2.dp)
+    ) {
+        Text(
+            text = block.text,
+            color = Color(0xFFDB2777),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+        )
+    }
+}
+
+@Composable
+fun GroupBlockRenderer(block: UiBlock.GroupBlock) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = block.title,
+            color = AiTextSecondary,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        if (block.type == "CIRCLE") {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                block.items.forEach { item ->
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(CircleShape)
+                                .background(AiGeminiBlue),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = item.title.take(2).uppercase(),
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(item.value, fontSize = 11.sp, textAlign = TextAlign.Center)
+                    }
+                }
+            }
+        } else { // Default to CARD
+            block.items.forEach { item ->
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(item.title, fontWeight = FontWeight.Medium)
+                        Text(item.value, fontWeight = FontWeight.Bold, color = AiPiggyPink)
+                    }
+                }
+            }
         }
     }
 }

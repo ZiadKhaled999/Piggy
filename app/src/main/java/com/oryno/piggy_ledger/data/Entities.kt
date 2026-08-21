@@ -56,14 +56,6 @@ data class Loan(
 @Serializable
 @Entity(
     tableName = "loan_payments",
-    foreignKeys = [
-        androidx.room.ForeignKey(
-            entity = Loan::class,
-            parentColumns = ["id"],
-            childColumns = ["loanId"],
-            onDelete = androidx.room.ForeignKey.CASCADE
-        )
-    ],
     indices = [androidx.room.Index("loanId")]
 )
 data class LoanPayment(

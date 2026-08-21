@@ -2,7 +2,9 @@ package com.oryno.piggy_ledger.ui
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -58,6 +60,8 @@ import com.clerk.api.signin.verifyWithPassword
 import com.clerk.api.signup.SignUp
 import com.clerk.api.signup.sendEmailCode
 import com.clerk.api.signup.verifyCode
+import com.clerk.api.user.setProfileImage
+import com.clerk.api.user.reload
 import com.oryno.piggy_ledger.R
 import com.posthog.PostHog
 import kotlinx.coroutines.delay
@@ -904,12 +908,196 @@ fun AuthScreen(
 
                 AuthRoute.SU_AVATAR -> {
                     // Sign Up: Avatar & Crop
-                    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                    var showPhotoSourceSheet by remember { mutableStateOf(false) }
+                    var selectedRawUri by remember { mutableStateOf<Uri?>(null) }
+                    var tempCameraCaptureUri by remember { mutableStateOf<Uri?>(null) }
+
+                    val photoPickerLauncher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.PickVisualMedia()
+                    ) { uri ->
                         if (uri != null) {
-                            suAvatarUri = uri
-                            suAvatarScale = 1f
-                            suAvatarOffset = Offset.Zero
+                            selectedRawUri = uri
                         }
+                    }
+
+                    val cameraLauncher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.TakePicture()
+                    ) { success ->
+                        if (success && tempCameraCaptureUri != null) {
+                            selectedRawUri = tempCameraCaptureUri
+                        }
+                    }
+
+                    if (showPhotoSourceSheet) {
+                        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                        ModalBottomSheet(
+                            onDismissRequest = { showPhotoSourceSheet = false },
+                            sheetState = sheetState,
+                            containerColor = Color.White,
+                            dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFF0F172A).copy(alpha = 0.2f)) },
+                            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp)
+                                    .padding(top = 8.dp, bottom = 36.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.profile_photo_sheet_title),
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                    IconButton(
+                                        onClick = { showPhotoSourceSheet = false },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Close",
+                                            tint = Color(0xFF94A3B8),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // Option 1: Gallery
+                                Surface(
+                                    onClick = {
+                                        showPhotoSourceSheet = false
+                                        try {
+                                            photoPickerLauncher.launch(
+                                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                            )
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("AuthScreen", "Failed to launch picker", e)
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = Color(0xFFF8FAFC),
+                                    border = BorderStroke(1.dp, Color(0xFFF1F5F9))
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(44.dp)
+                                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.PhotoLibrary,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(16.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = stringResource(R.string.choose_from_gallery),
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = Color(0xFF0F172A)
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = Icons.Default.ChevronRight,
+                                            contentDescription = null,
+                                            tint = Color(0xFF94A3B8),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                // Option 2: Camera
+                                Surface(
+                                    onClick = {
+                                        showPhotoSourceSheet = false
+                                        try {
+                                            val tempFile = java.io.File(context.cacheDir, "camera_signup_${System.currentTimeMillis()}.jpg")
+                                            val uri = FileProvider.getUriForFile(
+                                                context,
+                                                "${context.packageName}.fileprovider",
+                                                tempFile
+                                            )
+                                            tempCameraCaptureUri = uri
+                                            cameraLauncher.launch(uri)
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("AuthScreen", "Failed to launch camera", e)
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = Color(0xFFF8FAFC),
+                                    border = BorderStroke(1.dp, Color(0xFFF1F5F9))
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(44.dp)
+                                                .background(Color(0xFF3B82F6).copy(alpha = 0.12f), CircleShape),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.CameraAlt,
+                                                contentDescription = null,
+                                                tint = Color(0xFF3B82F6),
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(16.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = stringResource(R.string.take_photo),
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = Color(0xFF0F172A)
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = Icons.Default.ChevronRight,
+                                            contentDescription = null,
+                                            tint = Color(0xFF94A3B8),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (selectedRawUri != null) {
+                        ImageCropEditorDialog(
+                            imageUri = selectedRawUri!!,
+                            onDismiss = { selectedRawUri = null },
+                            onConfirm = { croppedUri ->
+                                selectedRawUri = null
+                                suAvatarUri = croppedUri
+                                suAvatarScale = 1f
+                                suAvatarOffset = Offset.Zero
+                            }
+                        )
                     }
 
                     Column(
@@ -945,7 +1133,7 @@ fun AuthScreen(
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                                 .border(3.dp, MaterialTheme.colorScheme.primaryContainer, CircleShape)
-                                .clickable { launcher.launch("image/*") }
+                                .clickable { showPhotoSourceSheet = true }
                                 .pointerInput(Unit) {
                                     detectTransformGestures { _, pan, zoom, _ ->
                                         suAvatarScale = (suAvatarScale * zoom).coerceIn(1f, 5f)
@@ -988,7 +1176,7 @@ fun AuthScreen(
 
                         Spacer(modifier = Modifier.height(20.dp))
                         OutlinedButton(
-                            onClick = { launcher.launch("image/*") },
+                            onClick = { showPhotoSourceSheet = true },
                             shape = RoundedCornerShape(100.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1011,6 +1199,28 @@ fun AuthScreen(
                                 val photoUrl = suAvatarUri?.toString() ?: user?.imageUrl ?: ""
                                 viewModel.setAuthUser(email, name, photoUrl)
                                 viewModel.triggerCloudSync()
+                                if (suAvatarUri != null) {
+                                    val uri = suAvatarUri!!
+                                    scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                        val tempFile = java.io.File(context.cacheDir, "clerk_avatar_${System.currentTimeMillis()}.jpg")
+                                        try {
+                                            context.contentResolver.openInputStream(uri)?.use { input ->
+                                                java.io.FileOutputStream(tempFile).use { output ->
+                                                    input.copyTo(output)
+                                                }
+                                            }
+                                            val currentUser = Clerk.userFlow.value ?: Clerk.user
+                                            if (currentUser != null && tempFile.exists() && tempFile.length() > 0) {
+                                                currentUser.setProfileImage(tempFile)
+                                                currentUser.reload()
+                                            }
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("AuthScreen", "Failed to upload avatar to Clerk", e)
+                                        } finally {
+                                            if (tempFile.exists()) tempFile.delete()
+                                        }
+                                    }
+                                }
                                 PostHog.capture(event = "user_sign_in", properties = mapOf("method" to "clerk", "user_id" to email))
                                 onAuthSuccess()
                             },

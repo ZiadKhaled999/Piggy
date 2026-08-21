@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.oryno.piggy_ledger.data.AiChatMessage
 import com.oryno.piggy_ledger.data.AiConversation
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +16,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.util.UUID
+
+sealed class ActiveChatState {
+    object Draft : ActiveChatState()
+    data class Existing(val chatId: String) : ActiveChatState()
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AiChatViewModel(
@@ -81,28 +87,26 @@ class AiChatViewModel(
         }
     }
 
-    private val _activeConversationId = MutableStateFlow<String>("")
-    val activeConversationId: StateFlow<String> = _activeConversationId.asStateFlow()
+    private val _activeChatState = MutableStateFlow<ActiveChatState>(ActiveChatState.Draft)
+    val activeChatState: StateFlow<ActiveChatState> = _activeChatState.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            conversations.collect { list ->
-                if (_activeConversationId.value.isBlank()) {
-                    if (list.isNotEmpty()) {
-                        _activeConversationId.value = list.first().id
-                    } else {
-                        createNewConversation()
-                    }
-                }
-            }
+    val activeConversationId: StateFlow<String> = _activeChatState.map { state ->
+        when (state) {
+            is ActiveChatState.Draft -> ""
+            is ActiveChatState.Existing -> state.chatId
         }
-    }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ""
+    )
 
-    val chatHistory: StateFlow<List<AiChatMessage>> = _activeConversationId.flatMapLatest { id ->
-        if (id.isBlank()) {
-            flowOf(emptyList())
-        } else {
-            repository.getChatMessagesForConversation(id)
+    // No automatic forced override of Draft state; user starts in Draft and only switches on selection or message submission
+
+    val chatHistory: StateFlow<List<AiChatMessage>> = _activeChatState.flatMapLatest { state ->
+        when (state) {
+            is ActiveChatState.Draft -> flowOf(emptyList())
+            is ActiveChatState.Existing -> repository.getChatMessagesForConversation(state.chatId)
         }
     }.stateIn(
         scope = viewModelScope,
@@ -178,22 +182,22 @@ class AiChatViewModel(
         - Do NOT write next steps as paragraph text or bullet points in your main answer body.
     """.trimIndent()
 
-    fun createNewConversation() {
-        viewModelScope.launch {
-            val newId = UUID.randomUUID().toString()
-            val newConv = AiConversation(
-                id = newId,
-                title = "New Chat",
-                createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis()
-            )
-            repository.saveConversation(newConv)
-            _activeConversationId.value = newId
+    fun onNewChatClicked() {
+        // Guard 1: Already sitting on an empty chat or unstarted draft
+        if (chatHistory.value.isEmpty() && _activeChatState.value is ActiveChatState.Draft) {
+            return
         }
+
+        // Action: Set local draft state without touching the DB
+        _activeChatState.value = ActiveChatState.Draft
+    }
+
+    fun createNewConversation() {
+        onNewChatClicked()
     }
 
     fun selectConversation(id: String) {
-        _activeConversationId.value = id
+        _activeChatState.value = ActiveChatState.Existing(id)
     }
 
     fun deleteConversation(id: String) {
@@ -202,11 +206,12 @@ class AiChatViewModel(
                 repository.deleteConversation(context, id)
             }
             val currentList = conversations.value.filter { it.id != id }
-            if (_activeConversationId.value == id) {
+            val currentId = (_activeChatState.value as? ActiveChatState.Existing)?.chatId
+            if (currentId == id) {
                 if (currentList.isNotEmpty()) {
-                    _activeConversationId.value = currentList.first().id
+                    _activeChatState.value = ActiveChatState.Existing(currentList.first().id)
                 } else {
-                    createNewConversation()
+                    _activeChatState.value = ActiveChatState.Draft
                 }
             }
         }
@@ -216,14 +221,20 @@ class AiChatViewModel(
         activeGenerationJob?.cancel()
         activeGenerationJob = viewModelScope.launch {
             try {
-                var convId = activeConversationId.value
-                if (convId.isBlank()) {
-                    val newId = UUID.randomUUID().toString()
-                    val newConv = AiConversation(id = newId, title = "New Chat")
-                    repository.saveConversation(newConv)
-                    _activeConversationId.value = newId
-                    convId = newId
+                val targetChatId = when (val state = _activeChatState.value) {
+                    is ActiveChatState.Draft -> {
+                        // Create DB row ONLY when the first message is submitted
+                        val newId = UUID.randomUUID().toString()
+                        val rawTitle = userText.trim()
+                        val titleText = if (rawTitle.length > 30) rawTitle.take(30) + "…" else rawTitle
+                        val newConv = AiConversation(id = newId, title = if (titleText.isNotBlank()) titleText else "New Chat")
+                        repository.saveConversation(newConv)
+                        _activeChatState.value = ActiveChatState.Existing(newId)
+                        newId
+                    }
+                    is ActiveChatState.Existing -> state.chatId
                 }
+                val convId = targetChatId
 
                 // Check 3-message limit for free users
                 val isPro = isPremium.value

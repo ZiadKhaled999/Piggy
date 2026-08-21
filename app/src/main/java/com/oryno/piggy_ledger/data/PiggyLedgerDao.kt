@@ -106,6 +106,9 @@ interface PiggyLedgerDao {
     @Query("DELETE FROM loan_payments WHERE id = :id")
     suspend fun deleteLoanPaymentById(id: String)
 
+    @Query("DELETE FROM loan_payments WHERE loanId = :loanId")
+    suspend fun deleteLoanPaymentsForLoan(loanId: String)
+
     @Query("SELECT * FROM loan_payments")
     suspend fun getAllLoanPaymentsSync(): List<LoanPayment>
 

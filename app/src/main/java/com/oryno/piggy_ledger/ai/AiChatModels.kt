@@ -83,6 +83,24 @@ sealed class UiBlock {
         val message: String = "",
         @SerialName("action_payload") val actionPayload: String = ""
     ) : UiBlock()
+
+    @Serializable
+    @SerialName("HIGHLIGHT_TEXT")
+    data class HighlightTextBlock(
+        val text: String = "",
+        val color: String = "PINK"
+    ) : UiBlock()
+
+    @Serializable
+    @SerialName("GROUP_BLOCK")
+    data class GroupBlock(
+        val title: String = "",
+        val type: String = "CARD", // CARD or CIRCLE
+        val items: List<GroupItem> = emptyList()
+    ) : UiBlock() {
+        @Serializable
+        data class GroupItem(val title: String = "", val value: String = "")
+    }
 }
 
 // Groq API Models

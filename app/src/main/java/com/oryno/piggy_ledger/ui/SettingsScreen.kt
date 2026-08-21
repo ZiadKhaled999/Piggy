@@ -417,6 +417,11 @@ fun DetailSettingsView(
     android.util.Log.d("DetailSettingsView", "Entering DetailSettingsView with mode: $mode")
     val context = LocalContext.current
     val isPremium by viewModel.isPremium.collectAsState()
+
+    if (mode == SettingsMode.PRO && !isPremium) {
+        PiggyLedgerProView(viewModel = viewModel, onClose = onBack)
+        return
+    }
     
     if (mode == SettingsMode.PROFILE) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -450,7 +455,9 @@ fun DetailSettingsView(
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (mode == SettingsMode.PRO) Modifier.padding(horizontal = 24.dp) else Modifier)
         ) {
             IconButton(onClick = onBack) {
                 Icon(
@@ -683,7 +690,7 @@ fun DetailSettingsView(
                 SecuritySettingsView(viewModel = viewModel)
             }
             SettingsMode.PRO -> {
-                PiggyLedgerProView(viewModel = viewModel)
+                PiggyLedgerProView(viewModel = viewModel, onClose = onBack)
             }
             SettingsMode.ACCOUNT_IDENTIFIERS -> {
                 android.util.Log.d("DetailSettingsView", "Calling AccountIdentifiersView")
@@ -958,7 +965,10 @@ fun SettingsLanguageOption(
 }
 
 @Composable
-fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
+fun PiggyLedgerProView(
+    viewModel: PiggyLedgerViewModel,
+    onClose: (() -> Unit)? = null
+) {
     val isPremiumState by viewModel.isPremium.collectAsStateWithLifecycle()
     var isPro by remember { mutableStateOf<Boolean?>(null) }
     var customerInfo by remember { mutableStateOf<com.revenuecat.purchases.CustomerInfo?>(null) }
@@ -1006,124 +1016,98 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF8FAFC))
+                .background(Color.White)
                 .verticalScroll(rememberScrollState())
-                .padding(vertical = 12.dp),
+                .padding(horizontal = 24.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 1. Top Hero Image
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            // 1. Top Hero Image (Clean, No Card/Border)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(if (isCompact) 180.dp else 220.dp)
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(if (isCompact) 180.dp else 220.dp)
-                        .padding(12.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.piggy_pro),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
-                    )
-                }
+                Image(
+                    painter = painterResource(id = R.drawable.piggy_pro),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 2. Full-Width Clean Content Container (No Box Borders)
-            Card(
+            // 2. Pro Title & Description (Clean, No Card/Border)
+            Text(
+                text = stringResource(R.string.pro_title),
+                fontSize = if (isCompact) 22.sp else 26.sp,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF0F172A),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = stringResource(R.string.pro_desc),
+                fontSize = if (isCompact) 13.sp else 15.sp,
+                color = Color(0xFF64748B),
+                textAlign = TextAlign.Center,
+                lineHeight = if (isCompact) 18.sp else 22.sp,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // 3. Features List (Clean, borderless list rows)
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RectangleShape,
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(if (isCompact) 16.dp else 20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = stringResource(R.string.pro_title),
-                        fontSize = if (isCompact) 20.sp else 24.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFF0F172A),
-                        textAlign = TextAlign.Center
-                    )
+                val features = listOf(
+                    stringResource(R.string.pro_feature_ai),
+                    stringResource(R.string.pro_feature_1),
+                    stringResource(R.string.pro_feature_2),
+                    stringResource(R.string.pro_feature_3),
+                    stringResource(R.string.pro_feature_4),
+                    stringResource(R.string.pro_feature_5)
+                )
 
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Text(
-                        text = stringResource(R.string.pro_desc),
-                        fontSize = if (isCompact) 13.sp else 14.sp,
-                        color = Color(0xFF64748B),
-                        textAlign = TextAlign.Center,
-                        lineHeight = if (isCompact) 18.sp else 20.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // 3. Full-Width Features List
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                features.forEach { feature ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val features = listOf(
-                            stringResource(R.string.pro_feature_ai),
-                            stringResource(R.string.pro_feature_1),
-                            stringResource(R.string.pro_feature_2),
-                            stringResource(R.string.pro_feature_3),
-                            stringResource(R.string.pro_feature_4),
-                            stringResource(R.string.pro_feature_5)
-                        )
-
-                        features.forEach { feature ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFFF8FAFC))
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .background(PinkPrimary.copy(alpha = 0.12f), CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = PinkPrimary,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = feature,
-                                    fontSize = if (isCompact) 13.sp else 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF334155),
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .background(PinkPrimary.copy(alpha = 0.12f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = PinkPrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Text(
+                            text = feature,
+                            fontSize = if (isCompact) 14.sp else 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF1E293B),
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
         }
     } else {
         PiggyLedgerPaywall(
@@ -1131,7 +1115,8 @@ fun PiggyLedgerProView(viewModel: PiggyLedgerViewModel) {
             onPurchaseSuccess = { info ->
                 customerInfo = info
                 isPro = true
-            }
+            },
+            onClose = onClose
         )
     }
 }
@@ -1296,8 +1281,8 @@ fun PiggyLedgerPaywall(
             tabLabel = stringResource(R.string.plan_monthly),
             badgeName = stringResource(R.string.plan_monthly),
             headerSubtitle = stringResource(R.string.plan_monthly_desc),
-            priceText = monthlyPackage?.product?.price?.formatted ?: "$9.99 / mo",
-            renewalCaption = stringResource(R.string.plan_monthly_renew, monthlyPackage?.product?.price?.formatted ?: "$9.99"),
+            priceText = monthlyPackage?.product?.price?.formatted ?: "$4.99 / mo",
+            renewalCaption = stringResource(R.string.plan_monthly_renew, monthlyPackage?.product?.price?.formatted ?: "$4.99"),
             ctaText = stringResource(R.string.upgrade_monthly),
             accentColor = Color(0xFF2563EB)
         )
@@ -1305,8 +1290,8 @@ fun PiggyLedgerPaywall(
             tabLabel = stringResource(R.string.plan_yearly),
             badgeName = stringResource(R.string.plan_yearly),
             headerSubtitle = stringResource(R.string.plan_yearly_desc),
-            priceText = yearlyPackage?.product?.price?.formatted ?: "$99.99 / yr",
-            renewalCaption = stringResource(R.string.plan_yearly_renew, yearlyPackage?.product?.price?.formatted ?: "$99.99"),
+            priceText = yearlyPackage?.product?.price?.formatted ?: "$49.99 / yr",
+            renewalCaption = stringResource(R.string.plan_yearly_renew, yearlyPackage?.product?.price?.formatted ?: "$49.99"),
             ctaText = stringResource(R.string.upgrade_yearly),
             tag = stringResource(R.string.save_17_percent),
             accentColor = Color(0xFF7C3AED)
@@ -1347,31 +1332,6 @@ fun PiggyLedgerPaywall(
                 .padding(bottom = 36.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Top Bar with back button if onClose provided
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (onClose != null) {
-                    IconButton(
-                        onClick = onClose,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(Color(0xFFF1F5F9), CircleShape)
-                            .border(1.dp, Color(0xFFE2E8F0), CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color(0xFF0F172A),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-
             // Header Title & Subtitle
             Column(
                 modifier = Modifier

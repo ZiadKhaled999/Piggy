@@ -308,7 +308,7 @@ fun EditAccountScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(if (isSelected) PinkPrimary.copy(alpha = 0.1f) else Color(0xFFF8FAFC))
+                                    .background(if (isSelected) PinkPrimary.copy(alpha = 0.1f) else Color.White)
                                     .clickable { 
                                         type = accType 
                                         provider = ""
@@ -332,7 +332,7 @@ fun EditAccountScreen(
                                         color = if (isSelected) PinkPrimary else Color(0xFFE2E8F0),
                                         shape = RoundedCornerShape(12.dp)
                                     )
-                                    .padding(vertical = 12.dp),
+                                    .padding(horizontal = 4.dp, vertical = 12.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Row(
@@ -343,13 +343,15 @@ fun EditAccountScreen(
                                         imageVector = icon,
                                         contentDescription = null,
                                         tint = if (isSelected) PinkPrimary else Color(0xFF64748B),
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(15.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = label,
-                                        fontSize = 13.sp,
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        softWrap = false,
                                         color = if (isSelected) PinkPrimary else Color(0xFF334155)
                                     )
                                 }

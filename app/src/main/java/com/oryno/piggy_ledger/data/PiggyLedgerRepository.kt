@@ -98,7 +98,7 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
             triggerSync()
         }
     }
-    suspend fun deleteLoan(id: String) { dao.deleteLoanById(id); try { com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("loans", id) } catch(e: Exception){}; triggerSync() }
+    suspend fun deleteLoan(id: String) { dao.deleteLoanPaymentsForLoan(id); dao.deleteLoanById(id); try { com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("loans", id) } catch(e: Exception){}; triggerSync() }
 
     suspend fun deleteGoal(id: String) {
         dao.deleteTransactionsForGoal(id)

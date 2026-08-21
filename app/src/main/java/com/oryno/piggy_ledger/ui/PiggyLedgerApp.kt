@@ -157,6 +157,7 @@ fun PiggyLedgerApp(
                         },
                         onAlreadyHaveAccount = {
                             viewModel.completeLanguageSelection()
+                            viewModel.completeHearAboutUs("already_have_account")
                             viewModel.completeOnboarding(1, 1, "Balanced")
                             navController.navigate(Screen.Auth) {
                                 popUpTo(Screen.LanguageSelection) { inclusive = true }

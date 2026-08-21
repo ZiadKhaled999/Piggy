@@ -13,7 +13,7 @@ Piggy Ledger Pro offers three flexible tiers designed to suit your budget and pe
 ---
 
 ## 2. Annual Subscription Plan (Best Value / Recommended)
-- **Billing Cycle**: Billed once per year (equivalent to **over 50% savings** compared to monthly pricing).
+- **Billing Cycle**: Billed once per year (equivalent to **17% savings** compared to monthly pricing).
 - **Free Trial**: Includes a 7-day risk-free trial period.
 - **Ideal For**: Serious financial trackers who want long-term habit building at the most cost-effective annual rate.
 

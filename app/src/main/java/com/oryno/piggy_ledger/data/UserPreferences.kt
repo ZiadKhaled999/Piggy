@@ -253,10 +253,22 @@ class UserPreferences(private val context: Context) {
         }
     }
 
-    suspend fun clearAll() {
+    suspend fun clearForLogout() {
         context.dataStore.edit { prefs ->
+            val hasOnboarded = prefs[HAS_ONBOARDED] ?: true
+            val hasLanguageSelected = prefs[HAS_LANGUAGE_SELECTED] ?: true
+            val hasHeardAboutUs = prefs[HAS_HEARD_ABOUT_US] ?: true
+
             prefs.clear()
+
+            prefs[HAS_ONBOARDED] = hasOnboarded
+            prefs[HAS_LANGUAGE_SELECTED] = hasLanguageSelected
+            prefs[HAS_HEARD_ABOUT_US] = hasHeardAboutUs
         }
+    }
+
+    suspend fun clearAll() {
+        clearForLogout()
     }
 
     private fun triggerSync(context: Context) {

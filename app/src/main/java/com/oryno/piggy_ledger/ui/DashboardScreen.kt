@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.clerk.api.Clerk
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.widget.Toast
@@ -134,8 +136,8 @@ fun DashboardScreen(
     }
 
     val userPhotoUrl = remember(user, authUserPhotoUrl) {
-        val url = user?.imageUrl ?: authUserPhotoUrl
-        url.ifBlank { null }
+        val url = if (authUserPhotoUrl.isNotBlank()) authUserPhotoUrl else user?.imageUrl
+        url?.ifBlank { null }
     }
 
     val totalBalance = accounts.sumOf { it.current_balance }
@@ -838,10 +840,15 @@ fun VirtualCardsWidget(
                         ) {
                             Text(
                                 text = if (accounts.size <= 1) "TOTAL BALANCE" else "${currentAccount?.name?.uppercase() ?: "CARD"} BALANCE",
-                                color = Color.White.copy(alpha = 0.8f),
+                                color = Color.White.copy(alpha = 0.85f),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
+                                letterSpacing = 0.8.sp,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .weight(1f, fill = false)
+                                    .padding(end = 8.dp)
                             )
                             
                             Row(
@@ -1085,7 +1092,11 @@ fun PremiumAvatar(
             ) {
                 if (imageUrl != null) {
                     AsyncImage(
-                        model = imageUrl,
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(imageUrl)
+                            .memoryCachePolicy(CachePolicy.DISABLED)
+                            .diskCachePolicy(CachePolicy.DISABLED)
+                            .build(),
                         contentDescription = "Profile",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop

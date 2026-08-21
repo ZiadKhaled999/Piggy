@@ -302,7 +302,7 @@ fun AddAccountScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(if (isSelected) PinkPrimary.copy(alpha = 0.1f) else Color(0xFFF8FAFC))
+                                    .background(if (isSelected) PinkPrimary.copy(alpha = 0.1f) else Color.White)
                                     .clickable { 
                                         type = accType 
                                         provider = ""
@@ -326,7 +326,7 @@ fun AddAccountScreen(
                                         color = if (isSelected) PinkPrimary else Color(0xFFE2E8F0),
                                         shape = RoundedCornerShape(12.dp)
                                     )
-                                    .padding(vertical = 12.dp),
+                                    .padding(horizontal = 4.dp, vertical = 12.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Row(
@@ -337,13 +337,15 @@ fun AddAccountScreen(
                                         imageVector = icon,
                                         contentDescription = null,
                                         tint = if (isSelected) PinkPrimary else Color(0xFF64748B),
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(15.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = label,
-                                        fontSize = 13.sp,
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        softWrap = false,
                                         color = if (isSelected) PinkPrimary else Color(0xFF334155)
                                     )
                                 }
@@ -980,27 +982,22 @@ fun AddAccountScreen(
 
 @Composable
 fun SectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Column {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         Text(
             text = title,
-            fontSize = 15.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = NavyDark,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
         )
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(20.dp)),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(20.dp)
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                content()
-            }
+            content()
         }
     }
 }

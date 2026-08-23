@@ -50,15 +50,8 @@ class SyncManager(private val context: Context) {
 
         val authHeader = getAuthHeader()
 
-        // Always attempt to sync onboarding answers, even if unauthenticated
-        try {
-            syncOnboardingAnswers(userId, authHeader)
-        } catch (e: Exception) {
-            Log.e("SyncManager", "Failed to sync onboarding answers", e)
-        }
-
         if (user == null || authHeader == null) {
-            Log.w("SyncManager", "❌ No authenticated user (Clerk.userFlow.value is null) or Auth header is null. Skipping cloud sync.")
+            Log.w("SyncManager", "❌ No authenticated user or Auth header is null. Skipping cloud sync.")
             return@withContext
         }
 
@@ -67,6 +60,7 @@ class SyncManager(private val context: Context) {
         Log.i("SyncManager", "✅ Authenticated user found: userId=$nonNullUserId. Starting syncAll...")
 
         try {
+            syncOnboardingAnswers(nonNullUserId, authHeader)
             syncUserPreferences(nonNullUserId, authHeader)
             syncStreakDates(nonNullUserId, authHeader)
             syncGoals(nonNullUserId, authHeader)
@@ -81,8 +75,7 @@ class SyncManager(private val context: Context) {
 
             Log.i("SyncManager", "Sync completed successfully.")
         } catch (e: Exception) {
-            Log.e("SyncManager", "Sync failed", e)
-            throw e
+            Log.w("SyncManager", "Sync skipped/failed: ${e.message}")
         }
     }
 
@@ -92,25 +85,30 @@ class SyncManager(private val context: Context) {
         items: List<T>
     ): Boolean {
         if (items.isEmpty()) return true
+        if (authHeader.isNullOrBlank()) {
+            Log.d("SyncManager", "Skipping push to $tableName: user is unauthenticated.")
+            return false
+        }
         Log.d("SyncManager", "⬆️ Pushing ${items.size} items to $tableName")
         return try {
             val response = ktorClient.post("$apiUrl/sync/push/$tableName") {
-                if (authHeader != null) {
-                    header(HttpHeaders.Authorization, authHeader)
-                }
+                header(HttpHeaders.Authorization, authHeader)
                 contentType(ContentType.Application.Json)
                 setBody(items)
             }
             if (response.status.isSuccess()) {
                 Log.i("SyncManager", "✅ Successfully pushed ${items.size} items to $tableName")
                 true
+            } else if (response.status == HttpStatusCode.Unauthorized) {
+                Log.w("SyncManager", "Push to $tableName unauthorized (401): session may be expired.")
+                false
             } else {
                 val body = response.bodyAsText()
-                Log.e("SyncManager", "Failed to push to $tableName: ${response.status}, body: $body")
+                Log.w("SyncManager", "Failed to push to $tableName: ${response.status}, body: $body")
                 false
             }
         } catch (e: Exception) {
-            Log.e("SyncManager", "Error pushing to $tableName", e)
+            Log.w("SyncManager", "Error pushing to $tableName: ${e.message}")
             false
         }
     }
@@ -119,23 +117,28 @@ class SyncManager(private val context: Context) {
         tableName: String,
         authHeader: String?
     ): List<T>? {
+        if (authHeader.isNullOrBlank()) {
+            Log.d("SyncManager", "Skipping pull from $tableName: user is unauthenticated.")
+            return null
+        }
         Log.d("SyncManager", "Fetching items from $tableName")
         return try {
             val response = ktorClient.get("$apiUrl/sync/pull/$tableName") {
-                if (authHeader != null) {
-                    header(HttpHeaders.Authorization, authHeader)
-                }
+                header(HttpHeaders.Authorization, authHeader)
             }
             if (response.status.isSuccess()) {
                 val remoteItems: List<T> = response.body()
                 Log.i("SyncManager", "Successfully fetched ${remoteItems.size} items from $tableName")
                 remoteItems
+            } else if (response.status == HttpStatusCode.Unauthorized) {
+                Log.w("SyncManager", "Pull from $tableName unauthorized (401): session may be expired.")
+                null
             } else {
-                Log.e("SyncManager", "Failed to fetch from $tableName: ${response.status}")
+                Log.w("SyncManager", "Failed to fetch from $tableName: ${response.status}")
                 null
             }
         } catch (e: Exception) {
-            Log.e("SyncManager", "Error fetching from $tableName", e)
+            Log.w("SyncManager", "Error fetching from $tableName: ${e.message}")
             null
         }
     }

@@ -540,6 +540,7 @@
     <string name="select_account_prompt">Choose an account to link this transaction to:</string>
     <string name="resolve_success">Transaction successfully routed!</string>
     <string name="discard_pending_success">Pending transaction discarded</string>
+    <string name="discard_transaction">Discard Transaction</string>
     <string name="no_pending_transactions">No Pending Transactions</string>
     <string name="no_pending_transactions_desc">All automatic SMS payments have been successfully routed to your accounts.</string>
     <string name="logs_timeline">Logs Timeline</string>

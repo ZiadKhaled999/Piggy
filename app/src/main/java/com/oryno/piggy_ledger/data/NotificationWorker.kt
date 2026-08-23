@@ -37,7 +37,7 @@ class NotificationWorker(
                         }
 
                         override fun onError(error: com.revenuecat.purchases.PurchasesError) {
-                            Log.e("NotificationWorker", "Failed to check RevenueCat: \${error.message}")
+                            Log.w("NotificationWorker", "RevenueCat check unavailable: ${error.message}")
                             continuation.resume(false)
                         }
                     }

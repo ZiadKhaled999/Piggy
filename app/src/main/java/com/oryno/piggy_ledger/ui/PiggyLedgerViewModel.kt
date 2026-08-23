@@ -331,13 +331,13 @@ class PiggyLedgerViewModel(
                                     setPremiumStatus(isProActive)
                                 }
                                 override fun onError(error: com.revenuecat.purchases.PurchasesError) {
-                                    android.util.Log.e("PiggyLedgerVM", "RevenueCat logIn error: ${error.message}")
+                                    android.util.Log.w("PiggyLedgerVM", "RevenueCat logIn warning: ${error.message}")
                                 }
                             }
                         )
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("PiggyLedgerVM", "RevenueCat logIn exception", e)
+                    android.util.Log.w("PiggyLedgerVM", "RevenueCat logIn exception: ${e.message}")
                 }
             }
         }

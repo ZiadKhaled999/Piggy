@@ -210,7 +210,7 @@ fun SettingsScreen(
     onBackClick: (() -> Unit)? = null,
     onSignOutClick: (() -> Unit)? = null
 ) {
-    var modeStack by remember { mutableStateOf(listOf(initialMode)) }
+    var modeStack by remember(initialMode) { mutableStateOf(listOf(initialMode)) }
     val settingsMode = modeStack.lastOrNull() ?: SettingsMode.MAIN
     val context = LocalContext.current
 
@@ -320,14 +320,7 @@ fun SettingsMainContent(
         SettingsItem(
             title = stringResource(R.string.give_feedback),
             iconRes = R.drawable.img_settings_feedback,
-            onClick = {
-                try {
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://piggy-ledger.featureos.app"))
-                    context.startActivity(intent)
-                } catch (e: Exception) {
-                    com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.browser_error), android.widget.Toast.LENGTH_SHORT)
-                }
-            }
+            onClick = { onModeChange(SettingsMode.FEEDBACK) }
         )
         
         SettingsItem(
@@ -431,6 +424,20 @@ fun DetailSettingsView(
     val context = LocalContext.current
     val isPremium by viewModel.isPremium.collectAsState()
 
+    val authUserName by viewModel.authUserName.collectAsState()
+    val authUserEmail by viewModel.authUserEmail.collectAsState()
+
+    val categories = listOf("Bug Report", "Feature Request", "UI / UX", "Sync & Data", "Billing / Pro", "Others")
+    var selectedCategory by remember { mutableStateOf("Bug Report") }
+    var feedbackMessage by remember { mutableStateOf("") }
+    var selectedAttachmentUri by remember { mutableStateOf<Uri?>(null) }
+
+    val attachmentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        selectedAttachmentUri = uri
+    }
+
     if (mode == SettingsMode.PRO && !isPremium) {
         PiggyLedgerProView(viewModel = viewModel, onClose = onBack)
         return
@@ -502,198 +509,375 @@ fun DetailSettingsView(
 
         when (mode) {
             SettingsMode.LANGUAGE -> {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(110.dp),
-                    contentAlignment = Alignment.Center
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.img_settings_language),
-                        contentDescription = stringResource(R.string.language_illustration),
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(16.dp)),
-                        contentScale = ContentScale.Fit
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(110.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_settings_language),
+                            contentDescription = stringResource(R.string.language_illustration),
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(16.dp)),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                    
+                    SettingsLanguageOption(
+                        title = stringResource(id = R.string.english),
+                        subtitle = stringResource(id = R.string.united_states),
+                        flagResId = R.drawable.ic_flag_us,
+                        isSelected = currentLocale.startsWith("en"),
+                        onClick = {
+                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+                        }
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    SettingsLanguageOption(
+                        title = stringResource(id = R.string.arabic),
+                        subtitle = stringResource(id = R.string.saudi_arabia),
+                        flagResId = R.drawable.ic_flag_sa,
+                        isSelected = (currentLocale.startsWith("ar") && !currentLocale.contains("EG")) || (currentLocale.isEmpty() && java.util.Locale.getDefault().language == "ar"),
+                        onClick = {
+                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ar"))
+                        }
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    SettingsLanguageOption(
+                        title = stringResource(id = R.string.egyptian),
+                        subtitle = stringResource(id = R.string.egypt),
+                        flagResId = R.drawable.ic_flag_eg,
+                        isSelected = currentLocale.contains("ar-EG"),
+                        onClick = {
+                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ar-EG"))
+                        }
                     )
                 }
-                
-                Spacer(modifier = Modifier.height(12.dp))
-
-                val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
-                
-                SettingsLanguageOption(
-                    title = stringResource(id = R.string.english),
-                    subtitle = stringResource(id = R.string.united_states),
-                    flagResId = R.drawable.ic_flag_us,
-                    isSelected = currentLocale.startsWith("en"),
-                    onClick = {
-                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
-                    }
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                SettingsLanguageOption(
-                    title = stringResource(id = R.string.arabic),
-                    subtitle = stringResource(id = R.string.saudi_arabia),
-                    flagResId = R.drawable.ic_flag_sa,
-                    isSelected = (currentLocale.startsWith("ar") && !currentLocale.contains("EG")) || (currentLocale.isEmpty() && java.util.Locale.getDefault().language == "ar"),
-                    onClick = {
-                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ar"))
-                    }
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                SettingsLanguageOption(
-                    title = stringResource(id = R.string.egyptian),
-                    subtitle = stringResource(id = R.string.egypt),
-                    flagResId = R.drawable.ic_flag_eg,
-                    isSelected = currentLocale.contains("ar-EG"),
-                    onClick = {
-                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ar-EG"))
-                    }
-                )
             }
             SettingsMode.FEEDBACK -> {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(110.dp),
-                    contentAlignment = Alignment.Center
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.img_settings_feedback),
-                        contentDescription = stringResource(R.string.feedback_illustration),
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(16.dp)),
-                        contentScale = ContentScale.Fit
+                    Text(
+                        text = "Select Category",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = NavyDark
                     )
-                }
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Chips row/flow
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        categories.forEach { category ->
+                            val isSelected = selectedCategory == category
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (isSelected) PinkPrimary else Color(0xFFF1F5F9))
+                                    .then(
+                                        if (isSelected) Modifier
+                                        else Modifier.border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(20.dp))
+                                    )
+                                    .clickable { selectedCategory = category }
+                                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                            ) {
+                                Text(
+                                    text = category,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (isSelected) Color.White else NavyDark
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
-                            text = stringResource(R.string.join_community_board),
+                            text = "Details",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = NavyDark
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = stringResource(R.string.help_improve),
-                            fontSize = 13.sp,
-                            color = TextLight,
-                            lineHeight = 18.sp
+                            text = "*",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PinkPrimary
                         )
                     }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                Button(
-                    onClick = {
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://piggy-ledger.featureos.app"))
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.browser_error), Toast.LENGTH_SHORT)
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = feedbackMessage,
+                        onValueChange = { if (it.length <= 500) feedbackMessage = it },
+                        placeholder = {
+                            Text(
+                                "Explain what happened, or suggestions.",
+                                color = TextLight,
+                                fontSize = 14.sp
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PinkPrimary,
+                            unfocusedBorderColor = Color(0xFFE2E8F0),
+                            focusedContainerColor = Color(0xFFFAFAFA),
+                            unfocusedContainerColor = Color(0xFFFAFAFA)
+                        )
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp, end = 4.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Text(
+                            text = "${feedbackMessage.length}/500",
+                            fontSize = 12.sp,
+                            color = TextLight
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Screenshots or videos (Optional)",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Plus Square Attachment Card
+                        Box(
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color(0xFFF1F5F9))
+                                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+                                .clickable {
+                                    try {
+                                        attachmentLauncher.launch("*/*")
+                                    } catch (e: Exception) {
+                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Cannot open file picker", Toast.LENGTH_SHORT)
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Attach file",
+                                tint = NavyDark,
+                                modifier = Modifier.size(28.dp)
+                            )
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PinkPrimary,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.OpenInNew,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.open_feedback_board), fontSize = 15.sp, fontWeight = FontWeight.Bold)
+
+                        if (selectedAttachmentUri != null) {
+                            Card(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(72.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Attached File",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = NavyDark
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = selectedAttachmentUri?.lastPathSegment ?: "Selected file",
+                                            fontSize = 11.sp,
+                                            color = TextLight,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                        )
+                                    }
+                                    TextButton(onClick = { selectedAttachmentUri = null }) {
+                                        Text("Remove", color = Color.Red, fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Button(
+                        onClick = {
+                            if (feedbackMessage.isBlank()) {
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Please enter details of the problem", Toast.LENGTH_SHORT)
+                                return@Button
+                            }
+                            val subject = "[$selectedCategory] Piggy Ledger Feedback"
+                            val body = "Category: $selectedCategory\nName: ${authUserName.ifBlank { "User" }}\nEmail: ${authUserEmail.ifBlank { "user@example.com" }}\n\nDetails:\n$feedbackMessage"
+
+                            try {
+                                val mailtoUrl = "mailto:contact@piggyapp.top" +
+                                        "?subject=" + Uri.encode(subject) +
+                                        "&body=" + Uri.encode(body)
+                                val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                    data = Uri.parse(mailtoUrl)
+                                }
+                                context.startActivity(Intent.createChooser(mailIntent, "Send Feedback via..."))
+                            } catch (e: Exception) {
+                                try {
+                                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_EMAIL, arrayOf("contact@piggyapp.top"))
+                                        putExtra(Intent.EXTRA_SUBJECT, subject)
+                                        putExtra(Intent.EXTRA_TEXT, body)
+                                    }
+                                    context.startActivity(Intent.createChooser(sendIntent, "Send Feedback via..."))
+                                } catch (ex: Exception) {
+                                    com.oryno.piggy_ledger.ui.ToastUtil.show(context, "No email app found", Toast.LENGTH_SHORT)
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PinkPrimary,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("Submit", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
             SettingsMode.RATING -> {
-                var rating by remember { mutableIntStateOf(0) }
-                
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(110.dp),
-                    contentAlignment = Alignment.Center
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.img_settings_rate),
-                        contentDescription = stringResource(R.string.rate_illustration),
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(16.dp)),
-                        contentScale = ContentScale.Fit
+                    var rating by remember { mutableIntStateOf(0) }
+                    
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(110.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_settings_rate),
+                            contentDescription = stringResource(R.string.rate_illustration),
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(16.dp)),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Text(
+                        text = stringResource(R.string.enjoying_piggy_ledger),
+                        fontSize = 14.sp,
+                        color = TextLight,
+                        lineHeight = 20.sp
                     )
-                }
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                Text(
-                    text = stringResource(R.string.enjoying_piggy_ledger),
-                    fontSize = 14.sp,
-                    color = TextLight,
-                    lineHeight = 20.sp
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    for (i in 1..5) {
-                        IconButton(
-                            onClick = { rating = i },
-                            modifier = Modifier.size(56.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (i <= rating) Icons.Default.Star else Icons.Outlined.Star,
-                                contentDescription = "Star $i",
-                                tint = if (i <= rating) PinkPrimary else Color(0xFFCBD5E1),
-                                modifier = Modifier.size(40.dp)
-                            )
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        for (i in 1..5) {
+                            IconButton(
+                                onClick = { rating = i },
+                                modifier = Modifier.size(56.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (i <= rating) Icons.Default.Star else Icons.Outlined.Star,
+                                    contentDescription = "Star $i",
+                                    tint = if (i <= rating) PinkPrimary else Color(0xFFCBD5E1),
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            }
                         }
                     }
-                }
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                Button(
-                    onClick = {
-                        val mailtoUrl = "mailto:albhyrytwamrwhy@gmail.com" +
-                                "?subject=" + Uri.encode("Piggy Ledger Rating") +
-                                "&body=" + Uri.encode("I rated Piggy Ledger $rating/5 stars!")
-                        val intent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse(mailtoUrl)
-                        }
-                        try {
-                            context.startActivity(Intent.createChooser(intent, "Send Rating"))
-                        } catch (e: Exception) {
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.email_error), Toast.LENGTH_SHORT)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PinkPrimary,
-                        contentColor = Color.White
-                    ),
-                    enabled = rating > 0
-                ) {
-                    Text(stringResource(R.string.send_rating), fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    
+                    Spacer(modifier = Modifier.height(32.dp))
+                    
+                    Button(
+                        onClick = {
+                            val mailtoUrl = "mailto:albhyrytwamrwhy@gmail.com" +
+                                    "?subject=" + Uri.encode("Piggy Ledger Rating") +
+                                    "&body=" + Uri.encode("I rated Piggy Ledger $rating/5 stars!")
+                            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                data = Uri.parse(mailtoUrl)
+                            }
+                            try {
+                                context.startActivity(Intent.createChooser(intent, "Send Rating"))
+                            } catch (e: Exception) {
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.email_error), Toast.LENGTH_SHORT)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PinkPrimary,
+                            contentColor = Color.White
+                        ),
+                        enabled = rating > 0
+                    ) {
+                        Text(stringResource(R.string.send_rating), fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
             SettingsMode.BACKUP -> {
@@ -1273,7 +1457,7 @@ fun PiggyLedgerPaywall(
                         override fun onError(error: com.revenuecat.purchases.PurchasesError) {
                             isLoadingOfferings = false
                             fetchError = error.message
-                            android.util.Log.e("Paywall", "Error fetching offerings: ${error.message}")
+                            android.util.Log.w("Paywall", "Offerings unavailable: ${error.message}")
                         }
                     }
                 )
@@ -1750,7 +1934,7 @@ fun PiggyLedgerPaywall(
                     textDecoration = TextDecoration.Underline,
                     modifier = Modifier.clickable {
                         try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://piggy-app.pages.dev/pricing"))
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://piggyapp.top/pricing"))
                             context.startActivity(intent)
                         } catch (e: Exception) {
                             com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Could not open link", Toast.LENGTH_SHORT)

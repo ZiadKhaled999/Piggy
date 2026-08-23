@@ -482,6 +482,7 @@
     <string name="select_account_prompt">اختار الحساب اللي عاوز تربط بيه العملية دي:</string>
     <string name="resolve_success">تم ربط العملية بالحساب بنجاح!</string>
     <string name="discard_pending_success">تم مسح العملية المعلقة</string>
+    <string name="discard_transaction">مسح العملية</string>
     <string name="no_pending_transactions">مفيش عمليات معلقة</string>
     <string name="no_pending_transactions_desc">كل عمليات رسايل الـ SMS اتوزعت وتوجهت لـ حساباتك بنجاح.</string>
     <string name="logs_timeline">سجل الدفعات</string>

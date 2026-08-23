@@ -638,6 +638,11 @@ fun DashboardScreen(
                         selectedPendingTxForSheet = null
                         automaticallyShowPendingSheet = false
                     },
+                    onDiscard = {
+                        viewModel.deletePendingTransaction(selectedPendingTxForSheet!!.id)
+                        selectedPendingTxForSheet = null
+                        automaticallyShowPendingSheet = false
+                    },
                     onClose = {
                         selectedPendingTxForSheet = null
                         automaticallyShowPendingSheet = false

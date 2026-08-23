@@ -517,6 +517,7 @@
     <string name="select_account_prompt">اختار حساب عشان تربط المعاملة دي بيه:</string>
     <string name="resolve_success">تم ربط وتوجيه المعاملة بنجاح!</string>
     <string name="discard_pending_success">تم تجاهل المعاملة المعلقة</string>
+    <string name="discard_transaction">تجاهل المعاملة</string>
     <string name="no_pending_transactions">مفيش معاملات معلقة</string>
     <string name="no_pending_transactions_desc">كل مدفوعات رسائل الـ SMS التلقائية تم توجيهها بنجاح لحساباتك.</string>
     <string name="reset_app_flow">إعادة تهيئة التطبيق</string>

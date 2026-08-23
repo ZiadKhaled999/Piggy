@@ -782,9 +782,11 @@
     <string name="pro_feature_1">حسابات وأهداف ادخار غير محدودة</string>
     <string name="pro_feature_2">ميزانيات وسجلات قروض غير محدودة</string>
     <string name="pro_feature_3">تحليلات ورسوم بيانية مالية متقدمة</string>
-    <string name="pro_feature_4">تصدير البيانات ومزامنة سحابية</string>
-    <string name="pro_feature_5">حماية لقطة الشاشة وفئات مخصصة</string>
+    <string name="pro_feature_4">تصدير البيانات (CSV / PDF) وتقارير متقدمة</string>
+    <string name="pro_feature_5">فئات مخصصة وقواعد تصنيف شخصية</string>
     <string name="pro_feature_ai">مساعد بيجي الذكي للتحليل المالي بلا حدود</string>
+    <string name="custom_categories_pro_title">التصنيفات المخصصة ميزة في برو</string>
+    <string name="custom_categories_pro_desc">قم بالترقية إلى بيجي ليدجر برو لإنشاء تصنيفات مصاريف مخصصة تناسب احتياجاتك المالية الشخصية.</string>
     <string name="comp_piggy_ai">مساعد بيجي الذكي (AI)</string>
     <string name="comp_piggy_ai_free">3 رسائل</string>
     <string name="comp_piggy_ai_pro">غير محدود</string>
@@ -926,5 +928,14 @@
     <string name="pro_hook_perks_heading">كل مميزات برو مفتوحة بالكامل:</string>
     <string name="pro_hook_perk_1">ذكاء اصطناعي مالي وتحليلات غير محدودة</string>
     <string name="pro_hook_perk_2">عدد لا نهائي من الحسابات والأهداف والديون</string>
-    <string name="pro_hook_perk_3">مزامنة سحابية وتتبع تلقائي للرسائل</string>
+    <string name="pro_hook_perk_3">فئات مخصصة وتتبع تلقائي للرسائل</string>
+    <string name="app_info">معلومات التطبيق</string>
+    <string name="advanced_settings">إعدادات متقدمة</string>
+    <string name="privacy_policy">سياسة الخصوصية</string>
+    <string name="open_source_licenses">تراخيص المصادر المفتوحة</string>
+    <string name="system_diagnostics">تشخيصات النظام</string>
+    <string name="copy_diagnostics">نسخ التشخيصات</string>
+    <string name="diagnostics_copied">تم نسخ بيانات التشخيص إلى الحافظة</string>
+    <string name="contact_support">تواصل مع الدعم</string>
+    <string name="license_details">تفاصيل الترخيص</string>
 </resources>

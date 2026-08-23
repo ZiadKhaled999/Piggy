@@ -535,7 +535,8 @@ fun MainContainer(
                                 viewModel = viewModel,
                                 onNavigateToAddAccount = { appNavController.navigate(Screen.AddAccount) },
                                 onNavigateToEditAccount = { id -> appNavController.navigate(Screen.EditAccount(id)) },
-                                onBack = { bottomNavController.popBackStack() }
+                                onBack = { bottomNavController.popBackStack() },
+                                onNavigateToSettingsPro = { appNavController.navigate(Screen.Settings(SettingsMode.PRO.name)) }
                             )
                         }
 
@@ -621,6 +622,10 @@ fun MainContainer(
                 onNavigateToAddAccount = {
                     showAddTransactionSheet = false
                     appNavController.navigate(Screen.AddAccount)
+                },
+                onNavigateToSettingsPro = {
+                    showAddTransactionSheet = false
+                    appNavController.navigate(Screen.Settings(SettingsMode.PRO.name))
                 }
             )
         }

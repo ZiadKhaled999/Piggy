@@ -123,9 +123,11 @@ fun AddTransactionScreen(
     selectedAccountId: String?,
     accounts: List<Account>,
     onDismiss: () -> Unit,
-    onNavigateToAddAccount: () -> Unit = {}
+    onNavigateToAddAccount: () -> Unit = {},
+    onNavigateToSettingsPro: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val isPremium by viewModel.isPremium.collectAsState()
     // Core Transaction Data
     var isExpense by remember { mutableStateOf(true) }
     
@@ -141,6 +143,7 @@ fun AddTransactionScreen(
     var showCategoryBottomSheet by remember { mutableStateOf(false) }
     var showSourceAccountPicker by remember { mutableStateOf(false) }
     var showCustomCategoryBottomSheet by remember { mutableStateOf(false) }
+    var showProCategoryDialog by remember { mutableStateOf(false) }
     
     // Selected Category (stored as TransactionCategory)
     var selectedCategory by remember { mutableStateOf<TransactionCategory?>(null) }
@@ -617,22 +620,74 @@ fun AddTransactionScreen(
                                 }
                                 
                                 item {
-                                    Box(
+                                    Surface(
                                         modifier = Modifier
                                             .fillMaxWidth()
+                                            .padding(vertical = 8.dp)
                                             .clickable {
-                                                showCategoryBottomSheet = false
-                                                showCustomCategoryBottomSheet = true
-                                            }
-                                            .padding(vertical = 16.dp),
-                                        contentAlignment = Alignment.Center
+                                                if (!isPremium) {
+                                                    showCategoryBottomSheet = false
+                                                    showProCategoryDialog = true
+                                                } else {
+                                                    showCategoryBottomSheet = false
+                                                    showCustomCategoryBottomSheet = true
+                                                }
+                                            },
+                                        color = Color(0xFFF8FAFC),
+                                        shape = RoundedCornerShape(12.dp),
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                                     ) {
-                                        Text(
-                                            text = stringResource(R.string.cant_find_it_create_own),
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = PinkPrimary
-                                        )
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.weight(1f, fill = false)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.AddCircleOutline,
+                                                    contentDescription = null,
+                                                    tint = PinkPrimary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Text(
+                                                    text = stringResource(R.string.cant_find_it_create_own),
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = PinkPrimary
+                                                )
+                                            }
+                                            if (!isPremium) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    color = PinkPrimary.copy(alpha = 0.12f)
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Lock,
+                                                            contentDescription = "Pro Feature",
+                                                            tint = PinkPrimary,
+                                                            modifier = Modifier.size(12.dp)
+                                                        )
+                                                        Spacer(modifier = Modifier.width(3.dp))
+                                                        Text(
+                                                            text = "PRO",
+                                                            fontSize = 10.sp,
+                                                            fontWeight = FontWeight.Black,
+                                                            color = PinkPrimary
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -795,6 +850,11 @@ fun AddTransactionScreen(
                                 }
                                                                 Button(
                                     onClick = {
+                                        if (!isPremium) {
+                                            showCustomCategoryBottomSheet = false
+                                            showProCategoryDialog = true
+                                            return@Button
+                                        }
                                         if (customCategoryName.isNotBlank()) {
                                             selectedCategory = TransactionCategory(
                                                 key = "custom_${customCategoryName.trim()}",
@@ -813,6 +873,74 @@ fun AddTransactionScreen(
                             }
                         }
                     }
+                }
+
+                // PRO CUSTOM CATEGORIES DIALOG
+                if (showProCategoryDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showProCategoryDialog = false },
+                        shape = RoundedCornerShape(20.dp),
+                        containerColor = Color.White,
+                        icon = {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(PinkPrimary.copy(alpha = 0.12f), RoundedCornerShape(24.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = PinkPrimary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        },
+                        title = {
+                            Text(
+                                text = stringResource(R.string.custom_categories_pro_title),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = NavyDark,
+                                textAlign = TextAlign.Center
+                            )
+                        },
+                        text = {
+                            Text(
+                                text = stringResource(R.string.custom_categories_pro_desc),
+                                fontSize = 14.sp,
+                                color = Color(0xFF64748B),
+                                textAlign = TextAlign.Center,
+                                lineHeight = 20.sp
+                            )
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showProCategoryDialog = false
+                                    onDismiss()
+                                    onNavigateToSettingsPro()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.ai_upgrade_to_pro),
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showProCategoryDialog = false }) {
+                                Text(
+                                    text = stringResource(R.string.cancel_btn),
+                                    color = Color(0xFF64748B),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    )
                 }
 
                 if (showDatePicker) {

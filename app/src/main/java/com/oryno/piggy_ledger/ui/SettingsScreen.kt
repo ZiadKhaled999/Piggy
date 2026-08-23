@@ -179,9 +179,10 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tag
 
 import androidx.compose.material.icons.filled.CloudUpload
-
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Logout
+import androidx.activity.compose.BackHandler
+import android.os.Build
 
 import androidx.compose.foundation.lazy.items
 
@@ -209,8 +210,25 @@ fun SettingsScreen(
     onBackClick: (() -> Unit)? = null,
     onSignOutClick: (() -> Unit)? = null
 ) {
-    var settingsMode by remember { mutableStateOf(initialMode) }
+    var modeStack by remember { mutableStateOf(listOf(initialMode)) }
+    val settingsMode = modeStack.lastOrNull() ?: SettingsMode.MAIN
     val context = LocalContext.current
+
+    val navigateBack: () -> Unit = {
+        if (modeStack.size > 1) {
+            modeStack = modeStack.dropLast(1)
+        } else {
+            onBackClick?.invoke()
+        }
+    }
+
+    val navigateTo: (SettingsMode) -> Unit = { newMode ->
+        modeStack = modeStack + newMode
+    }
+
+    BackHandler(enabled = true) {
+        navigateBack()
+    }
 
     val createDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -251,24 +269,18 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 SettingsMainContent(
-                    onModeChange = { settingsMode = it },
+                    onModeChange = { navigateTo(it) },
                     onNavigateToPendingTransactions = onNavigateToPendingTransactions,
                     onSignOutClick = onSignOutClick
                 )
             }
             else -> {
                 android.util.Log.d("SettingsScreen", "Showing DetailSettingsView with mode: $settingsMode")
-                // Detail views handled inside when block below for simplicity in this refactor
                 DetailSettingsView(
                     mode = settingsMode,
                     viewModel = viewModel,
-                    onBack = {
-                        if (initialMode != SettingsMode.MAIN) {
-                            onBackClick?.invoke()
-                        } else {
-                            settingsMode = SettingsMode.MAIN
-                        }
-                    },
+                    onBack = navigateBack,
+                    onNavigate = navigateTo,
                     createDocumentLauncher = createDocumentLauncher
                 )
             }
@@ -412,6 +424,7 @@ fun DetailSettingsView(
     mode: SettingsMode,
     viewModel: PiggyLedgerViewModel,
     onBack: () -> Unit,
+    onNavigate: (SettingsMode) -> Unit = {},
     createDocumentLauncher: androidx.activity.result.ActivityResultLauncher<String>
 ) {
     android.util.Log.d("DetailSettingsView", "Entering DetailSettingsView with mode: $mode")
@@ -714,8 +727,7 @@ fun SecuritySettingsView(viewModel: PiggyLedgerViewModel) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             Image(
                 painter = painterResource(id = R.drawable.img_settings_security),
@@ -969,6 +981,7 @@ fun PiggyLedgerProView(
     viewModel: PiggyLedgerViewModel,
     onClose: (() -> Unit)? = null
 ) {
+    val context = LocalContext.current
     val isPremiumState by viewModel.isPremium.collectAsStateWithLifecycle()
     var isPro by remember { mutableStateOf<Boolean?>(null) }
     var customerInfo by remember { mutableStateOf<com.revenuecat.purchases.CustomerInfo?>(null) }
@@ -1021,6 +1034,17 @@ fun PiggyLedgerProView(
                 .padding(horizontal = 24.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (onClose != null) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                    IconButton(onClick = onClose) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back_icon),
+                            tint = NavyDark
+                        )
+                    }
+                }
+            }
             // 1. Top Hero Image (Clean, No Card/Border)
             Box(
                 modifier = Modifier
@@ -1209,6 +1233,24 @@ fun PiggyLedgerPaywall(
     onClose: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+    
+    // Back button wrapper
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (onClose != null) {
+            IconButton(
+                onClick = onClose,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.back_icon),
+                    tint = NavyDark
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+    
     var offerings: com.revenuecat.purchases.Offerings? by remember { mutableStateOf(null) }
     var isLoadingOfferings by remember { mutableStateOf(true) }
     var fetchError by remember { mutableStateOf<String?>(null) }
@@ -1315,8 +1357,8 @@ fun PiggyLedgerPaywall(
         FeatureComparisonRow(stringResource(R.string.comp_adv_analytics), FeatureStatus.Dash, FeatureStatus.Check),
         FeatureComparisonRow(stringResource(R.string.comp_export), FeatureStatus.Dash, FeatureStatus.Check),
         FeatureComparisonRow(stringResource(R.string.comp_custom_categories), FeatureStatus.Dash, FeatureStatus.Check),
-        FeatureComparisonRow(stringResource(R.string.comp_screenshot_protect), FeatureStatus.Dash, FeatureStatus.Check),
-        FeatureComparisonRow(stringResource(R.string.comp_cloud_sync), FeatureStatus.Dash, FeatureStatus.Check),
+        FeatureComparisonRow(stringResource(R.string.comp_screenshot_protect), FeatureStatus.Check, FeatureStatus.Check),
+        FeatureComparisonRow(stringResource(R.string.comp_cloud_sync), FeatureStatus.Check, FeatureStatus.Check),
         FeatureComparisonRow(stringResource(R.string.comp_priority_support), FeatureStatus.Dash, FeatureStatus.Check)
     )
 
@@ -1718,6 +1760,7 @@ fun PiggyLedgerPaywall(
             }
         }
     }
+}
 }
 
 @Composable

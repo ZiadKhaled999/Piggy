@@ -668,8 +668,10 @@
     <string name="pro_feature_1">حسابات وحصالات مفتوحة من غير ليميت</string>
     <string name="pro_feature_2">ميزانيات وسجلات ديون مفتوحة براحتك</string>
     <string name="pro_feature_3">رسومات وتحليلات مالية متقدمة</string>
-    <string name="pro_feature_4">طلع بياناتك واعملها سينك على الكلاود</string>
-    <string name="pro_feature_5">حماية سكرين شوت وتصنيفات بمزاجك</string>
+    <string name="pro_feature_4">تصدير بياناتك (CSV / PDF) وتقارير متقدمة</string>
+    <string name="pro_feature_5">تصنيفات بمزاجك وقواعد خاصة</string>
+    <string name="custom_categories_pro_title">التصنيفات المخصصة ميزة في برو</string>
+    <string name="custom_categories_pro_desc">رقي لبيجي ليدجر برو عشان تعمل تصنيفات مصاريف بمزاجك على ذوقك.</string>
     <string name="plan_monthly">كل شهر</string>
     <string name="plan_monthly_desc">كمل متابعة بمميزات اكتر وتحكم براحتك خالص</string>
     <string name="plan_monthly_renew">هيتجدد بـ %s في الشهر. وتقدر تلغي في أي وقت.</string>
@@ -812,5 +814,14 @@
     <string name="pro_hook_perks_heading">كل مميزات برو مفتوحة بالكامل:</string>
     <string name="pro_hook_perk_1">ذكاء اصطناعي مالي وشات بدون حدود</string>
     <string name="pro_hook_perk_2">حسابات وأهداف وديون غير محدودة</string>
-    <string name="pro_hook_perk_3">مزامنة سحابية وتتبع رسايل تلقائي</string>
+    <string name="pro_hook_perk_3">تصنيفات بمزاجك وتتبع رسايل تلقائي</string>
+    <string name="app_info">معلومات التطبيق</string>
+    <string name="advanced_settings">تظبيطات متقدمة</string>
+    <string name="privacy_policy">سياسة الخصوصية</string>
+    <string name="open_source_licenses">تراخيص المصادر المفتوحة</string>
+    <string name="system_diagnostics">معلومات وتشخيص الجهاز</string>
+    <string name="copy_diagnostics">انسخ المعلومات</string>
+    <string name="diagnostics_copied">اتنسخت المعلومات للحافظة</string>
+    <string name="contact_support">كلمنا للدعم</string>
+    <string name="license_details">تفاصيل الترخيص</string>
 </resources>

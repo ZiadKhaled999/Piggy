@@ -52,6 +52,11 @@ class PiggyLedgerViewModel(
 
     init {
         triggerCloudSync()
+        viewModelScope.launch {
+            userPreferences.isPrivacyModeEnabled.collect { savedState ->
+                _isPrivacyModeEnabled.value = savedState
+            }
+        }
     }
 
     fun triggerCloudSync() {
@@ -965,6 +970,7 @@ class PiggyLedgerViewModel(
     fun canAddLoan(currentCount: Int): Boolean = isPremium.value || currentCount < 2
     fun canAccessFullAnalytics(): Boolean = isPremium.value
     fun canExportData(): Boolean = isPremium.value
+    fun canUseCustomCategories(): Boolean = isPremium.value
     fun canSendAiMessage(): Boolean = isPremium.value || (aiMessagesCount.value < 3)
 
     private val _isPrivacyModeEnabled = MutableStateFlow<Boolean>(false)
@@ -973,11 +979,17 @@ class PiggyLedgerViewModel(
     fun togglePrivacyMode(context: Context) {
         if (!_isPrivacyModeEnabled.value) {
             _isPrivacyModeEnabled.value = true
+            viewModelScope.launch {
+                userPreferences.savePrivacyModeEnabled(true)
+            }
         } else {
             BiometricHelper.authenticateToUnhide(
                 context = context,
                 onSuccess = {
                     _isPrivacyModeEnabled.value = false
+                    viewModelScope.launch {
+                        userPreferences.savePrivacyModeEnabled(false)
+                    }
                 },
                 onError = { err ->
                     android.widget.Toast.makeText(

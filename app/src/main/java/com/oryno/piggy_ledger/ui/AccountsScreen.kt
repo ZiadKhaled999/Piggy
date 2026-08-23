@@ -50,7 +50,8 @@ fun AccountsScreen(
     viewModel: PiggyLedgerViewModel,
     onNavigateToAddAccount: () -> Unit,
     onNavigateToEditAccount: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToSettingsPro: () -> Unit = {}
 ) {
     val accounts by viewModel.allAccounts.collectAsState()
     val selectedAccountId by viewModel.selectedAccountId.collectAsState()
@@ -839,7 +840,8 @@ fun AccountsScreen(
             selectedAccountId = selectedAccountId,
             accounts = accounts,
             onDismiss = { showAddTransactionDialog = false },
-            onNavigateToAddAccount = onNavigateToAddAccount
+            onNavigateToAddAccount = onNavigateToAddAccount,
+            onNavigateToSettingsPro = onNavigateToSettingsPro
         )
     }
 

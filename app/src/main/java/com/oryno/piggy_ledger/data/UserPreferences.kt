@@ -35,6 +35,7 @@ class UserPreferences(private val context: Context) {
         val PERSONALIZED_INTENSITY = intPreferencesKey("personalized_intensity")
         val SAVING_MODE = stringPreferencesKey("saving_mode")
         val CUSTOM_IDENTIFIERS_JSON = stringPreferencesKey("custom_identifiers_json")
+        val IS_PRIVACY_MODE_ENABLED = booleanPreferencesKey("is_privacy_mode_enabled")
     }
 
     val customIdentifiersJson: Flow<String> = context.dataStore.data.map { prefs ->
@@ -95,6 +96,10 @@ class UserPreferences(private val context: Context) {
 
     val isScreenshotProtectionEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[IS_SCREENSHOT_PROTECTION_ENABLED] ?: false
+    }
+
+    val isPrivacyModeEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[IS_PRIVACY_MODE_ENABLED] ?: false
     }
 
     val isPremium: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -179,6 +184,12 @@ class UserPreferences(private val context: Context) {
             prefs[IS_SCREENSHOT_PROTECTION_ENABLED] = enabled
         }
         syncPreferencesToDb()
+    }
+
+    suspend fun savePrivacyModeEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[IS_PRIVACY_MODE_ENABLED] = enabled
+        }
     }
 
     suspend fun savePremiumStatus(isPremium: Boolean, expiryTimestamp: Long = 0L, isLifetime: Boolean = false) {

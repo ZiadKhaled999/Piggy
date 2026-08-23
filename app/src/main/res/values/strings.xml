@@ -798,9 +798,11 @@
     <string name="pro_feature_1">Unlimited Accounts &amp; Savings Goals</string>
     <string name="pro_feature_2">Unlimited Budgets &amp; Loan Ledgers</string>
     <string name="pro_feature_3">Advanced Financial Analytics &amp; Charts</string>
-    <string name="pro_feature_4">Data Export (CSV/PDF) &amp; Cloud Sync</string>
-    <string name="pro_feature_5">Screenshot Protection &amp; Custom Categories</string>
+    <string name="pro_feature_4">Data Export (CSV/PDF) &amp; Reports</string>
+    <string name="pro_feature_5">Custom Categories &amp; Personalized Rules</string>
     <string name="pro_feature_ai">Unlimited Piggy AI Financial Co-Pilot &amp; Insights</string>
+    <string name="custom_categories_pro_title">Custom Categories is a Pro Feature</string>
+    <string name="custom_categories_pro_desc">Upgrade to Piggy Ledger Pro to create custom spending categories tailored to your personal financial needs.</string>
     <string name="comp_piggy_ai">Piggy AI Financial Assistant</string>
     <string name="comp_piggy_ai_free">3 Messages</string>
     <string name="comp_piggy_ai_pro">Unlimited</string>
@@ -942,5 +944,14 @@
     <string name="pro_hook_perks_heading">Everything included in Pro:</string>
     <string name="pro_hook_perk_1">Unlimited AI Financial Insights &amp; Chat</string>
     <string name="pro_hook_perk_2">Unlimited Accounts, Goals &amp; Loans</string>
-    <string name="pro_hook_perk_3">Cloud Sync &amp; Automatic SMS Tracking</string>
+    <string name="pro_hook_perk_3">Custom Categories &amp; Automatic SMS Tracking</string>
+    <string name="app_info">App Info</string>
+    <string name="advanced_settings">Advanced</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="open_source_licenses">Open Source Licenses</string>
+    <string name="system_diagnostics">System Diagnostics</string>
+    <string name="copy_diagnostics">Copy Diagnostics</string>
+    <string name="diagnostics_copied">Diagnostics copied to clipboard</string>
+    <string name="contact_support">Contact Support</string>
+    <string name="license_details">License Details</string>
 </resources>

@@ -188,10 +188,6 @@ import androidx.compose.foundation.lazy.items
 
 import androidx.compose.ui.draw.rotate
 
-import androidx.compose.foundation.layout.FlowRow
-
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-
 import com.oryno.piggy_ledger.R
 
 import com.oryno.piggy_ledger.ui.theme.NavyDark
@@ -250,9 +246,18 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .then(if (settingsMode != SettingsMode.PRO && settingsMode != SettingsMode.PROFILE) Modifier.padding(horizontal = 24.dp) else Modifier)
+            .then(
+                if (settingsMode != SettingsMode.PRO && 
+                    settingsMode != SettingsMode.PROFILE && 
+                    settingsMode != SettingsMode.BACKUP && 
+                    settingsMode != SettingsMode.FEEDBACK
+                ) Modifier.padding(horizontal = 24.dp) else Modifier
+            )
     ) {
-        if (settingsMode != SettingsMode.PROFILE) {
+        if (settingsMode != SettingsMode.PROFILE && 
+            settingsMode != SettingsMode.BACKUP && 
+            settingsMode != SettingsMode.FEEDBACK
+        ) {
             Spacer(modifier = Modifier.height(24.dp))
         }
         
@@ -424,21 +429,7 @@ fun DetailSettingsView(
     val context = LocalContext.current
     val isPremium by viewModel.isPremium.collectAsState()
 
-    val authUserName by viewModel.authUserName.collectAsState()
-    val authUserEmail by viewModel.authUserEmail.collectAsState()
-
-    val categories = listOf("Bug Report", "Feature Request", "UI / UX", "Sync & Data", "Billing / Pro", "Others")
-    var selectedCategory by remember { mutableStateOf("Bug Report") }
-    var feedbackMessage by remember { mutableStateOf("") }
-    var selectedAttachmentUri by remember { mutableStateOf<Uri?>(null) }
-
-    val attachmentLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        selectedAttachmentUri = uri
-    }
-
-    if (mode == SettingsMode.PRO && !isPremium) {
+    if (mode == SettingsMode.PRO) {
         PiggyLedgerProView(viewModel = viewModel, onClose = onBack)
         return
     }
@@ -469,6 +460,24 @@ fun DetailSettingsView(
                 )
             }
         }
+        return
+    }
+
+    if (mode == SettingsMode.BACKUP) {
+        BackupSettingsView(
+            viewModel = viewModel,
+            isPremium = isPremium,
+            createJsonLauncher = createDocumentLauncher,
+            onBack = onBack
+        )
+        return
+    }
+
+    if (mode == SettingsMode.FEEDBACK) {
+        FeedbackSettingsView(
+            viewModel = viewModel,
+            onBack = onBack
+        )
         return
     }
     
@@ -568,236 +577,6 @@ fun DetailSettingsView(
                     )
                 }
             }
-            SettingsMode.FEEDBACK -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Text(
-                        text = "Select Category",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = NavyDark
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Chips row/flow
-                    @OptIn(ExperimentalLayoutApi::class)
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        categories.forEach { category ->
-                            val isSelected = selectedCategory == category
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(if (isSelected) PinkPrimary else Color(0xFFF1F5F9))
-                                    .then(
-                                        if (isSelected) Modifier
-                                        else Modifier.border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(20.dp))
-                                    )
-                                    .clickable { selectedCategory = category }
-                                    .padding(horizontal = 16.dp, vertical = 10.dp)
-                            ) {
-                                Text(
-                                    text = category,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = if (isSelected) Color.White else NavyDark
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Details",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = NavyDark
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "*",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PinkPrimary
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = feedbackMessage,
-                        onValueChange = { if (it.length <= 500) feedbackMessage = it },
-                        placeholder = {
-                            Text(
-                                "Explain what happened, or suggestions.",
-                                color = TextLight,
-                                fontSize = 14.sp
-                            )
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(160.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PinkPrimary,
-                            unfocusedBorderColor = Color(0xFFE2E8F0),
-                            focusedContainerColor = Color(0xFFFAFAFA),
-                            unfocusedContainerColor = Color(0xFFFAFAFA)
-                        )
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp, end = 4.dp),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        Text(
-                            text = "${feedbackMessage.length}/500",
-                            fontSize = 12.sp,
-                            color = TextLight
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "Screenshots or videos (Optional)",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = NavyDark
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Plus Square Attachment Card
-                        Box(
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color(0xFFF1F5F9))
-                                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
-                                .clickable {
-                                    try {
-                                        attachmentLauncher.launch("*/*")
-                                    } catch (e: Exception) {
-                                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Cannot open file picker", Toast.LENGTH_SHORT)
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Attach file",
-                                tint = NavyDark,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-
-                        if (selectedAttachmentUri != null) {
-                            Card(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(72.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(horizontal = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = "Attached File",
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = NavyDark
-                                        )
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = selectedAttachmentUri?.lastPathSegment ?: "Selected file",
-                                            fontSize = 11.sp,
-                                            color = TextLight,
-                                            maxLines = 1,
-                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                        )
-                                    }
-                                    TextButton(onClick = { selectedAttachmentUri = null }) {
-                                        Text("Remove", color = Color.Red, fontSize = 12.sp)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    Button(
-                        onClick = {
-                            if (feedbackMessage.isBlank()) {
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Please enter details of the problem", Toast.LENGTH_SHORT)
-                                return@Button
-                            }
-                            val subject = "[$selectedCategory] Piggy Ledger Feedback"
-                            val body = "Category: $selectedCategory\nName: ${authUserName.ifBlank { "User" }}\nEmail: ${authUserEmail.ifBlank { "user@example.com" }}\n\nDetails:\n$feedbackMessage"
-
-                            try {
-                                val mailtoUrl = "mailto:contact@piggyapp.top" +
-                                        "?subject=" + Uri.encode(subject) +
-                                        "&body=" + Uri.encode(body)
-                                val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                                    data = Uri.parse(mailtoUrl)
-                                }
-                                context.startActivity(Intent.createChooser(mailIntent, "Send Feedback via..."))
-                            } catch (e: Exception) {
-                                try {
-                                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(Intent.EXTRA_EMAIL, arrayOf("contact@piggyapp.top"))
-                                        putExtra(Intent.EXTRA_SUBJECT, subject)
-                                        putExtra(Intent.EXTRA_TEXT, body)
-                                    }
-                                    context.startActivity(Intent.createChooser(sendIntent, "Send Feedback via..."))
-                                } catch (ex: Exception) {
-                                    com.oryno.piggy_ledger.ui.ToastUtil.show(context, "No email app found", Toast.LENGTH_SHORT)
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = PinkPrimary,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text("Submit", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
             SettingsMode.RATING -> {
                 Column(
                     modifier = Modifier
@@ -879,9 +658,6 @@ fun DetailSettingsView(
                         Text(stringResource(R.string.send_rating), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-            }
-            SettingsMode.BACKUP -> {
-                BackupSettingsView(viewModel = viewModel, isPremium = isPremium, createJsonLauncher = createDocumentLauncher)
             }
             SettingsMode.SECURITY -> {
                 SecuritySettingsView(viewModel = viewModel)

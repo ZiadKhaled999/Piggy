@@ -2,38 +2,35 @@ package com.oryno.piggy_ledger.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-
-import androidx.compose.animation.*
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.interaction.MutableInteractionSource
-
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalConfiguration
-import com.oryno.piggy_ledger.R
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.ui.theme.*
 import java.time.LocalDate
 
@@ -41,10 +38,11 @@ import java.time.LocalDate
 fun BackupSettingsView(
     viewModel: PiggyLedgerViewModel,
     isPremium: Boolean,
-    createJsonLauncher: androidx.activity.result.ActivityResultLauncher<String>
+    createJsonLauncher: androidx.activity.result.ActivityResultLauncher<String>,
+    onBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    var exportType by remember { mutableStateOf("CSV") }
+    var exportType by remember { mutableStateOf("JSON") }
     
     val transactions by viewModel.allTransactions.collectAsStateWithLifecycle(initialValue = emptyList())
     
@@ -86,17 +84,20 @@ fun BackupSettingsView(
         }
     }
 
-    val colorMap = mapOf(
-        "CSV" to Color(0xFF10A37F),
-        "JSON" to Color(0xFFF5A623),
-        "EXCEL" to Color(0xFF005A9E)
+    // Color requirements: Yellow for JSON, Green for Excel, Blue for CSV
+    val headerBgColor by animateColorAsState(
+        targetValue = when (exportType) {
+            "JSON" -> Color(0xFFEAB308)  // Vibrant Warm Yellow
+            "EXCEL" -> Color(0xFF10B981) // Vibrant Emerald Green
+            "CSV" -> Color(0xFF2563EB)   // Vibrant Royal Blue
+            else -> Color(0xFFEAB308)
+        },
+        animationSpec = tween(400),
+        label = "HeaderColor"
     )
-    val currentColor by animateColorAsState(targetValue = colorMap[exportType] ?: Color(0xFF10A37F), animationSpec = tween(400))
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 24.dp)
+        modifier = Modifier.fillMaxSize()
     ) {
         Column(
             modifier = Modifier
@@ -104,126 +105,177 @@ fun BackupSettingsView(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-        val scale by animateFloatAsState(
-            targetValue = if (exportType == "CSV") 1.05f else if (exportType == "JSON") 0.95f else 1f,
-            animationSpec = tween(300)
-        )
-        val configuration = LocalConfiguration.current
-        val isSmallScreen = configuration.screenWidthDp < 360
-
-        // Logo
-        Box(
-            modifier = Modifier.size(68.dp, 80.dp).scale(scale),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Article,
-                contentDescription = null,
-                tint = currentColor,
-                modifier = Modifier.fillMaxSize()
-            )
+            // Full-Bleed Dynamic Header Banner
             Box(
                 modifier = Modifier
-                    .background(Color.White)
-                    .border(2.5.dp, currentColor, RoundedCornerShape(4.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .background(headerBgColor)
             ) {
-                Text(
-                    text = exportType,
-                    color = currentColor,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = if (isSmallScreen) 12.sp else 14.sp
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(10.dp))
-        
-        Text(
-            text = stringResource(R.string.export_data_title),
-            fontSize = if (isSmallScreen) 16.sp else 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = NavyDark
-        )
-        
-        Spacer(modifier = Modifier.height(4.dp))
-        
-        Text(
-            text = stringResource(R.string.export_data_subtitle),
-            fontSize = if (isSmallScreen) 11.sp else 12.sp,
-            color = TextLight,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 24.dp),
-            lineHeight = 16.sp
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Export Type Selector
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            listOf("JSON", "CSV", "EXCEL").forEach { type ->
-                val isSelected = exportType == type
-                
-                val bgColor by animateColorAsState(
-                    targetValue = if (isSelected) PinkPrimary.copy(alpha = 0.08f) else Color.Transparent,
-                    animationSpec = tween(300)
-                )
-                val borderColor by animateColorAsState(
-                    targetValue = if (isSelected) PinkPrimary else Color(0xFFE0E0E0),
-                    animationSpec = tween(300)
-                )
-                val textColor by animateColorAsState(
-                    targetValue = if (isSelected) PinkPrimary else TextLight,
-                    animationSpec = tween(300)
-                )
-                
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                ) {
+                    // Top Bar inside vibrant header banner
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp, top = 12.dp, end = 24.dp)
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back_icon),
+                                tint = Color.White
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(R.string.backup_data_title),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Banner main content
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .padding(bottom = 28.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = when (exportType) {
+                                "JSON" -> Icons.Default.Code
+                                "EXCEL" -> Icons.Default.TableChart
+                                else -> Icons.Default.Article
+                            },
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(40.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // BIG WHITE TEXT for JSON / EXCEL / CSV
+                        Text(
+                            text = exportType,
+                            fontSize = 44.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White,
+                            letterSpacing = 2.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = when (exportType) {
+                                "JSON" -> stringResource(R.string.export_json_subtitle)
+                                "EXCEL" -> stringResource(R.string.export_excel_subtitle)
+                                else -> stringResource(R.string.export_csv_subtitle)
+                            },
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.92f),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                // Bottom Fade-Out Blend Effect
                 Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .background(bgColor, RoundedCornerShape(10.dp))
-                        .border(1.dp, borderColor, RoundedCornerShape(10.dp))
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable { exportType = type }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = type,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = textColor,
-                        fontSize = 12.sp
-                    )
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    headerBgColor.copy(alpha = 0f),
+                                    headerBgColor.copy(alpha = 0.5f),
+                                    Color.White
+                                )
+                            )
+                        )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Export Type Selector (Segmented Tabs)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                listOf("JSON", "CSV", "EXCEL").forEach { type ->
+                    val isSelected = exportType == type
+                    
+                    val tabBg = if (isSelected) headerBgColor else Color(0xFFF1F5F9)
+                    val tabTextColor = if (isSelected) Color.White else TextLight
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(tabBg)
+                            .then(
+                                if (!isSelected) Modifier.border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(14.dp))
+                                else Modifier
+                            )
+                            .clickable { exportType = type }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = type,
+                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                            color = tabTextColor,
+                            fontSize = 13.sp
+                        )
+                    }
                 }
             }
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Useful and enjoyable options
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White)
-        ) {
-            Divider(color = Color(0xFFEEEEEE), thickness = 1.dp)
-            ExportOptionRow(stringResource(R.string.export_include_pending), includePending) { includePending = it }
-            Divider(color = Color(0xFFEEEEEE), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
-            ExportOptionRow(stringResource(R.string.export_include_balances), includeBalances) { includeBalances = it }
-            Divider(color = Color(0xFFEEEEEE), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
-            ExportOptionRow(stringResource(R.string.export_include_goals), includeGoals) { includeGoals = it }
-            Divider(color = Color(0xFFEEEEEE), thickness = 1.dp)
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = stringResource(R.string.export_data_subtitle),
+                fontSize = 12.sp,
+                color = TextLight,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 24.dp),
+                lineHeight = 16.sp
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Options List
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White)
+                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+            ) {
+                ExportOptionRow(stringResource(R.string.export_include_pending), includePending) { includePending = it }
+                HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                ExportOptionRow(stringResource(R.string.export_include_balances), includeBalances) { includeBalances = it }
+                HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                ExportOptionRow(stringResource(R.string.export_include_goals), includeGoals) { includeGoals = it }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
         } // End of scrollable column
-        
+
+        // Bottom Action Area
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -237,41 +289,46 @@ fun BackupSettingsView(
                 color = TextLight,
                 letterSpacing = 0.8.sp
             )
-            
+
             Spacer(modifier = Modifier.height(10.dp))
-            
+
             Button(
-            onClick = {
-                if (!isPremium) {
-                    ToastUtil.show(context, context.getString(R.string.export_upgrade_pro), android.widget.Toast.LENGTH_SHORT)
-                    return@Button
-                }
-                
-                val dateStr = LocalDate.now().toString()
-                val baseName = "piggy_ledger_$dateStr"
-                
-                when (exportType) {
-                    "JSON" -> createJsonLauncher.launch("$baseName.json")
-                    "CSV" -> createCsvLauncher.launch("$baseName.csv")
-                    "EXCEL" -> createExcelLauncher.launch("$baseName.xls")
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .height(46.dp),
-            shape = RoundedCornerShape(23.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = PinkPrimary,
-                contentColor = Color.White
-            )
-        ) {
-            Text(text = stringResource(R.string.export_action), fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                onClick = {
+                    if (!isPremium) {
+                        ToastUtil.show(context, context.getString(R.string.export_upgrade_pro), android.widget.Toast.LENGTH_SHORT)
+                        return@Button
+                    }
+
+                    val dateStr = LocalDate.now().toString()
+                    val baseName = "piggy_ledger_$dateStr"
+
+                    when (exportType) {
+                        "JSON" -> createJsonLauncher.launch("$baseName.json")
+                        "CSV" -> createCsvLauncher.launch("$baseName.csv")
+                        "EXCEL" -> createExcelLauncher.launch("$baseName.xls")
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .height(50.dp),
+                shape = RoundedCornerShape(25.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PinkPrimary,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = stringResource(R.string.export_action),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
     }
-}
 }
 
 @Composable
@@ -284,7 +341,7 @@ fun ExportOptionRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -299,7 +356,10 @@ fun ExportOptionRow(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = PinkPrimary
+                checkedTrackColor = PinkPrimary,
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = Color(0xFFCBD5E1),
+                uncheckedBorderColor = Color.Transparent
             )
         )
     }

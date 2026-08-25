@@ -66,7 +66,15 @@ class PiggyLedgerViewModel(
 
     init {
         refreshStreak()
-        triggerCloudSync()
+        viewModelScope.launch {
+            var hasSyncedOnStart = false
+            com.clerk.api.Clerk.sessionFlow.collect { session ->
+                if (session != null && !hasSyncedOnStart) {
+                    hasSyncedOnStart = true
+                    triggerCloudSync()
+                }
+            }
+        }
         viewModelScope.launch {
             userPreferences.isPrivacyModeEnabled.collect { savedState ->
                 _isPrivacyModeEnabled.value = savedState
@@ -369,23 +377,21 @@ class PiggyLedgerViewModel(
         viewModelScope.launch {
             _logoutState.value = LogoutState.Syncing
             try {
-                val unsyncedCount = repository.getPendingUploadCount()
+                val initialUnsyncedCount = repository.getPendingUploadCount()
                 val networkAvailable = isNetworkAvailable(context)
 
-                if (unsyncedCount > 0 && !networkAvailable && !forceDeleteIfOffline) {
-                    _logoutState.value = LogoutState.OfflineError(unsyncedCount)
+                if (initialUnsyncedCount > 0 && !networkAvailable && !forceDeleteIfOffline) {
+                    _logoutState.value = LogoutState.OfflineError(initialUnsyncedCount)
                     return@launch
                 }
 
-                if (unsyncedCount > 0 && networkAvailable) {
-                    try {
-                        com.oryno.piggy_ledger.service.SyncManager(context).syncAll()
-                    } catch (e: Exception) {
-                        android.util.Log.e("PiggyLedgerViewModel", "Sync on logout failed", e)
-                        if (!forceDeleteIfOffline) {
-                            _logoutState.value = LogoutState.Error(e.localizedMessage ?: "Sync failed")
-                            return@launch
-                        }
+                if (initialUnsyncedCount > 0 && networkAvailable) {
+                    val ok = com.oryno.piggy_ledger.service.SyncManager(context).syncAll()
+                    val remainingCount = repository.getPendingUploadCount()
+                    
+                    if ((!ok || remainingCount > 0) && !forceDeleteIfOffline) {
+                        _logoutState.value = LogoutState.Error("Upload failed — $remainingCount items kept on device")
+                        return@launch
                     }
                 }
 

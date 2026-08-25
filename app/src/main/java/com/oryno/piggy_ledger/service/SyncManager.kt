@@ -43,7 +43,7 @@ class SyncManager(private val context: Context) {
         }
     }
 
-    suspend fun syncAll() = withContext(Dispatchers.IO) {
+    suspend fun syncAll(): Boolean = withContext(Dispatchers.IO) {
         Log.i("SyncManager", "🔥 syncAll() called! Neon API URL: $apiUrl")
         val user = Clerk.userFlow.value
         val userId = user?.id
@@ -52,7 +52,7 @@ class SyncManager(private val context: Context) {
 
         if (user == null || authHeader == null) {
             Log.w("SyncManager", "❌ No authenticated user or Auth header is null. Skipping cloud sync.")
-            return@withContext
+            return@withContext false
         }
 
         val nonNullUserId = user.id
@@ -60,22 +60,25 @@ class SyncManager(private val context: Context) {
         Log.i("SyncManager", "✅ Authenticated user found: userId=$nonNullUserId. Starting syncAll...")
 
         try {
-            syncOnboardingAnswers(nonNullUserId, authHeader)
-            syncUserPreferences(nonNullUserId, authHeader)
-            syncStreakDates(nonNullUserId, authHeader)
-            syncGoals(nonNullUserId, authHeader)
-            syncTransactions(nonNullUserId, authHeader)
-            syncLoans(nonNullUserId, authHeader)
-            syncLoanPayments(nonNullUserId, authHeader)
-            syncAccounts(nonNullUserId, authHeader)
-            syncAccountTransactions(nonNullUserId, authHeader)
-            syncPendingTransactions(nonNullUserId, authHeader)
-            syncAiConversations(nonNullUserId, authHeader)
-            syncAiChatMessages(nonNullUserId, authHeader)
+            var allOk = true
+            allOk = syncOnboardingAnswers(nonNullUserId, authHeader) && allOk
+            allOk = syncUserPreferences(nonNullUserId, authHeader) && allOk
+            allOk = syncStreakDates(nonNullUserId, authHeader) && allOk
+            allOk = syncGoals(nonNullUserId, authHeader) && allOk
+            allOk = syncTransactions(nonNullUserId, authHeader) && allOk
+            allOk = syncLoans(nonNullUserId, authHeader) && allOk
+            allOk = syncLoanPayments(nonNullUserId, authHeader) && allOk
+            allOk = syncAccounts(nonNullUserId, authHeader) && allOk
+            allOk = syncAccountTransactions(nonNullUserId, authHeader) && allOk
+            allOk = syncPendingTransactions(nonNullUserId, authHeader) && allOk
+            allOk = syncAiConversations(nonNullUserId, authHeader) && allOk
+            allOk = syncAiChatMessages(nonNullUserId, authHeader) && allOk
 
-            Log.i("SyncManager", "Sync completed successfully.")
+            Log.i("SyncManager", "Sync completed successfully. Success: $allOk")
+            allOk
         } catch (e: Exception) {
             Log.w("SyncManager", "Sync skipped/failed: ${e.message}")
+            false
         }
     }
 
@@ -143,7 +146,7 @@ class SyncManager(private val context: Context) {
         }
     }
 
-    private suspend fun syncUserPreferences(userId: String, authHeader: String) {
+    private suspend fun syncUserPreferences(userId: String, authHeader: String): Boolean {
         val tableName = "user_preferences"
         val rawUnsynced = dao.getUnsyncedUserPreferences()
         val unsynced = mutableListOf<UserPreferencesEntity>()
@@ -156,13 +159,15 @@ class SyncManager(private val context: Context) {
             unsynced.add(item.copy(userId = userId, isSynced = true))
         }
 
-        if (pushRemote(tableName, authHeader, unsynced)) {
+        val pushOk = pushRemote(tableName, authHeader, unsynced)
+        if (pushOk) {
             if (unsynced.isNotEmpty()) dao.insertUserPreferencesList(unsynced)
             if (hadLocalUser) {
                 dao.deleteUserPreferencesByUserId("local_user")
             }
         }
         val remote: List<UserPreferencesEntity>? = pullRemote(tableName, authHeader)
+        val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
             val localItem = dao.getUserPreferencesByUserId(userId)
             val itemsToInsert = mutableListOf<UserPreferencesEntity>()
@@ -181,9 +186,9 @@ class SyncManager(private val context: Context) {
         if (remotePrefs != null) {
             UserPreferences(context).applyFromEntity(remotePrefs)
         }
+        return pushOk && pullOk
     }
-
-    private suspend fun syncStreakDates(userId: String, authHeader: String) {
+    private suspend fun syncStreakDates(userId: String, authHeader: String): Boolean {
         val tableName = "streak_dates"
         val rawUnsynced = dao.getUnsyncedStreakDates()
         val mappedUnsynced = mutableListOf<StreakDateEntity>()
@@ -199,13 +204,15 @@ class SyncManager(private val context: Context) {
             }
         }
 
-        if (pushRemote(tableName, authHeader, mappedUnsynced)) {
+        val pushOk = pushRemote(tableName, authHeader, mappedUnsynced)
+        if (pushOk) {
             if (mappedUnsynced.isNotEmpty()) dao.insertStreakDates(mappedUnsynced)
             for (oldId in idsToDelete) {
                 dao.deleteStreakDateById(oldId)
             }
         }
         val remote: List<StreakDateEntity>? = pullRemote(tableName, authHeader)
+        val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
             val localMap = dao.getAllStreakDatesSync().associateBy { it.id }
             val itemsToInsert = mutableListOf<StreakDateEntity>()
@@ -221,15 +228,17 @@ class SyncManager(private val context: Context) {
         if (remoteStreakDates.isNotEmpty()) {
             StreakManager.syncFromCloud(context, remoteStreakDates)
         }
+        return pushOk && pullOk
     }
-
-    private suspend fun syncGoals(userId: String, authHeader: String) {
+    private suspend fun syncGoals(userId: String, authHeader: String): Boolean {
         val tableName = "goals"
         val unsynced = dao.getUnsyncedGoals().map { it.copy(userId = userId, isSynced = true) }
-        if (pushRemote(tableName, authHeader, unsynced)) {
+        val pushOk = pushRemote(tableName, authHeader, unsynced)
+        if (pushOk) {
             if (unsynced.isNotEmpty()) dao.insertGoals(unsynced)
         }
         val remote: List<Goal>? = pullRemote(tableName, authHeader)
+        val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
             val localMap = dao.getAllGoalsSync().associateBy { it.id }
             val itemsToInsert = mutableListOf<Goal>()
@@ -245,15 +254,17 @@ class SyncManager(private val context: Context) {
             }
             if (itemsToInsert.isNotEmpty()) dao.insertGoals(itemsToInsert)
         }
+        return pushOk && pullOk
     }
-
-    private suspend fun syncTransactions(userId: String, authHeader: String) {
+    private suspend fun syncTransactions(userId: String, authHeader: String): Boolean {
         val tableName = "transactions"
         val unsynced = dao.getUnsyncedTransactions().map { it.copy(userId = userId, isSynced = true) }
-        if (pushRemote(tableName, authHeader, unsynced)) {
+        val pushOk = pushRemote(tableName, authHeader, unsynced)
+        if (pushOk) {
             if (unsynced.isNotEmpty()) dao.insertTransactions(unsynced)
         }
         val remote: List<Transaction>? = pullRemote(tableName, authHeader)
+        val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
             val localMap = dao.getAllTransactions().associateBy { it.id }
             val itemsToInsert = mutableListOf<Transaction>()
@@ -269,15 +280,17 @@ class SyncManager(private val context: Context) {
             }
             if (itemsToInsert.isNotEmpty()) dao.insertTransactions(itemsToInsert)
         }
+        return pushOk && pullOk
     }
-
-    private suspend fun syncLoans(userId: String, authHeader: String) {
+    private suspend fun syncLoans(userId: String, authHeader: String): Boolean {
         val tableName = "loans"
         val unsynced = dao.getUnsyncedLoans().map { it.copy(userId = userId, isSynced = true) }
-        if (pushRemote(tableName, authHeader, unsynced)) {
+        val pushOk = pushRemote(tableName, authHeader, unsynced)
+        if (pushOk) {
             if (unsynced.isNotEmpty()) dao.insertLoans(unsynced)
         }
         val remote: List<Loan>? = pullRemote(tableName, authHeader)
+        val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
             val localMap = dao.getAllLoansSync().associateBy { it.id }
             val itemsToInsert = mutableListOf<Loan>()
@@ -293,15 +306,17 @@ class SyncManager(private val context: Context) {
             }
             if (itemsToInsert.isNotEmpty()) dao.insertLoans(itemsToInsert)
         }
+        return pushOk && pullOk
     }
-
-    private suspend fun syncLoanPayments(userId: String, authHeader: String) {
+    private suspend fun syncLoanPayments(userId: String, authHeader: String): Boolean {
         val tableName = "loan_payments"
         val unsynced = dao.getUnsyncedLoanPayments().map { it.copy(userId = userId, isSynced = true) }
-        if (pushRemote(tableName, authHeader, unsynced)) {
+        val pushOk = pushRemote(tableName, authHeader, unsynced)
+        if (pushOk) {
             if (unsynced.isNotEmpty()) dao.insertLoanPayments(unsynced)
         }
         val remote: List<LoanPayment>? = pullRemote(tableName, authHeader)
+        val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
             val localMap = dao.getAllLoanPaymentsSync().associateBy { it.id }
             val itemsToInsert = mutableListOf<LoanPayment>()
@@ -317,15 +332,17 @@ class SyncManager(private val context: Context) {
             }
             if (itemsToInsert.isNotEmpty()) dao.insertLoanPayments(itemsToInsert)
         }
+        return pushOk && pullOk
     }
-
-    private suspend fun syncAccountTransactions(userId: String, authHeader: String) {
+    private suspend fun syncAccountTransactions(userId: String, authHeader: String): Boolean {
         val tableName = "account_transactions"
         val unsynced = dao.getUnsyncedAccountTransactions().map { it.copy(userId = userId, isSynced = true) }
-        if (pushRemote(tableName, authHeader, unsynced)) {
+        val pushOk = pushRemote(tableName, authHeader, unsynced)
+        if (pushOk) {
             if (unsynced.isNotEmpty()) dao.insertAccountTransactions(unsynced)
         }
         val remote: List<AccountTransaction>? = pullRemote(tableName, authHeader)
+        val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
             val localMap = dao.getAllAccountTransactionsSync().associateBy { it.id }
             val itemsToInsert = mutableListOf<AccountTransaction>()
@@ -341,15 +358,17 @@ class SyncManager(private val context: Context) {
             }
             if (itemsToInsert.isNotEmpty()) dao.insertAccountTransactions(itemsToInsert)
         }
+        return pushOk && pullOk
     }
-
-    private suspend fun syncAccounts(userId: String, authHeader: String) {
+    private suspend fun syncAccounts(userId: String, authHeader: String): Boolean {
         val tableName = "accounts"
         val unsynced = dao.getUnsyncedAccounts().map { it.copy(userId = userId, isSynced = true) }
-        if (pushRemote(tableName, authHeader, unsynced)) {
+        val pushOk = pushRemote(tableName, authHeader, unsynced)
+        if (pushOk) {
             if (unsynced.isNotEmpty()) dao.insertAccounts(unsynced)
         }
         val remote: List<Account>? = pullRemote(tableName, authHeader)
+        val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
             val localMap = dao.getAllAccountsSync().associateBy { it.id }
             val itemsToInsert = mutableListOf<Account>()
@@ -365,15 +384,17 @@ class SyncManager(private val context: Context) {
             }
             if (itemsToInsert.isNotEmpty()) dao.insertAccounts(itemsToInsert)
         }
+        return pushOk && pullOk
     }
-
-    private suspend fun syncPendingTransactions(userId: String, authHeader: String) {
+    private suspend fun syncPendingTransactions(userId: String, authHeader: String): Boolean {
         val tableName = "pending_transactions"
         val unsynced = dao.getUnsyncedPendingTransactions().map { it.copy(userId = userId, isSynced = true) }
-        if (pushRemote(tableName, authHeader, unsynced)) {
+        val pushOk = pushRemote(tableName, authHeader, unsynced)
+        if (pushOk) {
             if (unsynced.isNotEmpty()) dao.insertPendingTransactions(unsynced)
         }
         val remote: List<PendingTransaction>? = pullRemote(tableName, authHeader)
+        val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
             val localMap = dao.getAllPendingTransactionsSync().associateBy { it.id }
             val itemsToInsert = mutableListOf<PendingTransaction>()
@@ -389,15 +410,17 @@ class SyncManager(private val context: Context) {
             }
             if (itemsToInsert.isNotEmpty()) dao.insertPendingTransactions(itemsToInsert)
         }
+        return pushOk && pullOk
     }
-
-    private suspend fun syncAiConversations(userId: String, authHeader: String) {
+    private suspend fun syncAiConversations(userId: String, authHeader: String): Boolean {
         val tableName = "ai_conversations"
         val unsynced = dao.getUnsyncedAiConversations().map { it.copy(userId = userId, isSynced = true) }
-        if (pushRemote(tableName, authHeader, unsynced)) {
+        val pushOk = pushRemote(tableName, authHeader, unsynced)
+        if (pushOk) {
             if (unsynced.isNotEmpty()) dao.insertAiConversations(unsynced)
         }
         val remote: List<AiConversation>? = pullRemote(tableName, authHeader)
+        val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
             val localMap = dao.getAllAiConversationsSync().associateBy { it.id }
             val itemsToInsert = mutableListOf<AiConversation>()
@@ -413,15 +436,17 @@ class SyncManager(private val context: Context) {
             }
             if (itemsToInsert.isNotEmpty()) dao.insertAiConversations(itemsToInsert)
         }
+        return pushOk && pullOk
     }
-
-    private suspend fun syncAiChatMessages(userId: String, authHeader: String) {
+    private suspend fun syncAiChatMessages(userId: String, authHeader: String): Boolean {
         val tableName = "ai_chat_messages"
         val unsynced = dao.getUnsyncedAiChatMessages().map { it.copy(userId = userId, isSynced = true) }
-        if (pushRemote(tableName, authHeader, unsynced)) {
+        val pushOk = pushRemote(tableName, authHeader, unsynced)
+        if (pushOk) {
             if (unsynced.isNotEmpty()) dao.insertAiChatMessages(unsynced)
         }
         val remote: List<AiChatMessage>? = pullRemote(tableName, authHeader)
+        val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
             val localMap = dao.getAllAiChatMessagesSync().associateBy { it.id }
             val itemsToInsert = mutableListOf<AiChatMessage>()
@@ -437,20 +462,22 @@ class SyncManager(private val context: Context) {
             }
             if (itemsToInsert.isNotEmpty()) dao.insertAiChatMessages(itemsToInsert)
         }
+        return pushOk && pullOk
     }
-
-    private suspend fun syncOnboardingAnswers(userId: String?, authHeader: String?) {
+    private suspend fun syncOnboardingAnswers(userId: String?, authHeader: String?): Boolean {
         val tableName = "onboarding_answers"
         val rawUnsynced = dao.getUnsyncedOnboardingAnswers()
         val unsynced = rawUnsynced.map { it.copy(userId = userId, isSynced = true) }
 
-        if (pushRemote(tableName, authHeader, unsynced)) {
+        val pushOk = pushRemote(tableName, authHeader, unsynced)
+        if (pushOk) {
             if (unsynced.isNotEmpty()) dao.insertOnboardingAnswers(unsynced)
         }
         
-        if (authHeader == null) return
-        
+        if (authHeader == null) return false
+
         val remote: List<OnboardingAnswer>? = pullRemote(tableName, authHeader)
+        val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
             val localMap = dao.getAllOnboardingAnswersSync().associateBy { it.id }
             val itemsToInsert = mutableListOf<OnboardingAnswer>()
@@ -466,14 +493,15 @@ class SyncManager(private val context: Context) {
             }
             if (itemsToInsert.isNotEmpty()) dao.insertOnboardingAnswers(itemsToInsert)
         }
+    return pushOk && pullOk
     }
 
     suspend fun deleteFromCloud(tableName: String, id: String) = withContext(Dispatchers.IO) {
         val user = Clerk.userFlow.value
-        if (user == null) return@withContext
+        if (user == null) return@withContext false
         
         try {
-            val authHeader = getAuthHeader() ?: return@withContext
+            val authHeader = getAuthHeader() ?: return@withContext false
             
             val response = ktorClient.delete("$apiUrl/sync/delete") {
                 header(HttpHeaders.Authorization, authHeader)

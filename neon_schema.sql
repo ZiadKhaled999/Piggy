@@ -129,6 +129,8 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     "isBiometricLockEnabled" BOOLEAN DEFAULT false,
     "isScreenshotProtectionEnabled" BOOLEAN DEFAULT false,
     "isPremium" BOOLEAN DEFAULT false,
+    "premiumExpiryTimestamp" BIGINT DEFAULT 0,
+    "isLifetimePremium" BOOLEAN DEFAULT false,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
     "isSynced" BOOLEAN DEFAULT true

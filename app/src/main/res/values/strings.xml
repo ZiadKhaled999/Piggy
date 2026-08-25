@@ -58,6 +58,7 @@
     <string name="help_improve">Help us improve Piggy Ledger! Click below to visit our feature request board. There, you can suggest new features, report bugs, and upvote existing suggestions from other users.</string>
     <string name="rate_app_title">Rate the App</string>
     <string name="enjoying_piggy_ledger">Enjoying Piggy Ledger? Tap the stars to rate your experience. Your support keeps us going!</string>
+    <string name="rating_submitted_thanks">Thank you for rating Piggy Ledger!</string>
     <string name="backup_data_title">Backup Data</string>
     <string name="secure_local_export">Secure Local Export</string>
     <string name="save_goals_desc">Save your goals, logs, and ledger stats to a backup JSON file.</string>

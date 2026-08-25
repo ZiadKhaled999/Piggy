@@ -290,25 +290,25 @@ object StreakManager {
             actionToday -> {
                 categoryId = 8 // Streak Extended / Logged Today
                 badgeRes = R.drawable.streak
-                bgRes = R.drawable.img_widget_bg_cyan_1785543039542
+                bgRes = R.drawable.bg_widget_card
                 mascotRes = R.drawable.ic_piggy_success
             }
             isFrozenToday -> {
                 categoryId = 7 // Streak Frozen State
                 badgeRes = R.drawable.streak_frozen
-                bgRes = R.drawable.img_widget_bg_dark_1785543053480
+                bgRes = R.drawable.bg_widget_card
                 mascotRes = R.drawable.ic_piggy_worried
             }
             streak == 0 && dates.isNotEmpty() -> {
                 categoryId = if (missedDays > 3) 10 else 9 // Ghosted or Broken
                 badgeRes = R.drawable.streak_missed
-                bgRes = R.drawable.img_widget_bg_dark_1785543053480
+                bgRes = R.drawable.bg_widget_card
                 mascotRes = R.drawable.ic_piggy_lost
             }
             dates.isEmpty() -> {
                 categoryId = 12 // Streak Born
                 badgeRes = R.drawable.streak
-                bgRes = R.drawable.img_widget_bg_cyan_1785543039542
+                bgRes = R.drawable.bg_widget_card
                 mascotRes = R.drawable.ic_piggy_happy
             }
             else -> {
@@ -316,37 +316,37 @@ object StreakManager {
                     in 0..3 -> {
                         categoryId = 1
                         badgeRes = R.drawable.streak
-                        bgRes = R.drawable.img_widget_bg_cyan_1785543039542
+                        bgRes = R.drawable.bg_widget_card
                         mascotRes = R.drawable.ic_piggy_happy
                     }
                     in 4..11 -> {
                         categoryId = 2
                         badgeRes = R.drawable.streak
-                        bgRes = R.drawable.img_widget_bg_cyan_1785543039542
+                        bgRes = R.drawable.bg_widget_card
                         mascotRes = R.drawable.ic_piggy_happy
                     }
                     in 12..15 -> {
                         categoryId = 3
                         badgeRes = R.drawable.streak
-                        bgRes = R.drawable.img_widget_bg_cyan_1785543039542
+                        bgRes = R.drawable.bg_widget_card
                         mascotRes = R.drawable.ic_piggy_happy
                     }
                     in 16..19 -> {
                         categoryId = 4
                         badgeRes = R.drawable.streak
-                        bgRes = R.drawable.img_widget_bg_urgent_1785543067926
+                        bgRes = R.drawable.bg_widget_card
                         mascotRes = R.drawable.ic_piggy_worried
                     }
                     in 20..21 -> {
                         categoryId = 5
                         badgeRes = R.drawable.streak_missed
-                        bgRes = R.drawable.img_widget_bg_urgent_1785543067926
+                        bgRes = R.drawable.bg_widget_card
                         mascotRes = R.drawable.ic_piggy_worried
                     }
                     else -> {
                         categoryId = 6
                         badgeRes = R.drawable.streak_missed
-                        bgRes = R.drawable.img_widget_bg_urgent_1785543067926
+                        bgRes = R.drawable.bg_widget_card
                         mascotRes = R.drawable.ic_piggy_panic
                     }
                 }

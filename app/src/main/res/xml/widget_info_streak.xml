@@ -11,5 +11,5 @@
     android:resizeMode="none"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/widget_streak"
-    android:previewImage="@drawable/ic_preview_streak"
+    android:previewImage="@drawable/ic_preview_streak_1787689150672"
     android:widgetCategory="home_screen" />

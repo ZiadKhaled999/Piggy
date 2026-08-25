@@ -9,7 +9,22 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,10 +59,14 @@ fun FeedbackSettingsView(
     val authUserName by viewModel.authUserName.collectAsState(initial = "")
     val authUserEmail by viewModel.authUserEmail.collectAsState(initial = "")
 
-    val categoryRows = remember {
+    val categories = remember {
         listOf(
-            listOf("Bug Report", "Feature Request", "UI / UX"),
-            listOf("Sync & Data", "Billing / Pro", "Others")
+            "Bug Report",
+            "Feature Request",
+            "UI / UX",
+            "Sync & Data",
+            "Billing / Pro",
+            "Others"
         )
     }
     var selectedCategory by remember { mutableStateOf("Bug Report") }
@@ -97,37 +116,44 @@ fun FeedbackSettingsView(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 8.dp)
         ) {
-            // Category Chips (Row by Row)
-            categoryRows.forEachIndexed { rowIndex, rowItems ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    rowItems.forEach { category ->
-                        val isSelected = selectedCategory == category
-                        Box(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .background(if (isSelected) PinkPrimary else Color(0xFFF1F5F9))
-                                .then(
-                                    if (!isSelected) Modifier.border(1.dp, Color(0xFFE2E8F0), CircleShape)
-                                    else Modifier
+            // Category Chips
+            val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+            val isCompact = configuration.screenWidthDp < 360
+            val columns = if (isCompact) 2 else 3
+            val chunkedCategories = categories.chunked(columns)
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                chunkedCategories.forEach { rowCategories ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowCategories.forEach { category ->
+                            val isSelected = selectedCategory == category
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(if (isSelected) PinkPrimary else Color(0xFFF1F5F9))
+                                    .then(
+                                        if (!isSelected) Modifier.border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                                        else Modifier
+                                    )
+                                    .clickable { selectedCategory = category }
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = category,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else NavyDark
                                 )
-                                .clickable { selectedCategory = category }
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = category,
-                                fontSize = 13.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) Color.White else NavyDark
-                            )
+                            }
                         }
                     }
-                }
-                if (rowIndex < categoryRows.size - 1) {
-                    Spacer(modifier = Modifier.height(10.dp))
                 }
             }
 
@@ -326,33 +352,53 @@ fun FeedbackSettingsView(
                     val body = "Category: $selectedCategory\nName: ${authUserName.ifBlank { "User" }}\nEmail: ${authUserEmail.ifBlank { "user@example.com" }}\n\nDetails:\n$feedbackMessage"
 
                     try {
-                        val mailtoUrl = "mailto:contact@piggyapp.top" +
-                                "?subject=" + Uri.encode(subject) +
-                                "&body=" + Uri.encode(body)
-                        val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse(mailtoUrl)
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        // Attempt 1: Direct ACTION_SENDTO mailto (Best for bypassing share sheet)
+                        val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:contact@piggyapp.top")
+                            putExtra(Intent.EXTRA_SUBJECT, subject)
+                            putExtra(Intent.EXTRA_TEXT, body)
+                            
+                            if (selectedAttachmentUri != null) {
+                                putExtra(Intent.EXTRA_STREAM, selectedAttachmentUri)
+                                clipData = android.content.ClipData.newRawUri("Attachment", selectedAttachmentUri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
                         }
-                        val chooser = Intent.createChooser(mailIntent, "Send Email...").apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        context.startActivity(chooser)
-                    } catch (e: Throwable) {
-                        try {
-                            val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
+
+                        // Check if an email app exists that can handle this
+                        val pm = context.packageManager
+                        if (emailIntent.resolveActivity(pm) != null) {
+                            context.startActivity(emailIntent)
+                        } else {
+                            // Attempt 2: Fallback to ACTION_SEND with email selector
+                            val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "message/rfc822"
                                 putExtra(Intent.EXTRA_EMAIL, arrayOf("contact@piggyapp.top"))
                                 putExtra(Intent.EXTRA_SUBJECT, subject)
                                 putExtra(Intent.EXTRA_TEXT, body)
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                
+                                if (selectedAttachmentUri != null) {
+                                    putExtra(Intent.EXTRA_STREAM, selectedAttachmentUri)
+                                    clipData = android.content.ClipData.newRawUri("Attachment", selectedAttachmentUri)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
                             }
-                            val chooser = Intent.createChooser(sendIntent, "Send Email...").apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            // Try setting to Gmail explicitly if installed
+                            val gmailPackage = "com.google.android.gm"
+                            val gmailIntent = Intent().apply { setPackage(gmailPackage) }
+                            if (pm.getLaunchIntentForPackage(gmailPackage) != null) {
+                                fallbackIntent.setPackage(gmailPackage)
+                                context.startActivity(fallbackIntent)
+                            } else {
+                                val chooser = Intent.createChooser(fallbackIntent, "Send Feedback").apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(chooser)
                             }
-                            context.startActivity(chooser)
-                        } catch (ex: Throwable) {
-                            android.util.Log.e("Feedback", "No email app found", ex)
                         }
+                    } catch (e: Throwable) {
+                        android.util.Log.e("Feedback", "Failed sending feedback", e)
+                        ToastUtil.show(context, "Could not open email app", Toast.LENGTH_SHORT)
                     }
 
                     feedbackMessage = ""

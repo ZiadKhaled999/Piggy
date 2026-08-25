@@ -480,13 +480,19 @@ fun DetailSettingsView(
         )
         return
     }
+
+    if (mode == SettingsMode.PRO) {
+        PiggyLedgerProView(
+            viewModel = viewModel,
+            onClose = onBack
+        )
+        return
+    }
     
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(if (mode == SettingsMode.PRO) Modifier.padding(horizontal = 24.dp) else Modifier)
+            modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = onBack) {
                 Icon(
@@ -635,16 +641,30 @@ fun DetailSettingsView(
                     
                     Button(
                         onClick = {
-                            val mailtoUrl = "mailto:albhyrytwamrwhy@gmail.com" +
-                                    "?subject=" + Uri.encode("Piggy Ledger Rating") +
-                                    "&body=" + Uri.encode("I rated Piggy Ledger $rating/5 stars!")
-                            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                data = Uri.parse(mailtoUrl)
-                            }
                             try {
-                                context.startActivity(Intent.createChooser(intent, "Send Rating"))
+                                com.posthog.PostHog.capture(
+                                    "user_rated_app",
+                                    properties = mapOf("stars" to rating)
+                                )
+                            } catch (e: Throwable) {
+                                // ignore
+                            }
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.rating_submitted_thanks), Toast.LENGTH_SHORT)
+                            val packageName = context.packageName
+                            try {
+                                val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY or Intent.FLAG_ACTIVITY_NEW_DOCUMENT or Intent.FLAG_ACTIVITY_MULTIPLE_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(marketIntent)
                             } catch (e: Exception) {
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.email_error), Toast.LENGTH_SHORT)
+                                try {
+                                    val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName")).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(webIntent)
+                                } catch (ex: Exception) {
+                                    com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Could not open Google Play Store", Toast.LENGTH_SHORT)
+                                }
                             }
                         },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -1194,23 +1214,6 @@ fun PiggyLedgerPaywall(
 ) {
     val context = LocalContext.current
     
-    // Back button wrapper
-    Column(modifier = Modifier.fillMaxSize()) {
-        if (onClose != null) {
-            IconButton(
-                onClick = onClose,
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.back_icon),
-                    tint = NavyDark
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-    
     var offerings: com.revenuecat.purchases.Offerings? by remember { mutableStateOf(null) }
     var isLoadingOfferings by remember { mutableStateOf(true) }
     var fetchError by remember { mutableStateOf<String?>(null) }
@@ -1334,6 +1337,26 @@ fun PiggyLedgerPaywall(
                 .padding(bottom = 36.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (onClose != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onClose) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back_icon),
+                            tint = NavyDark
+                        )
+                    }
+                }
+            } else {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             // Header Title & Subtitle
             Column(
                 modifier = Modifier
@@ -1720,7 +1743,6 @@ fun PiggyLedgerPaywall(
             }
         }
     }
-}
 }
 
 @Composable

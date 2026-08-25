@@ -66,7 +66,7 @@ fun DashboardScreen(
     onNotificationsClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val streakCount = remember { com.oryno.piggy_ledger.data.StreakManager.getStreak(context) }
+    val streakCount by viewModel.streakCount.collectAsStateWithLifecycle()
     val goals by viewModel.goals.collectAsState()
     val transactions by viewModel.allTransactions.collectAsState()
     val accounts by viewModel.allAccounts.collectAsState()

@@ -36,12 +36,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.data.StreakManager
 import com.airbnb.lottie.compose.LottieAnimation
@@ -59,8 +61,9 @@ fun StreakAchievementsScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val reactiveStreakCount by viewModel.streakCount.collectAsStateWithLifecycle()
 
-    var streakPair by remember { mutableStateOf(StreakManager.getStreakAndFrozenDates(context)) }
+    var streakPair by remember(reactiveStreakCount) { mutableStateOf(StreakManager.getStreakAndFrozenDates(context)) }
     val currentStreak = streakPair.first
     val frozenDates = streakPair.second
     val longestStreak = remember(currentStreak) { StreakManager.getLongestStreak(context) }
@@ -88,6 +91,9 @@ fun StreakAchievementsScreen(
         label = "FlameScale"
     )
 
+    val configuration = LocalConfiguration.current
+    val isCompact = configuration.screenWidthDp < 360
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -99,7 +105,7 @@ fun StreakAchievementsScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = if (isCompact) 8.dp else 12.dp)
                 .padding(bottom = 40.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -223,18 +229,16 @@ fun StreakAchievementsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Top Details & Legend Bar (Streak, Streak Freezed, Streak Missed, Longest Streak)
+            // Top Details & Legend Bar (Border removed for seamless design, fully responsive)
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                shadowElevation = 1.dp
+                color = Color.White
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                        .padding(horizontal = if (isCompact) 8.dp else 12.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -243,12 +247,12 @@ fun StreakAchievementsScreen(
                         Image(
                             painter = painterResource(id = R.drawable.streak),
                             contentDescription = null,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(if (isCompact) 18.dp else 20.dp)
                         )
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(3.dp))
                         Text(
                             text = "Streak",
-                            fontSize = 12.sp,
+                            fontSize = if (isCompact) 11.sp else 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF334155)
                         )
@@ -259,12 +263,12 @@ fun StreakAchievementsScreen(
                         Image(
                             painter = painterResource(id = R.drawable.streak_frozen),
                             contentDescription = null,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(if (isCompact) 18.dp else 20.dp)
                         )
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(3.dp))
                         Text(
                             text = "Freezed",
-                            fontSize = 12.sp,
+                            fontSize = if (isCompact) 11.sp else 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF0284C7)
                         )
@@ -275,22 +279,21 @@ fun StreakAchievementsScreen(
                         Image(
                             painter = painterResource(id = R.drawable.streak_missed),
                             contentDescription = null,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(if (isCompact) 18.dp else 20.dp)
                         )
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(3.dp))
                         Text(
                             text = "Missed",
-                            fontSize = 12.sp,
+                            fontSize = if (isCompact) 11.sp else 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFE11D48)
                         )
                     }
 
-                    // Longest Streak (Compact Top Badge)
+                    // Longest Streak (Compact Top Badge, border removed)
                     Surface(
                         color = Color(0xFFFFF7ED),
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, Color(0xFFFDBA74))
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -298,7 +301,7 @@ fun StreakAchievementsScreen(
                         ) {
                             Text(
                                 text = "🏆 $longestStreak d",
-                                fontSize = 12.sp,
+                                fontSize = if (isCompact) 11.sp else 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFC2410C)
                             )
@@ -307,20 +310,18 @@ fun StreakAchievementsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Monthly Streak Calendar Grid
+            // Monthly Streak Calendar Grid (Border removed, full-width responsive canvas)
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                shadowElevation = 2.dp
+                color = Color.White
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp)
+                        .padding(horizontal = if (isCompact) 8.dp else 14.dp, vertical = 16.dp)
                 ) {
                     val monthNameFormat = SimpleDateFormat("MMMM yyyy", Locale.US)
                     val monthTitle = monthNameFormat.format(displayCalendar.time)
@@ -381,7 +382,7 @@ fun StreakAchievementsScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Day Name Headers (Mon - Sun)
+                    // Day Name Headers (Mon - Sun, balanced across 7 columns)
                     val daysOfWeek = listOf("M", "T", "W", "T", "F", "S", "S")
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -394,7 +395,7 @@ fun StreakAchievementsScreen(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.width(36.dp)
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
@@ -473,25 +474,27 @@ fun StreakAchievementsScreen(
                                     .height(44.dp)
                             ) {
                                 val colWidth = maxWidth / 7
+                                val cellSize = minOf(colWidth * 0.88f, 38.dp)
 
-                                // Background pills for streak segments (contiguous days connected)
+                                // Background pills for streak segments (contiguous days connected, clean borderless highlight)
                                 streakSegments.forEach { (startCol, endCol) ->
-                                    val pillWidth = colWidth * (endCol - startCol) + 42.dp
-                                    val startOffset = colWidth * startCol + (colWidth - 42.dp) / 2
+                                    val pillWidth = colWidth * (endCol - startCol) + cellSize
+                                    val startOffset = colWidth * startCol + (colWidth - cellSize) / 2
                                     Box(
                                         modifier = Modifier
                                             .offset(x = startOffset)
                                             .width(pillWidth)
-                                            .height(42.dp)
-                                            .background(Color(0xFFFFF7ED), RoundedCornerShape(21.dp))
-                                            .border(1.dp, Color(0xFFFDBA74), RoundedCornerShape(21.dp))
+                                            .height(cellSize)
+                                            .align(Alignment.CenterStart)
+                                            .background(Color(0xFFFFF7ED), RoundedCornerShape(cellSize / 2))
                                     )
                                 }
 
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(44.dp)
+                                        .height(44.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     for (colIndex in 0 until 7) {
                                         val cell = rowCells[colIndex]
@@ -507,57 +510,54 @@ fun StreakAchievementsScreen(
                                                         Image(
                                                             painter = painterResource(id = R.drawable.streak),
                                                             contentDescription = "Active Streak",
-                                                            modifier = Modifier.size(34.dp)
+                                                            modifier = Modifier.size(minOf(cellSize * 0.88f, 34.dp))
                                                         )
                                                     }
                                                     cell.isFrozen -> {
                                                         Box(
                                                             modifier = Modifier
-                                                                .size(42.dp)
-                                                                .background(Color(0xFFF0F9FF), CircleShape)
-                                                                .border(1.dp, Color(0xFF7DD3FC), CircleShape),
+                                                                .size(cellSize)
+                                                                .background(Color(0xFFF0F9FF), CircleShape),
                                                             contentAlignment = Alignment.Center
                                                         ) {
                                                             Image(
                                                                 painter = painterResource(id = R.drawable.streak_frozen),
                                                                 contentDescription = "Frozen Streak",
-                                                                modifier = Modifier.size(32.dp)
+                                                                modifier = Modifier.size(minOf(cellSize * 0.78f, 30.dp))
                                                             )
                                                         }
                                                     }
                                                     cell.isMissed -> {
                                                         Box(
                                                             modifier = Modifier
-                                                                .size(42.dp)
-                                                                .background(Color(0xFFFEF2F2), CircleShape)
-                                                                .border(1.dp, Color(0xFFFCA5A5), CircleShape),
+                                                                .size(cellSize)
+                                                                .background(Color(0xFFFEF2F2), CircleShape),
                                                             contentAlignment = Alignment.Center
                                                         ) {
                                                             Image(
                                                                 painter = painterResource(id = R.drawable.streak_missed),
                                                                 contentDescription = "Missed Streak",
-                                                                modifier = Modifier.size(30.dp)
+                                                                modifier = Modifier.size(minOf(cellSize * 0.75f, 28.dp))
                                                             )
                                                         }
                                                     }
                                                     else -> {
                                                         Box(
                                                             modifier = Modifier
-                                                                .size(42.dp)
+                                                                .size(cellSize)
                                                                 .background(
                                                                     if (cell.isToday) Color(0xFFFFF7ED) else Color(0xFFF8FAFC),
                                                                     CircleShape
                                                                 )
-                                                                .border(
-                                                                    width = if (cell.isToday) 2.dp else 1.dp,
-                                                                    color = if (cell.isToday) Color(0xFFFF7A00) else Color(0xFFE2E8F0),
-                                                                    shape = CircleShape
+                                                                .then(
+                                                                    if (cell.isToday) Modifier.border(2.dp, Color(0xFFFF7A00), CircleShape)
+                                                                    else Modifier
                                                                 ),
                                                             contentAlignment = Alignment.Center
                                                         ) {
                                                             Text(
                                                                 text = "${cell.dayNum}",
-                                                                fontSize = 13.sp,
+                                                                fontSize = if (isCompact) 11.sp else 13.sp,
                                                                 fontWeight = if (cell.isToday) FontWeight.Bold else FontWeight.Medium,
                                                                 color = if (cell.isToday) Color(0xFFFF7A00) else Color(0xFF94A3B8)
                                                             )

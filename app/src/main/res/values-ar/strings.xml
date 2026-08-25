@@ -153,6 +153,7 @@
     <string name="join_community_board">انضم لصفحة الاقتراحات والآراء</string>
     <string name="help_improve">ساعدنا نحسن بيجى! دوس تحت عشان تزور صفحة الاقتراحات. هناك تقدر تقترح ميزات جديدة، تبلغ عن المشاكل، وتصوت للأفكار التانية.</string>
     <string name="rate_app_title">قيم التطبيق</string>
+    <string name="rating_submitted_thanks">شكراً لك على تقييم بيجي ليدجر!</string>
     <string name="enjoying_piggy_ledger">مبسوط مع بيجى؟ قيم تجربتك بنجوم. دعمك هو اللي بيخلينا نستمر!</string>
     <string name="backup_data_title">نسخ احتياطي للبيانات</string>
     <string name="secure_local_export">تصدير محلي آمن</string>

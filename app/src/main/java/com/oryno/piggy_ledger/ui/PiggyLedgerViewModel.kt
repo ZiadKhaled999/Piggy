@@ -50,7 +50,22 @@ class PiggyLedgerViewModel(
         isLenient = true
     }
 
+    private val _streakCount = MutableStateFlow<Int>(0)
+    val streakCount: StateFlow<Int> = _streakCount.asStateFlow()
+
+    fun refreshStreak() {
+        viewModelScope.launch {
+            _streakCount.value = StreakManager.getStreak(context)
+        }
+    }
+
+    private fun recordStreakAction() {
+        StreakManager.recordAction(context)
+        refreshStreak()
+    }
+
     init {
+        refreshStreak()
         triggerCloudSync()
         viewModelScope.launch {
             userPreferences.isPrivacyModeEnabled.collect { savedState ->
@@ -604,6 +619,10 @@ class PiggyLedgerViewModel(
                 repository.insertAccount(initialAccount)
                 val rowId = initialAccount.id
                 
+                recordStreakAction()
+                com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+                com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+                
                 // Fetch and save logo once online in background
                 viewModelScope.launch {
                     val localPath = downloadAndSaveLogo(context, domain)
@@ -616,6 +635,9 @@ class PiggyLedgerViewModel(
                 }
             } else {
                 repository.insertAccount(account)
+                recordStreakAction()
+                com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+                com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             }
         }
     }
@@ -721,6 +743,9 @@ class PiggyLedgerViewModel(
                     "source" to source
                 )
             )
+            recordStreakAction()
+            com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             val account = repository.getAccountById(accountId)
             if (account != null) {
                 val newBalance = account.current_balance + amount
@@ -812,6 +837,7 @@ class PiggyLedgerViewModel(
                 event = "goal_created",
                 properties = mapOf("goal_name" to name, "target_amount" to targetAmount, "goal_type" to "general", "deadline" to "none")
             )
+            recordStreakAction()
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
@@ -834,7 +860,7 @@ class PiggyLedgerViewModel(
                 event = "goal_transaction_added",
                 properties = mapOf("goal_id" to goalId, "amount" to amount, "note" to note, "running_total" to runningTotal)
             )
-            com.oryno.piggy_ledger.data.StreakManager.recordAction(context)
+            recordStreakAction()
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
@@ -852,7 +878,7 @@ class PiggyLedgerViewModel(
                     "type" to loan.type.name
                 )
             )
-            com.oryno.piggy_ledger.data.StreakManager.recordAction(context)
+            recordStreakAction()
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
@@ -877,7 +903,7 @@ class PiggyLedgerViewModel(
                 event = "loan_payment_added",
                 properties = mapOf<String, Any>("loan_id" to loanId, "amount" to amount, "note" to (note ?: ""))
             )
-            com.oryno.piggy_ledger.data.StreakManager.recordAction(context)
+            recordStreakAction()
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
@@ -904,7 +930,7 @@ class PiggyLedgerViewModel(
                 event = "loan_paid",
                 properties = mapOf("loan_id" to id)
             )
-            com.oryno.piggy_ledger.data.StreakManager.recordAction(context)
+            recordStreakAction()
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
@@ -948,6 +974,7 @@ class PiggyLedgerViewModel(
                 event = "pending_transaction_resolved",
                 properties = mapOf("pending_id" to pendingId, "account_id" to accountId)
             )
+            recordStreakAction()
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)

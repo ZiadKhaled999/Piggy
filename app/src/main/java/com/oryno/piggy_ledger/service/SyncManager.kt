@@ -170,7 +170,7 @@ class SyncManager(private val context: Context) {
                 if (localItem == null) {
                     itemsToInsert.add(remoteItem.copy(isSynced = true))
                 } else if (localItem.isSynced) {
-                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                    if (remoteItem.updatedAt > localItem.updatedAt) {
                         itemsToInsert.add(remoteItem.copy(isSynced = true))
                     }
                 }
@@ -238,7 +238,7 @@ class SyncManager(private val context: Context) {
                 if (localItem == null) {
                     itemsToInsert.add(remoteItem.copy(isSynced = true))
                 } else if (localItem.isSynced) {
-                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                    if (remoteItem.updatedAt > localItem.updatedAt) {
                         itemsToInsert.add(remoteItem.copy(isSynced = true))
                     }
                 }
@@ -262,7 +262,7 @@ class SyncManager(private val context: Context) {
                 if (localItem == null) {
                     itemsToInsert.add(remoteItem.copy(isSynced = true))
                 } else if (localItem.isSynced) {
-                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                    if (remoteItem.updatedAt > localItem.updatedAt) {
                         itemsToInsert.add(remoteItem.copy(isSynced = true))
                     }
                 }
@@ -286,7 +286,7 @@ class SyncManager(private val context: Context) {
                 if (localItem == null) {
                     itemsToInsert.add(remoteItem.copy(isSynced = true))
                 } else if (localItem.isSynced) {
-                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                    if (remoteItem.updatedAt > localItem.updatedAt) {
                         itemsToInsert.add(remoteItem.copy(isSynced = true))
                     }
                 }
@@ -310,7 +310,7 @@ class SyncManager(private val context: Context) {
                 if (localItem == null) {
                     itemsToInsert.add(remoteItem.copy(isSynced = true))
                 } else if (localItem.isSynced) {
-                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                    if (remoteItem.updatedAt > localItem.updatedAt) {
                         itemsToInsert.add(remoteItem.copy(isSynced = true))
                     }
                 }
@@ -334,7 +334,7 @@ class SyncManager(private val context: Context) {
                 if (localItem == null) {
                     itemsToInsert.add(remoteItem.copy(isSynced = true))
                 } else if (localItem.isSynced) {
-                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                    if (remoteItem.updatedAt > localItem.updatedAt) {
                         itemsToInsert.add(remoteItem.copy(isSynced = true))
                     }
                 }
@@ -358,7 +358,7 @@ class SyncManager(private val context: Context) {
                 if (localItem == null) {
                     itemsToInsert.add(remoteItem.copy(isSynced = true))
                 } else if (localItem.isSynced) {
-                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                    if (remoteItem.updatedAt > localItem.updatedAt) {
                         itemsToInsert.add(remoteItem.copy(isSynced = true))
                     }
                 }
@@ -382,7 +382,7 @@ class SyncManager(private val context: Context) {
                 if (localItem == null) {
                     itemsToInsert.add(remoteItem.copy(isSynced = true))
                 } else if (localItem.isSynced) {
-                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                    if (remoteItem.updatedAt > localItem.updatedAt) {
                         itemsToInsert.add(remoteItem.copy(isSynced = true))
                     }
                 }
@@ -406,7 +406,7 @@ class SyncManager(private val context: Context) {
                 if (localItem == null) {
                     itemsToInsert.add(remoteItem.copy(isSynced = true))
                 } else if (localItem.isSynced) {
-                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                    if (remoteItem.updatedAt > localItem.updatedAt) {
                         itemsToInsert.add(remoteItem.copy(isSynced = true))
                     }
                 }
@@ -430,7 +430,7 @@ class SyncManager(private val context: Context) {
                 if (localItem == null) {
                     itemsToInsert.add(remoteItem.copy(isSynced = true))
                 } else if (localItem.isSynced) {
-                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                    if (remoteItem.updatedAt > localItem.updatedAt) {
                         itemsToInsert.add(remoteItem.copy(isSynced = true))
                     }
                 }
@@ -442,7 +442,7 @@ class SyncManager(private val context: Context) {
     private suspend fun syncOnboardingAnswers(userId: String?, authHeader: String?) {
         val tableName = "onboarding_answers"
         val rawUnsynced = dao.getUnsyncedOnboardingAnswers()
-        val unsynced = rawUnsynced.map { it.copy(isSynced = true) }
+        val unsynced = rawUnsynced.map { it.copy(userId = userId, isSynced = true) }
 
         if (pushRemote(tableName, authHeader, unsynced)) {
             if (unsynced.isNotEmpty()) dao.insertOnboardingAnswers(unsynced)
@@ -459,7 +459,7 @@ class SyncManager(private val context: Context) {
                 if (localItem == null) {
                     itemsToInsert.add(remoteItem.copy(isSynced = true))
                 } else if (localItem.isSynced) {
-                    if (remoteItem.updatedAt >= localItem.updatedAt) {
+                    if (remoteItem.updatedAt > localItem.updatedAt) {
                         itemsToInsert.add(remoteItem.copy(isSynced = true))
                     }
                 }

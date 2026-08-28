@@ -7,8 +7,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,148 +38,176 @@ fun LanguageSelectionScreen(
 ) {
     var selectedLanguage by remember { mutableStateOf<String?>(null) }
 
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isSmallScreen = configuration.screenHeightDp < 700 || configuration.screenWidthDp < 360
+    
+    val titleFontSize = if (isSmallScreen) 24.sp else 32.sp
+    val descFontSize = if (isSmallScreen) 14.sp else 16.sp
+    val btnFontSize = if (isSmallScreen) 16.sp else 18.sp
+    val btnHeight = if (isSmallScreen) 54.dp else 64.dp
+    val topSpacerHeight = if (isSmallScreen) 24.dp else 48.dp
+    val middleSpacerHeight = if (isSmallScreen) 24.dp else 64.dp
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
             .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 32.dp),
+            .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(48.dp))
-        
-        Text(
-            text = stringResource(id = R.string.select_language),
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Black,
-            color = NavyDark,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        Text(
-            text = stringResource(id = R.string.choose_language_desc),
-            fontSize = 16.sp,
-            color = TextLight,
-            textAlign = TextAlign.Center,
-            lineHeight = 24.sp,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        
-        Spacer(modifier = Modifier.height(64.dp))
-        
-        LanguageOption(
-            title = stringResource(id = R.string.english),
-            subtitle = stringResource(id = R.string.united_states),
-            flagResId = R.drawable.ic_flag_us,
-            isSelected = selectedLanguage == "en",
-            onClick = { selectedLanguage = "en" }
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        LanguageOption(
-            title = stringResource(id = R.string.arabic),
-            subtitle = stringResource(id = R.string.saudi_arabia),
-            flagResId = R.drawable.ic_flag_sa,
-            isSelected = selectedLanguage == "ar",
-            onClick = { selectedLanguage = "ar" }
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        LanguageOption(
-            title = stringResource(id = R.string.egyptian),
-            subtitle = stringResource(id = R.string.egypt),
-            flagResId = R.drawable.ic_flag_eg,
-            isSelected = selectedLanguage == "ar-EG",
-            onClick = { selectedLanguage = "ar-EG" }
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        androidx.compose.animation.AnimatedVisibility(visible = selectedLanguage != null) {
-            val message = when(selectedLanguage) {
-                "ar" -> "يمكنك تغيير اللغة لاحقاً من الإعدادات."
-                "ar-EG" -> "تقدر تغير اللغة بعدين من الإعدادات."
-                else -> "You can change this later in settings."
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = if (isSmallScreen) 16.dp else 24.dp)
+                .padding(top = if (isSmallScreen) 16.dp else 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(topSpacerHeight))
+            
+            Text(
+                text = stringResource(id = R.string.select_language),
+                fontSize = titleFontSize,
+                fontWeight = FontWeight.Black,
+                color = NavyDark,
+                textAlign = TextAlign.Center
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Text(
+                text = stringResource(id = R.string.choose_language_desc),
+                fontSize = descFontSize,
+                color = TextLight,
+                textAlign = TextAlign.Center,
+                lineHeight = if (isSmallScreen) 20.sp else 24.sp,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            
+            Spacer(modifier = Modifier.height(middleSpacerHeight))
+            
+            LanguageOption(
+                title = stringResource(id = R.string.english),
+                subtitle = stringResource(id = R.string.united_states),
+                flagResId = R.drawable.ic_flag_us,
+                isSelected = selectedLanguage == "en",
+                isSmallScreen = isSmallScreen,
+                onClick = { selectedLanguage = "en" }
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            LanguageOption(
+                title = stringResource(id = R.string.arabic),
+                subtitle = stringResource(id = R.string.saudi_arabia),
+                flagResId = R.drawable.ic_flag_sa,
+                isSelected = selectedLanguage == "ar",
+                isSmallScreen = isSmallScreen,
+                onClick = { selectedLanguage = "ar" }
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            LanguageOption(
+                title = stringResource(id = R.string.egyptian),
+                subtitle = stringResource(id = R.string.egypt),
+                flagResId = R.drawable.ic_flag_eg,
+                isSelected = selectedLanguage == "ar-EG",
+                isSmallScreen = isSmallScreen,
+                onClick = { selectedLanguage = "ar-EG" }
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            androidx.compose.animation.AnimatedVisibility(visible = selectedLanguage != null) {
+                val message = when(selectedLanguage) {
+                    "ar" -> "يمكنك تغيير اللغة لاحقاً من الإعدادات."
+                    "ar-EG" -> "تقدر تغير اللغة بعدين من الإعدادات."
+                    else -> "You can change this later in settings."
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFDADADA), RoundedCornerShape(25.dp))
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = message,
+                        color = PinkPrimary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = if (isSmallScreen) 12.sp else 14.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = if (isSmallScreen) 16.sp else 20.sp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
-            Box(
+            
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+        
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = if (isSmallScreen) 16.dp else 24.dp)
+                .padding(bottom = if (isSmallScreen) 16.dp else 32.dp, top = 8.dp)
+        ) {
+            Button(
+                onClick = {
+                    selectedLanguage?.let {
+                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(it))
+                        onLanguageSelected()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFDADADA), RoundedCornerShape(25.dp))
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
+                    .height(btnHeight),
+                enabled = selectedLanguage != null,
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = NavyDark,
+                    disabledContainerColor = Color(0xFFE2E8F0),
+                    disabledContentColor = Color(0xFF94A3B8)
+                )
             ) {
                 Text(
-                    text = message,
-                    color = PinkPrimary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 20.sp,
-                    modifier = Modifier.fillMaxWidth()
+                    text = stringResource(id = R.string.continue_btn),
+                    fontSize = btnFontSize,
+                    fontWeight = FontWeight.Bold
                 )
             }
-        }
-        
-        Spacer(modifier = Modifier.weight(1f))
-        
-        Button(
-            onClick = {
-                selectedLanguage?.let {
-                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(it))
-                    onLanguageSelected()
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp),
-            enabled = selectedLanguage != null,
-            shape = RoundedCornerShape(20.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = NavyDark,
-                disabledContainerColor = Color(0xFFE2E8F0),
-                disabledContentColor = Color(0xFF94A3B8)
-            )
-        ) {
-            Text(
-                text = stringResource(id = R.string.continue_btn),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
 
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedButton(
-            onClick = {
-                selectedLanguage?.let {
-                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(it))
-                }
-                onAlreadyHaveAccount()
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp),
-            enabled = true,
-            shape = RoundedCornerShape(20.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color.White,
-                contentColor = NavyDark
-            ),
-            border = BorderStroke(
-                width = 1.dp,
-                color = NavyDark
-            )
-        ) {
-            Text(
-                text = stringResource(id = R.string.already_have_account),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
+            OutlinedButton(
+                onClick = {
+                    selectedLanguage?.let {
+                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(it))
+                    }
+                    onAlreadyHaveAccount()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(btnHeight),
+                enabled = true,
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.White,
+                    contentColor = NavyDark
+                ),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = NavyDark
+                )
+            ) {
+                Text(
+                    text = stringResource(id = R.string.already_have_account),
+                    fontSize = if (isSmallScreen) 14.sp else 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
@@ -188,12 +218,18 @@ fun LanguageOption(
     subtitle: String,
     flagResId: Int,
     isSelected: Boolean,
+    isSmallScreen: Boolean = false,
     onClick: () -> Unit
 ) {
+    val optionHeight = if (isSmallScreen) 72.dp else 84.dp
+    val flagSize = if (isSmallScreen) 36.dp else 48.dp
+    val titleSize = if (isSmallScreen) 16.sp else 18.sp
+    val subtitleSize = if (isSmallScreen) 12.sp else 14.sp
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(84.dp)
+            .height(optionHeight)
             .border(
                 width = if (isSelected) 3.dp else 2.dp,
                 color = if (isSelected) PinkPrimary else Color(0xFF94A3B8),
@@ -209,14 +245,14 @@ fun LanguageOption(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = if (isSmallScreen) 16.dp else 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
                 painter = painterResource(id = flagResId),
                 contentDescription = null,
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(flagSize)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
@@ -226,13 +262,13 @@ fun LanguageOption(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    fontSize = 18.sp,
+                    fontSize = titleSize,
                     fontWeight = FontWeight.Bold,
                     color = NavyDark
                 )
                 Text(
                     text = subtitle,
-                    fontSize = 14.sp,
+                    fontSize = subtitleSize,
                     color = TextLight
                 )
             }

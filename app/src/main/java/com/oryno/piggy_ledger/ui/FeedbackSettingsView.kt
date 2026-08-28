@@ -21,10 +21,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,23 +36,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun FeedbackSettingsView(
     viewModel: PiggyLedgerViewModel,
@@ -71,12 +77,14 @@ fun FeedbackSettingsView(
     }
     var selectedCategory by remember { mutableStateOf("Bug Report") }
     var feedbackMessage by remember { mutableStateOf("") }
-    var selectedAttachmentUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedAttachments by remember { mutableStateOf<List<Uri>>(emptyList()) }
 
     val attachmentLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        selectedAttachmentUri = uri
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            selectedAttachments = (selectedAttachments + uris).take(4)
+        }
     }
 
     Column(
@@ -116,20 +124,46 @@ fun FeedbackSettingsView(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 8.dp)
         ) {
-            // Category Chips
+            // Responsive Category Option Pills
             val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-            val isCompact = configuration.screenWidthDp < 360
+            val screenWidth = configuration.screenWidthDp
+            val isCompact = screenWidth < 360
             val columns = if (isCompact) 2 else 3
             val chunkedCategories = categories.chunked(columns)
 
+            // Sizing: Small by default, dynamically adjusting smaller on narrow screens so it never overflows or crashes
+            val pillFontSize = when {
+                screenWidth < 330 -> 10.5.sp
+                screenWidth < 360 -> 11.sp
+                screenWidth < 400 -> 11.5.sp
+                else -> 12.sp // Small by default
+            }
+
+            val pillHorizontalPadding = when {
+                screenWidth < 330 -> 8.dp
+                screenWidth < 360 -> 10.dp
+                screenWidth < 400 -> 11.dp
+                else -> 12.dp // Small by default
+            }
+
+            val pillVerticalPadding = when {
+                screenWidth < 360 -> 5.dp
+                else -> 6.dp // Small by default
+            }
+
+            val pillSpacing = when {
+                screenWidth < 360 -> 6.dp
+                else -> 8.dp
+            }
+
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(pillSpacing)
             ) {
                 chunkedCategories.forEach { rowCategories ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(pillSpacing)
                     ) {
                         rowCategories.forEach { category ->
                             val isSelected = selectedCategory == category
@@ -142,14 +176,19 @@ fun FeedbackSettingsView(
                                         else Modifier
                                     )
                                     .clickable { selectedCategory = category }
-                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                    .padding(
+                                        horizontal = pillHorizontalPadding,
+                                        vertical = pillVerticalPadding
+                                    ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = category,
-                                    fontSize = 13.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) Color.White else NavyDark
+                                    fontSize = pillFontSize,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else NavyDark,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                         }
@@ -242,75 +281,83 @@ fun FeedbackSettingsView(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Row(
+            LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // Cozy square add attachment button
-                Box(
-                    modifier = Modifier
-                        .size(76.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(Color(0xFFF1F5F9))
-                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(18.dp))
-                        .clickable {
-                            try {
-                                attachmentLauncher.launch("*/*")
-                            } catch (e: Throwable) {
-                                ToastUtil.show(context, "Cannot open file picker", Toast.LENGTH_SHORT)
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Attach media",
-                        tint = TextLight,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                if (selectedAttachmentUri != null) {
-                    Card(
+                items(selectedAttachments) { uri ->
+                    val isVideo = context.contentResolver.getType(uri)?.contains("video") == true
+                    Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .height(76.dp),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F5F9)),
-                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                            .size(76.dp)
                     ) {
-                        Row(
+                        // Thumbnail
+                        AsyncImage(
+                            model = uri,
+                            contentDescription = "Attachment",
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(horizontal = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color(0xFF2E2E2E)),
+                            contentScale = ContentScale.Crop
+                        )
+                        
+                        // Video icon
+                        if (isVideo) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Video",
+                                tint = Color.White,
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 6.dp)
+                                    .size(24.dp)
+                            )
+                        }
+
+                        // Close button at top right
+                        IconButton(
+                            onClick = { selectedAttachments = selectedAttachments - uri },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = 8.dp, y = (-8).dp)
+                                .size(26.dp)
+                                .background(Color(0xAA000000), CircleShape)
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Attached File",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = NavyDark
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = selectedAttachmentUri?.lastPathSegment ?: "File selected",
-                                    fontSize = 12.sp,
-                                    color = TextLight,
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                )
-                            }
-                            IconButton(onClick = { selectedAttachmentUri = null }) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Remove attachment",
-                                    tint = PinkPrimary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Remove",
+                                tint = Color.White,
+                                modifier = Modifier.padding(4.dp)
+                            )
+                        }
+                    }
+                }
+
+                if (selectedAttachments.size < 4) {
+                    item {
+                        // Square add attachment button
+                        Box(
+                            modifier = Modifier
+                                .size(76.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color(0xFF2E2E2E))
+                                .clickable {
+                                    try {
+                                        attachmentLauncher.launch("*/*")
+                                    } catch (e: Throwable) {
+                                        ToastUtil.show(context, "Cannot open file picker", Toast.LENGTH_SHORT)
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Attach media",
+                                tint = Color(0xFF9CA3AF),
+                                modifier = Modifier.size(32.dp)
+                            )
                         }
                     }
                 }
@@ -352,48 +399,50 @@ fun FeedbackSettingsView(
                     val body = "Category: $selectedCategory\nName: ${authUserName.ifBlank { "User" }}\nEmail: ${authUserEmail.ifBlank { "user@example.com" }}\n\nDetails:\n$feedbackMessage"
 
                     try {
-                        // Attempt 1: Direct ACTION_SENDTO mailto (Best for bypassing share sheet)
-                        val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse("mailto:contact@piggyapp.top")
+                        val action = if (selectedAttachments.size > 1) Intent.ACTION_SEND_MULTIPLE else Intent.ACTION_SEND
+                        val emailIntent = Intent(action).apply {
+                            // Using message/rfc822 to filter for email apps
+                            type = "message/rfc822"
+                            putExtra(Intent.EXTRA_EMAIL, arrayOf("contact@piggyapp.top"))
                             putExtra(Intent.EXTRA_SUBJECT, subject)
                             putExtra(Intent.EXTRA_TEXT, body)
                             
-                            if (selectedAttachmentUri != null) {
-                                putExtra(Intent.EXTRA_STREAM, selectedAttachmentUri)
-                                clipData = android.content.ClipData.newRawUri("Attachment", selectedAttachmentUri)
+                            // Use a selector to force email clients (prevents WhatsApp, etc. from showing up)
+                            selector = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"))
+                            
+                            if (selectedAttachments.isNotEmpty()) {
+                                if (selectedAttachments.size == 1) {
+                                    putExtra(Intent.EXTRA_STREAM, selectedAttachments.first())
+                                } else {
+                                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(selectedAttachments))
+                                }
+                                
+                                // Proper ClipData for granting URI permissions to all attachments
+                                val clip = android.content.ClipData.newRawUri("Attachment", selectedAttachments.first())
+                                for (i in 1 until selectedAttachments.size) {
+                                    clip.addItem(android.content.ClipData.Item(selectedAttachments[i]))
+                                }
+                                clipData = clip
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
                         }
 
-                        // Check if an email app exists that can handle this
-                        val pm = context.packageManager
-                        if (emailIntent.resolveActivity(pm) != null) {
-                            context.startActivity(emailIntent)
-                        } else {
-                            // Attempt 2: Fallback to ACTION_SEND with email selector
-                            val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "message/rfc822"
-                                putExtra(Intent.EXTRA_EMAIL, arrayOf("contact@piggyapp.top"))
-                                putExtra(Intent.EXTRA_SUBJECT, subject)
-                                putExtra(Intent.EXTRA_TEXT, body)
-                                
-                                if (selectedAttachmentUri != null) {
-                                    putExtra(Intent.EXTRA_STREAM, selectedAttachmentUri)
-                                    clipData = android.content.ClipData.newRawUri("Attachment", selectedAttachmentUri)
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                            }
-                            // Try setting to Gmail explicitly if installed
+                        try {
+                            context.startActivity(Intent.createChooser(emailIntent, "Send Feedback").apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            })
+                        } catch (e: Exception) {
+                            // Fallback if selector causes ActivityNotFoundException on weird custom OSes
+                            emailIntent.selector = null
                             val gmailPackage = "com.google.android.gm"
-                            val gmailIntent = Intent().apply { setPackage(gmailPackage) }
+                            val pm = context.packageManager
                             if (pm.getLaunchIntentForPackage(gmailPackage) != null) {
-                                fallbackIntent.setPackage(gmailPackage)
-                                context.startActivity(fallbackIntent)
+                                emailIntent.setPackage(gmailPackage)
+                                context.startActivity(emailIntent)
                             } else {
-                                val chooser = Intent.createChooser(fallbackIntent, "Send Feedback").apply {
+                                context.startActivity(Intent.createChooser(emailIntent, "Send Feedback").apply {
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(chooser)
+                                })
                             }
                         }
                     } catch (e: Throwable) {
@@ -402,7 +451,7 @@ fun FeedbackSettingsView(
                     }
 
                     feedbackMessage = ""
-                    selectedAttachmentUri = null
+                    selectedAttachments = emptyList()
                 },
                 modifier = Modifier
                     .fillMaxWidth()

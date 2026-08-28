@@ -83,7 +83,17 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
         dao.updateAccount(updatedAccount)
         triggerSync()
     }
-    suspend fun deleteAccount(id: String) { dao.deleteTransactionsForAccount(id); dao.deleteAccountById(id); try { com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("accounts", id) } catch(e: Exception){}; triggerSync() }
+    suspend fun deleteAccount(id: String) {
+        dao.deleteTransactionsForAccount(id)
+        dao.deleteAccountById(id)
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("accounts", id)
+            } catch (e: Exception) {
+                android.util.Log.e("Repository", "Failed cloud deletion for account: $id", e)
+            }
+        }
+    }
     suspend fun insertAccountTransaction(transaction: AccountTransaction) {
         val user = com.clerk.api.Clerk.userFlow.value
         val userId = user?.id ?: "local_user"

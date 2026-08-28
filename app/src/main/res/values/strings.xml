@@ -464,6 +464,8 @@
     <string name="delete_account">Delete Account</string>
     <string name="delete_account_confirm_title">Delete Account?</string>
     <string name="delete_account_confirm_msg">Are you sure you want to delete this account? All associated transactions will also be permanently deleted.</string>
+    <string name="delete_account_confirm_hint">Type the account name to confirm:</string>
+    <string name="delete_account_confirm_placeholder">Account Name</string>
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
     <string name="month_january">January</string>

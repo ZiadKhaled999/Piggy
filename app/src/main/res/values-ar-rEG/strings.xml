@@ -434,6 +434,8 @@
     <string name="delete_account">امسح الحساب</string>
     <string name="delete_account_confirm_title">عايز تمسح الحساب؟</string>
     <string name="delete_account_confirm_msg">متأكد إنك عايز تمسح الحساب ده؟ كل المعاملات اللي متسجلة عليه هتتمسح معاه للأبد ومفيش رجوع.</string>
+    <string name="delete_account_confirm_hint">اكتب اسم الحساب عشان تأكد الحذف:</string>
+    <string name="delete_account_confirm_placeholder">اسم الحساب</string>
     <string name="delete">امسح</string>
     <string name="cancel">إلغاء</string>
     <string name="month_january">يناير</string>

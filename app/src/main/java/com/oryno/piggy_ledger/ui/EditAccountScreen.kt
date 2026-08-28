@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oryno.piggy_ledger.R
@@ -86,6 +87,7 @@ fun EditAccountScreen(
     var bankSearchQuery by remember { mutableStateOf("") }
     
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var confirmNameInput by remember { mutableStateOf("") }
 
     val availableCurrencies = listOf(
         CurrencyInfo("USD", "US Dollar", "🇺🇸", "$"),
@@ -606,28 +608,124 @@ fun EditAccountScreen(
 
     // Confirmation dialog for deletion
     if (showDeleteConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmDialog = false },
-            title = { Text(stringResource(R.string.delete_account_confirm_title), fontWeight = FontWeight.Bold) },
-            text = { Text(stringResource(R.string.delete_account_confirm_msg)) },
-            confirmButton = {
-                TextButton(
+        ModalBottomSheet(
+            onDismissRequest = { 
+                showDeleteConfirmDialog = false
+                confirmNameInput = ""
+            },
+            sheetState = sheetState,
+            containerColor = Color.White,
+            dragHandle = { BottomSheetDefaults.DragHandle(color = NavyDark.copy(alpha = 0.2f)) }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = stringResource(R.string.delete_account_confirm_title),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = NavyDark
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = account?.name ?: "",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = PinkPrimary
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    IconButton(
+                        onClick = {
+                            clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(account?.name ?: ""))
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.copied), Toast.LENGTH_SHORT)
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Copy",
+                            tint = PinkPrimary.copy(alpha = 0.6f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = stringResource(R.string.delete_account_confirm_msg),
+                    fontSize = 14.sp,
+                    color = TextLight,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Text(
+                    text = stringResource(R.string.delete_account_confirm_hint),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = NavyDark,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                OutlinedTextField(
+                    value = confirmNameInput,
+                    onValueChange = { confirmNameInput = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(stringResource(R.string.delete_account_confirm_placeholder)) },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PinkPrimary,
+                        unfocusedBorderColor = NavyDark.copy(alpha = 0.1f)
+                    ),
+                    singleLine = true
+                )
+                
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                val canDelete = confirmNameInput.trim() == account?.name?.trim()
+                
+                Button(
                     onClick = {
                         showDeleteConfirmDialog = false
                         viewModel.deleteAccount(accountId)
                         com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_account_deleted), Toast.LENGTH_SHORT)
                         onBack()
-                    }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    enabled = canDelete,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFF4D4D),
+                        disabledContainerColor = Color(0xFFFF4D4D).copy(alpha = 0.3f)
+                    )
                 ) {
-                    Text(stringResource(R.string.delete), color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmDialog = false }) {
-                    Text(stringResource(R.string.cancel), color = NavyDark)
+                    Text(
+                        text = stringResource(R.string.delete),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
                 }
             }
-        )
+        }
     }
 
     // Modal Bottom Sheet

@@ -14,7 +14,8 @@ data class Goal(
     val targetAmount: Double,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
 )
 
 @Serializable
@@ -29,7 +30,8 @@ data class Transaction(
     val deadline: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
 )
 
 @Serializable
@@ -50,7 +52,8 @@ data class Loan(
     val deadline: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
 )
 
 @Serializable
@@ -67,7 +70,8 @@ data class LoanPayment(
     val note: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
 )
 
 @Serializable
@@ -105,7 +109,8 @@ data class Account(
     val label: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
 )
 
 @Serializable
@@ -131,7 +136,8 @@ data class AccountTransaction(
     val source: String = "AUTOMATIC_SMS",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
 )
 
 @Serializable
@@ -152,7 +158,8 @@ data class UserPreferencesEntity(
     val isLifetimePremium: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
 )
 
 @Serializable
@@ -163,7 +170,8 @@ data class StreakDateEntity(
     val dateStr: String,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
 )
 
 @Serializable
@@ -175,7 +183,8 @@ data class AiConversation(
     val isPinned: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
 )
 
 @Serializable
@@ -189,7 +198,8 @@ data class AiChatMessage(
     val timestamp: Long = System.currentTimeMillis(),
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
 )
 
 @Serializable
@@ -213,7 +223,8 @@ data class PendingTransaction(
     val timestamp: Long = System.currentTimeMillis(),
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
 )
 
 @Serializable
@@ -225,5 +236,6 @@ data class OnboardingAnswer(
     val value: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
 )

@@ -61,25 +61,25 @@ interface PiggyLedgerDao {
                getUnsyncedOnboardingAnswers().size
     }
 
-    @Query("SELECT * FROM goals ORDER BY createdAt DESC")
+    @Query("SELECT * FROM goals WHERE is_deleted = 0 ORDER BY createdAt DESC")
     fun getAllGoals(): Flow<List<Goal>>
 
-    @Query("SELECT * FROM goals WHERE id = :id")
+    @Query("SELECT * FROM goals WHERE id = :id AND is_deleted = 0")
     fun getGoalById(id: String): Flow<Goal?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGoal(goal: Goal)
 
-    @Query("SELECT * FROM transactions WHERE goalId = :goalId ORDER BY timestamp DESC")
+    @Query("SELECT * FROM transactions WHERE goalId = :goalId AND is_deleted = 0 ORDER BY timestamp DESC")
     fun getTransactionsForGoal(goalId: String): Flow<List<Transaction>>
 
-    @Query("SELECT * FROM transactions ORDER BY timestamp DESC")
+    @Query("SELECT * FROM transactions WHERE is_deleted = 0 ORDER BY timestamp DESC")
     fun getAllTransactionsFlow(): Flow<List<Transaction>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: Transaction)
 
-    @Query("SELECT * FROM loans ORDER BY isPaidOff ASC, timestamp DESC")
+    @Query("SELECT * FROM loans WHERE is_deleted = 0 ORDER BY isPaidOff ASC, timestamp DESC")
     fun getAllLoans(): Flow<List<Loan>>
 
     @Query("SELECT * FROM loans WHERE id = :id")
@@ -91,10 +91,10 @@ interface PiggyLedgerDao {
     @Update
     suspend fun updateLoan(loan: Loan)
 
-    @Query("SELECT * FROM loan_payments WHERE loanId = :loanId ORDER BY timestamp DESC")
+    @Query("SELECT * FROM loan_payments WHERE loanId = :loanId AND is_deleted = 0 ORDER BY timestamp DESC")
     fun getPaymentsForLoan(loanId: String): Flow<List<LoanPayment>>
 
-    @Query("SELECT * FROM loan_payments ORDER BY timestamp DESC")
+    @Query("SELECT * FROM loan_payments WHERE is_deleted = 0 ORDER BY timestamp DESC")
     fun getAllLoanPaymentsFlow(): Flow<List<LoanPayment>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -103,11 +103,11 @@ interface PiggyLedgerDao {
     @Query("SELECT * FROM loan_payments WHERE id = :id")
     suspend fun getLoanPaymentById(id: String): LoanPayment?
 
-    @Query("DELETE FROM loan_payments WHERE id = :id")
-    suspend fun deleteLoanPaymentById(id: String)
+    @Query("UPDATE loan_payments SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteLoanPaymentById(id: String, updatedAt: Long = System.currentTimeMillis())
 
-    @Query("DELETE FROM loan_payments WHERE loanId = :loanId")
-    suspend fun deleteLoanPaymentsForLoan(loanId: String)
+    @Query("UPDATE loan_payments SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE loanId = :loanId")
+    suspend fun deleteLoanPaymentsForLoan(loanId: String, updatedAt: Long = System.currentTimeMillis())
 
     @Query("SELECT * FROM loan_payments")
     suspend fun getAllLoanPaymentsSync(): List<LoanPayment>
@@ -118,16 +118,16 @@ interface PiggyLedgerDao {
     @Query("DELETE FROM loan_payments")
     suspend fun clearLoanPayments()
 
-    @Query("DELETE FROM loans WHERE id = :id")
-    suspend fun deleteLoanById(id: String)
+    @Query("UPDATE loans SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteLoanById(id: String, updatedAt: Long = System.currentTimeMillis())
 
-    @Query("SELECT * FROM accounts ORDER BY name ASC")
+    @Query("SELECT * FROM accounts WHERE is_deleted = 0 ORDER BY name ASC")
     fun getAllAccounts(): Flow<List<Account>>
 
-    @Query("SELECT * FROM accounts WHERE exclude_from_all = 0 ORDER BY name ASC")
+    @Query("SELECT * FROM accounts WHERE exclude_from_all = 0 AND is_deleted = 0 ORDER BY name ASC")
     fun getIncludedAccounts(): Flow<List<Account>>
 
-    @Query("SELECT * FROM accounts WHERE id = :id")
+    @Query("SELECT * FROM accounts WHERE id = :id AND is_deleted = 0")
     suspend fun getAccountById(id: String): Account?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -136,16 +136,16 @@ interface PiggyLedgerDao {
     @Update
     suspend fun updateAccount(account: Account)
 
-    @Query("DELETE FROM accounts WHERE id = :id")
-    suspend fun deleteAccountById(id: String)
+    @Query("UPDATE accounts SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteAccountById(id: String, updatedAt: Long = System.currentTimeMillis())
 
-    @Query("DELETE FROM account_transactions WHERE account_id = :accountId")
-    suspend fun deleteTransactionsForAccount(accountId: String)
+    @Query("UPDATE account_transactions SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE account_id = :accountId")
+    suspend fun deleteTransactionsForAccount(accountId: String, updatedAt: Long = System.currentTimeMillis())
 
-    @Query("SELECT * FROM account_transactions WHERE account_id = :accountId ORDER BY timestamp DESC")
+    @Query("SELECT * FROM account_transactions WHERE account_id = :accountId AND is_deleted = 0 ORDER BY timestamp DESC")
     fun getTransactionsForAccount(accountId: String): Flow<List<AccountTransaction>>
 
-    @Query("SELECT * FROM account_transactions ORDER BY timestamp DESC")
+    @Query("SELECT * FROM account_transactions WHERE is_deleted = 0 ORDER BY timestamp DESC")
     fun getAllAccountTransactions(): Flow<List<AccountTransaction>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -178,11 +178,11 @@ interface PiggyLedgerDao {
     }
 
 
-    @Query("DELETE FROM goals WHERE id = :id")
-    suspend fun deleteGoalById(id: String)
+    @Query("UPDATE goals SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteGoalById(id: String, updatedAt: Long = System.currentTimeMillis())
 
-    @Query("DELETE FROM transactions WHERE goalId = :goalId")
-    suspend fun deleteTransactionsForGoal(goalId: String)
+    @Query("UPDATE transactions SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE goalId = :goalId")
+    suspend fun deleteTransactionsForGoal(goalId: String, updatedAt: Long = System.currentTimeMillis())
 
     @Query("SELECT * FROM transactions")
     suspend fun getAllTransactions(): List<Transaction>
@@ -235,7 +235,7 @@ interface PiggyLedgerDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPendingTransactions(transactions: List<PendingTransaction>)
 
-    @Query("SELECT * FROM pending_transactions ORDER BY timestamp DESC")
+    @Query("SELECT * FROM pending_transactions WHERE is_deleted = 0 ORDER BY timestamp DESC")
     fun getAllPendingTransactionsFlow(): Flow<List<PendingTransaction>>
 
     @Query("SELECT * FROM pending_transactions WHERE id = :id")
@@ -244,8 +244,8 @@ interface PiggyLedgerDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPendingTransaction(transaction: PendingTransaction)
 
-    @Query("DELETE FROM pending_transactions WHERE id = :id")
-    suspend fun deletePendingTransactionById(id: String)
+    @Query("UPDATE pending_transactions SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deletePendingTransactionById(id: String, updatedAt: Long = System.currentTimeMillis())
 
     @Query("DELETE FROM pending_transactions")
     suspend fun clearPendingTransactions()
@@ -265,8 +265,8 @@ interface PiggyLedgerDao {
     @Query("SELECT * FROM onboarding_answers WHERE `key` = :key")
     suspend fun getOnboardingAnswerByKey(key: String): OnboardingAnswer?
 
-    @Query("DELETE FROM onboarding_answers WHERE id = :id")
-    suspend fun deleteOnboardingAnswerById(id: String)
+    @Query("UPDATE onboarding_answers SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteOnboardingAnswerById(id: String, updatedAt: Long = System.currentTimeMillis())
 
     @androidx.room.Transaction
     suspend fun resolvePendingTransaction(pendingId: String, accountId: String) {
@@ -283,7 +283,7 @@ interface PiggyLedgerDao {
         deletePendingTransactionById(pendingId)
     }
 
-    @Query("SELECT * FROM ai_conversations ORDER BY isPinned DESC, updatedAt DESC")
+    @Query("SELECT * FROM ai_conversations WHERE is_deleted = 0 ORDER BY isPinned DESC, updatedAt DESC")
     fun getAllConversationsFlow(): Flow<List<AiConversation>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -295,16 +295,16 @@ interface PiggyLedgerDao {
     @Query("UPDATE ai_conversations SET isPinned = :isPinned, isSynced = 0 WHERE id = :id")
     suspend fun updateConversationPinned(id: String, isPinned: Boolean)
 
-    @Query("DELETE FROM ai_conversations WHERE id = :id")
-    suspend fun deleteConversationById(id: String)
+    @Query("UPDATE ai_conversations SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteConversationById(id: String, updatedAt: Long = System.currentTimeMillis())
 
-    @Query("DELETE FROM ai_chat_messages WHERE conversationId = :conversationId")
-    suspend fun deleteChatMessagesForConversation(conversationId: String)
+    @Query("UPDATE ai_chat_messages SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE conversationId = :conversationId")
+    suspend fun deleteChatMessagesForConversation(conversationId: String, updatedAt: Long = System.currentTimeMillis())
 
-    @Query("SELECT * FROM ai_chat_messages WHERE conversationId = :conversationId ORDER BY timestamp ASC")
+    @Query("SELECT * FROM ai_chat_messages WHERE conversationId = :conversationId AND is_deleted = 0 ORDER BY timestamp ASC")
     fun getChatMessagesForConversationFlow(conversationId: String): Flow<List<AiChatMessage>>
 
-    @Query("SELECT * FROM ai_chat_messages ORDER BY timestamp ASC")
+    @Query("SELECT * FROM ai_chat_messages WHERE is_deleted = 0 ORDER BY timestamp ASC")
     fun getAllChatMessagesFlow(): Flow<List<AiChatMessage>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -337,8 +337,8 @@ interface PiggyLedgerDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertStreakDates(streakDates: List<StreakDateEntity>)
 
-    @Query("DELETE FROM streak_dates WHERE id = :id")
-    suspend fun deleteStreakDateById(id: String)
+    @Query("UPDATE streak_dates SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteStreakDateById(id: String, updatedAt: Long = System.currentTimeMillis())
 
     @Query("SELECT * FROM ai_conversations")
     suspend fun getAllAiConversationsSync(): List<AiConversation>

@@ -82,10 +82,17 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
         return@withContext try {
             val accounts = dao.getAllAccountsSync()
             val goals = dao.getAllGoalsSync()
+            val goalTransactions = dao.getAllTransactions()
             val loans = dao.getAllLoansSync()
-            val recentTransactions = dao.getAllAccountTransactionsSync().take(30)
+            val allAccountTxs = dao.getAllAccountTransactionsSync()
+            val recentTransactions = allAccountTxs.take(30)
             val pending = dao.getAllPendingTransactionsSync()
             
+            val primaryCurrency = accounts.firstOrNull()?.currency ?: "EGP"
+            val totalIncome = allAccountTxs.filter { it.amount > 0 }.sumOf { it.amount }
+            val totalExpenses = allAccountTxs.filter { it.amount < 0 }.sumOf { kotlin.math.abs(it.amount) }
+            val totalNetBalance = accounts.sumOf { it.current_balance }
+
             // Streak Info
             val streakInfo = if (context != null) {
                 val current = com.oryno.piggy_ledger.data.StreakManager.getStreak(context)
@@ -96,33 +103,58 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
                 "Streak status unavailable."
             }
             
-            val totalNetBalance = accounts.sumOf { it.current_balance }
-            
             val accountSummary = if (accounts.isEmpty()) "No accounts logged yet." 
                 else accounts.joinToString("\n") { "- ${it.name} (${it.type}): ${it.current_balance} ${it.currency} (Provider: ${it.provider ?: "N/A"})" }
                 
             val goalSummary = if (goals.isEmpty()) "No active goals set." 
-                else goals.joinToString("\n") { "- ${it.name}: Target ${it.targetAmount}" }
+                else goals.joinToString("\n") { g ->
+                    val saved = goalTransactions.filter { it.goalId == g.id }.sumOf { it.amount }
+                    "- ${g.name}:\n  Current: $saved $primaryCurrency\n  Target: ${g.targetAmount} $primaryCurrency"
+                }
                 
             val loanSummary = if (loans.isEmpty()) "No active loans." 
-                else loans.joinToString("\n") { "- ${it.type.name} with ${it.contactName}: Amount ${it.amount} (Paid Off: ${it.isPaidOff})" }
+                else loans.joinToString("\n") { "- ${it.type.name} with ${it.contactName}: Amount ${it.amount} $primaryCurrency (Paid Off: ${it.isPaidOff})" }
                 
             val txSummary = if (recentTransactions.isEmpty()) "No recent transactions."
                 else recentTransactions.joinToString("\n") { tx ->
                     val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(tx.timestamp))
-                    "- $dateStr | ${tx.merchant}: ${tx.amount} (${tx.source})"
+                    "- $dateStr | ${tx.merchant}: ${tx.amount} $primaryCurrency (${tx.source})"
                 }
                 
             val pendingSummary = if (pending.isEmpty()) "None."
-                else pending.joinToString("\n") { "- ${it.merchant}: ${it.amount}" }
+                else pending.joinToString("\n") { "- ${it.merchant}: ${it.amount} $primaryCurrency" }
                 
             """
+            |USER FINANCIAL CONTEXT
+            |
+            |Currency: $primaryCurrency
+            |
+            |Current period:
+            |Income: $totalIncome
+            |Expenses: $totalExpenses
+            |Balance: $totalNetBalance
+            |
+            |Accounts:
+            |$accountSummary
+            |
+            |Goals:
+            |$goalSummary
+            |
+            |Loans & Debts:
+            |$loanSummary
+            |
+            |Recent Transactions:
+            |$txSummary
+            |
+            |Pending SMS:
+            |$pendingSummary
+            |
             |=== KNOWLEDGE HUB INDEX ===
             |[MODULE 0: USER STREAK & HABIT METRICS]
             |$streakInfo
             |
             |[MODULE 1: ACCOUNTS & LIQUIDITY]
-            |Total Net Balance across all accounts: $totalNetBalance
+            |Total Net Balance across all accounts: $totalNetBalance $primaryCurrency
             |$accountSummary
             |
             |[MODULE 2: SAVINGS & FINANCIAL GOALS]

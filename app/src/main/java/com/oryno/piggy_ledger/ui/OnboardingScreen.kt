@@ -94,22 +94,23 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp
-    val scaleFactor = (screenWidth / 360f).coerceIn(0.8f, 1.2f)
-    val isSmallScreen = screenWidth < 360
+    val screenHeight = configuration.screenHeightDp
+    val scaleFactor = (screenWidth / 360f).coerceIn(0.75f, 1.2f)
+    val isSmallScreen = screenWidth < 380 || screenHeight < 720
     
-    val titleFontSize = (26 * scaleFactor).coerceAtLeast(22f).sp
-    val subtitleFontSize = (14 * scaleFactor).coerceAtLeast(13.5f).sp
-    val cardTitleFontSize = (15 * scaleFactor).coerceAtLeast(13f).sp
-    val cardDescFontSize = (12 * scaleFactor).coerceAtLeast(11.5f).sp
-    val emojiBoxSize = (46 * scaleFactor).dp
-    val emojiFontSize = (22 * scaleFactor).sp
-    val buttonFontSize = (17 * scaleFactor).coerceAtLeast(15f).sp
-    val backButtonFontSize = (15 * scaleFactor).coerceAtLeast(13f).sp
-    val horizontalPadding = (20 * scaleFactor).dp
-    val titleLineHeight = (32 * scaleFactor).coerceAtLeast(26f).sp
-    val subtitleLineHeight = (20 * scaleFactor).coerceAtLeast(18f).sp
-    val cardDescLineHeight = (15 * scaleFactor).sp
-    val sectionSpacing = (16 * scaleFactor).dp
+    val titleFontSize = (24 * scaleFactor).coerceIn(18f, 26f).sp
+    val subtitleFontSize = (13.5f * scaleFactor).coerceIn(11.5f, 14.5f).sp
+    val cardTitleFontSize = (14.5f * scaleFactor).coerceIn(12f, 15f).sp
+    val cardDescFontSize = (11.5f * scaleFactor).coerceIn(10f, 12.5f).sp
+    val emojiBoxSize = (42 * scaleFactor).coerceIn(34f, 46f).dp
+    val emojiFontSize = (20 * scaleFactor).coerceIn(16f, 22f).sp
+    val buttonFontSize = (16 * scaleFactor).coerceIn(14f, 17f).sp
+    val backButtonFontSize = (14 * scaleFactor).coerceIn(12f, 15f).sp
+    val horizontalPadding = (16 * scaleFactor).coerceIn(12f, 20f).dp
+    val titleLineHeight = (30 * scaleFactor).coerceIn(22f, 32f).sp
+    val subtitleLineHeight = (18 * scaleFactor).coerceIn(15f, 20f).sp
+    val cardDescLineHeight = (14 * scaleFactor).coerceIn(12f, 16f).sp
+    val sectionSpacing = (14 * scaleFactor).coerceIn(8f, 16f).dp
 
     var currentPage by remember { mutableIntStateOf(0) }
     var selectedIntent by remember { mutableIntStateOf(-1) }
@@ -333,21 +334,21 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                         // Phone Frame with Messages Interface
                         Box(
                             modifier = Modifier
-                                .width(if (isSmallScreen) 250.dp else 290.dp)
-                                .height(if (isSmallScreen) 270.dp else 310.dp)
-                                .clip(RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp, bottomStart = 20.dp, bottomEnd = 20.dp))
+                                .width(if (isSmallScreen) 230.dp else 280.dp)
+                                .height(if (isSmallScreen) 215.dp else 275.dp)
+                                .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp, bottomStart = 18.dp, bottomEnd = 18.dp))
                                 .background(Color.White)
                                 .border(
                                     width = 1.5.dp,
                                     color = Color(0xFFE2E8F0),
-                                    shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp, bottomStart = 20.dp, bottomEnd = 20.dp)
+                                    shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp, bottomStart = 18.dp, bottomEnd = 18.dp)
                                 ),
                             contentAlignment = Alignment.TopCenter
                         ) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                                    .padding(horizontal = if (isSmallScreen) 12.dp else 16.dp, vertical = if (isSmallScreen) 8.dp else 12.dp)
                             ) {
                                 // Top Navigation Chevron
                                 Icon(
@@ -355,19 +356,19 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                     contentDescription = null,
                                     tint = Color(0xFFCBD5E1),
                                     modifier = Modifier
-                                        .size(26.dp)
+                                        .size(if (isSmallScreen) 20.dp else 24.dp)
                                         .padding(top = 2.dp)
                                 )
 
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(2.dp))
 
                                 // App Title ("Messages" / "الرسائل")
                                 Text(
                                     text = stringResource(R.string.onboarding_messages_header),
-                                    fontSize = if (isSmallScreen) 22.sp else 26.sp,
+                                    fontSize = if (isSmallScreen) 17.sp else 22.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF94A3B8),
-                                    modifier = Modifier.padding(bottom = 8.dp)
+                                    modifier = Modifier.padding(bottom = if (isSmallScreen) 4.dp else 6.dp)
                                 )
 
                                 HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 1.dp)
@@ -376,12 +377,12 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 10.dp),
+                                        .padding(vertical = if (isSmallScreen) 5.dp else 8.dp),
                                     verticalAlignment = Alignment.Top
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(38.dp)
+                                            .size(if (isSmallScreen) 30.dp else 36.dp)
                                             .clip(CircleShape)
                                             .background(Color(0xFF94A3B8)),
                                         contentAlignment = Alignment.Center
@@ -390,11 +391,11 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                             imageVector = Icons.Default.Person,
                                             contentDescription = null,
                                             tint = Color.White,
-                                            modifier = Modifier.size(24.dp)
+                                            modifier = Modifier.size(if (isSmallScreen) 18.dp else 22.dp)
                                         )
                                     }
 
-                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
 
                                     Column(modifier = Modifier.weight(1f)) {
                                         Row(
@@ -404,13 +405,13 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                         ) {
                                             Text(
                                                 text = stringResource(R.string.onboarding_sms_mock_sender),
-                                                fontSize = 13.sp,
+                                                fontSize = if (isSmallScreen) 11.sp else 12.5.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = NavyDark
                                             )
                                             Text(
                                                 text = "9:41 AM",
-                                                fontSize = 10.sp,
+                                                fontSize = if (isSmallScreen) 8.5.sp else 10.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 color = Color(0xFF64748B)
                                             )
@@ -420,9 +421,9 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
 
                                         Text(
                                             text = stringResource(R.string.onboarding_sms_mock_body),
-                                            fontSize = 11.sp,
+                                            fontSize = if (isSmallScreen) 9.5.sp else 11.sp,
                                             color = TextLight,
-                                            lineHeight = 15.sp,
+                                            lineHeight = if (isSmallScreen) 13.sp else 15.sp,
                                             maxLines = 2,
                                             overflow = TextOverflow.Ellipsis
                                         )
@@ -432,61 +433,56 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                 HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
 
                                 // Row 2: Skeleton Placeholder 1
-                                SmsSkeletonRow()
+                                SmsSkeletonRow(isSmallScreen = isSmallScreen)
 
                                 HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
 
                                 // Row 3: Skeleton Placeholder 2
-                                SmsSkeletonRow()
-
-                                HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
-
-                                // Row 4: Skeleton Placeholder 3
-                                SmsSkeletonRow()
+                                SmsSkeletonRow(isSmallScreen = isSmallScreen)
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(if (isSmallScreen) 16.dp else 24.dp))
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 10.dp else 20.dp))
 
                         // Main Title
                         Text(
                             text = stringResource(R.string.onboarding_sms_title),
-                            fontSize = titleFontSize,
+                            fontSize = if (isSmallScreen) 18.sp else titleFontSize,
                             fontWeight = FontWeight.ExtraBold,
                             color = NavyDark,
                             textAlign = TextAlign.Center,
-                            lineHeight = titleLineHeight,
-                            modifier = Modifier.padding(horizontal = 12.dp)
+                            lineHeight = if (isSmallScreen) 23.sp else titleLineHeight,
+                            modifier = Modifier.padding(horizontal = if (isSmallScreen) 8.dp else 12.dp)
                         )
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 6.dp else 10.dp))
 
                         // Subtitle
                         Text(
                             text = stringResource(R.string.onboarding_sms_subtitle),
-                            fontSize = subtitleFontSize,
+                            fontSize = if (isSmallScreen) 11.5.sp else subtitleFontSize,
                             color = TextLight,
                             textAlign = TextAlign.Center,
-                            lineHeight = subtitleLineHeight,
-                            modifier = Modifier.padding(horizontal = 24.dp)
+                            lineHeight = if (isSmallScreen) 16.sp else subtitleLineHeight,
+                            modifier = Modifier.padding(horizontal = if (isSmallScreen) 12.dp else 24.dp)
                         )
 
-                        Spacer(modifier = Modifier.height(if (isSmallScreen) 16.dp else 24.dp))
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 10.dp else 20.dp))
 
                         // Enable SMS Button
                         Button(
                             onClick = { requestSmsPermissions() },
                             colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
                             modifier = Modifier
-                                .fillMaxWidth(0.85f)
-                                .height(52.dp)
+                                .fillMaxWidth(if (isSmallScreen) 0.92f else 0.85f)
+                                .height(if (isSmallScreen) 46.dp else 52.dp)
                                 .testTag("grant_sms_permission_button"),
                             shape = RoundedCornerShape(26.dp)
                         ) {
                             Text(
                                 text = stringResource(R.string.onboarding_sms_btn),
                                 color = Color.White,
-                                fontSize = 16.sp,
+                                fontSize = if (isSmallScreen) 13.5.sp else 15.5.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -504,7 +500,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                             Text(
                                 text = stringResource(R.string.onboarding_sms_skip),
                                 color = TextLight,
-                                fontSize = 14.sp,
+                                fontSize = if (isSmallScreen) 12.sp else 13.5.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -524,15 +520,15 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(if (isSmallScreen) 260.dp else 300.dp),
+                                .height(if (isSmallScreen) 205.dp else 265.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             // 1. Phone Frame Shell (Sleek Phone Silhouette)
                             Box(
                                 modifier = Modifier
-                                    .width(if (isSmallScreen) 230.dp else 270.dp)
+                                    .width(if (isSmallScreen) 190.dp else 240.dp)
                                     .fillMaxHeight()
-                                    .clip(RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp, bottomStart = 20.dp, bottomEnd = 20.dp))
+                                    .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp, bottomStart = 18.dp, bottomEnd = 18.dp))
                                     .background(
                                         Brush.verticalGradient(
                                             colors = listOf(
@@ -545,34 +541,34 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                     .border(
                                         width = 1.5.dp,
                                         color = Color(0xFFE2E8F0),
-                                        shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp, bottomStart = 20.dp, bottomEnd = 20.dp)
+                                        shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp, bottomStart = 18.dp, bottomEnd = 18.dp)
                                     ),
                                 contentAlignment = Alignment.TopCenter
                             ) {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(top = 10.dp),
+                                        .padding(top = if (isSmallScreen) 6.dp else 10.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     // Phone speaker notch
                                     Box(
                                         modifier = Modifier
-                                            .width(40.dp)
-                                            .height(4.dp)
+                                            .width(if (isSmallScreen) 32.dp else 40.dp)
+                                            .height(3.5.dp)
                                             .clip(CircleShape)
                                             .background(Color(0xFFCBD5E1).copy(alpha = 0.6f))
                                     )
 
-                                    Spacer(modifier = Modifier.height(if (isSmallScreen) 14.dp else 20.dp))
+                                    Spacer(modifier = Modifier.height(if (isSmallScreen) 8.dp else 16.dp))
 
                                     // Giant Lockscreen Clock Display ("9:41")
                                     Text(
                                         text = "9:41",
-                                        fontSize = if (isSmallScreen) 62.sp else 74.sp,
+                                        fontSize = if (isSmallScreen) 46.sp else 62.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF0F172A),
-                                        letterSpacing = (-2).sp
+                                        letterSpacing = (-1.5).sp
                                     )
                                 }
                             }
@@ -580,18 +576,18 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                             // 2. Floating Notification Card (Overlaps phone shell and extends wider horizontally!)
                             Card(
                                 modifier = Modifier
-                                    .width(if (isSmallScreen) 280.dp else 330.dp)
+                                    .width(if (isSmallScreen) 250.dp else 300.dp)
                                     .align(Alignment.BottomCenter)
-                                    .padding(bottom = if (isSmallScreen) 16.dp else 24.dp),
-                                shape = RoundedCornerShape(22.dp),
+                                    .padding(bottom = if (isSmallScreen) 10.dp else 18.dp),
+                                shape = RoundedCornerShape(if (isSmallScreen) 16.dp else 20.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF1F5F9))
                             ) {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(if (isSmallScreen) 12.dp else 16.dp)
+                                        .padding(if (isSmallScreen) 10.dp else 14.dp)
                                 ) {
                                     // Header Row: App Logo (No Pink Background!), App Name, Time
                                     Row(
@@ -602,16 +598,16 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                             painter = painterResource(id = R.drawable.img_app_logo),
                                             contentDescription = null,
                                             modifier = Modifier
-                                                .size(24.dp)
-                                                .clip(RoundedCornerShape(6.dp)),
+                                                .size(if (isSmallScreen) 20.dp else 24.dp)
+                                                .clip(RoundedCornerShape(5.dp)),
                                             contentScale = ContentScale.Crop
                                         )
 
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
 
                                         Text(
                                             text = stringResource(R.string.piggy_ledger_brand).uppercase(),
-                                            fontSize = 11.sp,
+                                            fontSize = if (isSmallScreen) 9.5.sp else 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFF64748B),
                                             letterSpacing = 0.5.sp
@@ -621,76 +617,76 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
 
                                         Text(
                                             text = "9:41 AM",
-                                            fontSize = 11.sp,
+                                            fontSize = if (isSmallScreen) 9.5.sp else 11.sp,
                                             fontWeight = FontWeight.Medium,
                                             color = Color(0xFF94A3B8)
                                         )
                                     }
 
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
 
                                     // Notification Title (No Emojis)
                                     Text(
                                         text = stringResource(R.string.onboarding_notif_card_title),
-                                        fontSize = if (isSmallScreen) 14.sp else 15.sp,
+                                        fontSize = if (isSmallScreen) 12.5.sp else 14.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = NavyDark
                                     )
 
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Spacer(modifier = Modifier.height(2.dp))
 
                                     // Notification Body
                                     Text(
                                         text = stringResource(R.string.onboarding_notif_card_body),
-                                        fontSize = if (isSmallScreen) 11.sp else 12.sp,
+                                        fontSize = if (isSmallScreen) 10.sp else 11.5.sp,
                                         color = TextLight,
-                                        lineHeight = if (isSmallScreen) 15.sp else 17.sp
+                                        lineHeight = if (isSmallScreen) 13.5.sp else 16.sp
                                     )
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(if (isSmallScreen) 16.dp else 24.dp))
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 10.dp else 20.dp))
 
                         // Main Title (No Emojis)
                         Text(
                             text = stringResource(R.string.onboarding_notif_title),
-                            fontSize = titleFontSize,
+                            fontSize = if (isSmallScreen) 18.sp else titleFontSize,
                             fontWeight = FontWeight.ExtraBold,
                             color = NavyDark,
                             textAlign = TextAlign.Center,
-                            lineHeight = titleLineHeight,
-                            modifier = Modifier.padding(horizontal = 12.dp)
+                            lineHeight = if (isSmallScreen) 23.sp else titleLineHeight,
+                            modifier = Modifier.padding(horizontal = if (isSmallScreen) 8.dp else 12.dp)
                         )
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 6.dp else 10.dp))
 
                         // Subtitle
                         Text(
                             text = stringResource(R.string.onboarding_notif_subtitle),
-                            fontSize = subtitleFontSize,
+                            fontSize = if (isSmallScreen) 11.5.sp else subtitleFontSize,
                             color = TextLight,
                             textAlign = TextAlign.Center,
-                            lineHeight = subtitleLineHeight,
-                            modifier = Modifier.padding(horizontal = 24.dp)
+                            lineHeight = if (isSmallScreen) 16.sp else subtitleLineHeight,
+                            modifier = Modifier.padding(horizontal = if (isSmallScreen) 12.dp else 24.dp)
                         )
 
-                        Spacer(modifier = Modifier.height(if (isSmallScreen) 16.dp else 24.dp))
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 10.dp else 20.dp))
 
                         // Enable Notifications Button
                         Button(
                             onClick = { requestNotificationPermissions() },
                             colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
                             modifier = Modifier
-                                .fillMaxWidth(0.85f)
-                                .height(52.dp)
+                                .fillMaxWidth(if (isSmallScreen) 0.92f else 0.85f)
+                                .height(if (isSmallScreen) 46.dp else 52.dp)
                                 .testTag("grant_notif_permission_button"),
                             shape = RoundedCornerShape(26.dp)
                         ) {
                             Text(
                                 text = stringResource(R.string.onboarding_notif_btn),
                                 color = Color.White,
-                                fontSize = 16.sp,
+                                fontSize = if (isSmallScreen) 13.5.sp else 15.5.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -708,7 +704,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                             Text(
                                 text = stringResource(R.string.onboarding_notif_skip),
                                 color = TextLight,
-                                fontSize = 14.sp,
+                                fontSize = if (isSmallScreen) 12.sp else 13.5.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -1824,7 +1820,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = if (isSmallScreen) 16.dp else 32.dp),
+                .padding(bottom = if (isSmallScreen) 12.dp else 24.dp),
             contentAlignment = Alignment.Center
         ) {
             // Back Button (Optional/Visible when not on first page)
@@ -1839,21 +1835,27 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                     Text(
                         text = stringResource(R.string.back_btn),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = if (isSmallScreen) 13.5.sp else 15.sp
                     )
                 }
             }
 
-
             if (currentPage !in 7..9) {
+                val isNavEnabled = when (currentPage) {
+                    3 -> false // Inactive until user clicks "Enable Secure Tracking"
+                    4 -> false // Inactive until user clicks "Enable Notifications"
+                    11 -> isPlanFinished
+                    else -> true
+                }
+
                 // Custom Progress Button
                 ProgressNextButton(
                     currentPage = currentPage,
                     totalPages = pages.size,
                     isSmallScreen = isSmallScreen,
-                    enabled = (currentPage != 11 || isPlanFinished),
+                    enabled = isNavEnabled,
                     onNext = {
-                        if (currentPage == 11 && !isPlanFinished) return@ProgressNextButton
+                        if (!isNavEnabled) return@ProgressNextButton
                         if (currentPage < pages.size - 1) {
                             if (currentPage == 5 && selectedIntent == -1) {
                                 com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT)
@@ -1868,7 +1870,6 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                     }
                 )
             }
-
         }
     }
 }
@@ -1893,13 +1894,13 @@ fun ProgressNextButton(
     
     Box(
         modifier = modifier
-            .size(if (isSmallScreen) 74.dp else 84.dp)
+            .size(if (isSmallScreen) 68.dp else 84.dp)
             .clip(CircleShape)
             .clickable(enabled = enabled, onClick = onNext),
         contentAlignment = Alignment.Center
     ) {
         // Progress Ring with segments
-        Canvas(modifier = Modifier.size(if (isSmallScreen) 62.dp else 72.dp)) {
+        Canvas(modifier = Modifier.size(if (isSmallScreen) 56.dp else 72.dp)) {
             val strokeWidth = (if (isSmallScreen) 3.dp else 4.dp).toPx()
             val gap = 8f // Gap between segments in degrees
             val segmentMaxSweep = (360f / totalPages) - gap
@@ -1933,8 +1934,8 @@ fun ProgressNextButton(
         
         // Inner Button
         Surface(
-            modifier = Modifier.size(if (isSmallScreen) 48.dp else 54.dp),
-            shape = RoundedCornerShape(if (isSmallScreen) 16.dp else 20.dp),
+            modifier = Modifier.size(if (isSmallScreen) 44.dp else 54.dp),
+            shape = RoundedCornerShape(if (isSmallScreen) 14.dp else 20.dp),
             color = buttonColor,
             shadowElevation = 4.dp
         ) {
@@ -1943,7 +1944,7 @@ fun ProgressNextButton(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Next",
                     tint = Color.White,
-                    modifier = Modifier.size(if (isSmallScreen) 24.dp else 28.dp)
+                    modifier = Modifier.size(if (isSmallScreen) 22.dp else 28.dp)
                 )
             }
         }
@@ -1952,21 +1953,21 @@ fun ProgressNextButton(
 
 
 @Composable
-private fun SmsSkeletonRow() {
+private fun SmsSkeletonRow(isSmallScreen: Boolean = false) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp),
+            .padding(vertical = if (isSmallScreen) 5.dp else 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(36.dp)
+                .size(if (isSmallScreen) 28.dp else 34.dp)
                 .clip(CircleShape)
                 .background(Color(0xFFE2E8F0))
         )
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(if (isSmallScreen) 8.dp else 12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Row(
@@ -1976,27 +1977,27 @@ private fun SmsSkeletonRow() {
             ) {
                 Box(
                     modifier = Modifier
-                        .width(90.dp)
-                        .height(10.dp)
-                        .clip(RoundedCornerShape(5.dp))
+                        .width(if (isSmallScreen) 70.dp else 90.dp)
+                        .height(if (isSmallScreen) 8.dp else 10.dp)
+                        .clip(RoundedCornerShape(4.dp))
                         .background(Color(0xFFE2E8F0))
                 )
                 Box(
                     modifier = Modifier
-                        .width(36.dp)
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .width(if (isSmallScreen) 28.dp else 36.dp)
+                        .height(if (isSmallScreen) 6.dp else 8.dp)
+                        .clip(RoundedCornerShape(3.dp))
                         .background(Color(0xFFE2E8F0))
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(if (isSmallScreen) 5.dp else 7.dp))
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.82f)
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .height(if (isSmallScreen) 6.dp else 8.dp)
+                    .clip(RoundedCornerShape(3.dp))
                     .background(Color(0xFFE2E8F0))
             )
         }

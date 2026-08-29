@@ -45,15 +45,15 @@ import kotlin.math.sin
 
 enum class AnalyticsTab { SPENDING, REVENUE }
 
-enum class SpendingPeriod(val label: String) {
-    WEEKLY("Weekly"),
-    MONTHLY("Monthly"),
-    YEARLY("Yearly")
+enum class SpendingPeriod(val labelRes: Int) {
+    WEEKLY(R.string.period_weekly),
+    MONTHLY(R.string.period_monthly),
+    YEARLY(R.string.period_yearly)
 }
-enum class RevenuePeriod(val label: String) {
-    WEEKLY("Weekly"),
-    MONTHLY("Monthly"),
-    YEARLY("Yearly")
+enum class RevenuePeriod(val labelRes: Int) {
+    WEEKLY(R.string.period_weekly),
+    MONTHLY(R.string.period_monthly),
+    YEARLY(R.string.period_yearly)
 }
 
 
@@ -279,9 +279,9 @@ fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean 
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val titleText = when (selectedPeriod) {
-                    SpendingPeriod.WEEKLY -> "Spending by Day"
-                    SpendingPeriod.MONTHLY -> "Spending by Week"
-                    SpendingPeriod.YEARLY -> "Spending by Month"
+                    SpendingPeriod.WEEKLY -> stringResource(R.string.analytics_spending_by_day)
+                    SpendingPeriod.MONTHLY -> stringResource(R.string.analytics_spending_by_week)
+                    SpendingPeriod.YEARLY -> stringResource(R.string.analytics_spending_by_month)
                 }
                 Text(
                     text = titleText,
@@ -299,13 +299,13 @@ fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean 
                 ) {
                     Icon(
                         Icons.Default.DateRange,
-                        contentDescription = "Select Period",
+                        contentDescription = stringResource(R.string.analytics_select_period),
                         tint = PinkPrimary,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        text = selectedPeriod.label,
+                        text = stringResource(selectedPeriod.labelRes),
                         fontSize = 14.sp,
                         color = PinkPrimary,
                         fontWeight = FontWeight.SemiBold
@@ -326,7 +326,7 @@ fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean 
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                    Text("Weekdays", fontSize = 14.sp, color = TextSecondary)
+                    Text(stringResource(R.string.analytics_weekdays), fontSize = 14.sp, color = TextSecondary)
                     Spacer(Modifier.height(4.dp))
                     Text(
                         if (isPrivacyMode) "••••••" else format.format(weekdaysSum),
@@ -341,7 +341,7 @@ fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean 
                 Box(modifier = Modifier.width(1.dp).height(40.dp).background(Color(0xFFE5E7EB)))
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                    Text("Weekends", fontSize = 14.sp, color = TextSecondary)
+                    Text(stringResource(R.string.analytics_weekends), fontSize = 14.sp, color = TextSecondary)
                     Spacer(Modifier.height(4.dp))
                     Text(
                         if (isPrivacyMode) "••••••" else format.format(weekendsSum),
@@ -363,7 +363,7 @@ fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean 
         ) {
             Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
                 Text(
-                    text = "Select Period",
+                    text = stringResource(R.string.analytics_select_period),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
@@ -383,7 +383,7 @@ fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean 
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = period.label,
+                            text = stringResource(period.labelRes),
                             fontSize = 16.sp,
                             color = if (isSelected) PinkPrimary else TextPrimary,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
@@ -571,9 +571,9 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val titleText = when (selectedPeriod) {
-                    RevenuePeriod.WEEKLY -> "Revenue by Day"
-                    RevenuePeriod.MONTHLY -> "Revenue by Week"
-                    RevenuePeriod.YEARLY -> "Revenue by Month"
+                    RevenuePeriod.WEEKLY -> stringResource(R.string.analytics_revenue_by_day)
+                    RevenuePeriod.MONTHLY -> stringResource(R.string.analytics_revenue_by_week)
+                    RevenuePeriod.YEARLY -> stringResource(R.string.analytics_revenue_by_month)
                 }
                 Text(
                     text = titleText,
@@ -591,13 +591,13 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
                 ) {
                     Icon(
                         Icons.Default.DateRange,
-                        contentDescription = "Select Period",
+                        contentDescription = stringResource(R.string.analytics_select_period),
                         tint = PinkPrimary,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        text = selectedPeriod.label,
+                        text = stringResource(selectedPeriod.labelRes),
                         fontSize = 14.sp,
                         color = PinkPrimary,
                         fontWeight = FontWeight.SemiBold
@@ -617,7 +617,7 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                    Text("Average", fontSize = 12.sp, color = TextSecondary)
+                    Text(stringResource(R.string.analytics_average), fontSize = 12.sp, color = TextSecondary)
                     Spacer(Modifier.height(4.dp))
                     Text(
                         if (isPrivacyMode) "••••••" else format.format(avgValue).replace(".00", ""),
@@ -632,7 +632,7 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
                 Box(modifier = Modifier.width(1.dp).height(30.dp).background(Color(0xFFE5E7EB)))
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                    Text("Highest", fontSize = 12.sp, color = TextSecondary)
+                    Text(stringResource(R.string.analytics_highest), fontSize = 12.sp, color = TextSecondary)
                     Spacer(Modifier.height(4.dp))
                     Text(
                         if (isPrivacyMode) "••••••" else if (peakPoint != null) format.format(peakPoint.value).replace(".00", "") else "$0",
@@ -647,7 +647,7 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
                 Box(modifier = Modifier.width(1.dp).height(30.dp).background(Color(0xFFE5E7EB)))
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                    Text("Total", fontSize = 12.sp, color = TextSecondary)
+                    Text(stringResource(R.string.analytics_total), fontSize = 12.sp, color = TextSecondary)
                     Spacer(Modifier.height(4.dp))
                     Text(
                         if (isPrivacyMode) "••••••" else format.format(totalRevenue).replace(".00", ""),
@@ -669,7 +669,7 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
         ) {
             Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
                 Text(
-                    text = "Select Period",
+                    text = stringResource(R.string.analytics_select_period),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
@@ -689,7 +689,7 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = period.label,
+                            text = stringResource(period.labelRes),
                             fontSize = 16.sp,
                             color = if (isSelected) PinkPrimary else TextPrimary,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium

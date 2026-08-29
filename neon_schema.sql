@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS goals (
     "targetAmount" DOUBLE PRECISION NOT NULL,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
-    "isSynced" BOOLEAN DEFAULT true
+    "isSynced" BOOLEAN DEFAULT true,
+    "is_deleted" BOOLEAN DEFAULT false
 );
 
 -- 2. Create Transactions table
@@ -25,7 +26,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     deadline BIGINT,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
-    "isSynced" BOOLEAN DEFAULT true
+    "isSynced" BOOLEAN DEFAULT true,
+    "is_deleted" BOOLEAN DEFAULT false
 );
 
 -- 3. Create Loans table
@@ -45,7 +47,8 @@ CREATE TABLE IF NOT EXISTS loans (
     deadline BIGINT,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
-    "isSynced" BOOLEAN DEFAULT true
+    "isSynced" BOOLEAN DEFAULT true,
+    "is_deleted" BOOLEAN DEFAULT false
 );
 
 -- 4. Create Loan Payments table
@@ -58,7 +61,8 @@ CREATE TABLE IF NOT EXISTS loan_payments (
     note TEXT,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
-    "isSynced" BOOLEAN DEFAULT true
+    "isSynced" BOOLEAN DEFAULT true,
+    "is_deleted" BOOLEAN DEFAULT false
 );
 
 -- 5. Create Accounts table
@@ -85,7 +89,8 @@ CREATE TABLE IF NOT EXISTS accounts (
     label TEXT,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
-    "isSynced" BOOLEAN DEFAULT true
+    "isSynced" BOOLEAN DEFAULT true,
+    "is_deleted" BOOLEAN DEFAULT false
 );
 
 -- 6. Create Account Transactions table
@@ -99,7 +104,8 @@ CREATE TABLE IF NOT EXISTS account_transactions (
     source TEXT NOT NULL,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
-    "isSynced" BOOLEAN DEFAULT true
+    "isSynced" BOOLEAN DEFAULT true,
+    "is_deleted" BOOLEAN DEFAULT false
 );
 
 -- 7. Create Pending Transactions table
@@ -113,7 +119,8 @@ CREATE TABLE IF NOT EXISTS pending_transactions (
     timestamp BIGINT NOT NULL,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
-    "isSynced" BOOLEAN DEFAULT true
+    "isSynced" BOOLEAN DEFAULT true,
+    "is_deleted" BOOLEAN DEFAULT false
 );
 
 -- 8. Create User Preferences & Onboarding Table
@@ -133,7 +140,8 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     "isLifetimePremium" BOOLEAN DEFAULT false,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
-    "isSynced" BOOLEAN DEFAULT true
+    "isSynced" BOOLEAN DEFAULT true,
+    "is_deleted" BOOLEAN DEFAULT false
 );
 
 -- 9. Create Streak Dates Table
@@ -143,7 +151,8 @@ CREATE TABLE IF NOT EXISTS streak_dates (
     "dateStr" TEXT NOT NULL,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
-    "isSynced" BOOLEAN DEFAULT true
+    "isSynced" BOOLEAN DEFAULT true,
+    "is_deleted" BOOLEAN DEFAULT false
 );
 
 -- 10. Create AI Conversations Table
@@ -154,7 +163,8 @@ CREATE TABLE IF NOT EXISTS ai_conversations (
     "isPinned" BOOLEAN DEFAULT false,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
-    "isSynced" BOOLEAN DEFAULT true
+    "isSynced" BOOLEAN DEFAULT true,
+    "is_deleted" BOOLEAN DEFAULT false
 );
 
 -- 11. Create AI Chat Messages Table
@@ -167,7 +177,8 @@ CREATE TABLE IF NOT EXISTS ai_chat_messages (
     timestamp BIGINT NOT NULL,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
-    "isSynced" BOOLEAN DEFAULT true
+    "isSynced" BOOLEAN DEFAULT true,
+    "is_deleted" BOOLEAN DEFAULT false
 );
 
 -- 12. Create Onboarding Answers Table
@@ -178,7 +189,8 @@ CREATE TABLE IF NOT EXISTS onboarding_answers (
     "value" TEXT NOT NULL,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
-    "isSynced" BOOLEAN DEFAULT true
+    "isSynced" BOOLEAN DEFAULT true,
+    "is_deleted" BOOLEAN DEFAULT false
 );
 
 -- ENABLE ROW LEVEL SECURITY (RLS) FOR ALL TABLES

@@ -828,4 +828,4 @@
     <string name="diagnostics_copied">اتنسخت المعلومات للحافظة</string>
     <string name="contact_support">كلمنا للدعم</string>
     <string name="license_details">تفاصيل الترخيص</string>
-</resources>
+<string name="analytics_spending_by_day">المصاريف بالأيام</string><string name="analytics_spending_by_week">المصاريف بالأسابيع</string><string name="analytics_spending_by_month">المصاريف بالشهور</string><string name="analytics_revenue_by_day">الدخل بالأيام</string><string name="analytics_revenue_by_week">الدخل بالأسابيع</string><string name="analytics_revenue_by_month">الدخل بالشهور</string><string name="analytics_select_period">اختار الفترة</string><string name="analytics_weekdays">أيام الشغل</string><string name="analytics_weekends">أيام الإجازة</string><string name="analytics_average">المتوسط</string><string name="analytics_highest">أعلى حاجة</string><string name="analytics_total">الإجمالي</string><string name="period_weekly">أسبوعي</string><string name="period_monthly">شهري</string><string name="period_yearly">سنوي</string></resources>

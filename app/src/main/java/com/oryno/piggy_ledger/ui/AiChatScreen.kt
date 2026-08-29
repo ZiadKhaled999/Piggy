@@ -1,6 +1,9 @@
 package com.oryno.piggy_ledger.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -38,6 +41,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import com.oryno.piggy_ledger.ai.NativeTtsManager
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -55,6 +61,9 @@ import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Edit
@@ -157,6 +166,18 @@ fun AiChatScreen(
     val context = LocalContext.current
     var speechLang by remember { mutableStateOf(if (java.util.Locale.getDefault().language == "ar") "ar-EG" else "en-US") }
 
+    // Native Android TextToSpeech manager
+    val ttsManager = remember { NativeTtsManager(context) }
+    val speakingMessageId by ttsManager.speakingMessageId.collectAsStateWithLifecycle()
+    val isTtsPaused by ttsManager.isPaused.collectAsStateWithLifecycle()
+    val ttsElapsedSeconds by ttsManager.elapsedSeconds.collectAsStateWithLifecycle()
+
+    DisposableEffect(Unit) {
+        onDispose {
+            ttsManager.shutdown()
+        }
+    }
+
     val speechRecognizerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -191,20 +212,20 @@ fun AiChatScreen(
                 title = { 
                     if (isPremium) {
                         Surface(
-                            color = Color(0xFFFDF2F8),
+                            color = Color(0xFFF1F5F9),
                             shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.dp, Color(0xFFFBCFE8))
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "👑 Pro • Unlimited AI",
-                                    color = Color(0xFFDB2777),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.5.sp,
-                                    letterSpacing = 0.2.sp
+                                    text = "Pro • Unlimited AI",
+                                    color = Color(0xFF334155),
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 12.sp,
+                                    letterSpacing = 0.1.sp
                                 )
                             }
                         }
@@ -230,34 +251,82 @@ fun AiChatScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { showHistorySheet = true }) {
-                        Icon(
-                            imageVector = Icons.Default.History,
-                            contentDescription = "Chat History",
-                            tint = AiTextPrimary,
-                            modifier = Modifier.size(24.dp)
-                        )
+                    // Two-line hamburger button inside light pill container matching light theme aesthetic
+                    Box(modifier = Modifier.padding(start = 12.dp)) {
+                        Surface(
+                            onClick = { showHistorySheet = true },
+                            shape = CircleShape,
+                            color = Color(0xFFF1F5F9),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            modifier = Modifier.size(42.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(4.5.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(18.dp)
+                                            .height(2.5.dp)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(AiTextPrimary)
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .width(18.dp)
+                                            .height(2.5.dp)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(AiTextPrimary)
+                                    )
+                                }
+                            }
+                        }
                     }
                 },
                 actions = {
-                    // New Chat / Compose button
-                    IconButton(onClick = { viewModel.createNewConversation() }) {
-                        Icon(
-                            imageVector = Icons.Outlined.Edit,
-                            contentDescription = "New Chat",
-                            tint = AiTextPrimary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
+                    // Right-side combined light capsule/pill holding Edit & More options
+                    Box(modifier = Modifier.padding(end = 12.dp)) {
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color(0xFFF1F5F9),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            modifier = Modifier.height(42.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            ) {
+                                // Compose / New Chat Icon
+                                IconButton(
+                                    onClick = { viewModel.createNewConversation() },
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Edit,
+                                        contentDescription = "New Chat",
+                                        tint = AiTextPrimary,
+                                        modifier = Modifier.size(19.dp)
+                                    )
+                                }
 
-                    // Overflow Options (3 dots) triggering Centered Blur Menu
-                    IconButton(onClick = { showOverflowMenu = true }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "More options",
-                            tint = AiTextPrimary,
-                            modifier = Modifier.size(22.dp)
-                        )
+                                // 3 Vertical Dots (More Options)
+                                IconButton(
+                                    onClick = { showOverflowMenu = true },
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MoreVert,
+                                        contentDescription = "More options",
+                                        tint = AiTextPrimary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -339,6 +408,8 @@ fun AiChatScreen(
                                 shouldStream = !isInitial && !isAnimated,
                                 onAnimationComplete = { animatedMessageIds.add(message.id) },
                                 onCtaClick = { cta -> viewModel.sendMessage(cta) },
+                                onTtsClick = { msgId, speechText -> ttsManager.speak(msgId, speechText) },
+                                isSpeaking = speakingMessageId == message.id,
                                 onNavigateToPaywall = onNavigateToPaywall
                             )
                         }
@@ -370,13 +441,23 @@ fun AiChatScreen(
                         .navigationBarsPadding(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Surface(
-                        color = Color(0xFFDADADA),
-                        shape = RoundedCornerShape(36.dp),
-                        border = BorderStroke(1.dp, Color(0xFFCACACA)),
-                        shadowElevation = 4.dp,
-                        modifier = Modifier.fillMaxWidth(animatedWidthFraction)
-                    ) {
+                    if (speakingMessageId != null) {
+                        LiveActionTtsPlayerBar(
+                            elapsedSeconds = ttsElapsedSeconds,
+                            isPaused = isTtsPaused,
+                            onTogglePlayPause = { ttsManager.togglePauseResume() },
+                            onRestart = { ttsManager.restart() },
+                            onCancel = { ttsManager.stop() },
+                            modifier = Modifier.fillMaxWidth(animatedWidthFraction)
+                        )
+                    } else {
+                        Surface(
+                            color = Color(0xFFDADADA),
+                            shape = RoundedCornerShape(36.dp),
+                            border = BorderStroke(1.dp, Color(0xFFCACACA)),
+                            shadowElevation = 4.dp,
+                            modifier = Modifier.fillMaxWidth(animatedWidthFraction)
+                        ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -519,6 +600,7 @@ fun AiChatScreen(
                         }
                     }
                 }
+            }
             }
         }
     }
@@ -839,13 +921,6 @@ fun ChatHistorySheetContent(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = null,
-                    tint = AiTextPrimary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Chat History",
                     color = AiTextPrimary,
@@ -858,33 +933,6 @@ fun ChatHistorySheetContent(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // New Conversation Action
-                Surface(
-                    onClick = onNewChatClick,
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFFFF1F6),
-                    border = BorderStroke(1.dp, Color(0xFFFCE7F3))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "New Chat",
-                            tint = Color(0xFFDB2777),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "New Chat",
-                            color = Color(0xFFDB2777),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-
                 // 3 Vertical Dots for BottomSheet Settings
                 Surface(
                     onClick = { showSheetSettingsMenu = true },
@@ -1563,6 +1611,18 @@ fun EmptyChatState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            // Real app logo
+            Image(
+                painter = painterResource(id = R.drawable.img_app_logo),
+                contentDescription = stringResource(R.string.app_name),
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(20.dp)),
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
             // Rotating catchy daily phrase with highlighted pink username
             Text(
                 text = annotatedPhrase,
@@ -1713,7 +1773,7 @@ fun parseResponseTextAndNextSteps(rawText: String): ProcessedResponse {
                 }
             } else if (trimmed.isNotBlank() && !trimmed.startsWith("#")) {
                 val cleanStep = trimmed.replace("**", "").trim()
-                if (cleanStep.isNotBlank() && nextStepsList.size < 4) {
+                if (cleanStep.isNotBlank() && nextStepsList.size < 2) {
                     nextStepsList.add(cleanStep)
                 }
             }
@@ -1722,42 +1782,37 @@ fun parseResponseTextAndNextSteps(rawText: String): ProcessedResponse {
         if (nextStepsList.isNotEmpty()) {
             return ProcessedResponse(
                 mainText = if (mainTextPart.isNotBlank()) mainTextPart else text,
-                nextSteps = nextStepsList.take(3)
+                nextSteps = nextStepsList.take(2)
             )
         }
     }
 
-    // Contextual CTA follow-up questions
+    // Contextual CTA follow-up questions (Strictly 2 suggestions)
     val lowerText = text.lowercase()
     val contextualNextSteps = when {
         lowerText.contains("goal") || lowerText.contains("save") || lowerText.contains("target") -> listOf(
             "What are my active savings goals progress?",
-            "How much do I need to complete my top goal?",
             "How can I accelerate my savings rate?"
         )
         lowerText.contains("loan") || lowerText.contains("debt") || lowerText.contains("borrow") -> listOf(
             "What is my loan repayment status?",
-            "How much total debt do I owe?",
-            "Audit my recent loan payments"
+            "How much total debt do I owe?"
         )
         lowerText.contains("streak") || lowerText.contains("habit") -> listOf(
             "What is my current logging streak status?",
-            "Did I log my financial activity today?",
-            "How can I maintain a 30-day logging streak?"
+            "Did I log my financial activity today?"
         )
         lowerText.contains("account") || lowerText.contains("balance") || lowerText.contains("cash") -> listOf(
             "Show all my account balances summary",
-            "Which account holds my largest liquidity?",
-            "Audit my recent spending transactions"
+            "Which account holds my largest liquidity?"
         )
         else -> listOf(
             "Audit my recent spending transactions",
-            "How can I optimize my monthly budget?",
-            "What are my top spending categories?"
+            "How can I optimize my monthly budget?"
         )
     }
 
-    return ProcessedResponse(mainText = text, nextSteps = contextualNextSteps)
+    return ProcessedResponse(mainText = text, nextSteps = contextualNextSteps.take(2))
 }
 
 /**
@@ -1769,6 +1824,8 @@ fun ChatMessageItem(
     shouldStream: Boolean,
     onAnimationComplete: () -> Unit,
     onCtaClick: (String) -> Unit,
+    onTtsClick: (String, String) -> Unit = { _, _ -> },
+    isSpeaking: Boolean = false,
     onNavigateToPaywall: () -> Unit = {}
 ) {
     val clipboardManager = LocalClipboardManager.current
@@ -1907,7 +1964,7 @@ fun ChatMessageItem(
                     }
                 }
 
-                // Bottom actions row with Copy action
+                // Bottom actions row with Copy and Native TTS speech actions
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1915,6 +1972,7 @@ fun ChatMessageItem(
                     horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Copy button
                     IconButton(
                         onClick = {
                             val textToCopy = mainAnswerText.ifBlank { message.content }
@@ -1931,40 +1989,69 @@ fun ChatMessageItem(
                             modifier = Modifier.size(15.dp)
                         )
                     }
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    // Native TTS Speak / Stop button
+                    IconButton(
+                        onClick = {
+                            val textToSpeak = mainAnswerText.ifBlank { message.content }
+                            onTtsClick(message.id, textToSpeak)
+                        },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isSpeaking) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                            contentDescription = if (isSpeaking) "Stop speech" else "Read response aloud",
+                            tint = if (isSpeaking) AiGeminiBlue else AiTextSecondary,
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
                 }
 
-                // Render Next Steps as CTA pill buttons
+                // Render Next Steps as CTA pill buttons (Strictly 2 suggestions, responsive to screen size)
                 if (nextStepsList.isNotEmpty() && charCount >= mainAnswerText.length) {
                     Spacer(modifier = Modifier.height(10.dp))
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        nextStepsList.forEach { stepText ->
-                            Surface(
-                                onClick = { onCtaClick(stepText) },
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color(0xFFF1F5F9),
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        val isSmallScreen = maxWidth < 360.dp
+                        val suggestionFontSize = if (isSmallScreen) 11.5.sp else 13.sp
+                        val suggestionLineHeight = if (isSmallScreen) 16.sp else 18.sp
+                        val horizontalPadding = if (isSmallScreen) 10.dp else 14.dp
+                        val verticalPadding = if (isSmallScreen) 7.dp else 9.dp
+                        val iconSize = if (isSmallScreen) 12.dp else 14.dp
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            nextStepsList.take(2).forEach { stepText ->
+                                Surface(
+                                    onClick = { onCtaClick(stepText) },
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Color(0xFFF1F5F9),
+                                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(
-                                        text = stepText,
-                                        color = AiTextPrimary,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                        contentDescription = null,
-                                        tint = AiGeminiBlue,
-                                        modifier = Modifier.size(14.dp)
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = horizontalPadding, vertical = verticalPadding),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = stepText,
+                                            color = AiTextPrimary,
+                                            fontSize = suggestionFontSize,
+                                            lineHeight = suggestionLineHeight,
+                                            fontWeight = FontWeight.Medium,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                            contentDescription = null,
+                                            tint = AiGeminiBlue,
+                                            modifier = Modifier.size(iconSize)
+                                        )
+                                    }
                                 }
                             }
                         }

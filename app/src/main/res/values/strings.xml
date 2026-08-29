@@ -958,4 +958,4 @@
     <string name="diagnostics_copied">Diagnostics copied to clipboard</string>
     <string name="contact_support">Contact Support</string>
     <string name="license_details">License Details</string>
-</resources>
+<string name="analytics_spending_by_day">Spending by Day</string><string name="analytics_spending_by_week">Spending by Week</string><string name="analytics_spending_by_month">Spending by Month</string><string name="analytics_revenue_by_day">Revenue by Day</string><string name="analytics_revenue_by_week">Revenue by Week</string><string name="analytics_revenue_by_month">Revenue by Month</string><string name="analytics_select_period">Select Period</string><string name="analytics_weekdays">Weekdays</string><string name="analytics_weekends">Weekends</string><string name="analytics_average">Average</string><string name="analytics_highest">Highest</string><string name="period_weekly">Weekly</string><string name="period_monthly">Monthly</string><string name="period_yearly">Yearly</string></resources>

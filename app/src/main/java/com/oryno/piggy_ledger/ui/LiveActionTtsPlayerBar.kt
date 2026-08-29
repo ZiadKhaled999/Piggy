@@ -222,8 +222,7 @@ fun LiveAudioWaveformVisualizer(
             val left = i * (barWidth + spacing)
             val top = (canvasHeight - barHeight) / 2f
 
-            // Slightly highlight leading waveform bars
-            val color = if (i < 10 && isPlaying) activeBarColor else inactiveBarColor
+            val color = if (isPlaying) activeBarColor else inactiveBarColor
 
             drawRoundRect(
                 color = color,

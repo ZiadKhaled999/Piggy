@@ -430,34 +430,11 @@ class AiChatViewModel(
                 }
                 val convId = targetChatId
 
-                // Check 3-message limit for free users
-                val isPro = isPremium.value
-                val usedCount = aiMessagesCount.value
-                if (!isPro && usedCount >= 3) {
-                    _showPaywallPrompt.value = true
-                    val limitMsg = SovereignAiResponse(
-                        archetypeRationale = "# 👑 Free AI Limit Reached (3/3)\n\nYou have used your 3 free Piggy AI messages. Upgrade to **Piggy Ledger Pro** to unlock **Unlimited AI Financial Assistant**, smart budget queries, and deep transaction insights across all your accounts.",
-                        currentArchetype = "",
-                        uiBlocks = listOf(
-                            UiBlock.ActionBannerBlock(
-                                message = "Upgrade to Piggy Ledger Pro for unlimited AI conversations and full ledger analysis.",
-                                actionPayload = "UPGRADE_PRO"
-                            )
-                        )
-                    )
-                    repository.saveMessage(role = "user", content = userText, conversationId = convId)
-                    repository.saveMessage(
-                        role = "assistant",
-                        content = json.encodeToString(SovereignAiResponse.serializer(), limitMsg),
-                        conversationId = convId
-                    )
-                    return@launch
-                }
-
                 _isLoading.value = true
                 
                 val currentHistory = chatHistory.value
                 val isFirstMessage = currentHistory.isEmpty()
+                val isPro = isPremium.value
                 
                 // 1. Save user message with active conversation ID
                 repository.saveMessage(role = "user", content = userText, conversationId = convId)
@@ -519,16 +496,22 @@ class AiChatViewModel(
                             rawError.contains("SocketTimeoutException", ignoreCase = true) ||
                             rawError.contains("internet connection", ignoreCase = true)
 
+                    val isQuotaIssue = rawError.contains("resource_exhausted", ignoreCase = true) || 
+                            rawError.contains("quota", ignoreCase = true) ||
+                            rawError.contains("429", ignoreCase = true)
+
                     val cleanUserError = when {
                         isNetworkIssue ->
                             "Unable to reach the server. Please check your internet connection and try again."
+                        isQuotaIssue ->
+                            "Piggy is currently experiencing high demand and needs a moment to catch his breath. Please try again later!"
                         rawError.isNotBlank() && !rawError.contains("<html>", ignoreCase = true) ->
-                            rawError
+                            "Piggy encountered an issue analyzing your request. Please try again."
                         else ->
                             "AI service is temporarily busy. Please tap Retry to attempt again."
                     }
 
-                    val headerTitle = if (isNetworkIssue) "# ⚠️ Connection Issue" else "# ⚠️ Service Notice"
+                    val headerTitle = if (isNetworkIssue) "# ⚠️ Connection Issue" else if (isQuotaIssue) "# ⏳ High Demand" else "# ⚠️ Service Notice"
 
                     val errorMsg = SovereignAiResponse(
                         thinkingProcess = kotlinx.serialization.json.JsonPrimitive("Error analyzing request."),

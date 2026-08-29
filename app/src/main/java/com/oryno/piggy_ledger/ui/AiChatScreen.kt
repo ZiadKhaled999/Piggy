@@ -191,10 +191,10 @@ fun AiChatScreen(
         }
     }
 
-    var initialHistoryIds by remember { mutableStateOf<Set<String>?>(null) }
-    if (initialHistoryIds == null && chatHistory.isNotEmpty()) {
-        initialHistoryIds = chatHistory.map { it.id }.toSet()
+    val initialHistoryIds = remember(activeConversationId, chatHistory.isNotEmpty()) {
+        if (chatHistory.isNotEmpty()) chatHistory.map { it.id }.toSet() else null
     }
+    
     val animatedMessageIds = remember { mutableStateListOf<String>() }
 
     // Position automatically to bottom on opening or new messages
@@ -631,83 +631,6 @@ fun AiChatScreen(
     }
 
     val paywallSheetState = rememberModalBottomSheetState()
-
-    // Paywall / Limit Reached Bottom Sheet
-    if (showPaywallPrompt) {
-        ModalBottomSheet(
-            onDismissRequest = { viewModel.dismissPaywallPrompt() },
-            sheetState = paywallSheetState,
-            containerColor = Color.White,
-            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-            dragHandle = { BottomSheetDefaults.DragHandle() }
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
-                    .navigationBarsPadding(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Sad Piggy Image
-                androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_piggy_sad),
-                    contentDescription = "Sad Piggy",
-                    modifier = Modifier
-                        .size(160.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                Text(
-                    text = stringResource(R.string.ai_limit_reached_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    color = Color(0xFF1E293B)
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                Text(
-                    text = stringResource(R.string.ai_limit_reached_desc),
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    color = Color(0xFF64748B),
-                    lineHeight = 24.sp
-                )
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                Button(
-                    onClick = {
-                        viewModel.dismissPaywallPrompt()
-                        onNavigateToPaywall()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDB2777)),
-                    contentPadding = PaddingValues(16.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.ai_upgrade_to_pro),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
-                }
-                
-                TextButton(
-                    onClick = { viewModel.dismissPaywallPrompt() },
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.close_btn),
-                        color = Color(0xFF64748B)
-                    )
-                }
-            }
-        }
-    }
 
     // ModalBottomSheet for Chat History Menu
     if (showHistorySheet) {

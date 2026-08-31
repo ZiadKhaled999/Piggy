@@ -138,6 +138,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     "isPremium" BOOLEAN DEFAULT false,
     "premiumExpiryTimestamp" BIGINT DEFAULT 0,
     "isLifetimePremium" BOOLEAN DEFAULT false,
+    "preferredAccountId" TEXT,
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
     "isSynced" BOOLEAN DEFAULT true,

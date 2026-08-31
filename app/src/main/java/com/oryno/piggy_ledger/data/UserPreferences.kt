@@ -36,6 +36,11 @@ class UserPreferences(private val context: Context) {
         val SAVING_MODE = stringPreferencesKey("saving_mode")
         val CUSTOM_IDENTIFIERS_JSON = stringPreferencesKey("custom_identifiers_json")
         val IS_PRIVACY_MODE_ENABLED = booleanPreferencesKey("is_privacy_mode_enabled")
+        val PREFERRED_ACCOUNT_ID = stringPreferencesKey("preferred_account_id")
+    }
+
+    val preferredAccountId: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[PREFERRED_ACCOUNT_ID]
     }
 
     val customIdentifiersJson: Flow<String> = context.dataStore.data.map { prefs ->
@@ -217,6 +222,17 @@ class UserPreferences(private val context: Context) {
         syncPreferencesToDb()
     }
 
+    suspend fun savePreferredAccountId(accountId: String?) {
+        context.dataStore.edit { prefs ->
+            if (accountId != null) {
+                prefs[PREFERRED_ACCOUNT_ID] = accountId
+            } else {
+                prefs.remove(PREFERRED_ACCOUNT_ID)
+            }
+        }
+        syncPreferencesToDb()
+    }
+
     suspend fun syncPreferencesToDb() {
         try {
             val user = com.clerk.api.Clerk.userFlow.value
@@ -236,6 +252,7 @@ class UserPreferences(private val context: Context) {
                 isPremium = prefs[IS_PREMIUM] ?: false,
                 premiumExpiryTimestamp = prefs[PREMIUM_EXPIRY_TIMESTAMP] ?: 0L,
                 isLifetimePremium = prefs[IS_LIFETIME_PREMIUM] ?: false,
+                preferredAccountId = prefs[PREFERRED_ACCOUNT_ID],
                 updatedAt = System.currentTimeMillis(),
                 isSynced = false
             )
@@ -261,6 +278,11 @@ class UserPreferences(private val context: Context) {
             prefs[IS_PREMIUM] = entity.isPremium
             prefs[PREMIUM_EXPIRY_TIMESTAMP] = entity.premiumExpiryTimestamp
             prefs[IS_LIFETIME_PREMIUM] = entity.isLifetimePremium
+            if (entity.preferredAccountId != null) {
+                prefs[PREFERRED_ACCOUNT_ID] = entity.preferredAccountId
+            } else {
+                prefs.remove(PREFERRED_ACCOUNT_ID)
+            }
         }
     }
 

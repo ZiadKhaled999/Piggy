@@ -666,6 +666,9 @@ class PiggyLedgerViewModel(
     fun deleteAccount(id: String) {
         viewModelScope.launch {
             repository.deleteAccount(id)
+            if (_selectedAccountId.value == id) {
+                selectAccount(null)
+            }
             PostHog.capture(
                 event = "account_deleted",
                 properties = mapOf("account_id" to id)
@@ -679,6 +682,13 @@ class PiggyLedgerViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        viewModelScope.launch {
+            userPreferences.preferredAccountId.collect { prefAccId ->
+                if (_selectedAccountId.value != prefAccId) {
+                    _selectedAccountId.value = prefAccId
+                }
+            }
+        }
         viewModelScope.launch {
             delay(5000)
             while (true) {
@@ -712,6 +722,9 @@ class PiggyLedgerViewModel(
 
     fun selectAccount(accountId: String?) {
         _selectedAccountId.value = accountId
+        viewModelScope.launch {
+            userPreferences.savePreferredAccountId(accountId)
+        }
         PostHog.capture(
             event = "account_selected",
             properties = mapOf("account_id" to (accountId ?: -1))

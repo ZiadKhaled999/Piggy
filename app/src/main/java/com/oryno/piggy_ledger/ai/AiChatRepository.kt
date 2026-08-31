@@ -64,6 +64,14 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
         return dao.getAllChatMessagesFlow()
     }
 
+    fun getUserAiMessagesCountFlow(): Flow<Int> {
+        return dao.getUserAiMessagesCountFlow()
+    }
+
+    suspend fun getUserAiMessagesCount(): Int {
+        return dao.getUserAiMessagesCount()
+    }
+
     suspend fun saveMessage(role: String, content: String, conversationId: String = "default") {
         val user = com.clerk.api.Clerk.userFlow.value
         val userId = user?.id ?: "local_user"
@@ -207,7 +215,7 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
                         maxCompletionTokens = 2048,
                         topP = 0.95,
                         stream = false,
-                        reasoningEffort = "default"
+                        reasoningEffort = null
                     )
 
                     val requestStr = json.encodeToString(requestBody)
@@ -225,32 +233,36 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
                         val rawContent = groqResponse.choices.firstOrNull()?.message?.content
                             ?: return@withContext Result.failure(Exception("AI did not produce text content. Please try again."))
 
-                        // Clean up any DeepSeek <think> tags if present
-                        val cleanedContent = if (rawContent.contains("</think>")) {
-                            val thinkParts = rawContent.split("</think>")
-                            val thinkingStr = thinkParts[0].replace("<think>", "").trim()
-                            val actualAnswer = thinkParts.getOrElse(1) { "" }.trim()
-                            if (actualAnswer.isNotBlank()) actualAnswer else thinkingStr
-                        } else {
-                            rawContent
+                        // Completely eliminate thinking tokens and tags from the ground up
+                        val cleanedContent = AiSanitizer.sanitizeThinking(rawContent).ifBlank {
+                            "I've analyzed your financial ledger. How can I assist you with your finances today?"
                         }
 
                         val jsonStr = extractJson(cleanedContent)
                         val parsed = if (jsonStr.isNotBlank() && jsonStr.contains("archetype_rationale")) {
                             try {
-                                json.decodeFromString<SovereignAiResponse>(jsonStr)
+                                val decoded = json.decodeFromString<SovereignAiResponse>(jsonStr)
+                                val cleanRationale = AiSanitizer.sanitizeThinking(decoded.archetypeRationale).ifBlank {
+                                    "I've analyzed your financial ledger. How can I assist you with your finances today?"
+                                }
+                                decoded.copy(
+                                    archetypeRationale = cleanRationale,
+                                    thinkingProcess = null
+                                )
                             } catch (e: Exception) {
                                 SovereignAiResponse(
                                     archetypeRationale = cleanedContent,
                                     currentArchetype = "",
-                                    uiBlocks = emptyList()
+                                    uiBlocks = emptyList(),
+                                    thinkingProcess = null
                                 )
                             }
                         } else {
                             SovereignAiResponse(
                                 archetypeRationale = cleanedContent,
                                 currentArchetype = "",
-                                uiBlocks = emptyList()
+                                uiBlocks = emptyList(),
+                                thinkingProcess = null
                             )
                         }
                         return@withContext Result.success(parsed)

@@ -117,8 +117,8 @@ data class GroqRequest(
     val temperature: Double? = 0.6,
     @SerialName("max_completion_tokens") val maxCompletionTokens: Int? = 2048,
     @SerialName("top_p") val topP: Double? = 0.95,
-    val stream: Boolean = true,
-    @SerialName("reasoning_effort") val reasoningEffort: String? = "default",
+    val stream: Boolean = false,
+    @SerialName("reasoning_effort") val reasoningEffort: String? = null,
     val stop: String? = null
 )
 
@@ -129,8 +129,8 @@ data class ResponseFormat(
 
 @Serializable
 data class GroqResponse(
-    val id: String,
-    val choices: List<Choice>
+    val id: String = "",
+    val choices: List<Choice> = emptyList()
 )
 
 @Serializable
@@ -140,6 +140,8 @@ data class Choice(
 
 @Serializable
 data class ChatMessageResponse(
-    val role: String,
-    val content: String
+    val role: String = "assistant",
+    val content: String? = null,
+    @SerialName("reasoning_content") val reasoningContent: String? = null,
+    @SerialName("reasoning") val reasoning: String? = null
 )

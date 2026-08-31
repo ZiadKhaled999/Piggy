@@ -1235,7 +1235,7 @@ fun PiggyLedgerPaywall(
                         }
                         override fun onError(error: com.revenuecat.purchases.PurchasesError) {
                             isLoadingOfferings = false
-                            fetchError = error.message
+                            fetchError = BillingErrorHandler.formatPurchasesError(context, error)
                             android.util.Log.w("Paywall", "Offerings unavailable: ${error.message}")
                         }
                     }
@@ -1246,7 +1246,7 @@ fun PiggyLedgerPaywall(
             }
         } catch (e: Exception) {
             isLoadingOfferings = false
-            fetchError = e.message ?: "Failed to connect to billing service."
+            fetchError = BillingErrorHandler.formatThrowable(context, e)
         }
     }
 
@@ -1573,7 +1573,54 @@ fun PiggyLedgerPaywall(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            if (fetchError != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFFFF1F2),
+                    border = BorderStroke(1.dp, Color(0xFFFECDD3))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = fetchError ?: stringResource(R.string.billing_error_offline),
+                            color = Color(0xFF9F1239),
+                            fontSize = 13.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(
+                            onClick = { refreshBillingTrigger++ },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    tint = Color(0xFFE11D48),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Retry",
+                                    color = Color(0xFFE11D48),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Restore subscription button
             Text(
@@ -1584,6 +1631,10 @@ fun PiggyLedgerPaywall(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .clickable {
+                        if (!BillingErrorHandler.isOnline(context)) {
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.billing_error_offline), Toast.LENGTH_LONG)
+                            return@clickable
+                        }
                         if (com.revenuecat.purchases.Purchases.isConfigured) {
                             try {
                                 com.revenuecat.purchases.Purchases.sharedInstance.restorePurchases(
@@ -1599,12 +1650,14 @@ fun PiggyLedgerPaywall(
                                             }
                                         }
                                         override fun onError(error: com.revenuecat.purchases.PurchasesError) {
-                                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Restore failed: ${error.message}", Toast.LENGTH_LONG)
+                                            val errorMsg = BillingErrorHandler.formatPurchasesError(context, error)
+                                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, errorMsg, Toast.LENGTH_LONG)
                                         }
                                     }
                                 )
                             } catch (e: Exception) {
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Restore failed: ${e.message}", Toast.LENGTH_LONG)
+                                val errorMsg = BillingErrorHandler.formatThrowable(context, e)
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, errorMsg, Toast.LENGTH_LONG)
                             }
                         } else {
                             com.oryno.piggy_ledger.ui.ToastUtil.show(context, "In-App Billing is not available on this device.", Toast.LENGTH_LONG)
@@ -1619,6 +1672,10 @@ fun PiggyLedgerPaywall(
             Button(
                 onClick = {
                     if (isPurchasing) return@Button
+                    if (!BillingErrorHandler.isOnline(context)) {
+                        com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.billing_error_offline), Toast.LENGTH_LONG)
+                        return@Button
+                    }
                     val packageToBuy = when (selectedPlan) {
                         PaywallPlan.MONTHLY -> monthlyPackage
                         PaywallPlan.YEARLY -> yearlyPackage
@@ -1650,14 +1707,18 @@ fun PiggyLedgerPaywall(
                                         override fun onError(error: com.revenuecat.purchases.PurchasesError, userCancelled: Boolean) {
                                             isPurchasing = false
                                             if (!userCancelled) {
-                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Google Play error: ${error.message}", android.widget.Toast.LENGTH_LONG)
+                                                val errorMsg = BillingErrorHandler.formatPurchasesError(context, error)
+                                                if (errorMsg.isNotBlank()) {
+                                                    com.oryno.piggy_ledger.ui.ToastUtil.show(context, errorMsg, android.widget.Toast.LENGTH_LONG)
+                                                }
                                             }
                                         }
                                     }
                                 )
                             } catch (e: Exception) {
                                 isPurchasing = false
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase failed: ${e.message}", android.widget.Toast.LENGTH_LONG)
+                                val errorMsg = BillingErrorHandler.formatThrowable(context, e)
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, errorMsg, android.widget.Toast.LENGTH_LONG)
                             }
                         } else {
                             com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Google Play Billing is initializing. Please try again in a moment.", android.widget.Toast.LENGTH_LONG)
@@ -1665,8 +1726,9 @@ fun PiggyLedgerPaywall(
                         }
                     } else {
                         val msg = when {
+                            !BillingErrorHandler.isOnline(context) -> context.getString(R.string.billing_error_offline)
                             isLoadingOfferings -> "Loading plans from Google Play..."
-                            fetchError != null -> "Google Play error: $fetchError"
+                            fetchError != null -> fetchError ?: context.getString(R.string.billing_error_general)
                             packagesList.isEmpty() -> "No active billing products found in Google Play."
                             else -> "Selected plan is currently unavailable."
                         }

@@ -535,6 +535,8 @@
     <string name="pro_restore_success">تم استعادة المشتريات بنجاح!</string>
     <string name="no_active_subscription">مش لاقيين اشتراك بيجى Pro نشط.</string>
     <string name="restore_failed_format">فشل الاستعادة: %s</string>
+    <string name="billing_error_offline">أنت مش متصل بالنت حالياً.</string>
+    <string name="billing_error_general">تعذر إتمام الطلب. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.</string>
     <string name="terms_of_service">شروط الخدمة</string>
     <string name="terms_unavailable">رابط الشروط مش متاح حالياً.</string>
     <string name="subscription_terms_text">الاشتراكات بتتجدد تلقائياً. ممكن تلغي في أي وقت من إعدادات متجر جوجل.</string>

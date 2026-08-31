@@ -151,6 +151,7 @@ fun AiChatScreen(
     val userName by viewModel.userName.collectAsStateWithLifecycle()
     val isPremium by viewModel.isPremium.collectAsStateWithLifecycle()
     val aiMessagesCount by viewModel.aiMessagesCount.collectAsStateWithLifecycle()
+    val isLimitReached by viewModel.isLimitReached.collectAsStateWithLifecycle()
     val showPaywallPrompt by viewModel.showPaywallPrompt.collectAsStateWithLifecycle()
     
     var inputText by remember { mutableStateOf("") }
@@ -196,6 +197,13 @@ fun AiChatScreen(
     }
     
     val animatedMessageIds = remember { mutableStateListOf<String>() }
+
+    LaunchedEffect(showPaywallPrompt) {
+        if (showPaywallPrompt) {
+            onNavigateToPaywall()
+            viewModel.dismissPaywallPrompt()
+        }
+    }
 
     // Position automatically to bottom on opening or new messages
     LaunchedEffect(chatHistory.size) {
@@ -382,8 +390,11 @@ fun AiChatScreen(
                     ) {
                         EmptyChatState(
                             userName = userName,
+                            isLimitReached = isLimitReached,
                             onSuggestionClick = { query ->
-                                viewModel.sendMessage(query)
+                                if (!isLimitReached) {
+                                    viewModel.sendMessage(query)
+                                }
                             }
                         )
                     }
@@ -406,8 +417,13 @@ fun AiChatScreen(
                             ChatMessageItem(
                                 message = message,
                                 shouldStream = !isInitial && !isAnimated,
+                                isLimitReached = isLimitReached,
                                 onAnimationComplete = { animatedMessageIds.add(message.id) },
-                                onCtaClick = { cta -> viewModel.sendMessage(cta) },
+                                onCtaClick = { cta -> 
+                                    if (!isLimitReached) {
+                                        viewModel.sendMessage(cta)
+                                    }
+                                },
                                 onTtsClick = { msgId, speechText -> ttsManager.speak(msgId, speechText) },
                                 isSpeaking = speakingMessageId == message.id,
                                 onNavigateToPaywall = onNavigateToPaywall
@@ -450,6 +466,57 @@ fun AiChatScreen(
                             onCancel = { ttsManager.stop() },
                             modifier = Modifier.fillMaxWidth(animatedWidthFraction)
                         )
+                    } else if (isLimitReached) {
+                        Surface(
+                            onClick = onNavigateToPaywall,
+                            shape = RoundedCornerShape(36.dp),
+                            shadowElevation = 4.dp,
+                            modifier = Modifier
+                                .fillMaxWidth(animatedWidthFraction)
+                                .height(56.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            colors = listOf(
+                                                Color(0xFFF43F5E),
+                                                Color(0xFFE11D48),
+                                                Color(0xFFDB2777)
+                                            )
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Upgrade to Pro",
+                                        color = Color.White,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = (-0.2).sp
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                        contentDescription = null,
+                                        tint = Color.White.copy(alpha = 0.9f),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
                     } else {
                         Surface(
                             color = Color(0xFFDADADA),
@@ -1484,6 +1551,7 @@ data class CategoryPillData(
 @Composable
 fun EmptyChatState(
     userName: String = "",
+    isLimitReached: Boolean = false,
     onSuggestionClick: (String) -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -1557,44 +1625,46 @@ fun EmptyChatState(
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            if (!isLimitReached) {
+                Spacer(modifier = Modifier.height(32.dp))
 
-            // Row 1 Infinite Looping Slider in Light Theme
-            val row1Pills = remember {
-                listOf(
-                    CategoryPillData("🎯", "savings goals progress", "What are my current savings goals progress?"),
-                    CategoryPillData("💡", "audit spending", "Audit my recent spending transactions"),
-                    CategoryPillData("👑", "runway and budget", "What is my current runway and budget balance?"),
-                    CategoryPillData("📈", "cash flow trends", "What are my recent cash flow trends?")
-                )
+                // Row 1 Infinite Looping Slider in Light Theme
+                val row1Pills = remember {
+                    listOf(
+                        CategoryPillData("🎯", "savings goals progress", "What are my current savings goals progress?"),
+                        CategoryPillData("💡", "audit spending", "Audit my recent spending transactions"),
+                        CategoryPillData("👑", "runway and budget", "What is my current runway and budget balance?"),
+                        CategoryPillData("📈", "cash flow trends", "What are my recent cash flow trends?")
+                    )
+                }
+                InfinitePillRow(pills = row1Pills, initialOffset = 1000, scrollSpeed = 0.9f, onSuggestionClick = onSuggestionClick)
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Row 2 Infinite Looping Slider in Light Theme
+                val row2Pills = remember {
+                    listOf(
+                        CategoryPillData("⚡", "expense shortcuts", "How can I optimize my monthly expenses?"),
+                        CategoryPillData("📊", "cash flow forecast", "Show my cash flow forecast"),
+                        CategoryPillData("💳", "loan repayments", "What is my loan repayment status?"),
+                        CategoryPillData("🏷️", "top spending category", "Which category do I spend the most on?")
+                    )
+                }
+                InfinitePillRow(pills = row2Pills, initialOffset = 3000, scrollSpeed = 0.7f, onSuggestionClick = onSuggestionClick)
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Row 3 Infinite Looping Slider in Light Theme
+                val row3Pills = remember {
+                    listOf(
+                        CategoryPillData("📱", "review pending SMS", "Are there any pending SMS transactions to review?"),
+                        CategoryPillData("💰", "account balances", "Show all my account balances"),
+                        CategoryPillData("✨", "streaks and habits", "What is my logging streak status?"),
+                        CategoryPillData("🏦", "total liquidity", "Which account holds my largest liquidity?")
+                    )
+                }
+                InfinitePillRow(pills = row3Pills, initialOffset = 5000, scrollSpeed = 1.0f, onSuggestionClick = onSuggestionClick)
             }
-            InfinitePillRow(pills = row1Pills, initialOffset = 1000, scrollSpeed = 0.9f, onSuggestionClick = onSuggestionClick)
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Row 2 Infinite Looping Slider in Light Theme
-            val row2Pills = remember {
-                listOf(
-                    CategoryPillData("⚡", "expense shortcuts", "How can I optimize my monthly expenses?"),
-                    CategoryPillData("📊", "cash flow forecast", "Show my cash flow forecast"),
-                    CategoryPillData("💳", "loan repayments", "What is my loan repayment status?"),
-                    CategoryPillData("🏷️", "top spending category", "Which category do I spend the most on?")
-                )
-            }
-            InfinitePillRow(pills = row2Pills, initialOffset = 3000, scrollSpeed = 0.7f, onSuggestionClick = onSuggestionClick)
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Row 3 Infinite Looping Slider in Light Theme
-            val row3Pills = remember {
-                listOf(
-                    CategoryPillData("📱", "review pending SMS", "Are there any pending SMS transactions to review?"),
-                    CategoryPillData("💰", "account balances", "Show all my account balances"),
-                    CategoryPillData("✨", "streaks and habits", "What is my logging streak status?"),
-                    CategoryPillData("🏦", "total liquidity", "Which account holds my largest liquidity?")
-                )
-            }
-            InfinitePillRow(pills = row3Pills, initialOffset = 5000, scrollSpeed = 1.0f, onSuggestionClick = onSuggestionClick)
         }
     }
 }
@@ -1667,7 +1737,7 @@ data class ProcessedResponse(
 )
 
 fun parseResponseTextAndNextSteps(rawText: String): ProcessedResponse {
-    var text = rawText
+    var text = com.oryno.piggy_ledger.ai.AiSanitizer.sanitizeThinking(rawText)
     
     if (text.contains("Knowledge Hub Analysis", ignoreCase = true)) {
         val lines = text.split("\n").filterNot { line ->
@@ -1745,6 +1815,7 @@ fun parseResponseTextAndNextSteps(rawText: String): ProcessedResponse {
 fun ChatMessageItem(
     message: AiChatMessage,
     shouldStream: Boolean,
+    isLimitReached: Boolean = false,
     onAnimationComplete: () -> Unit,
     onCtaClick: (String) -> Unit,
     onTtsClick: (String, String) -> Unit = { _, _ -> },
@@ -1833,7 +1904,7 @@ fun ChatMessageItem(
                     }
                 }
 
-                val rawRationale = decodedResponse?.archetypeRationale ?: message.content
+                val rawRationale = com.oryno.piggy_ledger.ai.AiSanitizer.sanitizeThinking(decodedResponse?.archetypeRationale ?: message.content)
                 val processedResponse = remember(rawRationale) {
                     parseResponseTextAndNextSteps(rawRationale)
                 }
@@ -1933,7 +2004,7 @@ fun ChatMessageItem(
                 }
 
                 // Render Next Steps as CTA pill buttons (Strictly 2 suggestions, responsive to screen size)
-                if (nextStepsList.isNotEmpty() && charCount >= mainAnswerText.length) {
+                if (!isLimitReached && nextStepsList.isNotEmpty() && charCount >= mainAnswerText.length) {
                     Spacer(modifier = Modifier.height(10.dp))
                     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                         val isSmallScreen = maxWidth < 360.dp

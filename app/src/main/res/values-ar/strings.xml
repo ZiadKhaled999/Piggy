@@ -621,6 +621,8 @@
     <string name="pro_restore_success">تم استعادة المشتريات بنجاح!</string>
     <string name="no_active_subscription">لم يتم العثور على اشتراك بيجى Pro نشط.</string>
     <string name="restore_failed_format">فشل الاستعادة: %s</string>
+    <string name="billing_error_offline">أنت غير متصل بالإنترنت حالياً.</string>
+    <string name="billing_error_general">تعذر إتمام الطلب. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.</string>
     <string name="terms_of_service">شروط الخدمة</string>
     <string name="terms_unavailable">رابط الشروط غير متاح حالياً.</string>
     <string name="subscription_terms_text">تتجدد الاشتراكات تلقائياً. يمكنك الإلغاء في أي وقت من إعدادات Google Play.</string>

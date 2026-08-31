@@ -637,6 +637,8 @@
     <string name="pro_restore_success">Purchases restored successfully!</string>
     <string name="no_active_subscription">No active Piggy Ledger Pro subscription found.</string>
     <string name="restore_failed_format">Restore failed: %s</string>
+    <string name="billing_error_offline">You are currently offline.</string>
+    <string name="billing_error_general">Unable to complete request. Please check your internet connection and try again.</string>
     <string name="terms_of_service">Terms of Service</string>
     <string name="terms_unavailable">Terms link is currently unavailable.</string>
     <string name="subscription_terms_text">Subscriptions automatically renew. Cancel anytime inside Google Play Settings.</string>

@@ -75,6 +75,7 @@ fun DashboardScreen(
     
     val pendingTransactions by viewModel.allPendingTransactions.collectAsState()
     val isPrivacyMode by viewModel.isPrivacyModeEnabled.collectAsState()
+    val selectedAccountId by viewModel.selectedAccountId.collectAsState()
     var automaticallyShowPendingSheet by remember { mutableStateOf(true) }
     var selectedPendingTxForSheet by remember { mutableStateOf<com.oryno.piggy_ledger.data.PendingTransaction?>(null) }
 
@@ -243,6 +244,8 @@ fun DashboardScreen(
                 VirtualCardsWidget(
                     totalBalance = totalBalance, 
                     accounts = accounts, 
+                    selectedAccountId = selectedAccountId,
+                    onAccountSelected = { accId -> viewModel.selectAccount(accId) },
                     onClick = onNavigateToAccounts,
                     isPrivacyMode = isPrivacyMode,
                     onTogglePrivacy = { viewModel.togglePrivacyMode(context) },
@@ -777,12 +780,26 @@ fun PendingTransactionDashboardCard(
 fun VirtualCardsWidget(
     totalBalance: Double, 
     accounts: List<com.oryno.piggy_ledger.data.Account>, 
+    selectedAccountId: String? = null,
+    onAccountSelected: (String?) -> Unit = {},
     onClick: () -> Unit,
     isPrivacyMode: Boolean = false,
     onTogglePrivacy: () -> Unit = {},
     onUpdateAccountColor: (com.oryno.piggy_ledger.data.Account?, String) -> Unit = { _, _ -> }
 ) {
-    var currentIndex by remember { mutableIntStateOf(0) }
+    val initialIndex = remember(accounts, selectedAccountId) {
+        val foundIdx = accounts.indexOfFirst { it.id == selectedAccountId }
+        if (foundIdx >= 0) foundIdx else 0
+    }
+    var currentIndex by remember { mutableIntStateOf(initialIndex) }
+
+    LaunchedEffect(selectedAccountId, accounts) {
+        val foundIdx = accounts.indexOfFirst { it.id == selectedAccountId }
+        if (foundIdx >= 0 && foundIdx != currentIndex) {
+            currentIndex = foundIdx
+        }
+    }
+
     var isCardIdVisible by remember { mutableStateOf(true) }
     var showColorPickerSheet by remember { mutableStateOf(false) }
 
@@ -893,7 +910,12 @@ fun VirtualCardsWidget(
                                 // Switch button (if accounts.size > 1)
                                 if (accounts.size > 1) {
                                     IconButton(
-                                        onClick = { currentIndex = (currentIndex + 1) % accounts.size },
+                                        onClick = { 
+                                            val nextIndex = (currentIndex + 1) % accounts.size
+                                            currentIndex = nextIndex
+                                            val switchedAcc = accounts.getOrNull(nextIndex)
+                                            onAccountSelected(switchedAcc?.id)
+                                        },
                                         modifier = Modifier
                                             .background(Color.White.copy(alpha = 0.2f), CircleShape)
                                             .size(32.dp)

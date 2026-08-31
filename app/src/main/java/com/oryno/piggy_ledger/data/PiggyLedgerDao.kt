@@ -307,6 +307,12 @@ interface PiggyLedgerDao {
     @Query("SELECT * FROM ai_chat_messages WHERE is_deleted = 0 ORDER BY timestamp ASC")
     fun getAllChatMessagesFlow(): Flow<List<AiChatMessage>>
 
+    @Query("SELECT COUNT(*) FROM ai_chat_messages WHERE role = 'user' AND is_deleted = 0")
+    fun getUserAiMessagesCountFlow(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM ai_chat_messages WHERE role = 'user' AND is_deleted = 0")
+    suspend fun getUserAiMessagesCount(): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChatMessage(message: AiChatMessage)
 

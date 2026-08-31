@@ -41,10 +41,26 @@ class AiChatViewModel(
         initialValue = false
     )
 
-    val aiMessagesCount: StateFlow<Int> = (userPreferences?.aiMessagesCount ?: flowOf(0)).stateIn(
+    val aiMessagesCount: StateFlow<Int> = kotlinx.coroutines.flow.combine(
+        userPreferences?.aiMessagesCount ?: flowOf(0),
+        repository.getUserAiMessagesCountFlow()
+    ) { prefsCount, daoCount ->
+        maxOf(prefsCount, daoCount)
+    }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = 0
+    )
+
+    val isLimitReached: StateFlow<Boolean> = kotlinx.coroutines.flow.combine(
+        isPremium,
+        aiMessagesCount
+    ) { premium, count ->
+        !premium && count >= 3
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
     )
 
     private val _showPaywallPrompt = MutableStateFlow(false)
@@ -412,6 +428,11 @@ class AiChatViewModel(
     }
 
     fun sendMessage(userText: String) {
+        if (!isPremium.value && aiMessagesCount.value >= 3) {
+            triggerPaywallPrompt()
+            return
+        }
+
         activeGenerationJob?.cancel()
         activeGenerationJob = viewModelScope.launch {
             try {
@@ -448,19 +469,22 @@ class AiChatViewModel(
                 val fullSystemPrompt = "$systemPrompt\n\n### USER KNOWLEDGE HUB SNAPSHOT\n$contextData"
                 apiMessages.add(ChatMessageRequest(role = "system", content = fullSystemPrompt))
                 
-                // Add previous history with cleaned text content
+                // Add previous history with cleaned text content (completely free of thinking blocks)
                 currentHistory.forEach { msg ->
                     val cleanedText = if (msg.role == "assistant") {
-                        try {
+                        val rawAssistantText = try {
                             val parsed = json.decodeFromString<SovereignAiResponse>(msg.content)
                             parsed.archetypeRationale.ifBlank { msg.content }
                         } catch (e: Exception) {
                             msg.content
                         }
+                        AiSanitizer.sanitizeThinking(rawAssistantText)
                     } else {
                         msg.content
                     }
-                    apiMessages.add(ChatMessageRequest(role = msg.role, content = cleanedText))
+                    if (cleanedText.isNotBlank()) {
+                        apiMessages.add(ChatMessageRequest(role = msg.role, content = cleanedText))
+                    }
                 }
                 
                 // Add current user message
@@ -473,11 +497,13 @@ class AiChatViewModel(
                 if (responseResult.isSuccess) {
                     val response = responseResult.getOrNull()
                     if (response != null) {
-                        val finalResponse = if (response.archetypeRationale.isNotBlank()) {
-                            response
-                        } else {
-                            SovereignAiResponse(archetypeRationale = "I analyzed your ledger data, but could not format the output. Please try asking again.")
+                        val sanitizedRationale = AiSanitizer.sanitizeThinking(response.archetypeRationale).ifBlank {
+                            "I've analyzed your financial ledger. How can I assist you today?"
                         }
+                        val finalResponse = response.copy(
+                            archetypeRationale = sanitizedRationale,
+                            thinkingProcess = null
+                        )
                         responseTextForTitle = finalResponse.archetypeRationale
                         val jsonString = json.encodeToString(SovereignAiResponse.serializer(), finalResponse)
                         repository.saveMessage(role = "assistant", content = jsonString, conversationId = convId)

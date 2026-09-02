@@ -37,6 +37,11 @@ class UserPreferences(private val context: Context) {
         val CUSTOM_IDENTIFIERS_JSON = stringPreferencesKey("custom_identifiers_json")
         val IS_PRIVACY_MODE_ENABLED = booleanPreferencesKey("is_privacy_mode_enabled")
         val PREFERRED_ACCOUNT_ID = stringPreferencesKey("preferred_account_id")
+        val APP_CURRENCY = stringPreferencesKey("app_currency")
+    }
+
+    val appCurrency: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[APP_CURRENCY] ?: "USD"
     }
 
     val preferredAccountId: Flow<String?> = context.dataStore.data.map { prefs ->
@@ -233,6 +238,13 @@ class UserPreferences(private val context: Context) {
         syncPreferencesToDb()
     }
 
+    suspend fun saveAppCurrency(currencyCode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[APP_CURRENCY] = currencyCode
+        }
+        syncPreferencesToDb()
+    }
+
     suspend fun syncPreferencesToDb() {
         try {
             val user = com.clerk.api.Clerk.userFlow.value
@@ -253,6 +265,7 @@ class UserPreferences(private val context: Context) {
                 premiumExpiryTimestamp = prefs[PREMIUM_EXPIRY_TIMESTAMP] ?: 0L,
                 isLifetimePremium = prefs[IS_LIFETIME_PREMIUM] ?: false,
                 preferredAccountId = prefs[PREFERRED_ACCOUNT_ID],
+                appCurrency = prefs[APP_CURRENCY] ?: "USD",
                 updatedAt = System.currentTimeMillis(),
                 isSynced = false
             )
@@ -283,6 +296,7 @@ class UserPreferences(private val context: Context) {
             } else {
                 prefs.remove(PREFERRED_ACCOUNT_ID)
             }
+            prefs[APP_CURRENCY] = entity.appCurrency
         }
     }
 
@@ -298,6 +312,19 @@ class UserPreferences(private val context: Context) {
             prefs[HAS_LANGUAGE_SELECTED] = hasLanguageSelected
             prefs[HAS_HEARD_ABOUT_US] = hasHeardAboutUs
         }
+    }
+
+    suspend fun getInitialDestination(): com.oryno.piggy_ledger.ui.Screen {
+        val prefs = context.dataStore.data.first()
+        val hasLang = prefs[HAS_LANGUAGE_SELECTED] ?: false
+        if (!hasLang) return com.oryno.piggy_ledger.ui.Screen.LanguageSelection
+        val hasHeard = prefs[HAS_HEARD_ABOUT_US] ?: false
+        if (!hasHeard) return com.oryno.piggy_ledger.ui.Screen.HearAboutUs
+        val hasOnboarded = prefs[HAS_ONBOARDED] ?: false
+        if (!hasOnboarded) return com.oryno.piggy_ledger.ui.Screen.Onboarding
+        val isAuth = prefs[IS_AUTHENTICATED] ?: false
+        if (!isAuth) return com.oryno.piggy_ledger.ui.Screen.Auth
+        return com.oryno.piggy_ledger.ui.Screen.MainContainer
     }
 
     suspend fun clearAll() {

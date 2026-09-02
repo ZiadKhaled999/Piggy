@@ -89,17 +89,6 @@ fun EditAccountScreen(
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var confirmNameInput by remember { mutableStateOf("") }
 
-    val availableCurrencies = listOf(
-        CurrencyInfo("USD", "US Dollar", "🇺🇸", "$"),
-        CurrencyInfo("EUR", "Euro", "🇪🇺", "€"),
-        CurrencyInfo("EGP", "Egyptian Pound", "🇪🇬", "EGP"),
-        CurrencyInfo("GBP", "British Pound", "🇬🇧", "£"),
-        CurrencyInfo("AED", "UAE Dirham", "🇦🇪", "AED"),
-        CurrencyInfo("SAR", "Saudi Riyal", "🇸🇦", "SAR"),
-        CurrencyInfo("OMR", "Omani Rial", "🇴🇲", "OMR"),
-        CurrencyInfo("JPY", "Japanese Yen", "🇯🇵", "¥"),
-        CurrencyInfo("CNY", "Chinese Yuan", "🇨🇳", "CN¥")
-    )
 
     val availableProviders = listOf(
         ProviderInfo("Vodafone Cash", Color(0xFFE11D48), "#E11D48"),
@@ -763,7 +752,8 @@ fun EditAccountScreen(
                         )
                         val filteredCurrencies = availableCurrencies.filter {
                             it.code.contains(currencySearchQuery, ignoreCase = true) ||
-                            it.name.contains(currencySearchQuery, ignoreCase = true)
+                            it.name.contains(currencySearchQuery, ignoreCase = true) ||
+                            it.symbol.contains(currencySearchQuery, ignoreCase = true)
                         }
                         LazyColumn {
                             items(filteredCurrencies) { item ->

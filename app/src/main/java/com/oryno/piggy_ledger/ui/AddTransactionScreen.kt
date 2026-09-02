@@ -130,6 +130,7 @@ fun AddTransactionScreen(
     val isPremium by viewModel.isPremium.collectAsState()
     // Core Transaction Data
     var isExpense by remember { mutableStateOf(true) }
+    var applyInstaPayFee by remember { mutableStateOf(false) }
     
     var txAmountStr by remember { mutableStateOf("") }
     var txDescription by remember { mutableStateOf("") }
@@ -202,7 +203,11 @@ fun AddTransactionScreen(
                                 } catch (e: Exception) {}
                                 val amt = txAmountStr.toDoubleOrNull()
                                 if (amt != null && amt > 0.0 && sourceAccountId != "") {
-                                    val finalAmt = if (isExpense) -amt else amt
+                                    var finalAmt = if (isExpense) -amt else amt
+                                    if (isExpense && applyInstaPayFee && activeSourceAccount?.insta_pay_fee == true) {
+                                        val feeAmt = minOf(amt * 0.001, 20.0)
+                                        finalAmt -= feeAmt // subtract since it's negative
+                                    }
                                     val categoryKey = if (selectedCategory != null) {
                                         selectedCategory!!.key
                                     } else {
@@ -526,6 +531,46 @@ fun AddTransactionScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = PinkPrimary
                                 )
+                            }
+                        }
+                        
+                        // InstaPay Fee Toggle
+                        if (isExpense && activeSourceAccount?.insta_pay_fee == true) {
+                            val rawAmt = txAmountStr.toDoubleOrNull() ?: 0.0
+                            val feeAmt = minOf(rawAmt * 0.001, 20.0)
+                            val hasFee = applyInstaPayFee && feeAmt > 0
+                            
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { applyInstaPayFee = !applyInstaPayFee }
+                                    .padding(vertical = 12.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = applyInstaPayFee,
+                                    onCheckedChange = { applyInstaPayFee = it },
+                                    colors = CheckboxDefaults.colors(checkedColor = PinkPrimary)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(R.string.add_instapay_fee),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = NavyDark
+                                    )
+                                    if (hasFee) {
+                                        val feeCurrency = activeSourceAccount?.currency?.let { getCurrencySymbol(it) } ?: "EGP"
+                                        Text(
+                                            text = "+$feeCurrency${String.format(Locale.getDefault(), "%,.2f", feeAmt)}",
+                                            fontSize = 13.sp,
+                                            color = PinkPrimary,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
                             }
                         }
                         

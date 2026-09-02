@@ -88,6 +88,8 @@ fun GoalDetailScreen(
     val context = LocalContext.current
     val goals by viewModel.goals.collectAsState()
     val isPrivacyMode by viewModel.isPrivacyModeEnabled.collectAsState()
+    val appCurrency by viewModel.appCurrency.collectAsState()
+    val currencySymbol = getCurrencySymbol(appCurrency)
     val goal = goals.find { it.id == goalId }
     val allTransactions by viewModel.allTransactions.collectAsState()
     val transactions = remember(allTransactions, goalId) {
@@ -264,10 +266,11 @@ fun GoalDetailScreen(
                     estCompletionDate = estCompletionDate,
                     establishedDate = establishedDate,
                     savedAmount = savedAmount,
-                    isPrivacyMode = isPrivacyMode
+                    isPrivacyMode = isPrivacyMode,
+                    currencySymbol = currencySymbol
                 )
             } else {
-                transactionsContent(transactions = transactions, isPrivacyMode = isPrivacyMode)
+                transactionsContent(transactions = transactions, isPrivacyMode = isPrivacyMode, currencySymbol = currencySymbol)
             }
             
             item {
@@ -333,7 +336,7 @@ fun GoalDetailScreen(
                 if (savedAmount > goal.targetAmount) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (isPrivacyMode) stringResource(R.string.amount_extra_simple, "••••••") else stringResource(R.string.amount_extra_simple, String.format("%.2f", savedAmount - goal.targetAmount)),
+                        text = if (isPrivacyMode) stringResource(R.string.amount_extra_simple, "$currencySymbol••••••") else stringResource(R.string.amount_extra_simple, "$currencySymbol${String.format("%.2f", savedAmount - goal.targetAmount)}"),
                         color = PinkAccent,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
@@ -345,14 +348,14 @@ fun GoalDetailScreen(
                 verticalAlignment = Alignment.Bottom
             ) {
                 Text(
-                    text = if (isPrivacyMode) "$••••••" else "$${String.format("%.2f", savedAmount)}",
+                    text = if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format("%.2f", savedAmount)}",
                     fontSize = 42.sp,
                     fontWeight = FontWeight.Bold,
                     color = NavyDark
                 )
                 if (goal.targetAmount > 0.0) {
                     Text(
-                        text = if (isPrivacyMode) " / $••••••" else " / $${String.format("%.2f", goal.targetAmount)}",
+                        text = if (isPrivacyMode) " / $currencySymbol••••••" else " / $currencySymbol${String.format("%.2f", goal.targetAmount)}",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextLight,
@@ -385,7 +388,7 @@ fun GoalDetailScreen(
                         maxLines = 1
                     )
                     Text(
-                        text = if (isPrivacyMode) "$••••••" else "$${String.format("%.0f", savedAmount)}",
+                        text = if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format("%.0f", savedAmount)}",
                         fontWeight = FontWeight.ExtraBold,
                         color = PinkPrimary,
                         fontSize = 18.sp
@@ -448,6 +451,14 @@ fun GoalDetailScreen(
                             amountStr = input
                         }
                     },
+                    leadingIcon = {
+                        Text(
+                            text = currencySymbol,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDark,
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
+                    },
                     label = { Text(stringResource(R.string.deposit_amount_label), fontWeight = FontWeight.Bold) },
                     placeholder = { Text(stringResource(R.string.zero_amount_placeholder)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -500,7 +511,7 @@ fun GoalDetailScreen(
                 
                 Button(
                     onClick = {
-                        val amount = amountStr.replace("$", "").trim().toDoubleOrNull()
+                        val amount = amountStr.replace(currencySymbol, "").replace("$", "").trim().toDoubleOrNull()
                         if (amount != null && amount > 0) {
                             viewModel.addTransaction(goalId, amount, note)
                             com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_savings_added), Toast.LENGTH_SHORT)
@@ -527,7 +538,8 @@ fun LazyListScope.overviewContent(
     estCompletionDate: String,
     establishedDate: String,
     savedAmount: Double,
-    isPrivacyMode: Boolean
+    isPrivacyMode: Boolean,
+    currencySymbol: String = "$"
 ) {
     item {
         MetadataCard(label = stringResource(R.string.established_date_label), value = establishedDate, icon = Icons.Default.Info)
@@ -538,7 +550,7 @@ fun LazyListScope.overviewContent(
         Spacer(modifier = Modifier.height(12.dp))
     }
     item {
-        MetadataCard(label = stringResource(R.string.avg_daily_saving_label), value = if (isPrivacyMode) "$••••••" else "$${String.format("%.2f", avgDaily)}", icon = Icons.AutoMirrored.Filled.TrendingUp)
+        MetadataCard(label = stringResource(R.string.avg_daily_saving_label), value = if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format("%.2f", avgDaily)}", icon = Icons.AutoMirrored.Filled.TrendingUp)
         Spacer(modifier = Modifier.height(12.dp))
     }
     item {
@@ -586,7 +598,12 @@ fun MetadataCard(
 }
 
 @Composable
-fun ProgressContent(transactions: List<Transaction>, goal: com.oryno.piggy_ledger.data.Goal) {
+fun ProgressContent(
+    transactions: List<Transaction>,
+    goal: com.oryno.piggy_ledger.data.Goal,
+    isPrivacyMode: Boolean = false,
+    currencySymbol: String = "$"
+) {
     val context = LocalContext.current
     if (transactions.isEmpty()) {
         EmptyState(message = stringResource(R.string.start_saving_msg))
@@ -631,7 +648,12 @@ fun ProgressContent(transactions: List<Transaction>, goal: com.oryno.piggy_ledge
             Column {
                 Text(stringResource(R.string.savings_challenge_title), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF334155))
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("$${String.format("%.0f", totalSaved)}", fontSize = 28.sp, fontWeight = FontWeight.Black, color = NavyDark)
+                Text(
+                    text = if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format("%.0f", totalSaved)}",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black,
+                    color = NavyDark
+                )
             }
             
             Row(
@@ -824,7 +846,7 @@ fun axisLabelComponent(
     typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, fontWeight.weight)
 )
 
-fun LazyListScope.transactionsContent(transactions: List<Transaction>, isPrivacyMode: Boolean) {
+fun LazyListScope.transactionsContent(transactions: List<Transaction>, isPrivacyMode: Boolean, currencySymbol: String = "$") {
     if (transactions.isEmpty()) {
         item {
             EmptyState(message = stringResource(R.string.no_contributions_msg))
@@ -889,7 +911,7 @@ fun LazyListScope.transactionsContent(transactions: List<Transaction>, isPrivacy
                             fontWeight = FontWeight.Light
                         )
                         val amountFormatted = String.format(Locale.getDefault(), "%,.2f", tx.amount)
-                        val amountStr = if (isPrivacyMode) "+$••••••" else "+$$amountFormatted"
+                        val amountStr = if (isPrivacyMode) "+$currencySymbol••••••" else "+$currencySymbol$amountFormatted"
                         Text(
                             text = amountStr,
                             color = PinkAccent,

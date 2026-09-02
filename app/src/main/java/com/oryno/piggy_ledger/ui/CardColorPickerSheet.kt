@@ -259,8 +259,9 @@ fun CardColorPickerBottomSheet(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.Bottom
                             ) {
+                                val cardCurrencySymbol = account?.currency?.let { getCurrencySymbol(it) } ?: "$"
                                 Text(
-                                    text = "$${String.format("%,.2f", account?.current_balance ?: 0.0)}",
+                                    text = "$cardCurrencySymbol${String.format("%,.2f", account?.current_balance ?: 0.0)}",
                                     color = Color.White,
                                     fontSize = 22.sp,
                                     fontWeight = FontWeight.Black

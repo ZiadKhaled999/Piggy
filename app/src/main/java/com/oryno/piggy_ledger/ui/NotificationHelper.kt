@@ -64,7 +64,7 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    fun showDeadlineNotification(contactName: String, amount: Double) {
+    fun showDeadlineNotification(contactName: String, amount: Double, currencySymbol: String = "$") {
         try {
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
             val title = try {
@@ -78,9 +78,9 @@ class NotificationHelper(private val context: Context) {
                 amount.toString()
             }
             val message = try {
-                context.getString(R.string.repayment_deadline_over, contactName, "$$formattedAmount")
+                context.getString(R.string.repayment_deadline_over, contactName, "$currencySymbol$formattedAmount")
             } catch (e: Exception) {
-                "The repayment deadline for $contactName is over. Outstanding amount: $$formattedAmount"
+                "The repayment deadline for $contactName is over. Outstanding amount: $currencySymbol$formattedAmount"
             }
             val logoBitmap = getAppLogoBitmap()
 

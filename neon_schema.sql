@@ -139,6 +139,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     "premiumExpiryTimestamp" BIGINT DEFAULT 0,
     "isLifetimePremium" BOOLEAN DEFAULT false,
     "preferredAccountId" TEXT,
+    "appCurrency" TEXT DEFAULT 'USD',
     "createdAt" BIGINT NOT NULL,
     "updatedAt" BIGINT NOT NULL,
     "isSynced" BOOLEAN DEFAULT true,

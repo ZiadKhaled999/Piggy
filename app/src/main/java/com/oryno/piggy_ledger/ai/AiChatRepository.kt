@@ -88,11 +88,14 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
 
     suspend fun fetchContextData(context: android.content.Context? = null): String = withContext(Dispatchers.IO) {
         return@withContext try {
-            val accounts = dao.getAllAccountsSync()
-            val goals = dao.getAllGoalsSync()
-            val goalTransactions = dao.getAllTransactions()
-            val loans = dao.getAllLoansSync()
-            val allAccountTxs = dao.getAllAccountTransactionsSync()
+            val allAccountsList = dao.getAllAccountsSync().filter { !it.is_deleted }
+            val accounts = allAccountsList.filter { !it.exclude_from_all }
+            val excludedAccountIds = allAccountsList.filter { it.exclude_from_all }.map { it.id }.toSet()
+            
+            val goals = dao.getActiveGoalsSync()
+            val goalTransactions = dao.getActiveTransactionsSync()
+            val loans = dao.getAllLoansSync().filter { !it.is_deleted }
+            val allAccountTxs = dao.getAllAccountTransactionsSync().filter { !it.is_deleted && !excludedAccountIds.contains(it.account_id) }
             val recentTransactions = allAccountTxs.take(30)
             val pending = dao.getAllPendingTransactionsSync()
             

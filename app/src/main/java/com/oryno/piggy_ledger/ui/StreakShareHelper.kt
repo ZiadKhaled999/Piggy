@@ -156,7 +156,7 @@ object StreakShareHelper {
         canvas.drawText(numberText, width / 2f, numberY, numberPaint)
 
         // Subtitle Text: "day saving streak"
-        val subtitleText = if (streakCount == 1) "day saving streak" else "days saving streak"
+        val subtitleText = context.getString(if (streakCount == 1) R.string.streak_day_saving_streak else R.string.streak_days_saving_streak)
         val subtitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#BE185D")
             textSize = 42f
@@ -237,7 +237,8 @@ object StreakShareHelper {
                 putExtra(Intent.EXTRA_STREAM, contentUri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(shareIntent, "Share your streak"))
+            val chooserTitle = context.getString(R.string.streak_share_modal_title)
+            context.startActivity(Intent.createChooser(shareIntent, chooserTitle))
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -257,10 +258,11 @@ object StreakShareHelper {
             val smsIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "image/png"
                 putExtra(Intent.EXTRA_STREAM, contentUri)
-                putExtra("sms_body", "Check out my savings streak on Piggy Ledger! 🐷🔥")
+                putExtra("sms_body", context.getString(R.string.streak_share_sms_body))
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(smsIntent, "Share via Messages"))
+            val chooserTitle = context.getString(R.string.streak_share_messages)
+            context.startActivity(Intent.createChooser(smsIntent, chooserTitle))
         } catch (e: Exception) {
             shareNativeImage(context, bitmap)
         }
@@ -283,7 +285,8 @@ object StreakShareHelper {
 
     private fun getShareStatement(context: Context, streakCount: Int): String {
         return try {
-            val inputStream: InputStream = context.assets.open("piggy_streak_messages.json")
+            val assetName = StreakManager.getStreakMessagesAsset(context)
+            val inputStream: InputStream = context.assets.open(assetName)
             val jsonString = inputStream.bufferedReader().use { it.readText() }
             val jsonObject = JSONObject(jsonString)
             val categoriesArray = jsonObject.getJSONArray("categories")
@@ -306,7 +309,7 @@ object StreakShareHelper {
             }
 
             if (candidates.isEmpty()) {
-                if (streakCount > 0) "Great job keeping your ledger updated!" else "Start your savings streak today!"
+                if (streakCount > 0) context.getString(R.string.streak_sub_keep_consistency) else context.getString(R.string.streak_sub_start_today)
             } else {
                 val selected = candidates[streakCount % candidates.size]
                 selected
@@ -316,7 +319,7 @@ object StreakShareHelper {
                     .replace("[Course]", "Budget")
             }
         } catch (e: Exception) {
-            if (streakCount > 0) "Great job keeping your ledger updated!" else "Start your savings streak today!"
+            if (streakCount > 0) context.getString(R.string.streak_sub_keep_consistency) else context.getString(R.string.streak_sub_start_today)
         }
     }
 

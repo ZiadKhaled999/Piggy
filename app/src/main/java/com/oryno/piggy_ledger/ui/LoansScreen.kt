@@ -1,5 +1,6 @@
 
 package com.oryno.piggy_ledger.ui
+import com.oryno.piggy_ledger.ui.getCurrencySymbol
 
 import java.util.Locale
 import androidx.compose.material.icons.filled.AttachMoney
@@ -146,6 +147,7 @@ fun LoansScreen(
     val loans by viewModel.loans.collectAsState()
     val allLoanPayments by viewModel.allLoanPayments.collectAsState()
     val isPrivacyMode by viewModel.isPrivacyModeEnabled.collectAsState()
+    val appCurrency by viewModel.appCurrency.collectAsState()
     
     val paymentsByLoanId = remember(allLoanPayments) { allLoanPayments.groupBy { it.loanId } }
     fun getRemainingAmount(loan: Loan): Double {
@@ -243,7 +245,7 @@ fun LoansScreen(
                                     Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text(if (isPrivacyMode) "$••••••" else "$${String.format("%.0f", owedToMe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", owedToMe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
                         
@@ -261,7 +263,7 @@ fun LoansScreen(
                                     Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text(if (isPrivacyMode) "$••••••" else "$${String.format("%.0f", iOwe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", iOwe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
                     }
@@ -282,7 +284,7 @@ fun LoansScreen(
                         ) {
                             Text(stringResource(R.string.net_ledger), fontSize = 9.sp, fontWeight = FontWeight.Black, color = TextLight)
                             Text(
-                                text = if (isPrivacyMode) "$••••••" else (if (netLedger >= 0) "+$${String.format("%.0f", netLedger)}" else "-$${String.format("%.0f", -netLedger)}"), 
+                                text = if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else (if (netLedger >= 0) "+${getCurrencySymbol(appCurrency)}${String.format("%.0f", netLedger)}" else "-${getCurrencySymbol(appCurrency)}${String.format("%.0f", -netLedger)}"), 
                                 fontSize = 15.sp, 
                                 fontWeight = FontWeight.Bold, 
                                 color = if (netLedger >= 0) PinkAccent else BlackAccent,
@@ -319,7 +321,7 @@ fun LoansScreen(
                                     Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text(if (isPrivacyMode) "$••••••" else "$${String.format("%.0f", owedToMe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", owedToMe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
                         
@@ -337,7 +339,7 @@ fun LoansScreen(
                                     Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text(if (isPrivacyMode) "$••••••" else "$${String.format("%.0f", iOwe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", iOwe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
                         
@@ -352,7 +354,7 @@ fun LoansScreen(
                                 Text(stringResource(R.string.net_ledger), fontSize = 8.sp, fontWeight = FontWeight.Black, color = TextLight, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = if (isPrivacyMode) "$••••••" else (if (netLedger >= 0) "+$${String.format("%.0f", netLedger)}" else "-$${String.format("%.0f", -netLedger)}"), 
+                                    text = if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else (if (netLedger >= 0) "+${getCurrencySymbol(appCurrency)}${String.format("%.0f", netLedger)}" else "-${getCurrencySymbol(appCurrency)}${String.format("%.0f", -netLedger)}"), 
                                     fontSize = 16.sp, 
                                     fontWeight = FontWeight.Bold, 
                                     color = if (netLedger >= 0) PinkAccent else BlackAccent,
@@ -572,7 +574,7 @@ fun LoansScreen(
                                 Column(horizontalAlignment = Alignment.End) {
                                     val currentAmt = if (isPaidOff) loan.amount else getRemainingAmount(loan)
                                     Text(
-                                        text = if (isPrivacyMode) "$prefix $••••••" else "$prefix $${String.format("%.2f", currentAmt)}", 
+                                        text = if (isPrivacyMode) "$prefix ${getCurrencySymbol(appCurrency)}••••••" else "$prefix ${getCurrencySymbol(appCurrency)}${String.format("%.2f", currentAmt)}", 
                                         color = if (isPaidOff) Color(0xFF64748B) else textColor, 
                                         fontWeight = FontWeight.Bold, 
                                         fontSize = 15.sp,
@@ -788,7 +790,7 @@ fun LoansScreen(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "$",
+                                text = getCurrencySymbol(appCurrency),
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = themeColor,
@@ -1185,7 +1187,7 @@ fun LoansScreen(
 
                 Button(
                     onClick = {
-                        val amount = amountStr.replace("$", "").trim().toDoubleOrNull()
+                        val amount = amountStr.replace(getCurrencySymbol(appCurrency), "").replace("$", "").trim().toDoubleOrNull()
                         if (amount != null && contactName.isNotBlank() && note.isNotBlank()) {
                             viewModel.addLoan(
                                 Loan(
@@ -1288,7 +1290,7 @@ fun LoansScreen(
                                     unfocusedBorderColor = Color(0xFFE2E8F0)
                                 ),
                                 leadingIcon = {
-                                    Text("$", fontWeight = FontWeight.Bold, color = NavyDark, modifier = Modifier.padding(start = 16.dp))
+                                    Text(getCurrencySymbol(appCurrency), fontWeight = FontWeight.Bold, color = NavyDark, modifier = Modifier.padding(start = 16.dp))
                                 }
                             )
                             OutlinedTextField(
@@ -1304,7 +1306,7 @@ fun LoansScreen(
                             )
                             Button(
                                 onClick = {
-                                    val amt = payAmount.toDoubleOrNull() ?: 0.0
+                                    val amt = payAmount.replace(getCurrencySymbol(appCurrency), "").replace("$", "").trim().toDoubleOrNull() ?: 0.0
                                     if (amt > 0) {
                                         viewModel.addLoanPayment(selectedLoan!!.id, amt, payNote.takeIf { it.isNotBlank() })
                                         com.oryno.piggy_ledger.ui.ToastUtil.show(screenContext, screenContext.getString(R.string.toast_loan_payment_added), Toast.LENGTH_SHORT)
@@ -1392,7 +1394,7 @@ fun LoansScreen(
                                             Spacer(modifier = Modifier.width(14.dp))
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text(
-                                                    text = if (isPrivacyMode) "$••••••" else "$${String.format(Locale.US, "%.2f", payment.amount)}",
+                                                    text = if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format(Locale.US, "%.2f", payment.amount)}",
                                                     fontWeight = FontWeight.Bold,
                                                     fontSize = 16.sp,
                                                     color = NavyDark
@@ -1443,14 +1445,14 @@ fun LoansScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = if (isPrivacyMode) "$prefix $••••••" else "$prefix $${String.format(Locale.US, "%.2f", remainingAmount)}",
+                                text = if (isPrivacyMode) "$prefix ${getCurrencySymbol(appCurrency)}••••••" else "$prefix ${getCurrencySymbol(appCurrency)}${String.format(Locale.US, "%.2f", remainingAmount)}",
                                 fontSize = 34.sp,
                                 fontWeight = FontWeight.Black,
                                 color = typeColor
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = if (isPrivacyMode) stringResource(R.string.remaining_of_prefix, "$••••••") else stringResource(R.string.remaining_of_prefix, "$${String.format(Locale.US, "%.2f", selectedLoan!!.amount)}"),
+                                text = if (isPrivacyMode) stringResource(R.string.remaining_of_prefix, "${getCurrencySymbol(appCurrency)}••••••") else stringResource(R.string.remaining_of_prefix, "${getCurrencySymbol(appCurrency)}${String.format(Locale.US, "%.2f", selectedLoan!!.amount)}"),
                                 fontSize = 13.sp,
                                 color = TextLight,
                                 fontWeight = FontWeight.Medium

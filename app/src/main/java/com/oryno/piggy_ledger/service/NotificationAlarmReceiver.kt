@@ -10,6 +10,7 @@ import com.oryno.piggy_ledger.data.StreakManager
 import com.oryno.piggy_ledger.ui.NotificationHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class NotificationAlarmReceiver : BroadcastReceiver() {
@@ -33,8 +34,8 @@ class NotificationAlarmReceiver : BroadcastReceiver() {
                     }
                     NotificationWorker.TYPE_GOAL -> {
                         val db = PiggyLedgerDatabase.getInstance(context)
-                        val goals = db.piggyLedgerDao().getAllGoalsSync()
-                        val transactions = db.piggyLedgerDao().getAllTransactions()
+                        val goals = db.piggyLedgerDao().getActiveGoalsSync()
+                        val transactions = db.piggyLedgerDao().getActiveTransactionsSync()
 
                         if (goals.isNotEmpty()) {
                             val goalsWithProgress = goals.map { goal ->
@@ -44,14 +45,18 @@ class NotificationAlarmReceiver : BroadcastReceiver() {
                             val closestGoalPair = goalsWithProgress.filter { it.second < it.first.targetAmount }
                                 .minByOrNull { it.first.targetAmount - it.second }
 
+                            val userPrefs = com.oryno.piggy_ledger.data.UserPreferences(context)
+                            val currencyCode = userPrefs.appCurrency.first()
+                            val currencySymbol = com.oryno.piggy_ledger.ui.getCurrencySymbol(currencyCode)
+
                             if (closestGoalPair != null) {
                                 val amountLeft = closestGoalPair.first.targetAmount - closestGoalPair.second
-                                val amountStr = String.format("$%.2f", amountLeft)
+                                val amountStr = String.format("%s%.2f", currencySymbol, amountLeft)
                                 notificationHelper.showGoalReminderNotification(closestGoalPair.first.name, amountStr)
                             } else {
                                 // All goals completed or no incomplete goals
                                 val firstGoal = goals.first()
-                                notificationHelper.showGoalReminderNotification(firstGoal.name, "$0.00")
+                                notificationHelper.showGoalReminderNotification(firstGoal.name, "${currencySymbol}0.00")
                             }
                         } else {
                             // Friendly reminder if no goals created yet

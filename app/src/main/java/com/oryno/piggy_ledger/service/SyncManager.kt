@@ -148,44 +148,65 @@ class SyncManager(private val context: Context) {
 
     private suspend fun syncUserPreferences(userId: String, authHeader: String): Boolean {
         val tableName = "user_preferences"
-        val rawUnsynced = dao.getUnsyncedUserPreferences()
-        val unsynced = mutableListOf<UserPreferencesEntity>()
-        var hadLocalUser = false
         
-        for (item in rawUnsynced) {
-            if (item.userId == "local_user") {
-                hadLocalUser = true
-            }
-            unsynced.add(item.copy(userId = userId, isSynced = true))
-        }
-
-        val pushOk = pushRemote(tableName, authHeader, unsynced)
-        if (pushOk) {
-            if (unsynced.isNotEmpty()) dao.insertUserPreferencesList(unsynced)
-            if (hadLocalUser) {
-                dao.deleteUserPreferencesByUserId("local_user")
-            }
-        }
+        // 1. Pull remote first to see if the user already has saved preferences in the cloud
         val remote: List<UserPreferencesEntity>? = pullRemote(tableName, authHeader)
         val pullOk = remote != null
-        if (remote != null && remote.isNotEmpty()) {
-            val localItem = dao.getUserPreferencesByUserId(userId)
-            val itemsToInsert = mutableListOf<UserPreferencesEntity>()
-            for (remoteItem in remote) {
-                if (localItem == null) {
-                    itemsToInsert.add(remoteItem.copy(isSynced = true))
-                } else if (localItem.isSynced) {
-                    if (remoteItem.updatedAt > localItem.updatedAt) {
-                        itemsToInsert.add(remoteItem.copy(isSynced = true))
+        val remoteItem = remote?.firstOrNull { it.userId == userId }
+        
+        val localItem = dao.getUserPreferencesByUserId(userId)
+        
+        // 2. Determine if remote should override local
+        val shouldAdoptRemote = if (remoteItem == null) {
+            false
+        } else if (localItem == null) {
+            true
+        } else {
+            // A local preference is a fresh default if it has "USD" as currency AND was created recently (last 5 mins)
+            val isLocalFreshDefault = (localItem.appCurrency == "USD") && 
+                    (System.currentTimeMillis() - localItem.updatedAt < 300000)
+            isLocalFreshDefault || (remoteItem.updatedAt > localItem.updatedAt)
+        }
+        
+        var pushOk = true
+        
+        if (shouldAdoptRemote && remoteItem != null) {
+            Log.i("SyncManager", "☁️ Overwriting local preferences with cloud preferences (currency: ${remoteItem.appCurrency})")
+            dao.insertUserPreferences(remoteItem.copy(isSynced = true))
+            UserPreferences(context).applyFromEntity(remoteItem)
+            
+            // Clean up any remaining local_user entry
+            dao.deleteUserPreferencesByUserId("local_user")
+        } else {
+            // Local is newer, or there's no remote preference. We push local.
+            val rawUnsynced = dao.getUnsyncedUserPreferences()
+            val unsynced = mutableListOf<UserPreferencesEntity>()
+            var hadLocalUser = false
+            
+            for (item in rawUnsynced) {
+                if (item.userId == "local_user") {
+                    hadLocalUser = true
+                }
+                unsynced.add(item.copy(userId = userId, isSynced = true))
+            }
+            
+            if (unsynced.isNotEmpty()) {
+                pushOk = pushRemote(tableName, authHeader, unsynced)
+                if (pushOk) {
+                    dao.insertUserPreferencesList(unsynced)
+                    if (hadLocalUser) {
+                        dao.deleteUserPreferencesByUserId("local_user")
                     }
                 }
             }
-            if (itemsToInsert.isNotEmpty()) dao.insertUserPreferencesList(itemsToInsert)
+            
+            // Just in case remote has different updates that we need to apply (timestamp wins)
+            if (remoteItem != null && localItem != null && remoteItem.updatedAt > localItem.updatedAt) {
+                dao.insertUserPreferences(remoteItem.copy(isSynced = true))
+                UserPreferences(context).applyFromEntity(remoteItem)
+            }
         }
-        val remotePrefs = dao.getUserPreferencesByUserId(userId)
-        if (remotePrefs != null) {
-            UserPreferences(context).applyFromEntity(remotePrefs)
-        }
+        
         return pushOk && pullOk
     }
     private suspend fun syncStreakDates(userId: String, authHeader: String): Boolean {
@@ -258,11 +279,35 @@ class SyncManager(private val context: Context) {
     }
     private suspend fun syncTransactions(userId: String, authHeader: String): Boolean {
         val tableName = "transactions"
-        val unsynced = dao.getUnsyncedTransactions().map { it.copy(userId = userId, isSynced = true) }
-        val pushOk = pushRemote(tableName, authHeader, unsynced)
-        if (pushOk) {
-            if (unsynced.isNotEmpty()) dao.insertTransactions(unsynced)
+        val rawUnsynced = dao.getUnsyncedTransactions()
+        
+        // Filter out orphaned transactions where the referenced goal does not exist locally.
+        val existingGoalIds = dao.getAllGoalsSync().map { it.id }.toSet()
+        val unsynced = mutableListOf<Transaction>()
+        val orphaned = mutableListOf<Transaction>()
+        
+        for (item in rawUnsynced) {
+            if (existingGoalIds.contains(item.goalId)) {
+                unsynced.add(item.copy(userId = userId, isSynced = true))
+            } else {
+                Log.w("SyncManager", "⚠️ Orphaned transaction found (goalId: ${item.goalId} does not exist locally). Marking as synced to clear queue.")
+                orphaned.add(item.copy(userId = userId, isSynced = true))
+            }
         }
+        
+        var pushOk = true
+        if (unsynced.isNotEmpty()) {
+            pushOk = pushRemote(tableName, authHeader, unsynced)
+            if (pushOk) {
+                dao.insertTransactions(unsynced)
+            }
+        }
+        
+        // Quietly clear orphaned records so they stop clogging the queue
+        if (orphaned.isNotEmpty()) {
+            dao.insertTransactions(orphaned)
+        }
+        
         val remote: List<Transaction>? = pullRemote(tableName, authHeader)
         val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
@@ -310,11 +355,35 @@ class SyncManager(private val context: Context) {
     }
     private suspend fun syncLoanPayments(userId: String, authHeader: String): Boolean {
         val tableName = "loan_payments"
-        val unsynced = dao.getUnsyncedLoanPayments().map { it.copy(userId = userId, isSynced = true) }
-        val pushOk = pushRemote(tableName, authHeader, unsynced)
-        if (pushOk) {
-            if (unsynced.isNotEmpty()) dao.insertLoanPayments(unsynced)
+        val rawUnsynced = dao.getUnsyncedLoanPayments()
+        
+        // Filter out orphaned loan payments where the referenced loan does not exist locally.
+        val existingLoanIds = dao.getAllLoansSync().map { it.id }.toSet()
+        val unsynced = mutableListOf<LoanPayment>()
+        val orphaned = mutableListOf<LoanPayment>()
+        
+        for (item in rawUnsynced) {
+            if (existingLoanIds.contains(item.loanId)) {
+                unsynced.add(item.copy(userId = userId, isSynced = true))
+            } else {
+                Log.w("SyncManager", "⚠️ Orphaned loan payment found (loanId: ${item.loanId} does not exist locally). Marking as synced to clear queue.")
+                orphaned.add(item.copy(userId = userId, isSynced = true))
+            }
         }
+        
+        var pushOk = true
+        if (unsynced.isNotEmpty()) {
+            pushOk = pushRemote(tableName, authHeader, unsynced)
+            if (pushOk) {
+                dao.insertLoanPayments(unsynced)
+            }
+        }
+        
+        // Quietly clear orphaned records so they stop clogging the queue
+        if (orphaned.isNotEmpty()) {
+            dao.insertLoanPayments(orphaned)
+        }
+        
         val remote: List<LoanPayment>? = pullRemote(tableName, authHeader)
         val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {
@@ -336,11 +405,35 @@ class SyncManager(private val context: Context) {
     }
     private suspend fun syncAccountTransactions(userId: String, authHeader: String): Boolean {
         val tableName = "account_transactions"
-        val unsynced = dao.getUnsyncedAccountTransactions().map { it.copy(userId = userId, isSynced = true) }
-        val pushOk = pushRemote(tableName, authHeader, unsynced)
-        if (pushOk) {
-            if (unsynced.isNotEmpty()) dao.insertAccountTransactions(unsynced)
+        val rawUnsynced = dao.getUnsyncedAccountTransactions()
+        
+        // Filter out orphaned account transactions where the referenced account does not exist locally.
+        val existingAccountIds = dao.getAllAccountsSync().map { it.id }.toSet()
+        val unsynced = mutableListOf<AccountTransaction>()
+        val orphaned = mutableListOf<AccountTransaction>()
+        
+        for (item in rawUnsynced) {
+            if (existingAccountIds.contains(item.account_id)) {
+                unsynced.add(item.copy(userId = userId, isSynced = true))
+            } else {
+                Log.w("SyncManager", "⚠️ Orphaned account transaction found (accountId: ${item.account_id} does not exist locally). Marking as synced to clear queue.")
+                orphaned.add(item.copy(userId = userId, isSynced = true))
+            }
         }
+        
+        var pushOk = true
+        if (unsynced.isNotEmpty()) {
+            pushOk = pushRemote(tableName, authHeader, unsynced)
+            if (pushOk) {
+                dao.insertAccountTransactions(unsynced)
+            }
+        }
+        
+        // Quietly clear orphaned records so they stop clogging the queue
+        if (orphaned.isNotEmpty()) {
+            dao.insertAccountTransactions(orphaned)
+        }
+        
         val remote: List<AccountTransaction>? = pullRemote(tableName, authHeader)
         val pullOk = remote != null
         if (remote != null && remote.isNotEmpty()) {

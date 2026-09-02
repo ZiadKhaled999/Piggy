@@ -395,9 +395,28 @@ object StreakManager {
         }
     }
 
+    fun getStreakMessagesAsset(context: Context): String {
+        val locale = try {
+            val locales = context.resources.configuration.locales
+            if (!locales.isEmpty) locales.get(0) else Locale.getDefault()
+        } catch (e: Exception) {
+            Locale.getDefault()
+        }
+        val tag = locale.toLanguageTag().lowercase()
+        val country = locale.country.lowercase()
+        val lang = locale.language.lowercase()
+
+        return when {
+            tag.contains("eg") || country == "eg" -> "piggy_streak_messages_ar_eg.json"
+            lang == "ar" -> "piggy_streak_messages_ar.json"
+            else -> "piggy_streak_messages.json"
+        }
+    }
+
     private fun getRandomPhraseFromCategory(context: Context, categoryId: Int, seed: Int): String {
         return try {
-            val inputStream: InputStream = context.assets.open("piggy_streak_messages.json")
+            val assetName = getStreakMessagesAsset(context)
+            val inputStream: InputStream = context.assets.open(assetName)
             val jsonString = inputStream.bufferedReader().use { it.readText() }
             val jsonObject = JSONObject(jsonString)
             val categoriesArray = jsonObject.getJSONArray("categories")
@@ -415,31 +434,35 @@ object StreakManager {
             }
 
             if (itemsList.isEmpty()) {
-                getFallbackPhrase(categoryId)
+                getFallbackPhrase(context, categoryId)
             } else {
                 val index = Math.abs(seed) % itemsList.size
                 itemsList[index]
             }
         } catch (e: Exception) {
-            getFallbackPhrase(categoryId)
+            getFallbackPhrase(context, categoryId)
         }
     }
 
-    private fun getFallbackPhrase(categoryId: Int): String {
+    private fun getFallbackPhrase(context: Context, categoryId: Int): String {
+        val assetName = getStreakMessagesAsset(context)
+        val isEgyptian = assetName.contains("ar_eg")
+        val isArabic = assetName.contains("ar")
+
         return when (categoryId) {
-            1 -> "Late night transaction?"
-            2 -> "Morning! Time to log expenses."
-            3 -> "Got 30 seconds to log?"
-            4 -> "Piggy is waiting for receipts!"
-            5 -> "It's getting late! Protect your streak."
-            6 -> "LOG TRANSACTIONS NOW!"
-            7 -> "Streak's frozen in ice!"
-            8 -> "Great job keeping your ledger updated!"
-            9 -> "Oh no! Your streak broke."
-            10 -> "Piggy misses you! Log a transaction."
-            11 -> "Days without logging..."
-            12 -> "Welcome! Let's build a streak."
-            else -> "Time to log expenses!"
+            1 -> if (isEgyptian) "بتسجل معاملة بالليل كده؟" else if (isArabic) "معاملة في وقت متأخر؟" else "Late night transaction?"
+            2 -> if (isEgyptian) "صباح الفل! يلا نسجل مصاريف النهارده." else if (isArabic) "صباح الخير! حان وقت تسجيل المصاريف." else "Morning! Time to log expenses."
+            3 -> if (isEgyptian) "معاك 30 ثانية تسجل المصاريف؟" else if (isArabic) "هل لديك 30 ثانية لتسجيل مصاريفك؟" else "Got 30 seconds to log?"
+            4 -> if (isEgyptian) "بيجي مستني الفواتير والمصاريف!" else if (isArabic) "بيجي ينتظر فواتيرك ومصاريفك!" else "Piggy is waiting for receipts!"
+            5 -> if (isEgyptian) "الوقت بيجري! الحق حافظ على شعلتك." else if (isArabic) "الوقت متأخر! حافظ على شعلتك وسلسلتك." else "It's getting late! Protect your streak."
+            6 -> if (isEgyptian) "سجل مصاريفك حالاً قبل ما اليوم يخلص!" else if (isArabic) "سجل معاملاتك الآن قبل انتهاء اليوم!" else "LOG TRANSACTIONS NOW!"
+            7 -> if (isEgyptian) "الشعلة اتجمدت في التلج!" else if (isArabic) "السلسلة مجمدة في الجليد!" else "Streak's frozen in ice!"
+            8 -> if (isEgyptian) "عاش جداً يا بطل! ليدجرك متظبط أول بأول." else if (isArabic) "عمل رائع! سجلك المالي محدث أولاً بأول." else "Great job keeping your ledger updated!"
+            9 -> if (isEgyptian) "يا خسارة! الشعلة انطفت." else if (isArabic) "للأسف! انقطعت سلسلتك." else "Oh no! Your streak broke."
+            10 -> if (isEgyptian) "بيجي وحشته جداً! سجل معاملة وارجع كمل." else if (isArabic) "بيجي يفتقدك! سجل معاملة لتستمر." else "Piggy misses you! Log a transaction."
+            11 -> if (isEgyptian) "أيام بتعدي من غير تسجيل..." else if (isArabic) "أيام مرت بدون تسجيل..." else "Days without logging..."
+            12 -> if (isEgyptian) "يا هلا بيك! يلا نبني شعلة واستمرار مع بعض." else if (isArabic) "أهلاً بك! لنبني سلسلة مميزة معاً." else "Welcome! Let's build a streak."
+            else -> if (isEgyptian) "جه وقت تسجيل المصاريف!" else if (isArabic) "حان وقت تسجيل المصاريف!" else "Time to log expenses!"
         }
     }
 }

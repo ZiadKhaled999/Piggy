@@ -289,6 +289,11 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
         ),
         OnboardingPageData(
             imageRes = R.drawable.img_app_logo,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_app_logo,
             title = buildAnnotatedString {
                 append(readyTo + " ")
                 withStyle(style = SpanStyle(color = PinkPrimary)) {
@@ -486,24 +491,6 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                 fontWeight = FontWeight.Bold
                             )
                         }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        // Skip Button
-                        TextButton(
-                            onClick = {
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_sms_denied), Toast.LENGTH_SHORT)
-                                currentPage++
-                            },
-                            modifier = Modifier.testTag("skip_sms_permission_button")
-                        ) {
-                            Text(
-                                text = stringResource(R.string.onboarding_sms_skip),
-                                color = TextLight,
-                                fontSize = if (isSmallScreen) 12.sp else 13.5.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
                     }
                 } else if (pageIndex == 4) {
                     // NOTIFICATION PERMISSION SLIDE - Larger realistic phone mockup + overlapping card
@@ -687,24 +674,6 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                 text = stringResource(R.string.onboarding_notif_btn),
                                 color = Color.White,
                                 fontSize = if (isSmallScreen) 13.5.sp else 15.5.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        // Skip Button
-                        TextButton(
-                            onClick = {
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_notif_denied), Toast.LENGTH_SHORT)
-                                currentPage++
-                            },
-                            modifier = Modifier.testTag("skip_notif_permission_button")
-                        ) {
-                            Text(
-                                text = stringResource(R.string.onboarding_notif_skip),
-                                color = TextLight,
-                                fontSize = if (isSmallScreen) 12.sp else 13.5.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -1770,6 +1739,14 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                             }
                         }
                     }
+                } else if (pageIndex == 13) {
+                    OnboardingFlashSaleScreen(
+                        titleFontSize = titleFontSize,
+                        subtitleFontSize = subtitleFontSize,
+                        titleLineHeight = titleLineHeight,
+                        subtitleLineHeight = subtitleLineHeight,
+                        isSmallScreen = isSmallScreen
+                    )
                 } else {
                     val page = pages[pageIndex]
                     Column(

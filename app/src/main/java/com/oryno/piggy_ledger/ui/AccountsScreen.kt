@@ -121,19 +121,21 @@ fun AccountsScreen(
     var selectedTxForDetails by remember { mutableStateOf<AccountTransaction?>(null) }
     var filterAllTime by remember { mutableStateOf(true) } // Default to true so all transactions are shown and scrollable!
 
+    val excludedAccountIds = remember(accounts) { accounts.filter { it.exclude_from_all }.map { it.id }.toSet() }
+
     // Filtered transaction list
-    val filteredTransactions = remember(allTransactions, selectedAccountId, monthStart, monthEnd) {
+    val filteredTransactions = remember(allTransactions, selectedAccountId, monthStart, monthEnd, excludedAccountIds) {
         allTransactions.filter { tx ->
-            val matchesAccount = (selectedAccountId == null) || (tx.account_id == selectedAccountId)
+            val matchesAccount = if (selectedAccountId == null) !excludedAccountIds.contains(tx.account_id) else (tx.account_id == selectedAccountId)
             val matchesTime = tx.timestamp in monthStart until monthEnd
             matchesAccount && matchesTime
         }
     }
 
     // List of transactions shown in the list
-    val displayedTransactions = remember(allTransactions, selectedAccountId, monthStart, monthEnd, filterAllTime) {
+    val displayedTransactions = remember(allTransactions, selectedAccountId, monthStart, monthEnd, filterAllTime, excludedAccountIds) {
         allTransactions.filter { tx ->
-            val matchesAccount = (selectedAccountId == null) || (tx.account_id == selectedAccountId)
+            val matchesAccount = if (selectedAccountId == null) !excludedAccountIds.contains(tx.account_id) else (tx.account_id == selectedAccountId)
             val matchesTime = filterAllTime || (tx.timestamp in monthStart until monthEnd)
             matchesAccount && matchesTime
         }
@@ -149,7 +151,8 @@ fun AccountsScreen(
     }
 
     val netSavings = totalIncome - totalSpent
-    val currencySymbol = selectedAccount?.currency ?: "EGP"
+    val appCurrency by viewModel.appCurrency.collectAsState()
+    val currencySymbol = selectedAccount?.currency?.let { getCurrencySymbol(it) } ?: getCurrencySymbol(appCurrency)
 
     val progress = if (monthlyBudget > 0) (totalSpent / monthlyBudget).toFloat().coerceIn(0f, 1f) else 0f
 
@@ -650,7 +653,7 @@ fun AccountsScreen(
                                     com.oryno.piggy_ledger.data.AccountType.WALLET -> stringResource(R.string.e_wallet)
                                 }
                                 Text(
-                                    text = "$localizedType • ${account.currency} ${String.format(Locale.getDefault(), "%,.2f", account.current_balance)}",
+                                    text = "$localizedType • ${getCurrencySymbol(account.currency)} ${String.format(Locale.getDefault(), "%,.2f", account.current_balance)}",
                                     fontSize = 12.sp,
                                     color = TextLight
                                 )
@@ -815,7 +818,7 @@ fun AccountsScreen(
 
                 Button(
                     onClick = {
-                        val parsed = newBudgetStr.toDoubleOrNull()
+                        val parsed = newBudgetStr.replace(currencySymbol, "").replace("$", "").trim().toDoubleOrNull()
                         if (parsed != null && parsed >= 0.0) {
                             viewModel.setMonthlyBudget(parsed)
                         }
@@ -880,7 +883,7 @@ fun AccountsScreen(
         val amountColor = if (tx.amount < 0) NavyDark else Color(0xFF10B981)
         val amountSign = if (tx.amount < 0) "-" else "+"
         val rawAmountStr = String.format("%,.2f", if (tx.amount < 0) -tx.amount else tx.amount)
-        val currencySymbolDetails = txAccount?.currency ?: "EGP"
+        val currencySymbolDetails = txAccount?.currency?.let { getCurrencySymbol(it) } ?: getCurrencySymbol(appCurrency)
 
         ModalBottomSheet(
             onDismissRequest = { selectedTxForDetails = null },

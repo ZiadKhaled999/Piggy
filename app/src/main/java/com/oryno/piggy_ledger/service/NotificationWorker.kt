@@ -3,6 +3,7 @@ package com.oryno.piggy_ledger.service
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.flow.first
 import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.data.PiggyLedgerDatabase
 import com.oryno.piggy_ledger.data.StreakManager
@@ -26,8 +27,8 @@ class NotificationWorker(
             }
             TYPE_GOAL -> {
                 val db = PiggyLedgerDatabase.getInstance(context)
-                val goals = db.piggyLedgerDao().getAllGoalsSync()
-                val transactions = db.piggyLedgerDao().getAllTransactions()
+                val goals = db.piggyLedgerDao().getActiveGoalsSync()
+                val transactions = db.piggyLedgerDao().getActiveTransactionsSync()
 
                 if (goals.isNotEmpty()) {
                     val goalsWithProgress = goals.map { goal ->
@@ -38,13 +39,17 @@ class NotificationWorker(
                     val closestGoalPair = goalsWithProgress.filter { it.second < it.first.targetAmount }
                         .minByOrNull { it.first.targetAmount - it.second }
 
+                    val userPrefs = com.oryno.piggy_ledger.data.UserPreferences(context)
+                    val currencyCode = userPrefs.appCurrency.first()
+                    val currencySymbol = com.oryno.piggy_ledger.ui.getCurrencySymbol(currencyCode)
+
                     if (closestGoalPair != null) {
                         val amountLeft = closestGoalPair.first.targetAmount - closestGoalPair.second
-                        val amountStr = String.format("$%.2f", amountLeft)
+                        val amountStr = String.format("%s%.2f", currencySymbol, amountLeft)
                         notificationHelper.showGoalReminderNotification(closestGoalPair.first.name, amountStr)
                     } else {
                         val firstGoal = goals.first()
-                        notificationHelper.showGoalReminderNotification(firstGoal.name, "$0.00")
+                        notificationHelper.showGoalReminderNotification(firstGoal.name, "${currencySymbol}0.00")
                     }
                 } else {
                     val goalMsg = context.getString(R.string.my_goals)

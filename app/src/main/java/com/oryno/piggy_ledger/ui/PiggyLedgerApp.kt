@@ -56,6 +56,7 @@ import android.widget.Toast
 @Composable
 fun PiggyLedgerApp(
     factory: ViewModelFactory,
+    initialDestination: Screen = Screen.LanguageSelection,
     openNotificationId: String? = null,
     shortcutAction: String? = null,
     onConsumeShortcut: () -> Unit = {}
@@ -87,9 +88,17 @@ fun PiggyLedgerApp(
 
     LaunchedEffect(isAuthenticated, hasLanguageSelected, hasOnboarded) {
         if (isAuthenticated == false && hasLanguageSelected == true && hasOnboarded == true) {
-            navController.navigate(Screen.Auth) {
-                popUpTo(0) { inclusive = true }
+            if (navController.currentDestination?.hasRoute(Screen.Auth::class) != true) {
+                navController.navigate(Screen.Auth) {
+                    popUpTo(0) { inclusive = true }
+                }
             }
+        }
+    }
+
+    LaunchedEffect(openNotificationId) {
+        if (openNotificationId != null && initialDestination == Screen.MainContainer) {
+            navController.navigate(Screen.Notifications)
         }
     }
 
@@ -100,50 +109,12 @@ fun PiggyLedgerApp(
         ) {
             NavHost(navController = navController, startDestination = Screen.Splash) {
                 composable<Screen.Splash> {
-                    LaunchedEffect(hasOnboarded, hasLanguageSelected, hasHeardAboutUs, isAuthenticated) {
-                        if (hasLanguageSelected != null && hasHeardAboutUs != null && hasOnboarded != null && isAuthenticated != null) {
-                            if (hasLanguageSelected == false) {
-                                navController.navigate(Screen.LanguageSelection) {
-                                    popUpTo(Screen.Splash) { inclusive = true }
-                                }
-                            } else if (hasHeardAboutUs == false) {
-                                navController.navigate(Screen.HearAboutUs) {
-                                    popUpTo(Screen.Splash) { inclusive = true }
-                                }
-                            } else if (hasOnboarded == false) {
-                                navController.navigate(Screen.Onboarding) {
-                                    popUpTo(Screen.Splash) { inclusive = true }
-                                }
-                            } else if (isAuthenticated == false) {
-                                navController.navigate(Screen.Auth) {
-                                    popUpTo(Screen.Splash) { inclusive = true }
-                                }
-                            } else {
-                                navController.navigate(Screen.MainContainer) {
-                                    popUpTo(Screen.Splash) { inclusive = true }
-                                }
-                                if (openNotificationId != null) {
-                                    navController.navigate(Screen.Notifications)
-                                }
-                            }
+                    AnimatedSplashScreen(onSplashFinished = {
+                        navController.navigate(initialDestination) {
+                            popUpTo(Screen.Splash) { inclusive = true }
                         }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.White),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.img_app_logo),
-                            contentDescription = stringResource(R.string.piggy_ledger_logo),
-                            modifier = Modifier.size(200.dp),
-                            contentScale = ContentScale.Fit
-                        )
-                    }
+                    })
                 }
-                
                 composable<Screen.LanguageSelection> {
                     LaunchedEffect(Unit) {
                         PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Language Selection"))
@@ -223,12 +194,14 @@ fun PiggyLedgerApp(
                 composable<Screen.CreateGoal> {
                     val goals by viewModel.goals.collectAsState()
                     val isPremium by viewModel.isPremium.collectAsState()
+                    val appCurrency by viewModel.appCurrency.collectAsState()
                     val context = LocalContext.current
 
                     LaunchedEffect(Unit) {
                         PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Create Goal"))
                     }
                     CreateGoalScreen(
+                        appCurrency = appCurrency,
                         onGoalCreated = { name, amount ->
                             if (viewModel.canAddGoal(goals.size)) {
                                 viewModel.addGoal(name, amount)
@@ -684,7 +657,7 @@ fun DeadlineInAppAlert(
                     }
                 }
                 Text(
-                    text = stringResource(R.string.repayment_deadline_over, loanName, "$$formattedAmount"),
+                    text = stringResource(R.string.repayment_deadline_over, loanName, ""),
                     color = Color.White,
                     fontSize = 13.sp,
                     maxLines = 2
@@ -914,6 +887,13 @@ fun DrawerSettingsContent(
                     onClick = {
                         onClose()
                         appNavController.navigate(Screen.Settings(SettingsMode.LANGUAGE.name))
+                    }
+                ),
+                DrawerMenuItem(
+                    title = stringResource(R.string.currency),
+                    onClick = {
+                        onClose()
+                        appNavController.navigate(Screen.Settings(SettingsMode.CURRENCY.name))
                     }
                 ),
                 DrawerMenuItem(

@@ -1,4 +1,5 @@
 package com.oryno.piggy_ledger.ui
+import com.oryno.piggy_ledger.ui.getCurrencySymbol
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -75,6 +76,7 @@ fun DashboardScreen(
     
     val pendingTransactions by viewModel.allPendingTransactions.collectAsState()
     val isPrivacyMode by viewModel.isPrivacyModeEnabled.collectAsState()
+    val appCurrency by viewModel.appCurrency.collectAsState()
     val selectedAccountId by viewModel.selectedAccountId.collectAsState()
     var automaticallyShowPendingSheet by remember { mutableStateOf(true) }
     var selectedPendingTxForSheet by remember { mutableStateOf<com.oryno.piggy_ledger.data.PendingTransaction?>(null) }
@@ -141,7 +143,7 @@ fun DashboardScreen(
         url?.ifBlank { null }
     }
 
-    val totalBalance = accounts.sumOf { it.current_balance }
+    val totalBalance = accounts.filter { !it.exclude_from_all }.sumOf { it.current_balance }
     val activeLoans = loans.filter { !it.isPaidOff }
     val totalLoan = activeLoans.sumOf { it.amount }
 
@@ -248,6 +250,7 @@ fun DashboardScreen(
                     onAccountSelected = { accId -> viewModel.selectAccount(accId) },
                     onClick = onNavigateToAccounts,
                     isPrivacyMode = isPrivacyMode,
+                    appCurrency = appCurrency,
                     onTogglePrivacy = { viewModel.togglePrivacyMode(context) },
                     onUpdateAccountColor = { acc, newColorHex ->
                         if (acc != null) {
@@ -287,9 +290,10 @@ fun DashboardScreen(
                             Icon(Icons.Default.TrendingDown, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(24.dp))
                             Column {
                                 Text(stringResource(R.string.spent), color = TextLight, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                                val totalSpent = accountTransactions.filter { it.amount < 0 }.sumOf { Math.abs(it.amount) }
+                                val excludedIds = remember(accounts) { accounts.filter { it.exclude_from_all }.map { it.id }.toSet() }
+                                val totalSpent = accountTransactions.filter { it.amount < 0 && !excludedIds.contains(it.account_id) }.sumOf { Math.abs(it.amount) }
                                 Text(
-                                    text = if (isPrivacyMode) "$ ••••••" else "$${String.format("%,.0f", totalSpent)}",
+                                    text = if (isPrivacyMode) "${getCurrencySymbol(appCurrency)} ••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%,.0f", totalSpent)}",
                                     color = NavyDark,
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Black
@@ -310,7 +314,7 @@ fun DashboardScreen(
                             Column {
                                 Text(stringResource(R.string.payoffs), color = TextLight, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                 Text(
-                                    text = if (isPrivacyMode) "$ ••••••" else "$${String.format("%,.0f", totalLoan)}",
+                                    text = if (isPrivacyMode) "${getCurrencySymbol(appCurrency)} ••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%,.0f", totalLoan)}",
                                     color = NavyDark,
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Black
@@ -333,7 +337,7 @@ fun DashboardScreen(
                     Text(stringResource(R.string.see_all), fontSize = 14.sp, color = PinkPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onNavigateToMyGoals() }.padding(4.dp))
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                GoalsHorizontalList(goals = goals, transactions = transactions, onClick = onNavigateToMyGoals, isPrivacyMode = isPrivacyMode)
+                GoalsHorizontalList(goals = goals, transactions = transactions, onClick = onNavigateToMyGoals, isPrivacyMode = isPrivacyMode, appCurrency = appCurrency)
             }
 
             if (pendingTransactions.isNotEmpty()) {
@@ -784,6 +788,7 @@ fun VirtualCardsWidget(
     onAccountSelected: (String?) -> Unit = {},
     onClick: () -> Unit,
     isPrivacyMode: Boolean = false,
+    appCurrency: String = "USD",
     onTogglePrivacy: () -> Unit = {},
     onUpdateAccountColor: (com.oryno.piggy_ledger.data.Account?, String) -> Unit = { _, _ -> }
 ) {
@@ -847,6 +852,7 @@ fun VirtualCardsWidget(
                 ) { (targetIndex, _) ->
                     val currentAccount = accounts.getOrNull(targetIndex)
                     val currentBalanceToShow = currentAccount?.current_balance ?: totalBalance
+                    val displayCurrencySymbol = currentAccount?.currency?.let { getCurrencySymbol(it) } ?: getCurrencySymbol(appCurrency)
                     val id = currentAccount?.card_numbers?.takeIf { it.isNotBlank() }
                         ?: currentAccount?.bank_account_no?.takeIf { it.isNotBlank() }
                         ?: ""
@@ -933,7 +939,7 @@ fun VirtualCardsWidget(
                         
                         Column {
                             Text(
-                                text = if (isPrivacyMode) "$••••••" else "$${String.format("%,.2f", currentBalanceToShow)}",
+                                text = if (isPrivacyMode) "${displayCurrencySymbol}••••••" else "${displayCurrencySymbol}${String.format("%,.2f", currentBalanceToShow)}",
                                 color = Color.White,
                                 fontSize = 34.sp,
                                 fontWeight = FontWeight.Black,
@@ -1011,7 +1017,8 @@ fun GoalsHorizontalList(
     goals: List<com.oryno.piggy_ledger.data.Goal>, 
     transactions: List<com.oryno.piggy_ledger.data.Transaction>, 
     onClick: () -> Unit,
-    isPrivacyMode: Boolean = false
+    isPrivacyMode: Boolean = false,
+    appCurrency: String = "USD"
 ) {
     if (goals.isEmpty()) {
         Card(
@@ -1048,11 +1055,11 @@ fun GoalsHorizontalList(
                             Text(text = goal.name, fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 15.sp, maxLines = 1)
                             Spacer(modifier = Modifier.height(4.dp))
                             val goalText = if (isPrivacyMode) {
-                                "$••••••"
+                                "${getCurrencySymbol(appCurrency)}••••••"
                             } else if (isOpenSavings) {
-                                "$${String.format("%.0f", saved)} / " + stringResource(R.string.widget_open_savings)
+                                "${getCurrencySymbol(appCurrency)}${String.format("%.0f", saved)} / " + stringResource(R.string.widget_open_savings)
                             } else {
-                                "$${String.format("%.0f", saved)} / $${String.format("%.0f", goal.targetAmount)}"
+                                "${getCurrencySymbol(appCurrency)}${String.format("%.0f", saved)} / ${getCurrencySymbol(appCurrency)}${String.format("%.0f", goal.targetAmount)}"
                             }
                             Text(text = goalText, color = TextLight, fontSize = 12.sp)
                         }

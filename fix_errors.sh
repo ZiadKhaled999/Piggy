@@ -1,1 +1,0 @@
-sed -i 's/import com.clerk.api.signup.update/import com.clerk.api.signup.update\nimport com.clerk.api.network.serialization.ClerkResult\nimport com.clerk.api.network.model.error.ClerkErrorResponse/' app/src/main/java/com/oryno/piggy_ledger/ui/AuthScreen.kt

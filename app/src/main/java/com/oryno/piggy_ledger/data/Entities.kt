@@ -157,6 +157,7 @@ data class UserPreferencesEntity(
     val premiumExpiryTimestamp: Long = 0L,
     val isLifetimePremium: Boolean = false,
     val preferredAccountId: String? = null,
+    val appCurrency: String = "USD",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false,

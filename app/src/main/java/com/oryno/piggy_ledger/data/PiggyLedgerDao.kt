@@ -187,8 +187,14 @@ interface PiggyLedgerDao {
     @Query("SELECT * FROM transactions")
     suspend fun getAllTransactions(): List<Transaction>
 
+    @Query("SELECT * FROM transactions WHERE is_deleted = 0 ORDER BY timestamp DESC")
+    suspend fun getActiveTransactionsSync(): List<Transaction>
+
     @Query("SELECT * FROM goals")
     suspend fun getAllGoalsSync(): List<Goal>
+
+    @Query("SELECT * FROM goals WHERE is_deleted = 0 ORDER BY createdAt DESC")
+    suspend fun getActiveGoalsSync(): List<Goal>
 
     @Query("SELECT * FROM accounts")
     suspend fun getAllAccountsSync(): List<Account>

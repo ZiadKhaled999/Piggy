@@ -1,5 +1,6 @@
 package com.oryno.piggy_ledger.ui
 
+import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -335,7 +336,7 @@ fun AuthScreen(
                                             if (!sid.isNullOrBlank()) {
                                                 Clerk.auth.setActive(sid).onFailure { setActiveErr ->
                                                     isLoading = false
-                                                    errorMessage = getClerkErrorMessage(setActiveErr)
+                                                    errorMessage = getClerkErrorMessage(context, setActiveErr)
                                                 }
                                             } else {
                                                 // Prepare & send email OTP code
@@ -347,12 +348,12 @@ fun AuthScreen(
                                                     navigateTo(AuthRoute.SU_OTP)
                                                 }.onFailure { sendErr ->
                                                     isLoading = false
-                                                    errorMessage = context.getString(R.string.auth_error_send_otp_failed, getClerkErrorMessage(sendErr))
+                                                    errorMessage = context.getString(R.string.auth_error_send_otp_failed, getClerkErrorMessage(context, sendErr))
                                                 }
                                             }
                                         }.onFailure { signInErr ->
                                             isLoading = false
-                                            val errMessage = getClerkErrorMessage(signInErr)
+                                            val errMessage = getClerkErrorMessage(context, signInErr)
                                             if (errMessage.contains("identifier is invalid", ignoreCase = true) ||
                                                 errMessage.contains("not found", ignoreCase = true)) {
                                                 errorMessage = context.getString(R.string.auth_account_not_found)
@@ -616,12 +617,12 @@ fun AuthScreen(
                                                     }
                                                     .onFailure { err ->
                                                         isLoading = false
-                                                        errorMessage = context.getString(R.string.auth_error_send_otp_failed, getClerkErrorMessage(err))
+                                                        errorMessage = context.getString(R.string.auth_error_send_otp_failed, getClerkErrorMessage(context, err))
                                                     }
                                             }
                                         }.onFailure { err ->
                                             isLoading = false
-                                            errorMessage = context.getString(R.string.auth_error_signup_failed, getClerkErrorMessage(err))
+                                            errorMessage = getClerkErrorMessage(context, err)
                                         }
                                     } catch (e: Exception) {
                                         isLoading = false
@@ -802,7 +803,7 @@ fun AuthScreen(
                                                     errorMessage = null
                                                 }?.onFailure {
                                                     isLoading = false
-                                                    errorMessage = context.getString(R.string.auth_otp_error_resend, getClerkErrorMessage(it))
+                                                    errorMessage = context.getString(R.string.auth_otp_error_resend, getClerkErrorMessage(context, it))
                                                 }
                                         } else if (activeSignIn != null) {
                                             val targetEmail = suEmail.trim().ifBlank { siEmail.trim() }.ifBlank { activeSignIn?.identifier ?: "" }
@@ -815,7 +816,7 @@ fun AuthScreen(
                                                     errorMessage = null
                                                 }?.onFailure {
                                                     isLoading = false
-                                                    errorMessage = context.getString(R.string.auth_otp_error_resend, getClerkErrorMessage(it))
+                                                    errorMessage = context.getString(R.string.auth_otp_error_resend, getClerkErrorMessage(context, it))
                                                 }
                                         }
                                     }
@@ -859,9 +860,9 @@ fun AuthScreen(
                                                 }
                                                 isLoading = false
                                                 navigateTo(AuthRoute.SU_AVATAR)
-                                            }?.onFailure {
+                                             }?.onFailure {
                                                 isLoading = false
-                                                errorMessage = context.getString(R.string.auth_otp_error_invalid, getClerkErrorMessage(it))
+                                                errorMessage = context.getString(R.string.auth_otp_error_invalid, getClerkErrorMessage(context, it))
                                             }
                                     } else if (activeSignIn != null) {
                                         activeSignIn?.verifyCode(suOtp)
@@ -871,7 +872,7 @@ fun AuthScreen(
                                                 if (!sid.isNullOrBlank()) {
                                                     Clerk.auth.setActive(sid).onFailure { setActiveErr ->
                                                         isLoading = false
-                                                        errorMessage = getClerkErrorMessage(setActiveErr)
+                                                        errorMessage = getClerkErrorMessage(context, setActiveErr)
                                                     }
                                                 } else {
                                                     isLoading = false
@@ -879,7 +880,7 @@ fun AuthScreen(
                                                 }
                                             }?.onFailure {
                                                 isLoading = false
-                                                errorMessage = context.getString(R.string.auth_otp_error_invalid, getClerkErrorMessage(it))
+                                                errorMessage = context.getString(R.string.auth_otp_error_invalid, getClerkErrorMessage(context, it))
                                             }
                                     }
                                 }
@@ -1391,6 +1392,81 @@ private fun calculatePasswordStrength(password: String): Int {
     if (password.any { it.isDigit() }) strength++
     if (password.any { !it.isLetterOrDigit() }) strength++
     return minOf(4, strength)
+}
+
+private fun getClerkErrorMessage(context: Context, err: Any?): String {
+    var rawMessage = ""
+    var rawCode = ""
+    if (err is ClerkResult.Failure<*>) {
+        val errorResponse = err.error as? ClerkErrorResponse
+        val clerkError = errorResponse?.errors?.firstOrNull()
+        rawCode = clerkError?.code ?: ""
+        rawMessage = clerkError?.longMessage ?: clerkError?.message ?: err.throwable?.message ?: ""
+    } else if (err is String) {
+        rawMessage = err
+    } else if (err != null) {
+        rawMessage = err.toString()
+    }
+
+    val lowerMsg = rawMessage.lowercase()
+    val lowerCode = rawCode.lowercase()
+
+    return when {
+        // Password pwned / data breach / compromised
+        lowerCode.contains("pwned") || lowerMsg.contains("breach") || lowerMsg.contains("pwned") || lowerMsg.contains("compromised") || lowerMsg.contains("data breach") -> {
+            context.getString(R.string.clerk_error_password_pwned)
+        }
+        // Password too short
+        lowerCode.contains("too_short") || (lowerMsg.contains("password") && (lowerMsg.contains("short") || lowerMsg.contains("at least 8") || lowerMsg.contains("minimum 8") || lowerMsg.contains("length"))) -> {
+            context.getString(R.string.clerk_error_password_too_short)
+        }
+        // Password lowercase
+        lowerCode.contains("lowercase") || (lowerMsg.contains("password") && lowerMsg.contains("lowercase")) -> {
+            context.getString(R.string.clerk_error_password_lowercase)
+        }
+        // Password uppercase
+        lowerCode.contains("uppercase") || (lowerMsg.contains("password") && lowerMsg.contains("uppercase")) -> {
+            context.getString(R.string.clerk_error_password_uppercase)
+        }
+        // Password number / digit
+        lowerCode.contains("digit") || lowerCode.contains("number") || (lowerMsg.contains("password") && (lowerMsg.contains("digit") || lowerMsg.contains("number"))) -> {
+            context.getString(R.string.clerk_error_password_number)
+        }
+        // Password special character / symbol
+        lowerCode.contains("special") || lowerCode.contains("symbol") || (lowerMsg.contains("password") && (lowerMsg.contains("symbol") || lowerMsg.contains("special"))) -> {
+            context.getString(R.string.clerk_error_password_special)
+        }
+        // Account already exists
+        lowerCode.contains("identifier_exists") || lowerCode.contains("already_exists") || lowerMsg.contains("already exists") || lowerMsg.contains("taken") -> {
+            context.getString(R.string.clerk_error_identifier_exists)
+        }
+        // Invalid email / identifier
+        lowerCode.contains("identifier_invalid") || lowerCode.contains("email_address_invalid") || lowerMsg.contains("invalid email") || lowerMsg.contains("enter a valid email") -> {
+            context.getString(R.string.clerk_error_invalid_email)
+        }
+        // Incorrect password
+        lowerCode.contains("password_incorrect") || lowerMsg.contains("incorrect password") || lowerMsg.contains("wrong password") || lowerMsg.contains("invalid password") || lowerMsg.contains("password is wrong") -> {
+            context.getString(R.string.clerk_error_password_incorrect)
+        }
+        // Incorrect verification code
+        lowerCode.contains("code_incorrect") || lowerMsg.contains("incorrect code") || lowerMsg.contains("invalid code") || lowerMsg.contains("verification code is incorrect") || lowerMsg.contains("incorrect verification") -> {
+            context.getString(R.string.clerk_error_code_incorrect)
+        }
+        // Expired verification code
+        lowerCode.contains("code_expired") || lowerMsg.contains("code has expired") || lowerMsg.contains("code expired") -> {
+            context.getString(R.string.clerk_error_code_expired)
+        }
+        // Too many attempts / rate limited
+        lowerCode.contains("too_many") || lowerCode.contains("rate_limit") || lowerMsg.contains("too many") || lowerMsg.contains("rate limit") || lowerMsg.contains("try again later") -> {
+            context.getString(R.string.clerk_error_too_many_attempts)
+        }
+        // Session exists
+        lowerCode.contains("session_exists") || lowerMsg.contains("session already exists") || lowerMsg.contains("already signed in") -> {
+            context.getString(R.string.clerk_error_session_exists)
+        }
+        rawMessage.isNotBlank() -> rawMessage
+        else -> context.getString(R.string.auth_error_generic)
+    }
 }
 
 private fun getClerkErrorMessage(err: Any?): String {

@@ -47,7 +47,6 @@ enum class BottomSheetType {
     BANK_SELECT
 }
 
-data class CurrencyInfo(val code: String, val name: String, val flag: String, val symbol: String)
 data class ProviderInfo(val name: String, val color: Color, val iconColorHex: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -94,17 +93,6 @@ fun AddAccountScreen(
     var currencySearchQuery by remember { mutableStateOf("") }
     var bankSearchQuery by remember { mutableStateOf("") }
 
-    val availableCurrencies = listOf(
-        CurrencyInfo("USD", "US Dollar", "🇺🇸", "$"),
-        CurrencyInfo("EUR", "Euro", "🇪🇺", "€"),
-        CurrencyInfo("EGP", "Egyptian Pound", "🇪🇬", "EGP"),
-        CurrencyInfo("GBP", "British Pound", "🇬🇧", "£"),
-        CurrencyInfo("AED", "UAE Dirham", "🇦🇪", "AED"),
-        CurrencyInfo("SAR", "Saudi Riyal", "🇸🇦", "SAR"),
-        CurrencyInfo("OMR", "Omani Rial", "🇴🇲", "OMR"),
-        CurrencyInfo("JPY", "Japanese Yen", "🇯🇵", "¥"),
-        CurrencyInfo("CNY", "Chinese Yuan", "🇨🇳", "CN¥")
-    )
 
     val availableProviders = listOf(
         ProviderInfo("Vodafone Cash", Color(0xFFE11D48), "#E11D48"),
@@ -777,7 +765,8 @@ fun AddAccountScreen(
                         )
                         val filteredCurrencies = availableCurrencies.filter {
                             it.code.contains(currencySearchQuery, ignoreCase = true) ||
-                            it.name.contains(currencySearchQuery, ignoreCase = true)
+                            it.name.contains(currencySearchQuery, ignoreCase = true) ||
+                            it.symbol.contains(currencySearchQuery, ignoreCase = true)
                         }
                         LazyColumn {
                             items(filteredCurrencies) { item ->

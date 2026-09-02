@@ -31,9 +31,11 @@ import androidx.compose.material.icons.filled.CheckCircle
 @Composable
 fun CreateGoalScreen(
     onGoalCreated: (String, Double) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    appCurrency: String = "USD"
 ) {
     val context = LocalContext.current
+    val currencySymbol = getCurrencySymbol(appCurrency)
     var goalName by remember { mutableStateOf("") }
     var targetAmount by remember { mutableStateOf("") }
     var isOpenedBalance by remember { mutableStateOf(false) }
@@ -196,6 +198,14 @@ fun CreateGoalScreen(
                         targetAmount = input
                     }
                 },
+                leadingIcon = {
+                    Text(
+                        text = currencySymbol,
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark,
+                        modifier = Modifier.padding(start = 16.dp)
+                    )
+                },
                 label = { Text(stringResource(R.string.how_much_do_you_need), fontWeight = FontWeight.Bold) },
                 placeholder = { Text(stringResource(R.string.zero_amount)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -245,7 +255,7 @@ fun CreateGoalScreen(
                         com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_goal_created), Toast.LENGTH_SHORT)
                         onGoalCreated(goalName, 0.0)
                     } else {
-                        val amount = targetAmount.replace("$", "").trim().toDoubleOrNull()
+                        val amount = targetAmount.replace(currencySymbol, "").replace("$", "").trim().toDoubleOrNull()
                         if (amount != null) {
                             com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_goal_created), Toast.LENGTH_SHORT)
                             onGoalCreated(goalName, amount)

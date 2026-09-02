@@ -106,6 +106,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.widget.Toast
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.annotation.StringRes
 import androidx.compose.ui.res.stringResource
 import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.ai.AiChatViewModel
@@ -229,7 +230,7 @@ fun AiChatScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Pro • Unlimited AI",
+                                    text = stringResource(R.string.ai_pro_unlimited),
                                     color = Color(0xFF334155),
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 12.sp,
@@ -249,7 +250,7 @@ fun AiChatScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = if (aiMessagesCount >= 3) "3/3 Free • Upgrade" else "${aiMessagesCount}/3 Free AI",
+                                    text = if (aiMessagesCount >= 3) stringResource(R.string.ai_free_upgrade) else stringResource(R.string.ai_free_messages, aiMessagesCount),
                                     color = if (aiMessagesCount >= 3) Color(0xFFDC2626) else Color(0xFF475569),
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 12.sp
@@ -315,7 +316,7 @@ fun AiChatScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Outlined.Edit,
-                                        contentDescription = "New Chat",
+                                        contentDescription = stringResource(R.string.ai_new_chat),
                                         tint = AiTextPrimary,
                                         modifier = Modifier.size(19.dp)
                                     )
@@ -328,7 +329,7 @@ fun AiChatScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.MoreVert,
-                                        contentDescription = "More options",
+                                        contentDescription = stringResource(R.string.ai_more_options),
                                         tint = AiTextPrimary,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -501,7 +502,7 @@ fun AiChatScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "Upgrade to Pro",
+                                        text = stringResource(R.string.ai_upgrade_to_pro),
                                         color = Color.White,
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Bold,
@@ -540,7 +541,7 @@ fun AiChatScreen(
                             ) {
                                 if (inputText.isEmpty()) {
                                     Text(
-                                        text = "Ask Piggy AI...",
+                                        text = stringResource(R.string.ai_ask_piggy),
                                         color = Color(0xFF555555),
                                         fontSize = 17.sp,
                                         fontWeight = FontWeight.Normal
@@ -588,7 +589,7 @@ fun AiChatScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Stop,
-                                        contentDescription = "Stop generation",
+                                        contentDescription = stringResource(R.string.ai_stop_generation),
                                         tint = Color.White,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -625,14 +626,14 @@ fun AiChatScreen(
                                                     }
                                                     speechRecognizerLauncher.launch(intent)
                                                 } catch (e: Exception) {
-                                                    Toast.makeText(context, "Speech recognition not supported on this device.", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, context.getString(R.string.speech_not_supported), Toast.LENGTH_SHORT).show()
                                                 }
                                             },
                                             modifier = Modifier.size(40.dp)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Mic,
-                                                contentDescription = "Voice Input",
+                                                contentDescription = stringResource(R.string.ai_voice_input),
                                                 tint = Color(0xFF2B2B2B),
                                                 modifier = Modifier.size(24.dp)
                                             )
@@ -654,7 +655,7 @@ fun AiChatScreen(
                                         ) {
                                             Icon(
                                                 imageVector = Icons.AutoMirrored.Filled.Send,
-                                                contentDescription = "Send",
+                                                contentDescription = stringResource(R.string.ai_send),
                                                 tint = Color.White,
                                                 modifier = Modifier
                                                     .size(20.dp)
@@ -676,17 +677,17 @@ fun AiChatScreen(
     if (showOverflowMenu) {
         CenteredMenuDialog(
             onDismissRequest = { showOverflowMenu = false },
-            title = "Chat Options",
+            title = stringResource(R.string.ai_chat_options),
             items = listOf(
                 CenteredMenuItem(
-                    title = "Chat History",
+                    title = stringResource(R.string.ai_chat_history),
                     onClick = {
                         showOverflowMenu = false
                         showHistorySheet = true
                     }
                 ),
                 CenteredMenuItem(
-                    title = "Clear Current Chat",
+                    title = stringResource(R.string.ai_clear_current_chat),
                     isDestructive = true,
                     onClick = {
                         showOverflowMenu = false
@@ -854,6 +855,7 @@ fun ChatHistorySheetContent(
     onRenameConversation: (String, String) -> Unit,
     onCloseSheet: () -> Unit
 ) {
+    val context = LocalContext.current
     var conversationToRename by remember { mutableStateOf<AiConversation?>(null) }
     var renameInputText by remember { mutableStateOf("") }
     var selectedConvForMenu by remember { mutableStateOf<AiConversation?>(null) }
@@ -888,11 +890,11 @@ fun ChatHistorySheetContent(
         }
 
         val groups = mutableListOf<ConversationGroup>()
-        if (pinned.isNotEmpty()) groups.add(ConversationGroup("Pinned", pinned))
-        if (todayItems.isNotEmpty()) groups.add(ConversationGroup("Today", todayItems))
-        if (sevenDaysItems.isNotEmpty()) groups.add(ConversationGroup("7 Days", sevenDaysItems))
-        if (thirtyDaysItems.isNotEmpty()) groups.add(ConversationGroup("30 Days", thirtyDaysItems))
-        if (olderItems.isNotEmpty()) groups.add(ConversationGroup("Older", olderItems))
+        if (pinned.isNotEmpty()) groups.add(ConversationGroup(context.getString(R.string.ai_history_pinned), pinned))
+        if (todayItems.isNotEmpty()) groups.add(ConversationGroup(context.getString(R.string.ai_history_today), todayItems))
+        if (sevenDaysItems.isNotEmpty()) groups.add(ConversationGroup(context.getString(R.string.ai_history_7_days), sevenDaysItems))
+        if (thirtyDaysItems.isNotEmpty()) groups.add(ConversationGroup(context.getString(R.string.ai_history_30_days), thirtyDaysItems))
+        if (olderItems.isNotEmpty()) groups.add(ConversationGroup(context.getString(R.string.ai_history_older), olderItems))
 
         groups
     }
@@ -912,7 +914,7 @@ fun ChatHistorySheetContent(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "Chat History",
+                    text = stringResource(R.string.ai_chat_history),
                     color = AiTextPrimary,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
@@ -936,7 +938,7 @@ fun ChatHistorySheetContent(
                     ) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = "History Settings",
+                            contentDescription = stringResource(R.string.ai_history_settings),
                             tint = Color(0xFFDB2777),
                             modifier = Modifier.size(18.dp)
                         )
@@ -960,7 +962,7 @@ fun ChatHistorySheetContent(
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
+                    contentDescription = stringResource(R.string.ai_search_conversations),
                     tint = AiTextSecondary,
                     modifier = Modifier.size(18.dp)
                 )
@@ -968,7 +970,7 @@ fun ChatHistorySheetContent(
                 TextField(
                     value = searchQuery,
                     onValueChange = onSearchQueryChange,
-                    placeholder = { Text("Search conversations...", color = Color(0xFF94A3B8), fontSize = 14.sp) },
+                    placeholder = { Text(stringResource(R.string.ai_search_conversations), color = Color(0xFF94A3B8), fontSize = 14.sp) },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
@@ -1003,7 +1005,7 @@ fun ChatHistorySheetContent(
                         modifier = Modifier.size(40.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("No previous chats", color = Color(0xFF94A3B8), fontSize = 14.sp)
+                    Text(stringResource(R.string.ai_no_previous_chats), color = Color(0xFF94A3B8), fontSize = 14.sp)
                 }
             }
         } else if (conversationGroups.isEmpty()) {
@@ -1013,7 +1015,7 @@ fun ChatHistorySheetContent(
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No matching conversations", color = Color(0xFF94A3B8), fontSize = 14.sp)
+                Text(stringResource(R.string.ai_no_matching_conversations), color = Color(0xFF94A3B8), fontSize = 14.sp)
             }
         } else {
             LazyColumn(
@@ -1105,7 +1107,7 @@ fun ChatHistorySheetContent(
             title = targetConv.title,
             items = listOf(
                 CenteredMenuItem(
-                    title = "Rename",
+                    title = stringResource(R.string.ai_rename),
                     onClick = {
                         val conv = targetConv
                         selectedConvForMenu = null
@@ -1114,7 +1116,7 @@ fun ChatHistorySheetContent(
                     }
                 ),
                 CenteredMenuItem(
-                    title = if (targetConv.isPinned) "Unpin from Top" else "Pin to Top",
+                    title = if (targetConv.isPinned) stringResource(R.string.ai_unpin) else stringResource(R.string.ai_pin),
                     onClick = {
                         val conv = targetConv
                         selectedConvForMenu = null
@@ -1122,7 +1124,7 @@ fun ChatHistorySheetContent(
                     }
                 ),
                 CenteredMenuItem(
-                    title = "Delete Conversation",
+                    title = stringResource(R.string.ai_delete_conversation),
                     isDestructive = true,
                     onClick = {
                         val conv = targetConv
@@ -1138,19 +1140,19 @@ fun ChatHistorySheetContent(
     if (showSheetSettingsMenu) {
         CenteredMenuDialog(
             onDismissRequest = { showSheetSettingsMenu = false },
-            title = "History Settings",
+            title = stringResource(R.string.ai_history_settings),
             statCount = conversations.size,
-            statLabel = if (conversations.size == 1) "conversation saved" else "conversations saved",
+            statLabel = if (conversations.size == 1) stringResource(R.string.ai_conversation_saved) else stringResource(R.string.ai_conversations_saved),
             items = listOf(
                 CenteredMenuItem(
-                    title = "New Conversation",
+                    title = stringResource(R.string.ai_new_conversation),
                     onClick = {
                         showSheetSettingsMenu = false
                         onNewChatClick()
                     }
                 ),
                 CenteredMenuItem(
-                    title = "Clear All History",
+                    title = stringResource(R.string.ai_clear_all_history),
                     isDestructive = true,
                     onClick = {
                         showSheetSettingsMenu = false
@@ -1158,7 +1160,7 @@ fun ChatHistorySheetContent(
                     }
                 ),
                 CenteredMenuItem(
-                    title = "Close History",
+                    title = stringResource(R.string.ai_close_history),
                     onClick = {
                         showSheetSettingsMenu = false
                         onCloseSheet()
@@ -1172,8 +1174,8 @@ fun ChatHistorySheetContent(
     if (showConfirmClearAllDialog) {
         AlertDialog(
             onDismissRequest = { showConfirmClearAllDialog = false },
-            title = { Text("Clear All History?", fontWeight = FontWeight.Bold, color = Color(0xFF1E293B)) },
-            text = { Text("This will permanently delete all your conversation history. This action cannot be undone.", color = Color(0xFF64748B), fontSize = 14.sp) },
+            title = { Text(stringResource(R.string.ai_clear_all_confirm_title), fontWeight = FontWeight.Bold, color = Color(0xFF1E293B)) },
+            text = { Text(stringResource(R.string.ai_clear_all_confirm_desc), color = Color(0xFF64748B), fontSize = 14.sp) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -1181,12 +1183,12 @@ fun ChatHistorySheetContent(
                         onDeleteAllConversations()
                     }
                 ) {
-                    Text("Delete All", fontWeight = FontWeight.Bold, color = Color(0xFFE11D48))
+                    Text(stringResource(R.string.ai_delete_all), fontWeight = FontWeight.Bold, color = Color(0xFFE11D48))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showConfirmClearAllDialog = false }) {
-                    Text("Cancel", color = Color(0xFF64748B))
+                    Text(stringResource(R.string.cancel_btn), color = Color(0xFF64748B))
                 }
             },
             containerColor = Color.White,
@@ -1211,7 +1213,7 @@ fun ChatHistorySheetContent(
                     .padding(bottom = 32.dp, top = 8.dp)
             ) {
                 Text(
-                    text = "Rename Conversation",
+                    text = stringResource(R.string.ai_rename_conversation),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1E293B)
@@ -1221,7 +1223,7 @@ fun ChatHistorySheetContent(
                     value = renameInputText,
                     onValueChange = { renameInputText = it },
                     singleLine = true,
-                    label = { Text("Conversation Title") },
+                    label = { Text(stringResource(R.string.ai_conversation_title)) },
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFDB2777),
@@ -1243,7 +1245,7 @@ fun ChatHistorySheetContent(
                             .weight(1f)
                             .height(48.dp)
                     ) {
-                        Text("Cancel", color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.cancel_btn), color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
                     }
                     Button(
                         onClick = {
@@ -1259,7 +1261,7 @@ fun ChatHistorySheetContent(
                             .weight(1f)
                             .height(48.dp)
                     ) {
-                        Text("Save", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.save), color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -1362,7 +1364,7 @@ fun CenteredMenuDialog(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = statLabel ?: if (statCount == 1) "conversation saved" else "conversations saved",
+                            text = statLabel ?: if (statCount == 1) stringResource(R.string.ai_conversation_saved) else stringResource(R.string.ai_conversations_saved),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF64748B),
@@ -1448,7 +1450,7 @@ fun CenteredMenuDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
+                            contentDescription = stringResource(R.string.close_btn),
                             tint = Color(0xFF1E293B),
                             modifier = Modifier.size(24.dp)
                         )
@@ -1460,31 +1462,31 @@ fun CenteredMenuDialog(
 }
 
 sealed interface LoadingPattern {
-    data class TwoStep(val step1: String, val step2: String) : LoadingPattern
-    data class SinglePulse(val phrase: String) : LoadingPattern
+    data class TwoStep(@StringRes val step1: Int, @StringRes val step2: Int) : LoadingPattern
+    data class SinglePulse(@StringRes val phrase: Int) : LoadingPattern
 }
 
 private val LOADING_PATTERNS = listOf(
     // 2-Step Rapid Cycles (Swap copy at 1.5 seconds)
-    LoadingPattern.TwoStep("Analyzing request...", "Almost ready..."),
-    LoadingPattern.TwoStep("Gathering details...", "Finishing up..."),
-    LoadingPattern.TwoStep("On it...", "Here it comes!"),
-    LoadingPattern.TwoStep("Connecting the dots...", "Polishing answer..."),
-    LoadingPattern.TwoStep("Quickly reading...", "Just a second..."),
+    LoadingPattern.TwoStep(R.string.ai_thinking_analyzing, R.string.ai_thinking_ready),
+    LoadingPattern.TwoStep(R.string.ai_thinking_gathering, R.string.ai_thinking_finishing),
+    LoadingPattern.TwoStep(R.string.ai_thinking_on_it, R.string.ai_thinking_coming),
+    LoadingPattern.TwoStep(R.string.ai_thinking_connecting, R.string.ai_thinking_polishing),
+    LoadingPattern.TwoStep(R.string.ai_thinking_reading, R.string.ai_thinking_second),
 
     // Single-Pulse Statuses (Static 3-second display)
     // Professional & Crisp
-    LoadingPattern.SinglePulse("Processing request..."),
-    LoadingPattern.SinglePulse("Generating output..."),
-    LoadingPattern.SinglePulse("Synthesizing..."),
+    LoadingPattern.SinglePulse(R.string.ai_thinking_processing),
+    LoadingPattern.SinglePulse(R.string.ai_thinking_generating),
+    LoadingPattern.SinglePulse(R.string.ai_thinking_synthesizing),
     // Casual & Friendly
-    LoadingPattern.SinglePulse("Cooking up an answer..."),
-    LoadingPattern.SinglePulse("Sorting things out..."),
-    LoadingPattern.SinglePulse("Working on it..."),
+    LoadingPattern.SinglePulse(R.string.ai_thinking_cooking),
+    LoadingPattern.SinglePulse(R.string.ai_thinking_sorting),
+    LoadingPattern.SinglePulse(R.string.ai_thinking_working),
     // Action-Focused
-    LoadingPattern.SinglePulse("Fetching insights..."),
-    LoadingPattern.SinglePulse("Building response..."),
-    LoadingPattern.SinglePulse("Putting it together...")
+    LoadingPattern.SinglePulse(R.string.ai_thinking_fetching),
+    LoadingPattern.SinglePulse(R.string.ai_thinking_building),
+    LoadingPattern.SinglePulse(R.string.ai_thinking_together)
 )
 
 /**
@@ -1494,19 +1496,18 @@ private val LOADING_PATTERNS = listOf(
 @Composable
 fun ThinkingIndicator() {
     val pattern = remember { LOADING_PATTERNS.random() }
-    var currentText by remember {
-        mutableStateOf(
-            when (pattern) {
-                is LoadingPattern.TwoStep -> pattern.step1
-                is LoadingPattern.SinglePulse -> pattern.phrase
-            }
-        )
+    val step1 = when (pattern) {
+        is LoadingPattern.TwoStep -> stringResource(pattern.step1)
+        is LoadingPattern.SinglePulse -> stringResource(pattern.phrase)
     }
+    val step2 = if (pattern is LoadingPattern.TwoStep) stringResource(pattern.step2) else ""
+
+    var currentText by remember { mutableStateOf(step1) }
 
     LaunchedEffect(pattern) {
         if (pattern is LoadingPattern.TwoStep) {
             delay(1500L) // Single swap limit: change text at 1.5s mark
-            currentText = pattern.step2
+            currentText = step2
         }
     }
 
@@ -1544,8 +1545,8 @@ fun ThinkingIndicator() {
 
 data class CategoryPillData(
     val icon: String,
-    val label: String,
-    val query: String
+    @StringRes val label: Int,
+    @StringRes val query: Int
 )
 
 @Composable
@@ -1560,33 +1561,34 @@ fun EmptyChatState(
         visible = true
     }
 
-    val annotatedPhrase = remember(userName) {
-        val displayName = if (userName.isNotBlank()) userName.trim() else "there"
-        val dayOfYear = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR)
-        val templates = listOf(
-            Pair("the mic is yours, ", ""),
-            Pair("it's up to you, ", ""),
-            Pair("how can we grow your wealth, ", "?"),
-            Pair("ready to master your numbers, ", "?"),
-            Pair("what's on your financial mind, ", "?"),
-            Pair("let's optimize your spending, ", ""),
-            Pair("your money co-pilot is ready, ", "")
-        )
-        val selected = templates[dayOfYear % templates.size]
+    // We need to fetch strings inside the composable, not remember block for resources
+    val dayOfYear = remember { java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR) }
+    val templates = listOf(
+        Pair(R.string.ai_phrase_mic_yours, ""),
+        Pair(R.string.ai_phrase_up_to_you, ""),
+        Pair(R.string.ai_phrase_grow_wealth, "?"),
+        Pair(R.string.ai_phrase_master_numbers, "?"),
+        Pair(R.string.ai_phrase_financial_mind, "?"),
+        Pair(R.string.ai_phrase_optimize_spending, ""),
+        Pair(R.string.ai_phrase_money_copilot, "")
+    )
+    val selectedTemplate = templates[dayOfYear % templates.size]
+    val phrasePrefix = stringResource(selectedTemplate.first)
+    val phraseSuffix = selectedTemplate.second
+    val displayName = if (userName.isNotBlank()) userName.trim() else stringResource(R.string.ai_default_name)
 
-        buildAnnotatedString {
-            append(selected.first)
-            withStyle(
-                style = SpanStyle(
-                    color = Color(0xFFDB2777),
-                    fontWeight = FontWeight.ExtraBold
-                )
-            ) {
-                append(displayName)
-            }
-            if (selected.second.isNotEmpty()) {
-                append(selected.second)
-            }
+    val annotatedPhrase = buildAnnotatedString {
+        append(phrasePrefix)
+        withStyle(
+            style = SpanStyle(
+                color = Color(0xFFDB2777),
+                fontWeight = FontWeight.ExtraBold
+            )
+        ) {
+            append(displayName)
+        }
+        if (phraseSuffix.isNotEmpty()) {
+            append(phraseSuffix)
         }
     }
 
@@ -1631,10 +1633,10 @@ fun EmptyChatState(
                 // Row 1 Infinite Looping Slider in Light Theme
                 val row1Pills = remember {
                     listOf(
-                        CategoryPillData("🎯", "savings goals progress", "What are my current savings goals progress?"),
-                        CategoryPillData("💡", "audit spending", "Audit my recent spending transactions"),
-                        CategoryPillData("👑", "runway and budget", "What is my current runway and budget balance?"),
-                        CategoryPillData("📈", "cash flow trends", "What are my recent cash flow trends?")
+                        CategoryPillData("🎯", R.string.ai_sugg_savings, R.string.ai_query_savings),
+                        CategoryPillData("💡", R.string.ai_sugg_audit, R.string.ai_query_audit),
+                        CategoryPillData("👑", R.string.ai_sugg_runway, R.string.ai_query_runway),
+                        CategoryPillData("📈", R.string.ai_sugg_cash_flow, R.string.ai_query_cash_flow)
                     )
                 }
                 InfinitePillRow(pills = row1Pills, initialOffset = 1000, scrollSpeed = 0.9f, onSuggestionClick = onSuggestionClick)
@@ -1644,10 +1646,10 @@ fun EmptyChatState(
                 // Row 2 Infinite Looping Slider in Light Theme
                 val row2Pills = remember {
                     listOf(
-                        CategoryPillData("⚡", "expense shortcuts", "How can I optimize my monthly expenses?"),
-                        CategoryPillData("📊", "cash flow forecast", "Show my cash flow forecast"),
-                        CategoryPillData("💳", "loan repayments", "What is my loan repayment status?"),
-                        CategoryPillData("🏷️", "top spending category", "Which category do I spend the most on?")
+                        CategoryPillData("⚡", R.string.ai_sugg_optimize, R.string.ai_query_optimize),
+                        CategoryPillData("📊", R.string.ai_sugg_forecast, R.string.ai_query_forecast),
+                        CategoryPillData("💳", R.string.ai_sugg_loans, R.string.ai_query_loans),
+                        CategoryPillData("🏷️", R.string.ai_sugg_top_category, R.string.ai_query_top_category)
                     )
                 }
                 InfinitePillRow(pills = row2Pills, initialOffset = 3000, scrollSpeed = 0.7f, onSuggestionClick = onSuggestionClick)
@@ -1657,10 +1659,10 @@ fun EmptyChatState(
                 // Row 3 Infinite Looping Slider in Light Theme
                 val row3Pills = remember {
                     listOf(
-                        CategoryPillData("📱", "review pending SMS", "Are there any pending SMS transactions to review?"),
-                        CategoryPillData("💰", "account balances", "Show all my account balances"),
-                        CategoryPillData("✨", "streaks and habits", "What is my logging streak status?"),
-                        CategoryPillData("🏦", "total liquidity", "Which account holds my largest liquidity?")
+                        CategoryPillData("📱", R.string.ai_sugg_pending_sms, R.string.ai_query_pending_sms),
+                        CategoryPillData("💰", R.string.ai_sugg_balances, R.string.ai_query_balances),
+                        CategoryPillData("✨", R.string.ai_sugg_streaks, R.string.ai_query_streaks),
+                        CategoryPillData("🏦", R.string.ai_sugg_liquidity, R.string.ai_query_liquidity)
                     )
                 }
                 InfinitePillRow(pills = row3Pills, initialOffset = 5000, scrollSpeed = 1.0f, onSuggestionClick = onSuggestionClick)
@@ -1695,8 +1697,10 @@ fun InfinitePillRow(
             count = Int.MAX_VALUE,
             itemContent = { index ->
                 val pill = pills[index % pills.size]
-                CategoryPill(icon = pill.icon, label = pill.label) {
-                    onSuggestionClick(pill.query)
+                val labelText = stringResource(pill.label)
+                val queryText = stringResource(pill.query)
+                CategoryPill(icon = pill.icon, label = labelText) {
+                    onSuggestionClick(queryText)
                 }
             }
         )
@@ -1731,9 +1735,14 @@ fun CategoryPill(
     }
 }
 
+sealed class NextStep {
+    data class Raw(val text: String) : NextStep()
+    data class Resource(@StringRes val resId: Int) : NextStep()
+}
+
 data class ProcessedResponse(
     val mainText: String,
-    val nextSteps: List<String>
+    val nextSteps: List<NextStep>
 )
 
 fun parseResponseTextAndNextSteps(rawText: String): ProcessedResponse {
@@ -1755,19 +1764,19 @@ fun parseResponseTextAndNextSteps(rawText: String): ProcessedResponse {
         val mainTextPart = text.substring(0, match.range.first).trim()
         val stepsPart = text.substring(match.range.last + 1).trim()
         
-        val nextStepsList = mutableListOf<String>()
+        val nextStepsList = mutableListOf<NextStep>()
         val lines = stepsPart.split("\n")
         for (line in lines) {
             val trimmed = line.trim()
             if (trimmed.startsWith("-") || trimmed.startsWith("*") || trimmed.startsWith("•") || trimmed.matches(Regex("""^\d+\..*"""))) {
                 val cleanStep = trimmed.replaceFirst(Regex("""^([-*•]|\d+\.)\s*"""), "").replace("**", "").trim()
                 if (cleanStep.isNotBlank()) {
-                    nextStepsList.add(cleanStep)
+                    nextStepsList.add(NextStep.Raw(cleanStep))
                 }
             } else if (trimmed.isNotBlank() && !trimmed.startsWith("#")) {
                 val cleanStep = trimmed.replace("**", "").trim()
                 if (cleanStep.isNotBlank() && nextStepsList.size < 2) {
-                    nextStepsList.add(cleanStep)
+                    nextStepsList.add(NextStep.Raw(cleanStep))
                 }
             }
         }
@@ -1784,24 +1793,24 @@ fun parseResponseTextAndNextSteps(rawText: String): ProcessedResponse {
     val lowerText = text.lowercase()
     val contextualNextSteps = when {
         lowerText.contains("goal") || lowerText.contains("save") || lowerText.contains("target") -> listOf(
-            "What are my active savings goals progress?",
-            "How can I accelerate my savings rate?"
+            NextStep.Resource(R.string.ai_query_savings),
+            NextStep.Resource(R.string.ai_cta_accelerate_savings)
         )
         lowerText.contains("loan") || lowerText.contains("debt") || lowerText.contains("borrow") -> listOf(
-            "What is my loan repayment status?",
-            "How much total debt do I owe?"
+            NextStep.Resource(R.string.ai_query_loans),
+            NextStep.Resource(R.string.ai_cta_total_debt)
         )
         lowerText.contains("streak") || lowerText.contains("habit") -> listOf(
-            "What is my current logging streak status?",
-            "Did I log my financial activity today?"
+            NextStep.Resource(R.string.ai_query_streaks),
+            NextStep.Resource(R.string.ai_cta_logged_today)
         )
         lowerText.contains("account") || lowerText.contains("balance") || lowerText.contains("cash") -> listOf(
-            "Show all my account balances summary",
-            "Which account holds my largest liquidity?"
+            NextStep.Resource(R.string.ai_cta_balances_summary),
+            NextStep.Resource(R.string.ai_query_liquidity)
         )
         else -> listOf(
-            "Audit my recent spending transactions",
-            "How can I optimize my monthly budget?"
+            NextStep.Resource(R.string.ai_query_audit),
+            NextStep.Resource(R.string.ai_cta_optimize_budget)
         )
     }
 
@@ -1845,13 +1854,13 @@ fun ChatMessageItem(
             IconButton(
                 onClick = {
                     clipboardManager.setText(AnnotatedString(message.content))
-                    Toast.makeText(context, "Question copied to clipboard", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.question_copied_to_clipboard), Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.size(28.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.ContentCopy,
-                    contentDescription = "Copy question",
+                    contentDescription = stringResource(R.string.ai_copy_question),
                     tint = AiTextSecondary,
                     modifier = Modifier.size(14.dp)
                 )
@@ -1972,13 +1981,13 @@ fun ChatMessageItem(
                             val textToCopy = mainAnswerText.ifBlank { message.content }
                             clipboardManager.setText(AnnotatedString(textToCopy))
                             isCopied = true
-                            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.copied_to_clipboard), Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
                             imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
-                            contentDescription = "Copy response",
+                            contentDescription = stringResource(R.string.ai_copy_response),
                             tint = if (isCopied) Color(0xFF10B981) else AiTextSecondary,
                             modifier = Modifier.size(15.dp)
                         )
@@ -1996,7 +2005,7 @@ fun ChatMessageItem(
                     ) {
                         Icon(
                             imageVector = if (isSpeaking) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                            contentDescription = if (isSpeaking) "Stop speech" else "Read response aloud",
+                            contentDescription = if (isSpeaking) stringResource(R.string.ai_stop_speech) else stringResource(R.string.ai_read_aloud),
                             tint = if (isSpeaking) AiGeminiBlue else AiTextSecondary,
                             modifier = Modifier.size(17.dp)
                         )
@@ -2018,7 +2027,11 @@ fun ChatMessageItem(
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            nextStepsList.take(2).forEach { stepText ->
+                            nextStepsList.take(2).forEach { step ->
+                                val stepText = when (step) {
+                                    is NextStep.Raw -> step.text
+                                    is NextStep.Resource -> stringResource(step.resId)
+                                }
                                 Surface(
                                     onClick = { onCtaClick(stepText) },
                                     shape = RoundedCornerShape(14.dp),
@@ -2071,7 +2084,7 @@ fun FormattedMarkdownText(text: String) {
                         code = block.code,
                         onCopy = {
                             clipboardManager.setText(AnnotatedString(block.code))
-                            Toast.makeText(context, "Code copied to clipboard", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.code_copied_to_clipboard), Toast.LENGTH_SHORT).show()
                         }
                     )
                 }
@@ -2225,13 +2238,13 @@ fun RenderCodeBlock(
                     ) {
                         Icon(
                             imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "Copy code",
+                            contentDescription = stringResource(R.string.ai_copy),
                             tint = Color(0xFF94A3B8),
                             modifier = Modifier.size(12.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Copy",
+                            text = stringResource(R.string.ai_copy),
                             color = Color(0xFFF8FAFC),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold

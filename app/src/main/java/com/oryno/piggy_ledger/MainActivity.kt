@@ -86,22 +86,54 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.ui.draw.scale
 import com.oryno.piggy_ledger.ui.theme.NavyDark
+
+import com.oryno.piggy_ledger.ui.Screen
+
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.InstallStatus
+import com.google.android.play.core.install.model.UpdateAvailability
+import com.google.android.play.core.install.InstallStateUpdatedListener
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 class MainActivity : AppCompatActivity() {
 
   private var isAuthenticatedByBiometric by mutableStateOf(false)
   private var isBiometricCheckComplete by mutableStateOf(false)
+  private var initialDestination by mutableStateOf<Screen?>(null)
   private var activeShortcutAction by mutableStateOf<String?>(null)
   private var activeOpenNotificationId by mutableStateOf<String?>(null)
   private lateinit var userPreferences: UserPreferences
 
+  private var isUpdateReady by mutableStateOf(false)
+  private val appUpdateManager by lazy { AppUpdateManagerFactory.create(this) }
+  private val UPDATE_REQUEST_CODE = 9001
+  private val installStateUpdatedListener = InstallStateUpdatedListener { state ->
+      if (state.installStatus() == InstallStatus.DOWNLOADED) {
+          isUpdateReady = true
+      }
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
+    val splashScreen = installSplashScreen()
     super.onCreate(savedInstanceState)
     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
     enableEdgeToEdge()
+
+    // Keep native splash screen until initial destination and biometric check are complete
+    splashScreen.setKeepOnScreenCondition {
+        initialDestination == null || !isBiometricCheckComplete
+    }
     
     // Schedule background notifications
     com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
@@ -129,20 +161,28 @@ class MainActivity : AppCompatActivity() {
     userPreferences = UserPreferences(applicationContext)
     val factory = ViewModelFactory(repository, userPreferences, applicationContext, database)
 
+    lifecycleScope.launch {
+        initialDestination = userPreferences.getInitialDestination()
+    }
+
     observeSecuritySettings()
     observeAuthentication()
 
     activeOpenNotificationId = intent?.getStringExtra("open_notification_id")
     activeShortcutAction = intent?.getStringExtra("shortcut_action")
 
+    appUpdateManager.registerListener(installStateUpdatedListener)
+    checkForAppUpdate()
+
     setContent {
       PiggyLedgerTheme {
-        val isLocked = (isBiometricCheckComplete && !isAuthenticatedByBiometric)
-
-        if (isBiometricCheckComplete) {
+        val dest = initialDestination
+        if (dest != null && isBiometricCheckComplete) {
+            val isLocked = !isAuthenticatedByBiometric
             if (!isLocked) {
                 PiggyLedgerApp(
                     factory = factory,
+                    initialDestination = dest,
                     openNotificationId = activeOpenNotificationId,
                     shortcutAction = activeShortcutAction,
                     onConsumeShortcut = { activeShortcutAction = null }
@@ -169,10 +209,23 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-        } else {
-            // Loading state while checking preferences
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                ExpressiveLoadingIndicator(size = 42.dp)
+        }
+        
+        if (isUpdateReady) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                Snackbar(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                        .navigationBarsPadding(),
+                    action = {
+                        TextButton(onClick = { appUpdateManager.completeUpdate() }) {
+                            Text(stringResource(R.string.restart), color = PinkPrimary)
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.update_downloaded))
+                }
             }
         }
       }
@@ -297,12 +350,43 @@ class MainActivity : AppCompatActivity() {
       super.onResume()
       // Reset auth if we've been gone too long
       checkLockStatus()
+      
+      // Check if update is downloaded while app was in background
+      appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+          if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+              isUpdateReady = true
+          }
+      }
   }
 
   override fun onStop() {
       super.onStop()
       lifecycleScope.launch {
           userPreferences.saveLastExitTime(System.currentTimeMillis())
+      }
+  }
+
+  override fun onDestroy() {
+      super.onDestroy()
+      appUpdateManager.unregisterListener(installStateUpdatedListener)
+  }
+
+  private fun checkForAppUpdate() {
+      appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+          if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+              && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
+          ) {
+              try {
+                  appUpdateManager.startUpdateFlowForResult(
+                      appUpdateInfo,
+                      AppUpdateType.FLEXIBLE,
+                      this,
+                      UPDATE_REQUEST_CODE
+                  )
+              } catch (e: Exception) {
+                  e.printStackTrace()
+              }
+          }
       }
   }
 

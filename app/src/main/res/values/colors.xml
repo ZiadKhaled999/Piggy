@@ -16,6 +16,7 @@
     <color name="text_muted">#94A3B8</color>
     <color name="pink_primary">#F43F5E</color>
     <color name="pink_accent">#FDA4AF</color>
+    <color name="splash_pink_bg">#F43F5E</color>
     <color name="accent_blue">#3B82F6</color>
     <color name="green_success">#10B981</color>
     <color name="red_danger">#EF4444</color>

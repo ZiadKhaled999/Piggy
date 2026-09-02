@@ -243,6 +243,10 @@ class PiggyLedgerViewModel(
         }
     }
 
+    val appCurrency = userPreferences.appCurrency.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), "USD"
+    )
+
     val hasOnboarded = userPreferences.hasOnboarded.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
     )
@@ -780,6 +784,12 @@ class PiggyLedgerViewModel(
 
     fun getTransactionsForGoal(goalId: String): Flow<List<Transaction>> {
         return allTransactions.map { list -> list.filter { it.goalId == goalId } }
+    }
+
+    fun setAppCurrency(currencyCode: String) {
+        viewModelScope.launch {
+            userPreferences.saveAppCurrency(currencyCode)
+        }
     }
 
     fun completeOnboarding(

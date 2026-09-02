@@ -1,4 +1,5 @@
 package com.oryno.piggy_ledger.ui
+import com.oryno.piggy_ledger.ui.getCurrencySymbol
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
@@ -95,10 +96,18 @@ fun AnalyticsScreen(
     viewModel: PiggyLedgerViewModel,
     onBack: () -> Unit
 ) {
-    val allTransactions by viewModel.allAccountTransactions.collectAsState()
+    val accounts by viewModel.allAccounts.collectAsState()
+    val allTransactionsRaw by viewModel.allAccountTransactions.collectAsState()
+    
+    val allTransactions = remember(accounts, allTransactionsRaw) {
+        val excludedIds = accounts.filter { it.exclude_from_all }.map { it.id }.toSet()
+        allTransactionsRaw.filter { !excludedIds.contains(it.account_id) }
+    }
+    
     var currentTab by remember { mutableStateOf(AnalyticsTab.SPENDING) }
 
     val isPrivacyMode by viewModel.isPrivacyModeEnabled.collectAsState()
+    val appCurrency by viewModel.appCurrency.collectAsState()
 
     Scaffold(
         topBar = {
@@ -153,9 +162,9 @@ fun AnalyticsScreen(
             Spacer(Modifier.height(16.dp))
 
             if (currentTab == AnalyticsTab.SPENDING) {
-                SpendingView(allTransactions, isPrivacyMode = isPrivacyMode)
+                SpendingView(allTransactions, isPrivacyMode = isPrivacyMode, appCurrency = appCurrency)
             } else {
-                RevenueView(allTransactions, isPrivacyMode = isPrivacyMode)
+                RevenueView(allTransactions, isPrivacyMode = isPrivacyMode, appCurrency = appCurrency)
             }
             
             Spacer(Modifier.height(32.dp))
@@ -165,7 +174,7 @@ fun AnalyticsScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean = false) {
+fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean = false, appCurrency: String = "USD") {
     var selectedPeriod by remember { mutableStateOf(SpendingPeriod.WEEKLY) }
     var showPeriodSheet by remember { mutableStateOf(false) }
 
@@ -264,7 +273,7 @@ fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean 
         }
     }
     
-        val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
+    val currencySymbol = getCurrencySymbol(appCurrency)
 
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -315,7 +324,7 @@ fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean 
             
             Spacer(Modifier.height(24.dp))
             
-            SpendingBarChart(points = points, isPrivacyMode = isPrivacyMode)
+            SpendingBarChart(points = points, isPrivacyMode = isPrivacyMode, appCurrency = appCurrency)
             
             Spacer(Modifier.height(24.dp))
             
@@ -329,7 +338,7 @@ fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean 
                     Text(stringResource(R.string.analytics_weekdays), fontSize = 14.sp, color = TextSecondary)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        if (isPrivacyMode) "••••••" else format.format(weekdaysSum),
+                        if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format(Locale.getDefault(), "%,.0f", weekdaysSum)}",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
@@ -344,7 +353,7 @@ fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean 
                     Text(stringResource(R.string.analytics_weekends), fontSize = 14.sp, color = TextSecondary)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        if (isPrivacyMode) "••••••" else format.format(weekendsSum),
+                        if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format(Locale.getDefault(), "%,.0f", weekendsSum)}",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
@@ -400,9 +409,9 @@ fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean 
 }
 
 @Composable
-fun SpendingBarChart(points: List<SpendingPoint>, isPrivacyMode: Boolean) {
+fun SpendingBarChart(points: List<SpendingPoint>, isPrivacyMode: Boolean, appCurrency: String = "USD") {
     val textMeasurer = rememberTextMeasurer()
-    val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
+    val currencySymbol = getCurrencySymbol(appCurrency)
     
     val maxVal = points.maxOfOrNull { it.value } ?: 0.0
     val yMax = if (maxVal <= 0) 10.0 else maxVal * 1.1
@@ -442,8 +451,7 @@ fun SpendingBarChart(points: List<SpendingPoint>, isPrivacyMode: Boolean) {
             
             // Draw Value on Top
             val valStr = if (isPrivacyMode) "•••" else {
-                val fStr = format.format(point.value)
-                fStr.replace(".00", "") // Simplified
+                "$currencySymbol${String.format(Locale.getDefault(), "%,.0f", point.value)}"
             }
             val valStyle = TextStyle(fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
             val valMeasurer = textMeasurer.measure(valStr, valStyle)
@@ -472,7 +480,7 @@ fun SpendingBarChart(points: List<SpendingPoint>, isPrivacyMode: Boolean) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean = false) {
+fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean = false, appCurrency: String = "USD") {
     var selectedPeriod by remember { mutableStateOf(RevenuePeriod.WEEKLY) }
     var showPeriodSheet by remember { mutableStateOf(false) }
     
@@ -556,7 +564,7 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
     val avgValue = totalRevenue / divisor
     val peakPoint = points.maxByOrNull { it.value }
 
-    val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
+    val currencySymbol = getCurrencySymbol(appCurrency)
 
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -620,7 +628,7 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
                     Text(stringResource(R.string.analytics_average), fontSize = 12.sp, color = TextSecondary)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        if (isPrivacyMode) "••••••" else format.format(avgValue).replace(".00", ""),
+                        if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format(Locale.getDefault(), "%,.0f", avgValue)}",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
@@ -635,7 +643,7 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
                     Text(stringResource(R.string.analytics_highest), fontSize = 12.sp, color = TextSecondary)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        if (isPrivacyMode) "••••••" else if (peakPoint != null) format.format(peakPoint.value).replace(".00", "") else "$0",
+                        if (isPrivacyMode) "$currencySymbol••••••" else if (peakPoint != null) "$currencySymbol${String.format(Locale.getDefault(), "%,.0f", peakPoint.value)}" else "${currencySymbol}0",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
@@ -650,7 +658,7 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
                     Text(stringResource(R.string.analytics_total), fontSize = 12.sp, color = TextSecondary)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        if (isPrivacyMode) "••••••" else format.format(totalRevenue).replace(".00", ""),
+                        if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format(Locale.getDefault(), "%,.0f", totalRevenue)}",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
@@ -708,7 +716,6 @@ fun RevenueView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean =
 @Composable
 fun RevenueLineChart(points: List<RevenuePoint>, isPrivacyMode: Boolean = false) {
     val textMeasurer = rememberTextMeasurer()
-    val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
     
     val maxVal = points.maxOfOrNull { it.value } ?: 0.0
     val yMax = if (maxVal <= 0) 100.0 else maxVal * 1.15

@@ -250,13 +250,15 @@ fun SettingsScreen(
                 if (settingsMode != SettingsMode.PRO && 
                     settingsMode != SettingsMode.PROFILE && 
                     settingsMode != SettingsMode.BACKUP && 
-                    settingsMode != SettingsMode.FEEDBACK
+                    settingsMode != SettingsMode.FEEDBACK &&
+                    settingsMode != SettingsMode.RATING
                 ) Modifier.padding(horizontal = 24.dp) else Modifier
             )
     ) {
         if (settingsMode != SettingsMode.PROFILE && 
             settingsMode != SettingsMode.BACKUP && 
-            settingsMode != SettingsMode.FEEDBACK
+            settingsMode != SettingsMode.FEEDBACK &&
+            settingsMode != SettingsMode.RATING
         ) {
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -488,6 +490,14 @@ fun DetailSettingsView(
         )
         return
     }
+
+    if (mode == SettingsMode.RATING) {
+        RateAppView(
+            onBack = onBack,
+            onNavigateToFeedback = { onNavigate(SettingsMode.FEEDBACK) }
+        )
+        return
+    }
     
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -505,6 +515,7 @@ fun DetailSettingsView(
             Text(
                 text = when(mode) {
                     SettingsMode.LANGUAGE -> stringResource(R.string.language)
+                    SettingsMode.CURRENCY -> stringResource(R.string.currency)
                     SettingsMode.FEEDBACK -> stringResource(R.string.community_feedback)
                     SettingsMode.RATING -> stringResource(R.string.rate_app_title)
                     SettingsMode.BACKUP -> stringResource(R.string.backup_data_title)
@@ -523,6 +534,10 @@ fun DetailSettingsView(
         Spacer(modifier = Modifier.height(16.dp))
 
         when (mode) {
+
+            SettingsMode.CURRENCY -> {
+                CurrencySettingsView(viewModel = viewModel, onBack = onBack)
+            }
             SettingsMode.LANGUAGE -> {
                 Column(
                     modifier = Modifier
@@ -581,102 +596,6 @@ fun DetailSettingsView(
                             AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ar-EG"))
                         }
                     )
-                }
-            }
-            SettingsMode.RATING -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    var rating by remember { mutableIntStateOf(0) }
-                    
-                    Box(
-                        modifier = Modifier.fillMaxWidth().height(110.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.img_settings_rate),
-                            contentDescription = stringResource(R.string.rate_illustration),
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .clip(RoundedCornerShape(16.dp)),
-                            contentScale = ContentScale.Fit
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    Text(
-                        text = stringResource(R.string.enjoying_piggy_ledger),
-                        fontSize = 14.sp,
-                        color = TextLight,
-                        lineHeight = 20.sp
-                    )
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        for (i in 1..5) {
-                            IconButton(
-                                onClick = { rating = i },
-                                modifier = Modifier.size(56.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (i <= rating) Icons.Default.Star else Icons.Outlined.Star,
-                                    contentDescription = "Star $i",
-                                    tint = if (i <= rating) PinkPrimary else Color(0xFFCBD5E1),
-                                    modifier = Modifier.size(40.dp)
-                                )
-                            }
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(32.dp))
-                    
-                    Button(
-                        onClick = {
-                            try {
-                                com.posthog.PostHog.capture(
-                                    "user_rated_app",
-                                    properties = mapOf("stars" to rating)
-                                )
-                            } catch (e: Throwable) {
-                                // ignore
-                            }
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.rating_submitted_thanks), Toast.LENGTH_SHORT)
-                            val packageName = context.packageName
-                            try {
-                                val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY or Intent.FLAG_ACTIVITY_NEW_DOCUMENT or Intent.FLAG_ACTIVITY_MULTIPLE_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(marketIntent)
-                            } catch (e: Exception) {
-                                try {
-                                    val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName")).apply {
-                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    }
-                                    context.startActivity(webIntent)
-                                } catch (ex: Exception) {
-                                    com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Could not open Google Play Store", Toast.LENGTH_SHORT)
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = PinkPrimary,
-                            contentColor = Color.White
-                        ),
-                        enabled = rating > 0
-                    ) {
-                        Text(stringResource(R.string.send_rating), fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                    }
                 }
             }
             SettingsMode.SECURITY -> {
@@ -1410,9 +1329,9 @@ fun PiggyLedgerPaywall(
                     PaywallPlan.values().forEach { plan ->
                         val isSelected = selectedPlan == plan
                         val pMeta = when (plan) {
-                            PaywallPlan.MONTHLY -> Pair("Monthly", null as String?)
-                            PaywallPlan.YEARLY -> Pair("Yearly", "SAVE 17%")
-                            PaywallPlan.LIFETIME -> Pair("Lifetime", "BEST VALUE")
+                            PaywallPlan.MONTHLY -> Pair(stringResource(R.string.plan_monthly), null as String?)
+                            PaywallPlan.YEARLY -> Pair(stringResource(R.string.plan_yearly), stringResource(R.string.save_17_percent_caps))
+                            PaywallPlan.LIFETIME -> Pair(stringResource(R.string.plan_lifetime), stringResource(R.string.best_value_caps))
                         }
 
                         Box(
@@ -1463,7 +1382,7 @@ fun PiggyLedgerPaywall(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Features",
+                            text = stringResource(R.string.billing_table_features),
                             color = Color(0xFF64748B),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -1471,7 +1390,7 @@ fun PiggyLedgerPaywall(
                         )
 
                         Text(
-                            text = "Free",
+                            text = stringResource(R.string.billing_table_free),
                             color = Color(0xFF64748B),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -1609,7 +1528,7 @@ fun PiggyLedgerPaywall(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "Retry",
+                                    text = stringResource(R.string.retry),
                                     color = Color(0xFFE11D48),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold
@@ -1644,9 +1563,9 @@ fun PiggyLedgerPaywall(
                                             if (active) {
                                                 viewModel.setPremiumStatus(true)
                                                 onPurchaseSuccess(info)
-                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Pro features restored!", Toast.LENGTH_LONG)
+                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.billing_pro_restored), Toast.LENGTH_LONG)
                                             } else {
-                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "No active subscription found.", Toast.LENGTH_LONG)
+                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.billing_no_active_sub), Toast.LENGTH_LONG)
                                             }
                                         }
                                         override fun onError(error: com.revenuecat.purchases.PurchasesError) {
@@ -1660,7 +1579,7 @@ fun PiggyLedgerPaywall(
                                 com.oryno.piggy_ledger.ui.ToastUtil.show(context, errorMsg, Toast.LENGTH_LONG)
                             }
                         } else {
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "In-App Billing is not available on this device.", Toast.LENGTH_LONG)
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.billing_not_available), Toast.LENGTH_LONG)
                         }
                     }
                     .padding(horizontal = 12.dp, vertical = 6.dp)
@@ -1696,12 +1615,12 @@ fun PiggyLedgerPaywall(
                                                          customerInfo.entitlements["Piggy Ledger Pro"]?.isActive == true ||
                                                          customerInfo.entitlements["pro"]?.isActive == true ||
                                                          customerInfo.entitlements["premium"]?.isActive == true
-                                            if (active) {
+                                             if (active) {
                                                 viewModel.setPremiumStatus(true)
                                                 onPurchaseSuccess(customerInfo)
-                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Welcome to Pro! All features unlocked.", android.widget.Toast.LENGTH_SHORT)
+                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.billing_welcome_pro), android.widget.Toast.LENGTH_SHORT)
                                             } else {
-                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Purchase completed.", android.widget.Toast.LENGTH_SHORT)
+                                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.billing_purchase_completed), android.widget.Toast.LENGTH_SHORT)
                                             }
                                         }
                                         override fun onError(error: com.revenuecat.purchases.PurchasesError, userCancelled: Boolean) {
@@ -1721,16 +1640,16 @@ fun PiggyLedgerPaywall(
                                 com.oryno.piggy_ledger.ui.ToastUtil.show(context, errorMsg, android.widget.Toast.LENGTH_LONG)
                             }
                         } else {
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Google Play Billing is initializing. Please try again in a moment.", android.widget.Toast.LENGTH_LONG)
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.billing_initializing), android.widget.Toast.LENGTH_LONG)
                             refreshBillingTrigger++
                         }
                     } else {
                         val msg = when {
                             !BillingErrorHandler.isOnline(context) -> context.getString(R.string.billing_error_offline)
-                            isLoadingOfferings -> "Loading plans from Google Play..."
+                            isLoadingOfferings -> context.getString(R.string.billing_loading_plans)
                             fetchError != null -> fetchError ?: context.getString(R.string.billing_error_general)
-                            packagesList.isEmpty() -> "No active billing products found in Google Play."
-                            else -> "Selected plan is currently unavailable."
+                            packagesList.isEmpty() -> context.getString(R.string.billing_no_products)
+                            else -> context.getString(R.string.billing_error_product_unavailable)
                         }
                         com.oryno.piggy_ledger.ui.ToastUtil.show(context, msg, android.widget.Toast.LENGTH_LONG)
                         refreshBillingTrigger++

@@ -1,4 +1,5 @@
 package com.oryno.piggy_ledger.ui
+import com.oryno.piggy_ledger.ui.getCurrencySymbol
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -48,6 +49,7 @@ fun MyGoalsScreen(
     val goals by viewModel.goals.collectAsState()
     val allTransactions by viewModel.allTransactions.collectAsState()
     val isPrivacyMode by viewModel.isPrivacyModeEnabled.collectAsState()
+    val appCurrency by viewModel.appCurrency.collectAsState()
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     
@@ -303,7 +305,8 @@ fun MyGoalsScreen(
                         transactions = goalTransactions, 
                         isPrivacyMode = isPrivacyMode,
                         onClick = { onNavigateToGoal(goal.id) },
-                        onDeleteClick = { goalToDelete = goal }
+                        onDeleteClick = { goalToDelete = goal },
+                        appCurrency = appCurrency
                     )
                 }
             }
@@ -312,7 +315,7 @@ fun MyGoalsScreen(
 }
 
 @Composable
-fun GoalCard(goal: Goal, transactions: List<Transaction>, isPrivacyMode: Boolean, onClick: () -> Unit, onDeleteClick: () -> Unit) {
+fun GoalCard(goal: Goal, transactions: List<Transaction>, isPrivacyMode: Boolean, onClick: () -> Unit, onDeleteClick: () -> Unit, appCurrency: String = "USD") {
     val savedAmount = transactions.sumOf { it.amount }
     val isOpenSavings = goal.targetAmount <= 0.0
     val progress = if (goal.targetAmount > 0) (savedAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f) else 0f
@@ -345,9 +348,9 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, isPrivacyMode: Boolean
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = if (isPrivacyMode) {
-                            if (isOpenSavings) stringResource(R.string.open_savings) else stringResource(R.string.target) + " $••••••"
+                            if (isOpenSavings) stringResource(R.string.open_savings) else stringResource(R.string.target) + " ${getCurrencySymbol(appCurrency)}••••••"
                         } else {
-                            if (isOpenSavings) stringResource(R.string.open_savings) else stringResource(R.string.target) + " $${String.format("%.0f", goal.targetAmount)}"
+                            if (isOpenSavings) stringResource(R.string.open_savings) else stringResource(R.string.target) + " ${getCurrencySymbol(appCurrency)}${String.format("%.0f", goal.targetAmount)}"
                         },
                         fontSize = 12.sp,
                         color = TextLight
@@ -418,15 +421,16 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, isPrivacyMode: Boolean
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                val sym = getCurrencySymbol(appCurrency)
                 val remaining = goal.targetAmount - savedAmount
                 val savedText = if (isPrivacyMode) {
-                    stringResource(R.string.amount_saved, "••••••")
+                    stringResource(R.string.amount_saved, "$sym••••••")
                 } else if (isOpenSavings) {
-                    stringResource(R.string.amount_saved, String.format("%.2f", savedAmount))
+                    stringResource(R.string.amount_saved, "$sym${String.format("%.2f", savedAmount)}")
                 } else if (remaining < 0) {
-                    stringResource(R.string.amount_total_extra, String.format("%.2f", savedAmount), String.format("%.2f", -remaining))
+                    stringResource(R.string.amount_total_extra, "$sym${String.format("%.2f", savedAmount)}", "$sym${String.format("%.2f", -remaining)}")
                 } else {
-                    stringResource(R.string.amount_saved, String.format("%.2f", savedAmount))
+                    stringResource(R.string.amount_saved, "$sym${String.format("%.2f", savedAmount)}")
                 }
                 Text(
                     text = savedText,
@@ -437,7 +441,7 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, isPrivacyMode: Boolean
                 
                 if (remaining > 0 && !isOpenSavings) {
                     Text(
-                        text = if (isPrivacyMode) stringResource(R.string.remaining_left, "••••••") else stringResource(R.string.remaining_left, String.format("%.2f", remaining)),
+                        text = if (isPrivacyMode) stringResource(R.string.remaining_left, "$sym••••••") else stringResource(R.string.remaining_left, "$sym${String.format("%.2f", remaining)}"),
                         color = NavyDark,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp

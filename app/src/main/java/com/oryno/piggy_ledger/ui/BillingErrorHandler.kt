@@ -45,11 +45,11 @@ object BillingErrorHandler {
 
         return when (error.code) {
             PurchasesErrorCode.PurchaseCancelledError -> ""
-            PurchasesErrorCode.StoreProblemError -> "Google Play is temporarily unavailable. Please try again later."
-            PurchasesErrorCode.ProductNotAvailableForPurchaseError -> "This subscription plan is currently unavailable."
-            PurchasesErrorCode.PurchaseNotAllowedError -> "In-app purchases are not allowed on this device."
-            PurchasesErrorCode.PurchaseInvalidError -> "Invalid purchase details. Please try again."
-            PurchasesErrorCode.PaymentPendingError -> "Payment is currently pending. Please check Google Play."
+            PurchasesErrorCode.StoreProblemError -> context.getString(R.string.billing_error_store_problem)
+            PurchasesErrorCode.ProductNotAvailableForPurchaseError -> context.getString(R.string.billing_error_product_unavailable)
+            PurchasesErrorCode.PurchaseNotAllowedError -> context.getString(R.string.billing_error_purchase_not_allowed)
+            PurchasesErrorCode.PurchaseInvalidError -> context.getString(R.string.billing_error_purchase_invalid)
+            PurchasesErrorCode.PaymentPendingError -> context.getString(R.string.billing_error_payment_pending)
             else -> {
                 if (error.message.isNotBlank()) {
                     error.message

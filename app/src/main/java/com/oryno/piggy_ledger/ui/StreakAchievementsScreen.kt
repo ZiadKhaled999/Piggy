@@ -51,6 +51,7 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
+import androidx.compose.ui.res.stringResource
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -125,14 +126,14 @@ fun StreakAchievementsScreen(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.back_icon),
                         tint = Color(0xFF0F172A),
                         modifier = Modifier.size(20.dp)
                     )
                 }
 
                 Text(
-                    text = "Achievements",
+                    text = stringResource(R.string.achievements_title),
                     color = Color(0xFF0F172A),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
@@ -206,7 +207,7 @@ fun StreakAchievementsScreen(
 
             // Streak Title
             Text(
-                text = "$currentStreak-Day Streak!",
+                text = stringResource(R.string.streak_days_format, currentStreak),
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Black,
                 color = Color(0xFF0F172A),
@@ -217,9 +218,9 @@ fun StreakAchievementsScreen(
 
             // Motivational Subtitle
             Text(
-                text = if (currentStreak >= 7) "A week of wins! Let's keep that flame alive 🔥"
-                else if (currentStreak > 0) "Great consistency! Keep logging your finances daily"
-                else "Start your streak today by logging a transaction or updating your ledger!",
+                text = if (currentStreak >= 7) stringResource(R.string.streak_sub_week_of_wins)
+                else if (currentStreak > 0) stringResource(R.string.streak_sub_keep_consistency)
+                else stringResource(R.string.streak_sub_start_today),
                 fontSize = 14.sp,
                 color = Color(0xFF64748B),
                 textAlign = TextAlign.Center,
@@ -251,7 +252,7 @@ fun StreakAchievementsScreen(
                         )
                         Spacer(Modifier.width(3.dp))
                         Text(
-                            text = "Streak",
+                            text = stringResource(R.string.streak_legend_active),
                             fontSize = if (isCompact) 11.sp else 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF334155)
@@ -267,7 +268,7 @@ fun StreakAchievementsScreen(
                         )
                         Spacer(Modifier.width(3.dp))
                         Text(
-                            text = "Freezed",
+                            text = stringResource(R.string.streak_legend_frozen),
                             fontSize = if (isCompact) 11.sp else 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF0284C7)
@@ -283,7 +284,7 @@ fun StreakAchievementsScreen(
                         )
                         Spacer(Modifier.width(3.dp))
                         Text(
-                            text = "Missed",
+                            text = stringResource(R.string.streak_legend_missed),
                             fontSize = if (isCompact) 11.sp else 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFE11D48)
@@ -300,7 +301,7 @@ fun StreakAchievementsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "🏆 $longestStreak d",
+                                text = stringResource(R.string.streak_legend_longest_days, longestStreak),
                                 fontSize = if (isCompact) 11.sp else 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFC2410C)
@@ -323,7 +324,7 @@ fun StreakAchievementsScreen(
                         .fillMaxWidth()
                         .padding(horizontal = if (isCompact) 8.dp else 14.dp, vertical = 16.dp)
                 ) {
-                    val monthNameFormat = SimpleDateFormat("MMMM yyyy", Locale.US)
+                    val monthNameFormat = remember { SimpleDateFormat("MMMM yyyy", Locale.getDefault()) }
                     val monthTitle = monthNameFormat.format(displayCalendar.time)
 
                     val todayCal = Calendar.getInstance()
@@ -345,7 +346,7 @@ fun StreakAchievementsScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                contentDescription = "Previous Month",
+                                contentDescription = null,
                                 tint = Color(0xFF0F172A),
                                 modifier = Modifier.size(22.dp)
                             )
@@ -373,7 +374,7 @@ fun StreakAchievementsScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = "Next Month",
+                                contentDescription = null,
                                 tint = if (!isCurrentMonth) Color(0xFF0F172A) else Color(0xFFCBD5E1),
                                 modifier = Modifier.size(22.dp)
                             )
@@ -383,7 +384,11 @@ fun StreakAchievementsScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Day Name Headers (Mon - Sun, balanced across 7 columns)
-                    val daysOfWeek = listOf("M", "T", "W", "T", "F", "S", "S")
+                    val daysOfWeek = if (Locale.getDefault().language.startsWith("ar")) {
+                        listOf("ن", "ث", "ر", "خ", "ج", "س", "ح")
+                    } else {
+                        listOf("M", "T", "W", "T", "F", "S", "S")
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceAround
@@ -509,7 +514,7 @@ fun StreakAchievementsScreen(
                                                     cell.isCompleted -> {
                                                         Image(
                                                             painter = painterResource(id = R.drawable.streak),
-                                                            contentDescription = "Active Streak",
+                                                            contentDescription = stringResource(R.string.streak_active_label),
                                                             modifier = Modifier.size(minOf(cellSize * 0.88f, 34.dp))
                                                         )
                                                     }
@@ -522,7 +527,7 @@ fun StreakAchievementsScreen(
                                                         ) {
                                                             Image(
                                                                 painter = painterResource(id = R.drawable.streak_frozen),
-                                                                contentDescription = "Frozen Streak",
+                                                                contentDescription = stringResource(R.string.streak_frozen_label),
                                                                 modifier = Modifier.size(minOf(cellSize * 0.78f, 30.dp))
                                                             )
                                                         }
@@ -536,7 +541,7 @@ fun StreakAchievementsScreen(
                                                         ) {
                                                             Image(
                                                                 painter = painterResource(id = R.drawable.streak_missed),
-                                                                contentDescription = "Missed Streak",
+                                                                contentDescription = stringResource(R.string.streak_missed_label),
                                                                 modifier = Modifier.size(minOf(cellSize * 0.75f, 28.dp))
                                                             )
                                                         }
@@ -597,12 +602,12 @@ fun StreakAchievementsScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Share,
-                    contentDescription = "Share My Streak",
+                    contentDescription = stringResource(R.string.streak_share_btn),
                     modifier = Modifier.size(22.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Share My Streak",
+                    text = stringResource(R.string.streak_share_btn),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -648,7 +653,7 @@ fun StreakAchievementsScreen(
                         ) {
                             Image(
                                 bitmap = streakBitmap!!.asImageBitmap(),
-                                contentDescription = "Streak Preview",
+                                contentDescription = stringResource(R.string.streak_preview),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .aspectRatio(1080f / 1280f)
@@ -675,7 +680,7 @@ fun StreakAchievementsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Share your streak",
+                                    text = stringResource(R.string.streak_share_modal_title),
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF0F172A)
@@ -688,7 +693,7 @@ fun StreakAchievementsScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
-                                        contentDescription = "Close",
+                                        contentDescription = stringResource(R.string.close),
                                         tint = Color(0xFF334155),
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -718,14 +723,14 @@ fun StreakAchievementsScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Comment,
-                                            contentDescription = "Messages",
+                                            contentDescription = stringResource(R.string.streak_share_messages),
                                             tint = Color.White,
                                             modifier = Modifier.size(28.dp)
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "Messages",
+                                        text = stringResource(R.string.streak_share_messages),
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = Color(0xFF475569)
@@ -741,23 +746,23 @@ fun StreakAchievementsScreen(
                                             .clickable {
                                                 val saved = StreakShareHelper.saveImageToGallery(context, streakBitmap!!)
                                                 if (saved) {
-                                                    Toast.makeText(context, "Saved to Gallery! 📸", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, context.getString(R.string.streak_saved_to_gallery), Toast.LENGTH_SHORT).show()
                                                 } else {
-                                                    Toast.makeText(context, "Failed to save image", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, context.getString(R.string.streak_failed_save_image), Toast.LENGTH_SHORT).show()
                                                 }
                                             },
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.ArrowDownward,
-                                            contentDescription = "Save Image",
+                                            contentDescription = stringResource(R.string.streak_share_save_image),
                                             tint = Color(0xFF0F172A),
                                             modifier = Modifier.size(28.dp)
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "Save Image",
+                                        text = stringResource(R.string.streak_share_save_image),
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = Color(0xFF475569)
@@ -777,14 +782,14 @@ fun StreakAchievementsScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.MoreHoriz,
-                                            contentDescription = "More",
+                                            contentDescription = stringResource(R.string.streak_share_more),
                                             tint = Color(0xFF0F172A),
                                             modifier = Modifier.size(28.dp)
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "More",
+                                        text = stringResource(R.string.streak_share_more),
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = Color(0xFF475569)

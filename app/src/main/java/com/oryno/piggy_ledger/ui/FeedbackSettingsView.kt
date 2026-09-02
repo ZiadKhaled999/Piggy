@@ -58,17 +58,17 @@ fun FeedbackSettingsView(
     val authUserName by viewModel.authUserName.collectAsStateWithLifecycle()
     val authUserEmail by viewModel.authUserEmail.collectAsStateWithLifecycle()
 
-    val categories = remember {
+    val categoryList = remember {
         listOf(
-            "Bug Report",
-            "Feature Request",
-            "UI / UX",
-            "Sync & Data",
-            "Billing / Pro",
-            "Others"
+            Pair(R.string.feedback_cat_bug_report, "Bug Report"),
+            Pair(R.string.feedback_cat_feature_request, "Feature Request"),
+            Pair(R.string.feedback_cat_ui_ux, "UI / UX"),
+            Pair(R.string.feedback_cat_sync_data, "Sync & Data"),
+            Pair(R.string.feedback_cat_billing_pro, "Billing / Pro"),
+            Pair(R.string.feedback_cat_others, "Others")
         )
     }
-    var selectedCategory by remember { mutableStateOf("Bug Report") }
+    var selectedCategoryTechnical by remember { mutableStateOf("Bug Report") }
     var feedbackMessage by remember { mutableStateOf("") }
 
     Column(
@@ -94,7 +94,7 @@ fun FeedbackSettingsView(
             }
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "Tell us the problem",
+                text = stringResource(R.string.tell_us_problem),
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Bold,
                 color = NavyDark
@@ -111,7 +111,7 @@ fun FeedbackSettingsView(
         ) {
             // Category Label
             Text(
-                text = "Category",
+                text = stringResource(R.string.feedback_category_label),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = NavyDark
@@ -126,8 +126,9 @@ fun FeedbackSettingsView(
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                categories.forEach { category ->
-                    val isSelected = selectedCategory == category
+                categoryList.forEach { (resId, techName) ->
+                    val isSelected = selectedCategoryTechnical == techName
+                    val localizedLabel = stringResource(resId)
                     Box(
                         modifier = Modifier
                             .clip(CircleShape)
@@ -136,7 +137,7 @@ fun FeedbackSettingsView(
                                 if (!isSelected) Modifier.border(1.dp, Color(0xFFE2E8F0), CircleShape)
                                 else Modifier
                             )
-                            .clickable { selectedCategory = category }
+                            .clickable { selectedCategoryTechnical = techName }
                             .padding(
                                 horizontal = 14.dp,
                                 vertical = 7.dp
@@ -144,7 +145,7 @@ fun FeedbackSettingsView(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = category,
+                            text = localizedLabel,
                             fontSize = 12.5.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                             color = if (isSelected) Color.White else NavyDark,
@@ -161,7 +162,7 @@ fun FeedbackSettingsView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Details",
+                    text = stringResource(R.string.feedback_details_label),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = NavyDark
@@ -195,7 +196,7 @@ fun FeedbackSettingsView(
                         onValueChange = { if (it.length <= 5000) feedbackMessage = it },
                         placeholder = {
                             Text(
-                                text = "Explain what happened, or share suggestions.",
+                                text = stringResource(R.string.feedback_details_placeholder),
                                 color = TextLight,
                                 fontSize = 13.5.sp
                             )
@@ -241,7 +242,7 @@ fun FeedbackSettingsView(
             Button(
                 onClick = {
                     if (feedbackMessage.isBlank()) {
-                        ToastUtil.show(context, "Please enter details of the problem", Toast.LENGTH_SHORT)
+                        ToastUtil.show(context, context.getString(R.string.feedback_error_empty), Toast.LENGTH_SHORT)
                         return@Button
                     }
 
@@ -249,7 +250,7 @@ fun FeedbackSettingsView(
                         com.posthog.PostHog.capture(
                             "user_feedback_submitted",
                             properties = mapOf(
-                                "category" to selectedCategory,
+                                "category" to selectedCategoryTechnical,
                                 "message_length" to feedbackMessage.length
                             )
                         )
@@ -259,8 +260,8 @@ fun FeedbackSettingsView(
 
                     val senderName = authUserName.ifBlank { "User" }
                     val senderEmail = authUserEmail.ifBlank { "Not provided" }
-                    val subject = "[$selectedCategory] Piggy Ledger Feedback"
-                    val body = "Name: $senderName\nEmail: $senderEmail\nCategory: $selectedCategory\n\nDetails:\n$feedbackMessage"
+                    val subject = "[$selectedCategoryTechnical] Piggy Ledger Feedback"
+                    val body = "Name: $senderName\nEmail: $senderEmail\nCategory: $selectedCategoryTechnical\n\nDetails:\n$feedbackMessage"
 
                     val recipientEmail = "contact@piggyapp.top"
                     val mailtoUri = Uri.parse("mailto:$recipientEmail?subject=${Uri.encode(subject)}&body=${Uri.encode(body)}")
@@ -288,17 +289,17 @@ fun FeedbackSettingsView(
                             context.startActivity(fallbackIntent)
                         } catch (e2: Exception) {
                             try {
-                                val chooserIntent = Intent.createChooser(fallbackIntent, "Send Feedback").apply {
+                                val chooserIntent = Intent.createChooser(fallbackIntent, context.getString(R.string.feedback_send_chooser_title)).apply {
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }
                                 context.startActivity(chooserIntent)
                             } catch (e3: Exception) {
-                                ToastUtil.show(context, "Could not open email app", Toast.LENGTH_SHORT)
+                                ToastUtil.show(context, context.getString(R.string.feedback_cannot_open_email), Toast.LENGTH_SHORT)
                             }
                         }
                     }
 
-                    ToastUtil.show(context, "Thank you! Redirecting to email...", Toast.LENGTH_SHORT)
+                    ToastUtil.show(context, context.getString(R.string.feedback_redirecting_email), Toast.LENGTH_SHORT)
                     feedbackMessage = ""
                 },
                 modifier = Modifier
@@ -321,7 +322,7 @@ fun FeedbackSettingsView(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Submit",
+                        text = stringResource(R.string.feedback_submit_btn),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )

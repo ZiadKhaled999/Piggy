@@ -34,16 +34,21 @@ fun AnimatedSplashScreen(onSplashFinished: () -> Unit) {
         label = "path_progress"
     )
 
+    var startFadeOut by remember { mutableStateOf(false) }
+
     val fadeOut = animateFloatAsState(
-        targetValue = if (pathProgress.value == 1f) 0f else 1f,
-        animationSpec = tween(durationMillis = 500, delayMillis = 500),
-        label = "fade_out",
-        finishedListener = { onSplashFinished() }
+        targetValue = if (startFadeOut) 0f else 1f,
+        animationSpec = tween(durationMillis = 500),
+        label = "fade_out"
     )
 
     LaunchedEffect(Unit) {
         delay(300)
         startAnimation = true
+        delay(1500)
+        startFadeOut = true
+        delay(500)
+        onSplashFinished()
     }
 
     Box(

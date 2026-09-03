@@ -250,6 +250,8 @@ class UserPreferences(private val context: Context) {
             val user = com.clerk.api.Clerk.userFlow.value
             val userId = user?.id ?: "local_user"
             val prefs = context.dataStore.data.first()
+            val dao = PiggyLedgerDatabase.getInstance(context.applicationContext).piggyLedgerDao()
+            val existing = dao.getUserPreferencesByUserId(userId)
             val entity = UserPreferencesEntity(
                 userId = userId,
                 hasOnboarded = prefs[HAS_ONBOARDED] ?: false,
@@ -266,10 +268,10 @@ class UserPreferences(private val context: Context) {
                 isLifetimePremium = prefs[IS_LIFETIME_PREMIUM] ?: false,
                 preferredAccountId = prefs[PREFERRED_ACCOUNT_ID],
                 appCurrency = prefs[APP_CURRENCY] ?: "USD",
+                createdAt = existing?.createdAt ?: System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
                 isSynced = false
             )
-            val dao = PiggyLedgerDatabase.getInstance(context.applicationContext).piggyLedgerDao()
             dao.insertUserPreferences(entity)
             triggerSync(context)
         } catch (e: Exception) {
@@ -305,12 +307,14 @@ class UserPreferences(private val context: Context) {
             val hasOnboarded = prefs[HAS_ONBOARDED] ?: true
             val hasLanguageSelected = prefs[HAS_LANGUAGE_SELECTED] ?: true
             val hasHeardAboutUs = prefs[HAS_HEARD_ABOUT_US] ?: true
+            val appCurrency = prefs[APP_CURRENCY] ?: "USD"
 
             prefs.clear()
 
             prefs[HAS_ONBOARDED] = hasOnboarded
             prefs[HAS_LANGUAGE_SELECTED] = hasLanguageSelected
             prefs[HAS_HEARD_ABOUT_US] = hasHeardAboutUs
+            prefs[APP_CURRENCY] = appCurrency
         }
     }
 

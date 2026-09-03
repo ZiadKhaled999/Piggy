@@ -149,61 +149,45 @@ class SyncManager(private val context: Context) {
     private suspend fun syncUserPreferences(userId: String, authHeader: String): Boolean {
         val tableName = "user_preferences"
         
-        // 1. Pull remote first to see if the user already has saved preferences in the cloud
+        // 1. Pull remote preferences from cloud database
         val remote: List<UserPreferencesEntity>? = pullRemote(tableName, authHeader)
         val pullOk = remote != null
         val remoteItem = remote?.firstOrNull { it.userId == userId }
         
         val localItem = dao.getUserPreferencesByUserId(userId)
         
-        // 2. Determine if remote should override local
-        val shouldAdoptRemote = if (remoteItem == null) {
-            false
-        } else if (localItem == null) {
-            true
-        } else {
-            // A local preference is a fresh default if it has "USD" as currency AND was created recently (last 5 mins)
-            val isLocalFreshDefault = (localItem.appCurrency == "USD") && 
-                    (System.currentTimeMillis() - localItem.updatedAt < 300000)
-            isLocalFreshDefault || (remoteItem.updatedAt > localItem.updatedAt)
-        }
+        // Check if there is an intentional unsynced edit made by this authenticated user locally
+        val hasPendingLocalUserEdit = localItem != null && !localItem.isSynced && (remoteItem == null || localItem.updatedAt > remoteItem.updatedAt)
         
         var pushOk = true
         
-        if (shouldAdoptRemote && remoteItem != null) {
-            Log.i("SyncManager", "☁️ Overwriting local preferences with cloud preferences (currency: ${remoteItem.appCurrency})")
+        if (hasPendingLocalUserEdit && localItem != null) {
+            // The user actively changed preferences on this device while logged in. Push to cloud.
+            Log.i("SyncManager", "☁️ Pushing updated local preferences to cloud (currency: ${localItem.appCurrency})")
+            val toPush = listOf(localItem.copy(userId = userId, isSynced = true))
+            pushOk = pushRemote(tableName, authHeader, toPush)
+            if (pushOk) {
+                dao.insertUserPreferences(localItem.copy(isSynced = true))
+                dao.deleteUserPreferencesByUserId("local_user")
+            }
+        } else if (remoteItem != null) {
+            // Cloud has saved preferences for this user. Cloud is the single source of truth.
+            Log.i("SyncManager", "☁️ Adopting cloud preferences (currency: ${remoteItem.appCurrency})")
             dao.insertUserPreferences(remoteItem.copy(isSynced = true))
             UserPreferences(context).applyFromEntity(remoteItem)
-            
-            // Clean up any remaining local_user entry
             dao.deleteUserPreferencesByUserId("local_user")
         } else {
-            // Local is newer, or there's no remote preference. We push local.
-            val rawUnsynced = dao.getUnsyncedUserPreferences()
-            val unsynced = mutableListOf<UserPreferencesEntity>()
-            var hadLocalUser = false
-            
-            for (item in rawUnsynced) {
-                if (item.userId == "local_user") {
-                    hadLocalUser = true
-                }
-                unsynced.add(item.copy(userId = userId, isSynced = true))
-            }
-            
-            if (unsynced.isNotEmpty()) {
-                pushOk = pushRemote(tableName, authHeader, unsynced)
+            // Brand new cloud user: no remote preferences exist yet in the database.
+            // Check if we have local preferences to initialize their cloud account.
+            val localToInit = localItem ?: dao.getUserPreferencesByUserId("local_user")
+            if (localToInit != null) {
+                Log.i("SyncManager", "☁️ Initializing new cloud user preferences (currency: ${localToInit.appCurrency})")
+                val toPush = listOf(localToInit.copy(userId = userId, isSynced = true))
+                pushOk = pushRemote(tableName, authHeader, toPush)
                 if (pushOk) {
-                    dao.insertUserPreferencesList(unsynced)
-                    if (hadLocalUser) {
-                        dao.deleteUserPreferencesByUserId("local_user")
-                    }
+                    dao.insertUserPreferences(localToInit.copy(userId = userId, isSynced = true))
+                    dao.deleteUserPreferencesByUserId("local_user")
                 }
-            }
-            
-            // Just in case remote has different updates that we need to apply (timestamp wins)
-            if (remoteItem != null && localItem != null && remoteItem.updatedAt > localItem.updatedAt) {
-                dao.insertUserPreferences(remoteItem.copy(isSynced = true))
-                UserPreferences(context).applyFromEntity(remoteItem)
             }
         }
         
@@ -224,10 +208,12 @@ class SyncManager(private val context: Context) {
                 mappedUnsynced.add(item.copy(userId = userId, isSynced = true))
             }
         }
+        
+        val uniqueMappedUnsynced = mappedUnsynced.distinctBy { it.id }
 
-        val pushOk = pushRemote(tableName, authHeader, mappedUnsynced)
+        val pushOk = pushRemote(tableName, authHeader, uniqueMappedUnsynced)
         if (pushOk) {
-            if (mappedUnsynced.isNotEmpty()) dao.insertStreakDates(mappedUnsynced)
+            if (uniqueMappedUnsynced.isNotEmpty()) dao.insertStreakDates(uniqueMappedUnsynced)
             for (oldId in idsToDelete) {
                 dao.deleteStreakDateById(oldId)
             }

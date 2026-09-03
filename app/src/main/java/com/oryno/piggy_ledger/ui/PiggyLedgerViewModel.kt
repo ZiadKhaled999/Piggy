@@ -394,7 +394,8 @@ class PiggyLedgerViewModel(
                     val remainingCount = repository.getPendingUploadCount()
                     
                     if ((!ok || remainingCount > 0) && !forceDeleteIfOffline) {
-                        _logoutState.value = LogoutState.Error("Upload failed — $remainingCount items kept on device")
+                        val errorMsg = context.getString(com.oryno.piggy_ledger.R.string.logout_sync_failed_items, remainingCount)
+                        _logoutState.value = LogoutState.Error(errorMsg)
                         return@launch
                     }
                 }
@@ -429,7 +430,6 @@ class PiggyLedgerViewModel(
                 com.oryno.piggy_ledger.ui.NotificationHelper(context).showAuthNotification(false)
 
                 _logoutState.value = LogoutState.Success
-                onSuccess()
             } catch (e: Exception) {
                 android.util.Log.e("PiggyLedgerViewModel", "Perform sync and logout failed", e)
                 _logoutState.value = LogoutState.Error(e.localizedMessage ?: "Logout failed")

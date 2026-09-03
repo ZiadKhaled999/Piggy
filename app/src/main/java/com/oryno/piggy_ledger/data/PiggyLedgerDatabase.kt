@@ -181,7 +181,7 @@ abstract class PiggyLedgerDatabase : RoomDatabase() {
                     try { db.execSQL("ALTER TABLE $table ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0") } catch(e: Exception) {}
                     try { db.execSQL("ALTER TABLE $table ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0") } catch(e: Exception) {}
                 }
-                db.execSQL("CREATE TABLE IF NOT EXISTS `user_preferences` (`userId` TEXT NOT NULL, `hasOnboarded` INTEGER NOT NULL, `hasLanguageSelected` INTEGER NOT NULL, `hasHeardAboutUs` INTEGER NOT NULL, `personalizedIntent` INTEGER NOT NULL, `personalizedIntensity` INTEGER NOT NULL, `savingMode` TEXT NOT NULL, `customIdentifiersJson` TEXT NOT NULL, `isBiometricLockEnabled` INTEGER NOT NULL, `isScreenshotProtectionEnabled` INTEGER NOT NULL, `isPremium` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isSynced` INTEGER NOT NULL, PRIMARY KEY(`userId`))")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `user_preferences` (`userId` TEXT NOT NULL, `hasOnboarded` INTEGER NOT NULL, `hasLanguageSelected` INTEGER NOT NULL, `hasHeardAboutUs` INTEGER NOT NULL, `personalizedIntent` INTEGER NOT NULL, `personalizedIntensity` INTEGER NOT NULL, `savingMode` TEXT NOT NULL, `customIdentifiersJson` TEXT NOT NULL, `isBiometricLockEnabled` INTEGER NOT NULL, `isScreenshotProtectionEnabled` INTEGER NOT NULL, `isPremium` INTEGER NOT NULL, `appCurrency` TEXT NOT NULL DEFAULT 'USD', `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isSynced` INTEGER NOT NULL, PRIMARY KEY(`userId`))")
                 db.execSQL("CREATE TABLE IF NOT EXISTS `streak_dates` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `dateStr` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isSynced` INTEGER NOT NULL, PRIMARY KEY(`id`))")
             }
         }
@@ -200,6 +200,7 @@ abstract class PiggyLedgerDatabase : RoomDatabase() {
         val MIGRATION_19_20 = object : Migration(19, 20) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 try { db.execSQL("ALTER TABLE user_preferences ADD COLUMN preferredAccountId TEXT") } catch(e: Exception) {}
+                try { db.execSQL("ALTER TABLE user_preferences ADD COLUMN appCurrency TEXT NOT NULL DEFAULT 'USD'") } catch(e: Exception) {}
             }
         }
 

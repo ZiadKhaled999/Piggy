@@ -68,6 +68,8 @@
     <string name="rate_prompt_feedback">Help us improve by telling us what we can do better.</string>
     <string name="rate_prompt_playstore">A quick review on Google Play helps us grow and keep building!</string>
     <string name="rating_submitted_thanks">Thank you for rating Piggy Ledger</string>
+    <string name="could_not_open_playstore">Could not open Google Play Store</string>
+    <string name="logout_sync_failed_items">Upload failed — %1$d items kept on device</string>
     <string name="enjoying_piggy_ledger">Enjoying Piggy Ledger? Tap the stars to rate your experience. Your support keeps us going!</string>
     <string name="backup_data_title">Backup Data</string>
     <string name="secure_local_export">Secure Local Export</string>

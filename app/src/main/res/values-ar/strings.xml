@@ -163,6 +163,8 @@
     <string name="rate_prompt_feedback">شاركنا ملاحظاتك لنتمكن من تحسين التطبيق وخدمتك بشكل أفضل.</string>
     <string name="rate_prompt_playstore">تقييمك الإيجابي على متجر جوجل بلاي يدعمنا لمواصلة التطوير!</string>
     <string name="rating_submitted_thanks">شكراً جزيلاً على تقييمك لتطبيق بيجي ليدجر!</string>
+    <string name="could_not_open_playstore">تعذر فتح متجر جوجل بلاي، يرجى تقييم التطبيق على المتجر</string>
+    <string name="logout_sync_failed_items">فشل الرفع — بقي %1$d عنصر على الجهاز</string>
     <string name="enjoying_piggy_ledger">مبسوط مع بيجى؟ قيم تجربتك بنجوم. دعمك هو اللي بيخلينا نستمر!</string>
     <string name="backup_data_title">نسخ احتياطي للبيانات</string>
     <string name="secure_local_export">تصدير محلي آمن</string>

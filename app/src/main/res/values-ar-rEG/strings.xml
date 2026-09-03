@@ -111,6 +111,8 @@
     <string name="rate_prompt_feedback">قولنا إيه اللي ضايقك ومحتاج يتظبط، وهنصلحه في أقرب وقت.</string>
     <string name="rate_prompt_playstore">تقييمك الحلو على جوجل بلاي بيفرحنا وبيشجعنا نطور أكتر!</string>
     <string name="rating_submitted_thanks">تسلم إيدك! شكراً على تقييمك لبيجي ليدجر.</string>
+    <string name="could_not_open_playstore">معرفناش نفتح جوجل بلاي، ياريت تقيم التطبيق على المتجر</string>
+    <string name="logout_sync_failed_items">الرفع فشل — لسه فيه %1$d حاجة متسجلة على الجهاز بس</string>
     <string name="enjoying_piggy_ledger">مبسوط بالحصالة؟ دوس على النجوم عشان تقيم تجربتك.</string>
     <string name="backup_data_title">شيل نسخة من البيانات</string>
     <string name="secure_local_export">تصدير محلي آمن</string>

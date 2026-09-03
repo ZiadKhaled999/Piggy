@@ -614,7 +614,7 @@ private fun openPlayStore(context: Context) {
             }
             context.startActivity(webIntent)
         } catch (ex: Exception) {
-            ToastUtil.show(context, "Could not open Google Play Store", Toast.LENGTH_SHORT)
+            ToastUtil.show(context, context.getString(R.string.could_not_open_playstore), Toast.LENGTH_SHORT)
         }
     }
 }

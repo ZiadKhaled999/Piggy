@@ -42,6 +42,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import com.patrykandpatrick.vico.core.component.shape.Shapes
@@ -344,25 +347,31 @@ fun GoalDetailScreen(
                 }
             }
             
-            Row(
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text(
-                    text = if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format("%.2f", savedAmount)}",
-                    fontSize = 42.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = NavyDark
-                )
-                if (goal.targetAmount > 0.0) {
-                    Text(
-                        text = if (isPrivacyMode) " / $currencySymbol••••••" else " / $currencySymbol${String.format("%.2f", goal.targetAmount)}",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextLight,
-                        modifier = Modifier.padding(bottom = 6.dp)
-                    )
-                }
-            }
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(style = SpanStyle(fontSize = 18.sp, color = NavyDark)) {
+                        append(currencySymbol)
+                    }
+                    append(if (isPrivacyMode) "••••••" else String.format("%.2f", savedAmount))
+                    if (goal.targetAmount > 0.0) {
+                        withStyle(style = SpanStyle(fontSize = 20.sp, color = TextLight)) {
+                            append(" / ")
+                        }
+                        withStyle(style = SpanStyle(fontSize = 14.sp, color = TextLight)) {
+                            append(currencySymbol)
+                        }
+                        withStyle(style = SpanStyle(fontSize = 20.sp, color = TextLight)) {
+                            append(if (isPrivacyMode) "••••••" else String.format("%.2f", goal.targetAmount))
+                        }
+                    }
+                },
+                fontSize = 42.sp,
+                fontWeight = FontWeight.Bold,
+                color = NavyDark,
+                modifier = Modifier.padding(horizontal = 16.dp),
+                textAlign = TextAlign.Center,
+                lineHeight = 48.sp
+            )
         }
 
         // Fixed Top Bar when scrolled

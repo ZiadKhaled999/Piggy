@@ -41,7 +41,8 @@ class UserPreferences(private val context: Context) {
     }
 
     val appCurrency: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[APP_CURRENCY] ?: "USD"
+        // Force EGP, ignoring saved currency to disable currency changes
+        "EGP"
     }
 
     val preferredAccountId: Flow<String?> = context.dataStore.data.map { prefs ->
@@ -267,7 +268,7 @@ class UserPreferences(private val context: Context) {
                 premiumExpiryTimestamp = prefs[PREMIUM_EXPIRY_TIMESTAMP] ?: 0L,
                 isLifetimePremium = prefs[IS_LIFETIME_PREMIUM] ?: false,
                 preferredAccountId = prefs[PREFERRED_ACCOUNT_ID],
-                appCurrency = prefs[APP_CURRENCY] ?: "USD",
+                appCurrency = prefs[APP_CURRENCY] ?: "EGP",
                 createdAt = existing?.createdAt ?: System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
                 isSynced = false
@@ -298,7 +299,7 @@ class UserPreferences(private val context: Context) {
             } else {
                 prefs.remove(PREFERRED_ACCOUNT_ID)
             }
-            prefs[APP_CURRENCY] = entity.appCurrency
+            // prefs[APP_CURRENCY] = entity.appCurrency
         }
     }
 
@@ -307,7 +308,7 @@ class UserPreferences(private val context: Context) {
             val hasOnboarded = prefs[HAS_ONBOARDED] ?: true
             val hasLanguageSelected = prefs[HAS_LANGUAGE_SELECTED] ?: true
             val hasHeardAboutUs = prefs[HAS_HEARD_ABOUT_US] ?: true
-            val appCurrency = prefs[APP_CURRENCY] ?: "USD"
+            val appCurrency = prefs[APP_CURRENCY] ?: "EGP"
 
             prefs.clear()
 

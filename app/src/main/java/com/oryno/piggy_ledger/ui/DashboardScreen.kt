@@ -35,6 +35,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
@@ -939,7 +942,12 @@ fun VirtualCardsWidget(
                         
                         Column {
                             Text(
-                                text = if (isPrivacyMode) "${displayCurrencySymbol}••••••" else "${displayCurrencySymbol}${String.format("%,.2f", currentBalanceToShow)}",
+                                text = buildAnnotatedString {
+                                    withStyle(style = SpanStyle(fontSize = 18.sp, color = Color.White.copy(alpha = 0.9f))) {
+                                        append(displayCurrencySymbol)
+                                    }
+                                    append(if (isPrivacyMode) "••••••" else String.format("%,.2f", currentBalanceToShow))
+                                },
                                 color = Color.White,
                                 fontSize = 34.sp,
                                 fontWeight = FontWeight.Black,

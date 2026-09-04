@@ -889,13 +889,13 @@ fun DrawerSettingsContent(
                         appNavController.navigate(Screen.Settings(SettingsMode.LANGUAGE.name))
                     }
                 ),
-                DrawerMenuItem(
+                /* DrawerMenuItem(
                     title = stringResource(R.string.currency),
                     onClick = {
                         onClose()
                         appNavController.navigate(Screen.Settings(SettingsMode.CURRENCY.name))
                     }
-                ),
+                ), */
                 DrawerMenuItem(
                     title = stringResource(R.string.give_feedback),
                     onClick = {

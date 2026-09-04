@@ -37,3 +37,19 @@
 -dontwarn com.google.android.gms.**
 -dontwarn com.google.firebase.**
 
+# AndroidX & Biometric
+-keep class androidx.biometric.** { *; }
+-dontwarn androidx.biometric.**
+
+# Coroutines
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+-keep class kotlinx.coroutines.** { *; }
+
+# WorkManager
+-keep class androidx.work.** { *; }
+-dontwarn androidx.work.**
+
+# Services
+-keep class com.oryno.piggy_ledger.service.** { *; }
+

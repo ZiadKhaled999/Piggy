@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.room.Room
@@ -130,9 +134,9 @@ class MainActivity : AppCompatActivity() {
     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
     enableEdgeToEdge()
 
-    // Keep native splash screen until initial destination and biometric check are complete
+    // Keep native splash screen until initial destination is loaded
     splashScreen.setKeepOnScreenCondition {
-        initialDestination == null || !isBiometricCheckComplete
+        initialDestination == null
     }
     
     // Schedule background notifications
@@ -177,34 +181,40 @@ class MainActivity : AppCompatActivity() {
     setContent {
       PiggyLedgerTheme {
         val dest = initialDestination
-        if (dest != null && isBiometricCheckComplete) {
-            val isLocked = !isAuthenticatedByBiometric
-            if (!isLocked) {
-                PiggyLedgerApp(
-                    factory = factory,
-                    initialDestination = dest,
-                    openNotificationId = activeOpenNotificationId,
-                    shortcutAction = activeShortcutAction,
-                    onConsumeShortcut = { activeShortcutAction = null }
-                )
+        if (dest != null) {
+            if (!isBiometricCheckComplete) {
+                Box(modifier = Modifier.fillMaxSize().background(Color(0xFFFFF9F5)), contentAlignment = Alignment.Center) {
+                    ExpressiveLoadingIndicator()
+                }
             } else {
-                Box(
-                    modifier = Modifier.fillMaxSize().background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "Locked",
-                            tint = PinkPrimary,
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { checkBiometricLock(userPreferences) },
-                            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
-                        ) {
-                            Text("Unlock App")
+                val isLocked = !isAuthenticatedByBiometric
+                if (!isLocked) {
+                    PiggyLedgerApp(
+                        factory = factory,
+                        initialDestination = dest,
+                        openNotificationId = activeOpenNotificationId,
+                        shortcutAction = activeShortcutAction,
+                        onConsumeShortcut = { activeShortcutAction = null }
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(Color.White),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Locked",
+                                tint = PinkPrimary,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { checkBiometricLock(userPreferences) },
+                                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+                            ) {
+                                Text("Unlock App")
+                            }
                         }
                     }
                 }
@@ -233,16 +243,33 @@ class MainActivity : AppCompatActivity() {
   }
 
   private fun checkBiometricLock(userPreferences: UserPreferences) {
+      if (isPromptShowing) return
       lifecycleScope.launch {
           val isEnabled = userPreferences.isBiometricLockEnabled.first()
           if (isEnabled) {
               val biometricManager = BiometricManager.from(this@MainActivity)
               val canAuthenticate = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
               if (canAuthenticate == BiometricManager.BIOMETRIC_SUCCESS) {
-                  showBiometricPrompt()
+                  isPromptShowing = true
+                  com.oryno.piggy_ledger.ui.BiometricHelper.authenticateToUnhide(
+                      context = this@MainActivity,
+                      onSuccess = {
+                          isAuthenticatedByBiometric = true
+                          isBiometricCheckComplete = true
+                          lifecycleScope.launch {
+                              userPreferences.saveLastExitTime(System.currentTimeMillis())
+                              kotlinx.coroutines.delay(500)
+                              isPromptShowing = false
+                          }
+                      },
+                      onError = {
+                          isAuthenticatedByBiometric = false
+                          isBiometricCheckComplete = true
+                          isPromptShowing = false
+                      }
+                  )
               } else {
                   // Hardware unavailable or nothing enrolled, fall back to allow access
-                  // In a real app you might want to show a message or use another fallback.
                   isAuthenticatedByBiometric = true
                   isBiometricCheckComplete = true
               }
@@ -251,37 +278,6 @@ class MainActivity : AppCompatActivity() {
               isBiometricCheckComplete = true
           }
       }
-  }
-
-  private fun showBiometricPrompt() {
-      val executor = ContextCompat.getMainExecutor(this)
-      val biometricPrompt = BiometricPrompt(this, executor,
-          object : BiometricPrompt.AuthenticationCallback() {
-              override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                  super.onAuthenticationError(errorCode, errString)
-                  isAuthenticatedByBiometric = false
-                  isBiometricCheckComplete = true
-              }
-
-              override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                  super.onAuthenticationSucceeded(result)
-                  isAuthenticatedByBiometric = true
-                  isBiometricCheckComplete = true
-              }
-
-              override fun onAuthenticationFailed() {
-                  super.onAuthenticationFailed()
-                  // User failed, they can try again or the prompt stays up usually
-              }
-          })
-
-      val promptInfo = BiometricPrompt.PromptInfo.Builder()
-          .setTitle(getString(R.string.biometric_login_title))
-          .setSubtitle(getString(R.string.biometric_login_subtitle))
-          .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
-          .build()
-
-      biometricPrompt.authenticate(promptInfo)
   }
 
   private fun observeSecuritySettings() {
@@ -390,7 +386,10 @@ class MainActivity : AppCompatActivity() {
       }
   }
 
+  private var isPromptShowing = false
+
   private fun checkLockStatus() {
+      if (isPromptShowing) return
       lifecycleScope.launch {
           val isEnabled = userPreferences.isBiometricLockEnabled.first()
           val lastExit = userPreferences.lastExitTime.first()

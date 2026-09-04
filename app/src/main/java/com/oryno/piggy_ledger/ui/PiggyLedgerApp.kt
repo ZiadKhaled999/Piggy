@@ -107,14 +107,7 @@ fun PiggyLedgerApp(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            NavHost(navController = navController, startDestination = Screen.Splash) {
-                composable<Screen.Splash> {
-                    AnimatedSplashScreen(onSplashFinished = {
-                        navController.navigate(initialDestination) {
-                            popUpTo(Screen.Splash) { inclusive = true }
-                        }
-                    })
-                }
+            NavHost(navController = navController, startDestination = initialDestination) {
                 composable<Screen.LanguageSelection> {
                     LaunchedEffect(Unit) {
                         PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Language Selection"))

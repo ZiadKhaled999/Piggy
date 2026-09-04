@@ -220,12 +220,6 @@ object StreakManager {
                 val dao = PiggyLedgerDatabase.getInstance(context.applicationContext).piggyLedgerDao()
                 dao.insertStreakDates(entities)
                 
-                val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.SyncWorker>().build()
-                androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
-                    "SyncWork",
-                    androidx.work.ExistingWorkPolicy.REPLACE,
-                    workRequest
-                )
                 com.oryno.piggy_ledger.service.SyncManager(context).syncAll()
             } catch (e: Exception) {
                 android.util.Log.e("StreakManager", "Failed to sync streak dates to Room", e)

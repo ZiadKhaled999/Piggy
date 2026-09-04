@@ -336,18 +336,18 @@ class UserPreferences(private val context: Context) {
     }
 
     private fun triggerSync(context: Context) {
+        // Single trigger only. Previously this also launched a direct
+        // SyncManager(context).syncAll() coroutine in parallel with the
+        // WorkManager job below, which raced against it (and against any
+        // sync run from logout) over the same Room rows. The syncAll()
+        // mutex now makes concurrent calls safe, but firing sync twice for
+        // one edit is still pointless duplicate network traffic, so it's
+        // removed rather than just tolerated.
         val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.SyncWorker>().build()
         androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
             "SyncWork",
             androidx.work.ExistingWorkPolicy.REPLACE,
             workRequest
         )
-        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-            try {
-                com.oryno.piggy_ledger.service.SyncManager(context).syncAll()
-            } catch (e: Exception) {
-                android.util.Log.e("UserPreferences", "Direct sync trigger failed", e)
-            }
-        }
     }
 }

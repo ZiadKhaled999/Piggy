@@ -6,19 +6,13 @@ import kotlinx.coroutines.launch
 class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context: android.content.Context) {
 
     private fun triggerSync() {
+        // Single trigger only — see matching comment in UserPreferences.kt.
         val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.SyncWorker>().build()
         androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
             "SyncWork",
             androidx.work.ExistingWorkPolicy.REPLACE,
             workRequest
         )
-        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-            try {
-                com.oryno.piggy_ledger.service.SyncManager(context).syncAll()
-            } catch (e: Exception) {
-                android.util.Log.e("PiggyLedgerRepository", "Direct sync trigger failed", e)
-            }
-        }
     }
 
     val allGoals: Flow<List<Goal>> = dao.getAllGoals()

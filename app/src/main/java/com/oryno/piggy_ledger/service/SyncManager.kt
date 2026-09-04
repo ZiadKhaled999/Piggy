@@ -13,9 +13,18 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 class SyncManager(private val context: Context) {
+    companion object {
+        // Shared across ALL SyncManager instances (WorkManager job, direct
+        // coroutine triggers, and the logout-time sync) so overlapping
+        // syncAll() calls serialize instead of racing on the same Room rows.
+        private val syncMutex = Mutex()
+    }
+
     private val db = PiggyLedgerDatabase.getInstance(context)
     private val dao = db.piggyLedgerDao()
     private val ktorClient = ApiClient.ktorClient
@@ -43,42 +52,44 @@ class SyncManager(private val context: Context) {
         }
     }
 
-    suspend fun syncAll(): Boolean = withContext(Dispatchers.IO) {
-        Log.i("SyncManager", "🔥 syncAll() called! Neon API URL: $apiUrl")
-        val user = Clerk.userFlow.value
-        val userId = user?.id
+    suspend fun syncAll(): Boolean = syncMutex.withLock {
+        withContext(Dispatchers.IO) {
+            Log.i("SyncManager", "🔥 syncAll() called! Neon API URL: $apiUrl")
+            val user = Clerk.userFlow.value
+            val userId = user?.id
 
-        val authHeader = getAuthHeader()
+            val authHeader = getAuthHeader()
 
-        if (user == null || authHeader == null) {
-            Log.w("SyncManager", "❌ No authenticated user or Auth header is null. Skipping cloud sync.")
-            return@withContext false
-        }
+            if (user == null || authHeader == null) {
+                Log.w("SyncManager", "❌ No authenticated user or Auth header is null. Skipping cloud sync.")
+                return@withContext false
+            }
 
-        val nonNullUserId = user.id
+            val nonNullUserId = user.id
 
-        Log.i("SyncManager", "✅ Authenticated user found: userId=$nonNullUserId. Starting syncAll...")
+            Log.i("SyncManager", "✅ Authenticated user found: userId=$nonNullUserId. Starting syncAll...")
 
-        try {
-            var allOk = true
-            allOk = syncOnboardingAnswers(nonNullUserId, authHeader) && allOk
-            allOk = syncUserPreferences(nonNullUserId, authHeader) && allOk
-            allOk = syncStreakDates(nonNullUserId, authHeader) && allOk
-            allOk = syncGoals(nonNullUserId, authHeader) && allOk
-            allOk = syncTransactions(nonNullUserId, authHeader) && allOk
-            allOk = syncLoans(nonNullUserId, authHeader) && allOk
-            allOk = syncLoanPayments(nonNullUserId, authHeader) && allOk
-            allOk = syncAccounts(nonNullUserId, authHeader) && allOk
-            allOk = syncAccountTransactions(nonNullUserId, authHeader) && allOk
-            allOk = syncPendingTransactions(nonNullUserId, authHeader) && allOk
-            allOk = syncAiConversations(nonNullUserId, authHeader) && allOk
-            allOk = syncAiChatMessages(nonNullUserId, authHeader) && allOk
+            try {
+                var allOk = true
+                allOk = syncOnboardingAnswers(nonNullUserId, authHeader) && allOk
+                allOk = syncUserPreferences(nonNullUserId, authHeader) && allOk
+                allOk = syncStreakDates(nonNullUserId, authHeader) && allOk
+                allOk = syncGoals(nonNullUserId, authHeader) && allOk
+                allOk = syncTransactions(nonNullUserId, authHeader) && allOk
+                allOk = syncLoans(nonNullUserId, authHeader) && allOk
+                allOk = syncLoanPayments(nonNullUserId, authHeader) && allOk
+                allOk = syncAccounts(nonNullUserId, authHeader) && allOk
+                allOk = syncAccountTransactions(nonNullUserId, authHeader) && allOk
+                allOk = syncPendingTransactions(nonNullUserId, authHeader) && allOk
+                allOk = syncAiConversations(nonNullUserId, authHeader) && allOk
+                allOk = syncAiChatMessages(nonNullUserId, authHeader) && allOk
 
-            Log.i("SyncManager", "Sync completed successfully. Success: $allOk")
-            allOk
-        } catch (e: Exception) {
-            Log.w("SyncManager", "Sync skipped/failed: ${e.message}")
-            false
+                Log.i("SyncManager", "Sync completed successfully. Success: $allOk")
+                allOk
+            } catch (e: Exception) {
+                Log.w("SyncManager", "Sync skipped/failed: ${e.message}")
+                false
+            }
         }
     }
 

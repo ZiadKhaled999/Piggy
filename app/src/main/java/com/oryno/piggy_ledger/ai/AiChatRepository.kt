@@ -188,12 +188,12 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
 
     suspend fun getAiResponse(messages: List<ChatMessageRequest>): Result<SovereignAiResponse> = withContext(Dispatchers.IO) {
         if (apiKey.isBlank() || apiKey == "YOUR_GROQ_API_KEY") {
-            return@withContext Result.failure(Exception("AI service key is not configured. Please ensure GROQ_API_KEY is set in your configuration."))
+            return@withContext Result.failure(Exception("AI service is temporarily updating. Please try again shortly."))
         }
 
         val sanitizedMessages = messages.filter { it.content.isNotBlank() }
         if (sanitizedMessages.isEmpty()) {
-            return@withContext Result.failure(Exception("Please enter a message to send."))
+            return@withContext Result.failure(Exception("Please enter a question."))
         }
 
         val isGroq = apiKey.startsWith("gsk_") || !apiKey.startsWith("sk-")
@@ -285,12 +285,11 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
                         }
 
                         val message = when (response.code) {
-                            401 -> "AI Authentication failed. Please check your API key."
-                            403 -> "AI Access forbidden. Please verify your account access."
-                            404 -> errorDetail ?: "AI Model not found ($candidateModel)."
-                            429 -> "AI Rate limit reached. Retrying shortly..."
-                            in 500..599 -> "AI Server is temporarily busy. Retrying..."
-                            else -> errorDetail ?: "AI service response error (${response.code})."
+                            401, 403 -> "Service authorization is updating. Please try again in a moment."
+                            404 -> "Service is temporarily updating. Please try again in a moment."
+                            429 -> "Piggy is receiving high demand right now. Please try again shortly."
+                            in 500..599 -> "Service is temporarily busy. Please try again shortly."
+                            else -> "Service is temporarily unavailable. Please try again."
                         }
                         lastException = Exception(message)
                         if (response.code == 401 || response.code == 403) {
@@ -299,13 +298,13 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
                     }
                 } catch (e: java.net.UnknownHostException) {
                     android.util.Log.e("AiChat", "DNS/Network issue on attempt $attempt: ${e.message}")
-                    lastException = Exception("Unable to connect to AI server. Please check your internet connection.")
+                    lastException = Exception("Internet connection appears to be offline.")
                 } catch (e: java.net.SocketTimeoutException) {
                     android.util.Log.w("AiChat", "Timeout on $candidateModel attempt $attempt: ${e.message}")
-                    lastException = Exception("AI request timed out. Please check your connection and retry.")
+                    lastException = Exception("Connection timed out. Please check your network and retry.")
                 } catch (e: Exception) {
                     android.util.Log.e("AiChat", "Exception on $candidateModel attempt $attempt: ${e.message}", e)
-                    lastException = e
+                    lastException = Exception("Service encountered a brief hiccup. Please try again.")
                 }
 
                 // Short backoff before next retry
@@ -315,7 +314,7 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
             }
         }
 
-        Result.failure(lastException ?: Exception("Unable to get AI response. Please try again."))
+        Result.failure(lastException ?: Exception("Service is temporarily busy. Please try again."))
     }
 
     fun getAllAccounts(): Flow<List<com.oryno.piggy_ledger.data.Account>> {

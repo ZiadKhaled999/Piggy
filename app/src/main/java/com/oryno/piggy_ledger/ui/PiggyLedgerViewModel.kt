@@ -98,11 +98,20 @@ class PiggyLedgerViewModel(
         } catch (e: Exception) {
             emptyMap()
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     fun addCustomIdentifierKeywords(providerName: String, keywords: List<String>, onComplete: () -> Unit) {
         viewModelScope.launch {
-            val currentMap = customIdentifiers.value.toMutableMap()
+            val currentJson = try {
+                userPreferences.customIdentifiersJson.first()
+            } catch (e: Exception) {
+                "{}"
+            }
+            val currentMap = try {
+                json.decodeFromString<Map<String, List<String>>>(currentJson).toMutableMap()
+            } catch (e: Exception) {
+                customIdentifiers.value.toMutableMap()
+            }
             val existingKeywords = currentMap[providerName]?.toMutableList() ?: mutableListOf()
             keywords.forEach { kw ->
                 val trimmed = kw.trim()
@@ -131,6 +140,50 @@ class PiggyLedgerViewModel(
             uploadIdentifierKeywordsToPost(providerName, existingKeywords)
 
             onComplete()
+        }
+    }
+
+    fun deleteCustomIdentifierKeyword(providerName: String, keyword: String, onComplete: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            val currentJson = try {
+                userPreferences.customIdentifiersJson.first()
+            } catch (e: Exception) {
+                "{}"
+            }
+            val currentMap = try {
+                json.decodeFromString<Map<String, List<String>>>(currentJson).toMutableMap()
+            } catch (e: Exception) {
+                customIdentifiers.value.toMutableMap()
+            }
+            val existingKeywords = currentMap[providerName]?.toMutableList() ?: mutableListOf()
+            existingKeywords.remove(keyword)
+            if (existingKeywords.isEmpty()) {
+                currentMap.remove(providerName)
+            } else {
+                currentMap[providerName] = existingKeywords
+            }
+            val jsonString = json.encodeToString(currentMap)
+            userPreferences.saveCustomIdentifiersJson(jsonString)
+            onComplete?.invoke()
+        }
+    }
+
+    fun clearCustomIdentifierKeywordsForProvider(providerName: String, onComplete: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            val currentJson = try {
+                userPreferences.customIdentifiersJson.first()
+            } catch (e: Exception) {
+                "{}"
+            }
+            val currentMap = try {
+                json.decodeFromString<Map<String, List<String>>>(currentJson).toMutableMap()
+            } catch (e: Exception) {
+                customIdentifiers.value.toMutableMap()
+            }
+            currentMap.remove(providerName)
+            val jsonString = json.encodeToString(currentMap)
+            userPreferences.saveCustomIdentifiersJson(jsonString)
+            onComplete?.invoke()
         }
     }
 
@@ -246,6 +299,21 @@ class PiggyLedgerViewModel(
     val appCurrency = userPreferences.appCurrency.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), "USD"
     )
+
+    val appLanguage = userPreferences.appLanguage.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), null
+    )
+
+    fun setAppLanguage(lang: String) {
+        viewModelScope.launch {
+            userPreferences.saveAppLanguage(lang)
+            androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                androidx.core.os.LocaleListCompat.forLanguageTags(lang)
+            )
+            com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+        }
+    }
 
     val hasOnboarded = userPreferences.hasOnboarded.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null

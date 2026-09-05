@@ -38,11 +38,41 @@ class UserPreferences(private val context: Context) {
         val IS_PRIVACY_MODE_ENABLED = booleanPreferencesKey("is_privacy_mode_enabled")
         val PREFERRED_ACCOUNT_ID = stringPreferencesKey("preferred_account_id")
         val APP_CURRENCY = stringPreferencesKey("app_currency")
+        val APP_LANGUAGE = stringPreferencesKey("app_language")
+
+        fun getSavedAppLanguageSync(context: Context): String? {
+            return try {
+                val sharedPrefs = context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                val lang = sharedPrefs.getString("app_language", null)
+                if (!lang.isNullOrBlank()) lang else null
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    val appLanguage: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[APP_LANGUAGE] ?: getSavedAppLanguageSync(context)
+    }
+
+    suspend fun saveAppLanguage(lang: String) {
+        context.dataStore.edit { prefs ->
+            prefs[APP_LANGUAGE] = lang
+        }
+        saveAppLanguageSync(lang)
+    }
+
+    fun saveAppLanguageSync(lang: String) {
+        try {
+            val sharedPrefs = context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+            sharedPrefs.edit().putString("app_language", lang).apply()
+        } catch (e: Exception) {
+            android.util.Log.e("UserPreferences", "Failed to save language synchronously", e)
+        }
     }
 
     val appCurrency: Flow<String> = context.dataStore.data.map { prefs ->
-        // Force EGP, ignoring saved currency to disable currency changes
-        "EGP"
+        prefs[APP_CURRENCY] ?: "EGP"
     }
 
     val preferredAccountId: Flow<String?> = context.dataStore.data.map { prefs ->
@@ -244,6 +274,8 @@ class UserPreferences(private val context: Context) {
             prefs[APP_CURRENCY] = currencyCode
         }
         syncPreferencesToDb()
+        com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+        com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
     }
 
     suspend fun syncPreferencesToDb() {
@@ -309,6 +341,7 @@ class UserPreferences(private val context: Context) {
             val hasLanguageSelected = prefs[HAS_LANGUAGE_SELECTED] ?: true
             val hasHeardAboutUs = prefs[HAS_HEARD_ABOUT_US] ?: true
             val appCurrency = prefs[APP_CURRENCY] ?: "EGP"
+            val appLanguage = prefs[APP_LANGUAGE]
 
             prefs.clear()
 
@@ -316,6 +349,9 @@ class UserPreferences(private val context: Context) {
             prefs[HAS_LANGUAGE_SELECTED] = hasLanguageSelected
             prefs[HAS_HEARD_ABOUT_US] = hasHeardAboutUs
             prefs[APP_CURRENCY] = appCurrency
+            if (appLanguage != null) {
+                prefs[APP_LANGUAGE] = appLanguage
+            }
         }
     }
 

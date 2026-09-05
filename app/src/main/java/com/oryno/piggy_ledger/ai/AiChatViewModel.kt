@@ -166,6 +166,12 @@ class AiChatViewModel(
     private val systemPrompt = """
         You are Piggy AI, the optional AI assistant inside Piggy Ledger, a personal finance and budgeting application.
 
+        ### STRICT LANGUAGE MATCHING DIRECTIVE (MANDATORY):
+        - You MUST strictly identify and mirror the language of the user's prompt:
+        - If the user asks in ARABIC (العربية), you MUST respond EXCLUSIVELY and 100% in natural, clear Arabic. Do NOT output English words, sentences, or explanations.
+        - If the user asks in ENGLISH, you MUST respond EXCLUSIVELY and 100% in natural, clear English. Do NOT output Arabic words, sentences, or explanations.
+        - NEVER mix languages. A question in Arabic must ALWAYS get an answer in Arabic only. A question in English must ALWAYS get an answer in English only.
+
         Piggy Ledger is primarily a finance management app. AI is a secondary utility feature. Your job is NOT to make the app feel like an AI product. Your job is to make the user's existing financial data easier to understand, calculate, analyze, and use.
 
         CORE PRINCIPLE
@@ -465,8 +471,25 @@ class AiChatViewModel(
                 // 2. Prepare clean message history for API call
                 val apiMessages = mutableListOf<ChatMessageRequest>()
                 
-                // System prompt + context
-                val fullSystemPrompt = "$systemPrompt\n\n### USER KNOWLEDGE HUB SNAPSHOT\n$contextData"
+                // System prompt + dynamic language directive + context
+                val isArabic = isArabicQuery(userText)
+                val languageDirective = if (isArabic) {
+                    """
+                    ### CRITICAL LANGUAGE MANDATE:
+                    The user's query is in ARABIC (باللغة العربية).
+                    You MUST formulate your entire response in clear, fluent Arabic only.
+                    Do not use English under any circumstances.
+                    """.trimIndent()
+                } else {
+                    """
+                    ### CRITICAL LANGUAGE MANDATE:
+                    The user's query is in ENGLISH.
+                    You MUST formulate your entire response in clear, fluent English only.
+                    Do not use Arabic under any circumstances.
+                    """.trimIndent()
+                }
+
+                val fullSystemPrompt = "$systemPrompt\n\n$languageDirective\n\n### USER KNOWLEDGE HUB SNAPSHOT\n$contextData"
                 apiMessages.add(ChatMessageRequest(role = "system", content = fullSystemPrompt))
                 
                 // Add previous history with cleaned text content (completely free of thinking blocks)
@@ -520,34 +543,78 @@ class AiChatViewModel(
                             rawError.contains("No address associated with hostname", ignoreCase = true) ||
                             rawError.contains("Failed to connect", ignoreCase = true) ||
                             rawError.contains("SocketTimeoutException", ignoreCase = true) ||
-                            rawError.contains("internet connection", ignoreCase = true)
+                            rawError.contains("ConnectException", ignoreCase = true) ||
+                            rawError.contains("internet connection", ignoreCase = true) ||
+                            rawError.contains("offline", ignoreCase = true) ||
+                            rawError.contains("network", ignoreCase = true) ||
+                            rawError.contains("timeout", ignoreCase = true)
 
-                    val isQuotaIssue = rawError.contains("resource_exhausted", ignoreCase = true) || 
+                    val isQuotaOrBusy = rawError.contains("resource_exhausted", ignoreCase = true) || 
                             rawError.contains("quota", ignoreCase = true) ||
-                            rawError.contains("429", ignoreCase = true)
+                            rawError.contains("429", ignoreCase = true) ||
+                            rawError.contains("busy", ignoreCase = true) ||
+                            rawError.contains("demand", ignoreCase = true) ||
+                            rawError.contains("rate limit", ignoreCase = true)
 
-                    val cleanUserError = when {
-                        isNetworkIssue ->
-                            "Unable to reach the server. Please check your internet connection and try again."
-                        isQuotaIssue ->
-                            "Piggy is currently experiencing high demand and needs a moment to catch his breath. Please try again later!"
-                        rawError.isNotBlank() && !rawError.contains("<html>", ignoreCase = true) ->
-                            "Piggy encountered an issue analyzing your request. Please try again."
-                        else ->
-                            "AI service is temporarily busy. Please tap Retry to attempt again."
+                    val isArabic = isArabicQuery(userText)
+
+                    val (headerTitle, cleanUserError, actionLabel) = when {
+                        isNetworkIssue -> {
+                            if (isArabic) {
+                                Triple(
+                                    "# ⚠️ تنبيه الاتصال",
+                                    "يبدو أن جهازك غير متصل بالإنترنت حالياً. يُرجى التحقق من الشبكة والمحاولة مرة ثانية.",
+                                    "إعادة المحاولة"
+                                )
+                            } else {
+                                Triple(
+                                    "# ⚠️ Connection Notice",
+                                    "It looks like your device is offline or the connection is unstable. Please check your network and try again.",
+                                    "Retry"
+                                )
+                            }
+                        }
+                        isQuotaOrBusy -> {
+                            if (isArabic) {
+                                Triple(
+                                    "# ⏳ استراحة قصيرة",
+                                    "بيجي يمر بضغط خفيف حالياً ويحتاج لحظة بسيطة. يُرجى الضغط على إعادة المحاولة بعد قليل!",
+                                    "إعادة المحاولة"
+                                )
+                            } else {
+                                Triple(
+                                    "# ⏳ Taking a Quick Breath",
+                                    "Piggy is currently receiving high demand and needs a quick moment. Please tap Retry in a few seconds!",
+                                    "Retry"
+                                )
+                            }
+                        }
+                        else -> {
+                            if (isArabic) {
+                                Triple(
+                                    "# ⚠️ تنبيه بسيط",
+                                    "واجه بيجي صعوبة مؤقتة في قراءة هذا الطلب. يُرجى الضغط على زر إعادة المحاولة.",
+                                    "إعادة المحاولة"
+                                )
+                            } else {
+                                Triple(
+                                    "# ⚠️ Friendly Notice",
+                                    "Piggy ran into a quick hiccup processing your request. Please tap Retry to give it another go.",
+                                    "Retry"
+                                )
+                            }
+                        }
                     }
 
-                    val headerTitle = if (isNetworkIssue) "# ⚠️ Connection Issue" else if (isQuotaIssue) "# ⏳ High Demand" else "# ⚠️ Service Notice"
-
                     val errorMsg = SovereignAiResponse(
-                        thinkingProcess = kotlinx.serialization.json.JsonPrimitive("Error analyzing request."),
+                        thinkingProcess = null,
                         currentArchetype = "",
                         archetypeRationale = headerTitle,
                         uiBlocks = listOf(
-                            UiBlock.ActionBannerBlock(cleanUserError, "RETRY")
+                            UiBlock.ActionBannerBlock(cleanUserError, actionLabel)
                         )
                     )
-                    responseTextForTitle = errorMsg.archetypeRationale
+                    responseTextForTitle = if (isArabic) "تنبيه في الخدمة" else "Service Notice"
                     repository.saveMessage(role = "assistant", content = json.encodeToString(SovereignAiResponse.serializer(), errorMsg), conversationId = convId)
                 }
 
@@ -560,6 +627,27 @@ class AiChatViewModel(
                 _isLoading.value = false
                 activeGenerationJob = null
             }
+        }
+    }
+
+    fun retryLastMessage() {
+        val lastUserQuery = chatHistory.value.lastOrNull { it.role == "user" }?.content
+        if (!lastUserQuery.isNullOrBlank()) {
+            sendMessage(lastUserQuery)
+        }
+    }
+
+    private fun isArabicQuery(text: String): Boolean {
+        val arabicCount = text.count {
+            (it in '\u0600'..'\u06FF') || (it in '\u0750'..'\u077F') || 
+            (it in '\u08A0'..'\u08FF') || (it in '\uFB50'..'\uFDFF') || 
+            (it in '\uFE70'..'\uFEFF')
+        }
+        val latinCount = text.count { (it in 'a'..'z') || (it in 'A'..'Z') }
+        return if (arabicCount > 0 || latinCount > 0) {
+            arabicCount >= latinCount
+        } else {
+            java.util.Locale.getDefault().language == "ar"
         }
     }
 

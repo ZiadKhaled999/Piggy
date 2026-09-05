@@ -102,6 +102,17 @@ fun PiggyLedgerApp(
         }
     }
 
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+    val isPreAuthFlow = currentRoute?.contains("LanguageSelection") == true ||
+            currentRoute?.contains("HearAboutUs") == true ||
+            currentRoute?.contains("Onboarding") == true ||
+            currentRoute?.contains("Auth") == true
+
+    if (!isPreAuthFlow && isAuthenticated == true && hasOnboarded == true) {
+        PermissionHealthChecker()
+    }
+
     PiggyLedgerTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),

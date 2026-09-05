@@ -441,6 +441,38 @@ fun EditAccountScreen(
                         )
                     }
                 }
+                
+                // Currency Selection
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(stringResource(R.string.currency), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(androidx.compose.ui.graphics.Color(0xFFF8FAFC))
+                            .border(1.dp, androidx.compose.ui.graphics.Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+                            .clickable { showBottomSheet = true; bottomSheetType = BottomSheetType.CURRENCY_SELECT }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            val currInfo = availableCurrencies.find { it.code == currency }
+                            Text(
+                                text = currInfo?.flag ?: "🇪🇬",
+                                fontSize = 24.sp
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = if (currInfo != null) "${currInfo.code} - ${currInfo.name}" else "EGP - Egyptian Pound",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = NavyDark
+                            )
+                        }
+                        Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = TextLight)
+                    }
+                }
             }
 
             // SECTION: Advanced Settings

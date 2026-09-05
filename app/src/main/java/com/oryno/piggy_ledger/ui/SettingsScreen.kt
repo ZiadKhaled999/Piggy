@@ -65,6 +65,7 @@ import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Backup
 
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.DeleteOutline
 
 import androidx.compose.foundation.lazy.LazyColumn
 
@@ -499,6 +500,8 @@ fun DetailSettingsView(
         return
     }
     
+    var showManageCustomKeywordsSheet by remember { mutableStateOf(false) }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -527,8 +530,18 @@ fun DetailSettingsView(
                 },
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = NavyDark
+                color = NavyDark,
+                modifier = Modifier.weight(1f)
             )
+            if (mode == SettingsMode.ACCOUNT_IDENTIFIERS) {
+                IconButton(onClick = { showManageCustomKeywordsSheet = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = stringResource(R.string.manage_custom_keywords),
+                        tint = NavyDark
+                    )
+                }
+            }
         }
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -561,15 +574,17 @@ fun DetailSettingsView(
                     
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    val savedLang by viewModel.appLanguage.collectAsStateWithLifecycle()
                     val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                    val effectiveLocale = if (!savedLang.isNullOrBlank()) savedLang!! else currentLocale
                     
                     SettingsLanguageOption(
                         title = stringResource(id = R.string.english),
                         subtitle = stringResource(id = R.string.united_states),
                         flagResId = R.drawable.ic_flag_us,
-                        isSelected = currentLocale.startsWith("en"),
+                        isSelected = effectiveLocale.startsWith("en"),
                         onClick = {
-                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+                            viewModel.setAppLanguage("en")
                         }
                     )
                     
@@ -579,9 +594,9 @@ fun DetailSettingsView(
                         title = stringResource(id = R.string.arabic),
                         subtitle = stringResource(id = R.string.saudi_arabia),
                         flagResId = R.drawable.ic_flag_sa,
-                        isSelected = (currentLocale.startsWith("ar") && !currentLocale.contains("EG")) || (currentLocale.isEmpty() && java.util.Locale.getDefault().language == "ar"),
+                        isSelected = (effectiveLocale.startsWith("ar") && !effectiveLocale.contains("EG")) || (effectiveLocale.isEmpty() && java.util.Locale.getDefault().language == "ar"),
                         onClick = {
-                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ar"))
+                            viewModel.setAppLanguage("ar")
                         }
                     )
                     
@@ -591,9 +606,10 @@ fun DetailSettingsView(
                         title = stringResource(id = R.string.egyptian),
                         subtitle = stringResource(id = R.string.egypt),
                         flagResId = R.drawable.ic_flag_eg,
-                        isSelected = currentLocale.contains("ar-EG"),
+                        isSelected = effectiveLocale.contains("ar-EG"),
+                        isPremium = true,
                         onClick = {
-                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ar-EG"))
+                            viewModel.setAppLanguage("ar-EG")
                         }
                     )
                 }
@@ -606,9 +622,19 @@ fun DetailSettingsView(
             }
             SettingsMode.ACCOUNT_IDENTIFIERS -> {
                 android.util.Log.d("DetailSettingsView", "Calling AccountIdentifiersView")
-                AccountIdentifiersView(viewModel = viewModel)
+                AccountIdentifiersView(
+                    viewModel = viewModel,
+                    onOpenManageKeywords = { showManageCustomKeywordsSheet = true }
+                )
             }
             else -> {}
+        }
+
+        if (showManageCustomKeywordsSheet) {
+            ManageCustomKeywordsBottomSheet(
+                viewModel = viewModel,
+                onDismiss = { showManageCustomKeywordsSheet = false }
+            )
         }
     }
 }
@@ -821,55 +847,87 @@ fun SettingsLanguageOption(
     subtitle: String,
     flagResId: Int,
     isSelected: Boolean,
+    isPremium: Boolean = false,
     onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) PinkPrimary.copy(alpha = 0.08f) else androidx.compose.ui.graphics.Color(0xFFF8FAFC)
-        ),
-        border = androidx.compose.foundation.BorderStroke(
-            width = if (isSelected) 2.dp else 1.dp,
-            color = if (isSelected) PinkPrimary else androidx.compose.ui.graphics.Color(0xFFE2E8F0)
-        )
-    ) {
-        Row(
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Card(
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Image(
-                painter = painterResource(id = flagResId),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape),
-                contentScale = ContentScale.Crop
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isSelected) PinkPrimary.copy(alpha = 0.08f) else androidx.compose.ui.graphics.Color(0xFFF8FAFC)
+            ),
+            border = androidx.compose.foundation.BorderStroke(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = if (isSelected) PinkPrimary else androidx.compose.ui.graphics.Color(0xFFE2E8F0)
             )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = NavyDark
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = flagResId),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape),
+                    contentScale = ContentScale.Crop
                 )
-                Text(
-                    text = subtitle,
-                    fontSize = 13.sp,
-                    color = TextLight
-                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark
+                    )
+                    Text(
+                        text = subtitle,
+                        fontSize = 13.sp,
+                        color = TextLight
+                    )
+                }
+                if (isSelected) {
+                    androidx.compose.material3.RadioButton(
+                        selected = true,
+                        onClick = null,
+                        colors = RadioButtonDefaults.colors(selectedColor = PinkPrimary)
+                    )
+                }
             }
-            if (isSelected) {
-                androidx.compose.material3.RadioButton(
-                    selected = true,
-                    onClick = null,
-                    colors = RadioButtonDefaults.colors(selectedColor = PinkPrimary)
-                )
+        }
+        if (isPremium) {
+            val isRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 6.dp, y = (-4).dp)
+                    .size(24.dp)
+                    .background(androidx.compose.ui.graphics.Color.White, androidx.compose.foundation.shape.CircleShape)
+                    .border(1.5.dp, androidx.compose.ui.graphics.Color(0xFFFBBF24), androidx.compose.foundation.shape.CircleShape)
+                    .padding(3.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(w * 0.1f, h * 0.85f)
+                        lineTo(w * 0.1f, h * 0.35f)
+                        lineTo(w * 0.35f, h * 0.6f)
+                        lineTo(w * 0.5f, h * 0.15f)
+                        lineTo(w * 0.65f, h * 0.6f)
+                        lineTo(w * 0.9f, h * 0.35f)
+                        lineTo(w * 0.9f, h * 0.85f)
+                        close()
+                    }
+                    drawPath(path = path, color = androidx.compose.ui.graphics.Color(0xFFFBBF24))
+                }
             }
         }
     }
@@ -2126,9 +2184,12 @@ fun SlideToPurchase(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountIdentifiersView(viewModel: PiggyLedgerViewModel) {
+fun AccountIdentifiersView(
+    viewModel: PiggyLedgerViewModel,
+    onOpenManageKeywords: (() -> Unit)? = null
+) {
     android.util.Log.d("AccountIdentifiersView", "Entering AccountIdentifiersView")
     val context = LocalContext.current
     val customIdentifiers by viewModel.customIdentifiers.collectAsStateWithLifecycle()
@@ -2136,7 +2197,16 @@ fun AccountIdentifiersView(viewModel: PiggyLedgerViewModel) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
     var showBottomSheet by remember { mutableStateOf(false) }
+    var internalShowManageSheet by remember { mutableStateOf(false) }
     var targetProviderForSheet by remember { mutableStateOf("Vodafone Cash") }
+
+    val handleOpenManage = {
+        if (onOpenManageKeywords != null) {
+            onOpenManageKeywords()
+        } else {
+            internalShowManageSheet = true
+        }
+    }
 
     val providersList = remember {
         listOf(
@@ -2364,13 +2434,31 @@ fun AccountIdentifiersView(viewModel: PiggyLedgerViewModel) {
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 userKeywords.forEach { kw ->
-                                    Box(
+                                    Row(
                                         modifier = Modifier
                                             .background(PinkPrimary.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
                                             .border(1.dp, PinkPrimary.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                                            .padding(start = 8.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(kw, fontSize = 11.sp, color = PinkPrimary, fontWeight = FontWeight.Bold)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = stringResource(R.string.delete_keyword),
+                                            tint = PinkPrimary,
+                                            modifier = Modifier
+                                                .size(14.dp)
+                                                .clickable {
+                                                    viewModel.deleteCustomIdentifierKeyword(provider.name, kw) {
+                                                        com.oryno.piggy_ledger.ui.ToastUtil.show(
+                                                            context,
+                                                            context.getString(R.string.keyword_deleted),
+                                                            Toast.LENGTH_SHORT
+                                                        )
+                                                    }
+                                                }
+                                        )
                                     }
                                 }
                             }
@@ -2379,6 +2467,13 @@ fun AccountIdentifiersView(viewModel: PiggyLedgerViewModel) {
                 }
             }
         }
+    }
+
+    if (internalShowManageSheet) {
+        ManageCustomKeywordsBottomSheet(
+            viewModel = viewModel,
+            onDismiss = { internalShowManageSheet = false }
+        )
     }
 
     if (showBottomSheet) {
@@ -2391,6 +2486,16 @@ fun AccountIdentifiersView(viewModel: PiggyLedgerViewModel) {
         AddIdentifierBottomSheet(
             providerName = targetProviderForSheet,
             accountType = accountType,
+            existingKeywords = customIdentifiers[targetProviderForSheet] ?: emptyList(),
+            onDeleteKeyword = { kw ->
+                viewModel.deleteCustomIdentifierKeyword(targetProviderForSheet, kw) {
+                    com.oryno.piggy_ledger.ui.ToastUtil.show(
+                        context,
+                        context.getString(R.string.keyword_deleted),
+                        Toast.LENGTH_SHORT
+                    )
+                }
+            },
             onDismiss = { showBottomSheet = false },
             onSave = { newKeywords ->
                 viewModel.addCustomIdentifierKeywords(targetProviderForSheet, newKeywords) {
@@ -2408,11 +2513,71 @@ data class ProviderIdentifierInfo(
     val defaultKeywords: List<String>
 )
 
+@Composable
+fun SimpleFlowRow(
+    modifier: Modifier = Modifier,
+    horizontalSpacing: androidx.compose.ui.unit.Dp = 6.dp,
+    verticalSpacing: androidx.compose.ui.unit.Dp = 6.dp,
+    content: @Composable () -> Unit
+) {
+    androidx.compose.ui.layout.Layout(
+        content = content,
+        modifier = modifier
+    ) { measurables, constraints ->
+        val hSpacingPx = horizontalSpacing.roundToPx()
+        val vSpacingPx = verticalSpacing.roundToPx()
+        val placeables = measurables.map { it.measure(constraints) }
+
+        var currentLineWidth = 0
+        var currentLineHeight = 0
+        var totalHeight = 0
+        var maxWidth = 0
+
+        val lines = mutableListOf<List<androidx.compose.ui.layout.Placeable>>()
+        var currentLine = mutableListOf<androidx.compose.ui.layout.Placeable>()
+
+        for (placeable in placeables) {
+            if (currentLineWidth + placeable.width > constraints.maxWidth && currentLine.isNotEmpty()) {
+                lines.add(currentLine)
+                totalHeight += currentLineHeight + vSpacingPx
+                maxWidth = maxOf(maxWidth, currentLineWidth - hSpacingPx)
+                currentLine = mutableListOf()
+                currentLineWidth = 0
+                currentLineHeight = 0
+            }
+            currentLine.add(placeable)
+            currentLineWidth += placeable.width + hSpacingPx
+            currentLineHeight = maxOf(currentLineHeight, placeable.height)
+        }
+        if (currentLine.isNotEmpty()) {
+            lines.add(currentLine)
+            totalHeight += currentLineHeight
+            maxWidth = maxOf(maxWidth, currentLineWidth - hSpacingPx)
+        }
+
+        layout(maxOf(maxWidth, constraints.minWidth), maxOf(totalHeight, constraints.minHeight)) {
+            var yOffset = 0
+            for (line in lines) {
+                var xOffset = 0
+                var lineHeight = 0
+                for (placeable in line) {
+                    placeable.placeRelative(x = xOffset, y = yOffset)
+                    xOffset += placeable.width + hSpacingPx
+                    lineHeight = maxOf(lineHeight, placeable.height)
+                }
+                yOffset += lineHeight + vSpacingPx
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddIdentifierBottomSheet(
     providerName: String,
     accountType: com.oryno.piggy_ledger.data.AccountType,
+    existingKeywords: List<String> = emptyList(),
+    onDeleteKeyword: ((String) -> Unit)? = null,
     onDismiss: () -> Unit,
     onSave: (keywords: List<String>) -> Unit
 ) {
@@ -2460,6 +2625,51 @@ fun AddIdentifierBottomSheet(
                 }
             }
 
+            // Existing Custom Keywords for this provider
+            if (existingKeywords.isNotEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.your_custom_keywords),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PinkPrimary
+                    )
+                    SimpleFlowRow(
+                        horizontalSpacing = 6.dp,
+                        verticalSpacing = 6.dp
+                    ) {
+                        existingKeywords.forEach { kw ->
+                            Row(
+                                modifier = Modifier
+                                    .background(PinkPrimary.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
+                                    .border(1.dp, PinkPrimary.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                                    .padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = kw,
+                                    fontSize = 12.sp,
+                                    color = PinkPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = stringResource(R.string.delete_keyword),
+                                    tint = PinkPrimary,
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .clickable { onDeleteKeyword?.invoke(kw) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             Text(
                 stringResource(R.string.enter_custom_keywords_desc, providerName),
                 fontSize = 13.sp,
@@ -2497,7 +2707,7 @@ fun AddIdentifierBottomSheet(
 
                 Button(
                     onClick = {
-                        val parsed = inputKeywords.split(",", "\n", ";")
+                        val parsed = inputKeywords.split(",", "،", "\n", ";", "؛")
                             .map { it.trim() }
                             .filter { it.isNotEmpty() }
                         if (parsed.isNotEmpty()) {
@@ -2511,6 +2721,258 @@ fun AddIdentifierBottomSheet(
                 ) {
                     Text(stringResource(R.string.save_btn), fontWeight = FontWeight.Bold)
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ManageCustomKeywordsBottomSheet(
+    viewModel: PiggyLedgerViewModel,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val customIdentifiers by viewModel.customIdentifiers.collectAsStateWithLifecycle()
+    val providersWithKeywords = remember(customIdentifiers) {
+        customIdentifiers.filter { it.value.isNotEmpty() }.toList()
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(),
+        containerColor = Color.White,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(PinkPrimary.copy(alpha = 0.12f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = null,
+                        tint = PinkPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.manage_custom_keywords),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark
+                    )
+                    Text(
+                        text = stringResource(R.string.manage_custom_keywords_subtitle),
+                        fontSize = 12.sp,
+                        color = TextLight
+                    )
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.back_icon),
+                        tint = TextLight
+                    )
+                }
+            }
+
+            if (providersWithKeywords.isEmpty()) {
+                // Empty state
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(Color(0xFFF1F5F9), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Inbox,
+                                contentDescription = null,
+                                tint = TextLight,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.no_custom_keywords_title),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDark
+                        )
+                        Text(
+                            text = stringResource(R.string.no_custom_keywords_desc),
+                            fontSize = 12.sp,
+                            color = TextLight,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        )
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    providersWithKeywords.forEach { (providerName, keywords) ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    BrandLogo(
+                                        provider = providerName,
+                                        accountType = com.oryno.piggy_ledger.data.AccountType.BANK,
+                                        iconColorHex = null,
+                                        modifier = Modifier.size(36.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = providerName,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp,
+                                            color = NavyDark
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.custom_keywords_count, keywords.size),
+                                            fontSize = 11.sp,
+                                            color = TextLight
+                                        )
+                                    }
+
+                                    TextButton(
+                                        onClick = {
+                                            viewModel.clearCustomIdentifierKeywordsForProvider(providerName) {
+                                                val msg = try {
+                                                    context.getString(R.string.keyword_deleted)
+                                                } catch (e: Exception) {
+                                                    "Keywords cleared"
+                                                }
+                                                com.oryno.piggy_ledger.ui.ToastUtil.show(
+                                                    context,
+                                                    msg,
+                                                    Toast.LENGTH_SHORT
+                                                )
+                                            }
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DeleteOutline,
+                                            contentDescription = null,
+                                            tint = Color(0xFFEF4444),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = stringResource(R.string.clear_all),
+                                            fontSize = 12.sp,
+                                            color = Color(0xFFEF4444),
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+
+                                SimpleFlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalSpacing = 6.dp,
+                                    verticalSpacing = 6.dp
+                                ) {
+                                    keywords.forEach { kw ->
+                                        Row(
+                                            modifier = Modifier
+                                                .background(PinkPrimary.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
+                                                .border(1.dp, PinkPrimary.copy(alpha = 0.35f), RoundedCornerShape(8.dp))
+                                                .padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = kw,
+                                                fontSize = 11.sp,
+                                                color = PinkPrimary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = stringResource(R.string.delete_keyword),
+                                                tint = PinkPrimary,
+                                                modifier = Modifier
+                                                    .size(14.dp)
+                                                    .clickable {
+                                                        viewModel.deleteCustomIdentifierKeyword(providerName, kw) {
+                                                            val msg = try {
+                                                                context.getString(R.string.keyword_deleted)
+                                                            } catch (e: Exception) {
+                                                                "Keyword deleted"
+                                                            }
+                                                            com.oryno.piggy_ledger.ui.ToastUtil.show(
+                                                                context,
+                                                                msg,
+                                                                Toast.LENGTH_SHORT
+                                                            )
+                                                        }
+                                                    }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.done),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
             }
         }
     }

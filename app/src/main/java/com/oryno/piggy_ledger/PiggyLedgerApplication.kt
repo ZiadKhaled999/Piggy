@@ -2,6 +2,9 @@ package com.oryno.piggy_ledger
 
 import android.app.Application
 import android.util.Log
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
+import com.oryno.piggy_ledger.data.UserPreferences
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
 import com.clerk.api.Clerk
@@ -14,6 +17,16 @@ import kotlin.coroutines.resume
 class PiggyLedgerApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        
+        // Restore locally saved language choice immediately
+        try {
+            val savedLanguage = UserPreferences.getSavedAppLanguageSync(this)
+            if (!savedLanguage.isNullOrBlank()) {
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(savedLanguage))
+            }
+        } catch (e: Exception) {
+            Log.e("PiggyLedgerApp", "Failed to restore saved app locale", e)
+        }
         
         try {
             val config = PostHogAndroidConfig(

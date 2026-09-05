@@ -131,6 +131,20 @@ class MainActivity : AppCompatActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     val splashScreen = installSplashScreen()
     super.onCreate(savedInstanceState)
+    
+    // Ensure locally saved language is applied
+    try {
+        val savedLanguage = UserPreferences.getSavedAppLanguageSync(this)
+        if (!savedLanguage.isNullOrBlank()) {
+            val currentLocales = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+            if (!currentLocales.contains(savedLanguage)) {
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(savedLanguage))
+            }
+        }
+    } catch (e: Exception) {
+        android.util.Log.e("MainActivity", "Failed to apply saved language", e)
+    }
+
     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
     enableEdgeToEdge()
 

@@ -439,7 +439,7 @@ fun AddAccountScreen(
                     }
                 }
 
-                /* // Currency Selection
+                // Currency Selection
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(stringResource(R.string.currency), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                     Row(
@@ -469,7 +469,7 @@ fun AddAccountScreen(
                         }
                         Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = TextLight)
                     }
-                } */
+                }
             }
 
             // SECTION: Credit Card Config

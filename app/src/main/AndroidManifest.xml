@@ -102,6 +102,8 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.oryno.piggy_ledger.widget.ACTION_GOAL_CLICK" />
+                <action android:name="com.oryno.piggy_ledger.widget.ACTION_GOAL_BACK" />
                 <action android:name="com.aistudio.piggyledger.vpxqwm.widget.ACTION_GOAL_CLICK" />
                 <action android:name="com.aistudio.piggyledger.vpxqwm.widget.ACTION_GOAL_BACK" />
             </intent-filter>
@@ -114,6 +116,16 @@
             android:name=".widget.GoalsWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="false" />
+
+        <!-- AppCompat Per-App Language Storage Service for Android 12 and below -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
 
         <service
             android:name=".service.SmsNotificationListenerService"

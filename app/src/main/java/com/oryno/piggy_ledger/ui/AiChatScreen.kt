@@ -419,10 +419,21 @@ fun AiChatScreen(
                                 message = message,
                                 shouldStream = !isInitial && !isAnimated,
                                 isLimitReached = isLimitReached,
-                                onAnimationComplete = { animatedMessageIds.add(message.id) },
+                                onAnimationComplete = { 
+                                    animatedMessageIds.add(message.id)
+                                    coroutineScope.launch {
+                                        if (chatHistory.isNotEmpty()) {
+                                            listState.animateScrollToItem(chatHistory.size - 1)
+                                        }
+                                    }
+                                },
                                 onCtaClick = { cta -> 
                                     if (!isLimitReached) {
-                                        viewModel.sendMessage(cta)
+                                        if (cta == "RETRY_LAST") {
+                                            viewModel.retryLastMessage()
+                                        } else {
+                                            viewModel.sendMessage(cta)
+                                        }
                                     }
                                 },
                                 onTtsClick = { msgId, speechText -> ttsManager.speak(msgId, speechText) },
@@ -1748,6 +1759,11 @@ data class ProcessedResponse(
 fun parseResponseTextAndNextSteps(rawText: String): ProcessedResponse {
     var text = com.oryno.piggy_ledger.ai.AiSanitizer.sanitizeThinking(rawText)
     
+    // Service notice cards should not present unrelated finance CTA suggestions
+    if (text.startsWith("# ⚠️") || text.startsWith("# ⏳")) {
+        return ProcessedResponse(mainText = text, nextSteps = emptyList())
+    }
+
     if (text.contains("Knowledge Hub Analysis", ignoreCase = true)) {
         val lines = text.split("\n").filterNot { line ->
             val trimmed = line.trim()
@@ -1757,7 +1773,7 @@ fun parseResponseTextAndNextSteps(rawText: String): ProcessedResponse {
         text = lines.joinToString("\n").trim()
     }
 
-    val nextStepHeaderRegex = Regex("""(?i)(###?\s*(next[_\s]*steps?|suggested[_\s]*next[_\s]*steps?|actionable[_\s]*next[_\s]*steps?|recommended[_\s]*next[_\s]*steps?|recommendations|follow-up\s*questions|related\s*questions|suggested\s*questions|what\s*to\s*ask\s*next)|(next[_\s]*steps?|suggested[_\s]*next[_\s]*steps?|actionable[_\s]*next[_\s]*steps?):)""")
+    val nextStepHeaderRegex = Regex("""(?i)(###?\s*(next[_\s]*steps?|suggested[_\s]*next[_\s]*steps?|actionable[_\s]*next[_\s]*steps?|recommended[_\s]*next[_\s]*steps?|recommendations|follow-up\s*questions|related\s*questions|suggested\s*questions|what\s*to\s*ask\s*next|الخطوات\s*التالية|خطوات\s*مقترحة|أسئلة\s*مقترحة|أسئلة\s*متابعة)|(next[_\s]*steps?|suggested[_\s]*next[_\s]*steps?|actionable[_\s]*next[_\s]*steps?|الخطوات\s*التالية|خطوات\s*مقترحة):)""")
     
     val match = nextStepHeaderRegex.find(text)
     if (match != null) {
@@ -1920,16 +1936,19 @@ fun ChatMessageItem(
                 val mainAnswerText = processedResponse.mainText
                 val nextStepsList = processedResponse.nextSteps
 
-                // Streaming typewriter transition only once on new creation
+                // Rapid, smooth streaming display - dynamically chunked so it completes briskly in ~250-350ms
                 var charCount by remember(message.id, mainAnswerText, shouldStream) {
                     mutableStateOf(if (shouldStream) 0 else mainAnswerText.length)
                 }
 
                 LaunchedEffect(message.id, shouldStream, mainAnswerText) {
                     if (shouldStream && charCount < mainAnswerText.length) {
-                        while (charCount < mainAnswerText.length) {
-                            delay(10)
-                            charCount++
+                        val totalLength = mainAnswerText.length
+                        // Dynamically scale step so text streams rapidly and pleasantly in ~15-20 frames (~250-320ms)
+                        val chunkStep = maxOf(12, totalLength / 18)
+                        while (charCount < totalLength) {
+                            delay(16)
+                            charCount = minOf(charCount + chunkStep, totalLength)
                         }
                         onAnimationComplete()
                     } else {
@@ -1941,8 +1960,17 @@ fun ChatMessageItem(
                     mainAnswerText.take(charCount)
                 }
 
-                // AI Answer Content in clean, high-contrast light typography
-                SelectionContainer {
+                // AI Answer Content in clean, high-contrast light typography (tap to instantly finish streaming)
+                SelectionContainer(
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = charCount < mainAnswerText.length
+                    ) {
+                        charCount = mainAnswerText.length
+                        onAnimationComplete()
+                    }
+                ) {
                     Column {
                         if (displayedText.isNotBlank()) {
                             FormattedMarkdownText(displayedText)
@@ -1958,7 +1986,11 @@ fun ChatMessageItem(
                         is UiBlock.InteractiveChartBlock -> InteractiveChart(block)
                         is UiBlock.ReflectivePollBlock -> ReflectivePoll(block)
                         is UiBlock.LedgerItemBlock -> LedgerItem(block)
-                        is UiBlock.ActionBannerBlock -> ActionBanner(block, onNavigateToPaywall)
+                        is UiBlock.ActionBannerBlock -> ActionBanner(
+                            block = block, 
+                            onUpgradeClick = onNavigateToPaywall,
+                            onRetryClick = { onCtaClick("RETRY_LAST") }
+                        )
                         is UiBlock.HighlightTextBlock -> HighlightedText(block)
                         is UiBlock.GroupBlock -> GroupBlockRenderer(block)
                     }
@@ -2894,38 +2926,57 @@ fun LedgerItem(block: UiBlock.LedgerItemBlock) {
 }
 
 @Composable
-fun ActionBanner(block: UiBlock.ActionBannerBlock, onUpgradeClick: () -> Unit = {}) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = AiUserBubbleColor),
+fun ActionBanner(
+    block: UiBlock.ActionBannerBlock, 
+    onUpgradeClick: () -> Unit = {},
+    onRetryClick: () -> Unit = {}
+) {
+    val isUpgrade = block.message.contains("upgrade", ignoreCase = true) || 
+            block.message.contains("pro", ignoreCase = true) ||
+            block.actionPayload.contains("upgrade", ignoreCase = true) ||
+            block.actionPayload.contains("ترقية", ignoreCase = true)
+
+    val containerColor = if (isUpgrade) Color(0xFFFDF2F8) else Color(0xFFFEF2F2)
+    val borderColor = if (isUpgrade) Color(0xFFFBCFE8) else Color(0xFFFECACA)
+    val textColor = if (isUpgrade) Color(0xFF831843) else Color(0xFF991B1B)
+    val buttonColor = if (isUpgrade) Color(0xFFDB2777) else Color(0xFFDC2626)
+
+    Surface(
+        color = containerColor,
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                if (block.message.contains("upgrade", ignoreCase = true) || 
-                    block.message.contains("pro", ignoreCase = true)) {
-                    onUpgradeClick()
-                }
-            }
+        border = BorderStroke(1.dp, borderColor),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(18.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                block.message,
-                color = Color.White,
-                fontSize = 14.sp,
+                text = block.message,
+                color = textColor,
+                fontSize = 13.5.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.weight(1f),
-                lineHeight = 20.sp
+                lineHeight = 19.sp
             )
-            Spacer(modifier = Modifier.width(14.dp))
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowForward, 
-                contentDescription = "Action", 
-                tint = Color.White, 
-                modifier = Modifier.size(18.dp)
-            )
+            if (block.actionPayload.isNotBlank()) {
+                Spacer(modifier = Modifier.width(12.dp))
+                Button(
+                    onClick = {
+                        if (isUpgrade) onUpgradeClick() else onRetryClick()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = block.actionPayload,
+                        color = Color.White,
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
     }
 }

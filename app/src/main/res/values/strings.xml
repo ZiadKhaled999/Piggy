@@ -666,6 +666,15 @@
     <string name="keywords_placeholder">e.g. %1$s, VF-Cash, 010</string>
     <string name="save_btn">Save</string>
     <string name="toast_saved_keywords">Saved keywords for %1$s</string>
+    <string name="manage_custom_keywords">Manage Custom Keywords</string>
+    <string name="manage_custom_keywords_subtitle">View and delete custom SMS keywords by provider</string>
+    <string name="no_custom_keywords_title">No Custom Keywords</string>
+    <string name="no_custom_keywords_desc">You haven\'t added any custom keywords yet. Tap \'+\' next to any bank or wallet to add your own keywords.</string>
+    <string name="delete_keyword">Delete keyword</string>
+    <string name="keyword_deleted">Keyword deleted</string>
+    <string name="clear_provider_keywords">Clear all for %1$s</string>
+    <string name="clear_all">Clear all</string>
+    <string name="custom_keywords_count">%1$d custom keywords</string>
     <string name="notif_tx_title_deposit">Deposit Received</string>
     <string name="notif_tx_title_withdrawal">Cash Withdrawal</string>
     <string name="notif_tx_title_transfer">Money Transfer</string>
@@ -1197,4 +1206,27 @@
     <string name="ai_cta_optimize_budget">How can I optimize my monthly budget?</string>
     <string name="ai_cta_balances_summary">Show all my account balances summary</string>
     <string name="ai_copy">Copy</string>
+
+    <!-- Permission Health Check Bottom Sheet -->
+    <string name="permissions_sheet_title">Required Permissions</string>
+    <string name="permissions_sheet_subtitle">Piggy Ledger requires SMS and notification permissions to automatically track bank transfers and keep your balance up to date.</string>
+    <string name="permissions_critical_section">Critical (Required)</string>
+    <string name="permissions_optional_section">Optional Features</string>
+    <string name="permissions_required_badge">Required</string>
+    <string name="permissions_optional_badge">Optional</string>
+    <string name="permissions_active_badge">Active</string>
+    <string name="permissions_sms_title">SMS Transaction Detection</string>
+    <string name="permissions_sms_desc">Automatically detects and logs incoming transfers from bank accounts and digital wallets (InstaPay, Vodafone Cash, etc.).</string>
+    <string name="permissions_notif_title">Push Notifications</string>
+    <string name="permissions_notif_desc">Alerts you when new transactions are detected, pending reviews need approval, and keeps your streak alive.</string>
+    <string name="permissions_contacts_title">Contacts Access</string>
+    <string name="permissions_contacts_desc">Auto-suggests names and phone numbers when logging loans, repayments, and personal transactions.</string>
+    <string name="permissions_mic_title">Microphone &amp; Voice</string>
+    <string name="permissions_mic_desc">Enables voice expense logging and hands-free conversations with Piggy AI assistant.</string>
+    <string name="permissions_grant_btn">Enable</string>
+    <string name="permissions_enabled_btn">Enabled</string>
+    <string name="permissions_open_settings">Open Settings</string>
+    <string name="permissions_continue_btn">Continue to App</string>
+    <string name="permissions_locked_warning">Please enable both SMS and Notification permissions to continue using Piggy Ledger.</string>
+    <string name="permissions_grant_all_critical">Enable Required Permissions</string>
 </resources>

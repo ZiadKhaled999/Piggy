@@ -158,7 +158,7 @@ data class UserPreferencesEntity(
     val isLifetimePremium: Boolean = false,
     val preferredAccountId: String? = null,
     @kotlinx.serialization.Transient
-    val appCurrency: String = "USD",
+    val appCurrency: String = "EGP",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false,

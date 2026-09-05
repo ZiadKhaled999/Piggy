@@ -1194,4 +1194,38 @@
     <string name="ai_cta_optimize_budget">إزاي أظبط ميزانيتي الشهرية؟</string>
     <string name="ai_cta_balances_summary">وريني ملخص أرصدة حساباتي</string>
     <string name="ai_copy">انسخ</string>
+
+    <!-- Permission Health Check Bottom Sheet -->
+    <string name="permissions_sheet_title">الأذونات المطلوبة عشان تكمل</string>
+    <string name="permissions_sheet_subtitle">بيجى محتاج إذن الرسايل والإشعارات عشان يسجل تحويلات البنوك والمحافظ تلقائي ويظبط رصيدك أول بأول.</string>
+    <string name="permissions_critical_section">أذونات أساسية (ضرورية)</string>
+    <string name="permissions_optional_section">ميزات تانية (اختيارية)</string>
+    <string name="permissions_required_badge">مطلوب</string>
+    <string name="permissions_optional_badge">اختياري</string>
+    <string name="permissions_active_badge">شغال</string>
+    <string name="permissions_sms_title">تتبع رسايل المعاملات (SMS)</string>
+    <string name="permissions_sms_desc">بيقرأ رسايل البنوك والمحافظ تلقائي (إنستاباي، فودافون كاش، وغيرها) عشان يسجل كل تحويل من غير تعب.</string>
+    <string name="permissions_notif_title">الإشعارات والتنبيهات</string>
+    <string name="permissions_notif_desc">بيفكرك أول ما يجيلك تحويل جديد عشان تأكده، ويحافظ على استمرار سلسلتك اليومية.</string>
+    <string name="permissions_contacts_title">قراية جهات الاتصال</string>
+    <string name="permissions_contacts_desc">بيساعدك تختار أسامي أصحابك وأرقامهم بسرعة لما تسجل ديون أو سلفيات.</string>
+    <string name="permissions_mic_title">المايك والتسجيل الصوتي</string>
+    <string name="permissions_mic_desc">تقدر تسجل مصاريفك بصوتك وتتكلم مع مساعد بيجى الذكي بكل سهولة.</string>
+    <string name="permissions_grant_btn">فعّل</string>
+    <string name="permissions_enabled_btn">متفعل</string>
+    <string name="permissions_open_settings">افتح الضبط</string>
+    <string name="permissions_continue_btn">كمّل للتطبيق</string>
+    <string name="permissions_locked_warning">لازم تفعل إذن الرسايل والإشعارات عشان تقدر تستخدم بيجى.</string>
+    <string name="permissions_grant_all_critical">تفعيل الأذونات المطلوبة</string>
+
+    <!-- Custom Identifiers & Keywords Management -->
+    <string name="manage_custom_keywords">إدارة الكلمات المفتاحية</string>
+    <string name="manage_custom_keywords_subtitle">عرض وحذف الكلمات المفتاحية المخصصة حسب المزود</string>
+    <string name="no_custom_keywords_title">لا توجد كلمات مفتاحية مخصصة</string>
+    <string name="no_custom_keywords_desc">لم تقم بإضافة أي كلمات مفتاحية مخصصة بعد. اضغط على \'+\' بجوار أي بنك أو محفظة لإضافة كلماتك.</string>
+    <string name="delete_keyword">حذف الكلمة المفتاحية</string>
+    <string name="keyword_deleted">تم حذف الكلمة المفتاحية</string>
+    <string name="clear_provider_keywords">مسح الكل لـ %1$s</string>
+    <string name="clear_all">مسح الكل</string>
+    <string name="custom_keywords_count">%1$d كلمة مخصصة</string>
 </resources>

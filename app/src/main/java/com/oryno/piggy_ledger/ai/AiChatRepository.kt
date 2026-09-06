@@ -187,80 +187,58 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
     }
 
     suspend fun getAiResponse(messages: List<ChatMessageRequest>): Result<SovereignAiResponse> = withContext(Dispatchers.IO) {
-        if (apiKey.isBlank() || apiKey == "YOUR_GROQ_API_KEY") {
-            return@withContext Result.failure(Exception("AI service is temporarily updating. Please try again shortly."))
-        }
-
         val sanitizedMessages = messages.filter { it.content.isNotBlank() }
         if (sanitizedMessages.isEmpty()) {
             return@withContext Result.failure(Exception("Please enter a question."))
         }
 
-        val isGroq = apiKey.startsWith("gsk_") || !apiKey.startsWith("sk-")
-        val endpointUrl = if (isGroq) "https://api.groq.com/openai/v1/chat/completions" else "https://api.deepseek.com/chat/completions"
-
+        val endpointUrl = "https://piggy-ai-gateway.albhyrytwamrwhy.workers.dev/"
         var lastException: Exception? = null
 
-        // Primary model + fallback models if Groq is used
-        val modelsToTry = if (isGroq) {
-            listOf("qwen/qwen3.6-27b", "llama-3.3-70b-versatile")
-        } else {
-            listOf("deepseek-chat")
-        }
+        for (attempt in 1..2) {
+            try {
+                val requestBody = GroqRequest(
+                    model = "@cf/meta/llama-3.1-8b-instruct-fp8",
+                    messages = sanitizedMessages,
+                    temperature = 0.6,
+                    maxCompletionTokens = 2048,
+                    topP = 0.95,
+                    stream = false,
+                    reasoningEffort = null
+                )
 
-        for (candidateModel in modelsToTry) {
-            for (attempt in 1..2) {
-                try {
-                    val requestBody = GroqRequest(
-                        model = candidateModel,
-                        messages = sanitizedMessages,
-                        temperature = 0.6,
-                        maxCompletionTokens = 2048,
-                        topP = 0.95,
-                        stream = false,
-                        reasoningEffort = null
-                    )
+                val requestStr = json.encodeToString(requestBody)
 
-                    val requestStr = json.encodeToString(requestBody)
-                    val request = Request.Builder()
-                        .url(endpointUrl)
-                        .addHeader("Authorization", "Bearer $apiKey")
-                        .post(requestStr.toRequestBody("application/json".toMediaType()))
-                        .build()
+                val request = Request.Builder()
+                    .url(endpointUrl)
+                    .addHeader("Authorization", "Bearer DUMMY_KEY_CF")
+                    .post(requestStr.toRequestBody("application/json".toMediaType()))
+                    .build()
 
-                    val response = client.newCall(request).execute()
-                    val responseBody = response.body?.string().orEmpty()
+                val response = client.newCall(request).execute()
+                val responseBody = response.body?.string().orEmpty()
 
-                    if (response.isSuccessful && responseBody.isNotBlank()) {
-                        val groqResponse = json.decodeFromString<GroqResponse>(responseBody)
-                        val rawContent = groqResponse.choices.firstOrNull()?.message?.content
-                            ?: return@withContext Result.failure(Exception("AI did not produce text content. Please try again."))
+                if (response.isSuccessful && responseBody.isNotBlank()) {
+                    val groqResponse = json.decodeFromString<GroqResponse>(responseBody)
+                    val rawContent = groqResponse.choices.firstOrNull()?.message?.content
+                        ?: return@withContext Result.failure(Exception("AI did not produce text content. Please try again."))
+                    
+                    val cleanedContent = AiSanitizer.sanitizeThinking(rawContent).ifBlank {
+                        "I've analyzed your financial ledger. How can I assist you with your finances today?"
+                    }
 
-                        // Completely eliminate thinking tokens and tags from the ground up
-                        val cleanedContent = AiSanitizer.sanitizeThinking(rawContent).ifBlank {
-                            "I've analyzed your financial ledger. How can I assist you with your finances today?"
-                        }
-
-                        val jsonStr = extractJson(cleanedContent)
-                        val parsed = if (jsonStr.isNotBlank() && jsonStr.contains("archetype_rationale")) {
-                            try {
-                                val decoded = json.decodeFromString<SovereignAiResponse>(jsonStr)
-                                val cleanRationale = AiSanitizer.sanitizeThinking(decoded.archetypeRationale).ifBlank {
-                                    "I've analyzed your financial ledger. How can I assist you with your finances today?"
-                                }
-                                decoded.copy(
-                                    archetypeRationale = cleanRationale,
-                                    thinkingProcess = null
-                                )
-                            } catch (e: Exception) {
-                                SovereignAiResponse(
-                                    archetypeRationale = cleanedContent,
-                                    currentArchetype = "",
-                                    uiBlocks = emptyList(),
-                                    thinkingProcess = null
-                                )
+                    val jsonStr = extractJson(cleanedContent)
+                    val parsed = if (jsonStr.isNotBlank() && jsonStr.contains("archetype_rationale")) {
+                        try {
+                            val decoded = json.decodeFromString<SovereignAiResponse>(jsonStr)
+                            val cleanRationale = AiSanitizer.sanitizeThinking(decoded.archetypeRationale).ifBlank {
+                                "I've analyzed your financial ledger. How can I assist you with your finances today?"
                             }
-                        } else {
+                            decoded.copy(
+                                archetypeRationale = cleanRationale,
+                                thinkingProcess = null
+                            )
+                        } catch (e: Exception) {
                             SovereignAiResponse(
                                 archetypeRationale = cleanedContent,
                                 currentArchetype = "",
@@ -268,56 +246,45 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
                                 thinkingProcess = null
                             )
                         }
-                        return@withContext Result.success(parsed)
                     } else {
-                        android.util.Log.w("AiChat", "Model $candidateModel attempt $attempt API Error ${response.code}: $responseBody")
-
-                        // Extract detailed error message from response json if available
-                        val errorDetail = try {
-                            val parsedObj = json.parseToJsonElement(responseBody)
-                            val errObj = parsedObj.toString()
-                            if (errObj.contains("\"message\"")) {
-                                val msgPart = errObj.substringAfter("\"message\":\"").substringBefore("\"")
-                                if (msgPart.isNotBlank() && !msgPart.contains("{")) msgPart else null
-                            } else null
-                        } catch (e: Exception) {
-                            null
-                        }
-
-                        val message = when (response.code) {
-                            401, 403 -> "Service authorization is updating. Please try again in a moment."
-                            404 -> "Service is temporarily updating. Please try again in a moment."
-                            429 -> "Piggy is receiving high demand right now. Please try again shortly."
-                            in 500..599 -> "Service is temporarily busy. Please try again shortly."
-                            else -> "Service is temporarily unavailable. Please try again."
-                        }
-                        lastException = Exception(message)
-                        if (response.code == 401 || response.code == 403) {
-                            return@withContext Result.failure(lastException)
-                        }
+                        SovereignAiResponse(
+                            archetypeRationale = cleanedContent,
+                            currentArchetype = "",
+                            uiBlocks = emptyList(),
+                            thinkingProcess = null
+                        )
                     }
-                } catch (e: java.net.UnknownHostException) {
-                    android.util.Log.e("AiChat", "DNS/Network issue on attempt $attempt: ${e.message}")
-                    lastException = Exception("Internet connection appears to be offline.")
-                } catch (e: java.net.SocketTimeoutException) {
-                    android.util.Log.w("AiChat", "Timeout on $candidateModel attempt $attempt: ${e.message}")
-                    lastException = Exception("Connection timed out. Please check your network and retry.")
-                } catch (e: Exception) {
-                    android.util.Log.e("AiChat", "Exception on $candidateModel attempt $attempt: ${e.message}", e)
-                    lastException = Exception("Service encountered a brief hiccup. Please try again.")
+                    
+                    return@withContext Result.success(parsed)
+                } else {
+                    android.util.Log.w("AiChat", "Worker attempt $attempt API Error ${response.code}: $responseBody")
+                    val message = when (response.code) {
+                        429 -> "Piggy is receiving high demand right now. Please try again shortly."
+                        in 500..599 -> "Service is temporarily busy. Please try again shortly."
+                        else -> "Service is temporarily unavailable. Please try again."
+                    }
+                    lastException = Exception(message)
                 }
-
-                // Short backoff before next retry
-                if (attempt < 2) {
-                    kotlinx.coroutines.delay(600)
-                }
+            } catch (e: java.net.UnknownHostException) {
+                android.util.Log.e("AiChat", "DNS/Network issue on attempt $attempt: ${e.message}")
+                lastException = Exception("Internet connection appears to be offline.")
+            } catch (e: java.net.SocketTimeoutException) {
+                android.util.Log.w("AiChat", "Timeout on attempt $attempt: ${e.message}")
+                lastException = Exception("Connection timed out. Please check your network and retry.")
+            } catch (e: Exception) {
+                android.util.Log.e("AiChat", "Exception on attempt $attempt: ${e.message}", e)
+                lastException = Exception("Service encountered a brief hiccup. Please try again.")
+            }
+            
+            if (attempt < 2) {
+                kotlinx.coroutines.delay(600)
             }
         }
-
+        
         Result.failure(lastException ?: Exception("Service is temporarily busy. Please try again."))
     }
 
-    fun getAllAccounts(): Flow<List<com.oryno.piggy_ledger.data.Account>> {
+    fun getAllAccounts(): kotlinx.coroutines.flow.Flow<List<com.oryno.piggy_ledger.data.Account>> {
         return dao.getAllAccounts()
     }
 

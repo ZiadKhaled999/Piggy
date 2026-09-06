@@ -493,7 +493,8 @@ class AiChatViewModel(
                 apiMessages.add(ChatMessageRequest(role = "system", content = fullSystemPrompt))
                 
                 // Add previous history with cleaned text content (completely free of thinking blocks)
-                currentHistory.forEach { msg ->
+                val recentHistory = currentHistory.takeLast(4)
+                recentHistory.forEach { msg ->
                     val cleanedText = if (msg.role == "assistant") {
                         val rawAssistantText = try {
                             val parsed = json.decodeFromString<SovereignAiResponse>(msg.content)

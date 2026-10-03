@@ -374,7 +374,7 @@ fun AuthScreen(
                             enabled = !isLoading
                         ) {
                             if (isLoading) {
-                                ExpressiveLoadingIndicator(size = 24.dp, color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                             } else {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -637,7 +637,7 @@ fun AuthScreen(
                             enabled = !isLoading
                         ) {
                             if (isLoading) {
-                                ExpressiveLoadingIndicator(size = 24.dp, color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                             } else {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -892,7 +892,7 @@ fun AuthScreen(
                             enabled = !isLoading
                         ) {
                             if (isLoading) {
-                                ExpressiveLoadingIndicator(size = 24.dp, color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                             } else {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -1232,7 +1232,7 @@ fun AuthScreen(
                             enabled = !isLoading
                         ) {
                             if (isLoading) {
-                                ExpressiveLoadingIndicator(size = 24.dp, color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                             } else {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(20.dp))

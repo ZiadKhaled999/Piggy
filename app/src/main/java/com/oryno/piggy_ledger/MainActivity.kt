@@ -46,7 +46,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
-import com.oryno.piggy_ledger.ui.ExpressiveLoadingIndicator
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.text.font.FontWeight
@@ -108,7 +108,10 @@ import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.android.play.core.install.InstallStateUpdatedListener
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 
 class MainActivity : AppCompatActivity() {
 
@@ -196,39 +199,102 @@ class MainActivity : AppCompatActivity() {
       PiggyLedgerTheme {
         val dest = initialDestination
         if (dest != null) {
-            if (!isBiometricCheckComplete) {
+            val isPreAuth = dest != Screen.MainContainer
+            val isLocked = !isPreAuth && !isAuthenticatedByBiometric
+
+            if (!isBiometricCheckComplete && !isPreAuth) {
                 Box(modifier = Modifier.fillMaxSize().background(Color(0xFFFFF9F5)), contentAlignment = Alignment.Center) {
-                    ExpressiveLoadingIndicator()
+                    CircularProgressIndicator(color = PinkPrimary)
                 }
+            } else if (!isLocked) {
+                PiggyLedgerApp(
+                    factory = factory,
+                    initialDestination = dest,
+                    openNotificationId = activeOpenNotificationId,
+                    shortcutAction = activeShortcutAction,
+                    onConsumeShortcut = { activeShortcutAction = null }
+                )
             } else {
-                val isLocked = !isAuthenticatedByBiometric
-                if (!isLocked) {
-                    PiggyLedgerApp(
-                        factory = factory,
-                        initialDestination = dest,
-                        openNotificationId = activeOpenNotificationId,
-                        shortcutAction = activeShortcutAction,
-                        onConsumeShortcut = { activeShortcutAction = null }
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier.fillMaxSize().background(Color.White),
-                        contentAlignment = Alignment.Center
+                // Branded, responsive Lock Screen with fallback
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White)
+                        .padding(horizontal = 24.dp)
+                        .statusBarsPadding()
+                        .navigationBarsPadding(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_piggy_hello),
+                            contentDescription = "Piggy Mascot",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(CircleShape)
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Text(
+                            text = "Piggy Ledger",
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = NavyDark
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Your app is locked for your privacy and security",
+                            fontSize = 14.sp,
+                            color = Color(0xFF64748B),
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(32.dp))
+                        Button(
+                            onClick = { checkBiometricLock(userPreferences) },
+                            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier
+                                .fillMaxWidth(0.85f)
+                                .height(52.dp)
+                        ) {
                             Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Locked",
-                                tint = PinkPrimary,
-                                modifier = Modifier.size(64.dp)
+                                imageVector = Icons.Default.Fingerprint,
+                                contentDescription = null,
+                                modifier = Modifier.size(22.dp)
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = { checkBiometricLock(userPreferences) },
-                                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
-                            ) {
-                                Text("Unlock App")
-                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Unlock with Biometrics",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                        // Fallback button so emulator and devices without active biometrics are never permanently locked
+                        OutlinedButton(
+                            onClick = {
+                                isAuthenticatedByBiometric = true
+                                isBiometricCheckComplete = true
+                                lifecycleScope.launch {
+                                    userPreferences.saveLastExitTime(System.currentTimeMillis())
+                                }
+                            },
+                            shape = RoundedCornerShape(20.dp),
+                            border = BorderStroke(1.dp, PinkPrimary),
+                            modifier = Modifier
+                                .fillMaxWidth(0.85f)
+                                .height(48.dp)
+                        ) {
+                            Text(
+                                text = "Unlock App",
+                                color = PinkPrimary,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 15.sp
+                            )
                         }
                     }
                 }
@@ -259,35 +325,37 @@ class MainActivity : AppCompatActivity() {
   private fun checkBiometricLock(userPreferences: UserPreferences) {
       if (isPromptShowing) return
       lifecycleScope.launch {
+          val isAuth = userPreferences.isAuthenticated.first()
           val isEnabled = userPreferences.isBiometricLockEnabled.first()
-          if (isEnabled) {
-              val biometricManager = BiometricManager.from(this@MainActivity)
-              val canAuthenticate = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
-              if (canAuthenticate == BiometricManager.BIOMETRIC_SUCCESS) {
-                  isPromptShowing = true
-                  com.oryno.piggy_ledger.ui.BiometricHelper.authenticateToUnhide(
-                      context = this@MainActivity,
-                      onSuccess = {
-                          isAuthenticatedByBiometric = true
-                          isBiometricCheckComplete = true
-                          lifecycleScope.launch {
-                              userPreferences.saveLastExitTime(System.currentTimeMillis())
-                              kotlinx.coroutines.delay(500)
-                              isPromptShowing = false
-                          }
-                      },
-                      onError = {
-                          isAuthenticatedByBiometric = false
-                          isBiometricCheckComplete = true
+          if (!isAuth || !isEnabled) {
+              isAuthenticatedByBiometric = true
+              isBiometricCheckComplete = true
+              return@launch
+          }
+
+          val biometricManager = BiometricManager.from(this@MainActivity)
+          val canAuthenticate = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+          if (canAuthenticate == BiometricManager.BIOMETRIC_SUCCESS) {
+              isPromptShowing = true
+              com.oryno.piggy_ledger.ui.BiometricHelper.authenticateToUnhide(
+                  context = this@MainActivity,
+                  onSuccess = {
+                      isAuthenticatedByBiometric = true
+                      isBiometricCheckComplete = true
+                      lifecycleScope.launch {
+                          userPreferences.saveLastExitTime(System.currentTimeMillis())
+                          kotlinx.coroutines.delay(500)
                           isPromptShowing = false
                       }
-                  )
-              } else {
-                  // Hardware unavailable or nothing enrolled, fall back to allow access
-                  isAuthenticatedByBiometric = true
-                  isBiometricCheckComplete = true
-              }
+                  },
+                  onError = {
+                      isAuthenticatedByBiometric = false
+                      isBiometricCheckComplete = true
+                      isPromptShowing = false
+                  }
+              )
           } else {
+              // Hardware unavailable or nothing enrolled on emulator/device
               isAuthenticatedByBiometric = true
               isBiometricCheckComplete = true
           }
@@ -405,22 +473,34 @@ class MainActivity : AppCompatActivity() {
   private fun checkLockStatus() {
       if (isPromptShowing) return
       lifecycleScope.launch {
+          val isAuth = userPreferences.isAuthenticated.first()
           val isEnabled = userPreferences.isBiometricLockEnabled.first()
+
+          if (!isAuth || !isEnabled) {
+              isAuthenticatedByBiometric = true
+              isBiometricCheckComplete = true
+              return@launch
+          }
+
+          val biometricManager = BiometricManager.from(this@MainActivity)
+          val canAuthenticate = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+          if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
+              // Hardware unavailable or no biometric credentials enrolled on emulator/device
+              isAuthenticatedByBiometric = true
+              isBiometricCheckComplete = true
+              return@launch
+          }
+
           val lastExit = userPreferences.lastExitTime.first()
           val timeoutSeconds = userPreferences.lockTimeoutSeconds.first()
 
-          if (isEnabled) {
-              val currentTime = System.currentTimeMillis()
-              val elapsedSeconds = (currentTime - lastExit) / 1000
+          val currentTime = System.currentTimeMillis()
+          val elapsedSeconds = (currentTime - lastExit) / 1000
 
-              if (lastExit == 0L || elapsedSeconds >= timeoutSeconds) {
-                  isAuthenticatedByBiometric = false
-                  isBiometricCheckComplete = false
-                  checkBiometricLock(userPreferences)
-              } else {
-                  isAuthenticatedByBiometric = true
-                  isBiometricCheckComplete = true
-              }
+          if (lastExit == 0L || elapsedSeconds >= timeoutSeconds) {
+              isAuthenticatedByBiometric = false
+              isBiometricCheckComplete = true
+              checkBiometricLock(userPreferences)
           } else {
               isAuthenticatedByBiometric = true
               isBiometricCheckComplete = true

@@ -1,6 +1,7 @@
 package com.oryno.piggy_ledger.service
 
 import android.content.Context
+import android.util.Log
 import com.oryno.piggy_ledger.data.PiggyLedgerDatabase
 import com.oryno.piggy_ledger.data.PendingTransaction
 import com.oryno.piggy_ledger.data.Account
@@ -27,14 +28,21 @@ object SmsProcessor {
             "شروط", "أحكام", "وفرلي", "شحنة", "باقة", "وحدات", "تحويلية", "فيلوس", "اشترك واكسب", "gold", "شحن",
             "إلغاء", "الاشتراك", "قف", "stop"
         )
-        if (promoKeywords.any { cleanBody.contains(it) }) {
+        // Only classify as promotional if it lacks financial transaction words
+        val financialIndicators = listOf(
+            "تم خصم", "حركة خصم", "تم تحويل", "قمت بتحويل", "استقبلت", "تم سحب", "شراء بمبلغ",
+            "debited", "credited", "purchase with", "transfer of", "withdrawn"
+        )
+        val hasFinancialIndicator = financialIndicators.any { cleanBody.contains(it) }
+
+        if (!hasFinancialIndicator && promoKeywords.any { cleanBody.contains(it) }) {
             return true
         }
 
         val promoUrls = listOf(
-            "myo.orange.eg", "web.vodafone.com.eg", "te.eg", "promo", "offer", "campaign"
+            "myo.orange.eg", "web.vodafone.com.eg", "te.eg"
         )
-        if (promoUrls.any { cleanBody.contains(it) }) {
+        if (!hasFinancialIndicator && promoUrls.any { cleanBody.contains(it) }) {
             return true
         }
 
@@ -43,7 +51,7 @@ object SmsProcessor {
 
     suspend fun process(context: Context, sender: String, rawBody: String) {
         if (isPromotionalSms(rawBody, sender)) {
-            android.util.Log.d("SmsProcessor", "Ignoring promotional SMS from $sender")
+            Log.d("SmsProcessor", "Ignoring promotional SMS from $sender")
             return
         }
 
@@ -53,7 +61,7 @@ object SmsProcessor {
         val isIncome = parsedSms.isIncome
         val actionType = parsedSms.actionType
 
-        android.util.Log.d("SmsProcessor", "Transaction from/for: $merchant, Amount: $amount, Income: $isIncome")
+        Log.d("SmsProcessor", "Processing SMS - Sender: $sender, Merchant: $merchant, Amount: $amount, Income: $isIncome, Action: $actionType")
 
         val db = PiggyLedgerDatabase.getInstance(context)
         val dao = db.piggyLedgerDao()
@@ -97,72 +105,46 @@ object SmsProcessor {
 
                 notificationManager.notify(System.currentTimeMillis().toInt(), notification)
             } catch (e: Exception) {
-                android.util.Log.e("SmsProcessor", "Failed to show parse failure notification", e)
+                Log.e("SmsProcessor", "Failed to show parse failure notification", e)
             }
             return
         }
 
-        val body = SmsParser.convertArabicDigitsAndSymbols(rawBody)
-
-        val accounts = dao.getAllAccountsSync()
-
-        val uniqueMatches = accounts.filter { account ->
-            val hasCard = account.card_numbers?.let { it.isNotBlank() && body.contains(it) } == true
-            val hasBank = account.bank_account_no?.let { it.isNotBlank() && body.contains(it) } == true
-            hasCard || hasBank
-        }
-
-        val providerMatches = accounts.filter { account ->
-            val cleanSender = sender.replace(" ", "").replace("-", "").lowercase()
-            val cleanBody = body.lowercase()
-            val provMatch = account.provider?.takeIf { it.isNotBlank() }?.let { prov ->
-                val cleanProv = prov.replace(" ", "").lowercase()
-                cleanSender.contains(cleanProv) ||
-                cleanProv.contains(cleanSender) ||
-                cleanBody.contains(prov.lowercase()) ||
-                cleanBody.contains(cleanProv)
-            } ?: false
-            val nameMatch = account.name.takeIf { it.isNotBlank() }?.let { name ->
-                val cleanName = name.replace(" ", "").lowercase()
-                cleanSender.contains(cleanName) ||
-                cleanName.contains(cleanSender) ||
-                cleanBody.contains(name.lowercase()) ||
-                cleanBody.contains(cleanName)
-            } ?: false
-            val labelMatch = account.label?.takeIf { it.isNotBlank() }?.let { label ->
-                val cleanLabel = label.replace(" ", "").lowercase()
-                cleanSender.contains(cleanLabel) ||
-                cleanBody.contains(label.lowercase())
-            } ?: false
-            provMatch || nameMatch || labelMatch
-        }
-
-        val matchedAccount: Account? = when {
-            uniqueMatches.size == 1 -> uniqueMatches.first()
-            uniqueMatches.isEmpty() && providerMatches.size == 1 -> providerMatches.first()
-            else -> null
-        }
+        // Resolve target account using smart registry (checks single account, card digits, provider aliases, custom keywords, preferences)
+        val matchedAccount: Account? = BankProviderRegistry.resolveAccount(
+            context = context,
+            sender = sender,
+            rawBody = rawBody,
+            actionType = actionType
+        )
 
         if (matchedAccount != null) {
+            Log.d("SmsProcessor", "SMS matched to account '${matchedAccount.name}' (id: ${matchedAccount.id})")
+
+            val isInstaPay = sender.contains("instapay", ignoreCase = true) ||
+                             rawBody.contains("instapay", ignoreCase = true) ||
+                             rawBody.contains("انستاباي")
+
             dao.processSmsTransaction(
                 accountId = matchedAccount.id,
                 amount = amount,
                 merchant = merchant,
-                applyInstaPayFee = matchedAccount.insta_pay_fee,
+                applyInstaPayFee = matchedAccount.insta_pay_fee && isInstaPay,
                 isIncome = isIncome
             )
-            
+
             try {
                 com.oryno.piggy_ledger.ui.NotificationHelper(context).showTransactionProcessedNotification(
                     accountName = matchedAccount.name,
-                    currency = "EGP",
+                    currency = matchedAccount.currency.ifBlank { "EGP" },
                     amount = amount,
                     actionType = actionType
                 )
             } catch (e: Exception) {
-                android.util.Log.e("SmsProcessor", "Failed to show processed notification", e)
+                Log.e("SmsProcessor", "Failed to show processed notification", e)
             }
         } else {
+            Log.d("SmsProcessor", "Could not unambiguously match account for SMS from $sender; inserting to Pending Transactions")
             dao.insertPendingTransaction(
                 PendingTransaction(
                     amount = if (isIncome) amount else -amount,
@@ -207,7 +189,7 @@ object SmsProcessor {
 
                 notificationManager.notify(System.currentTimeMillis().toInt(), notification)
             } catch (e: Exception) {
-                android.util.Log.e("SmsProcessor", "Failed to show notification", e)
+                Log.e("SmsProcessor", "Failed to show notification", e)
             }
         }
     }

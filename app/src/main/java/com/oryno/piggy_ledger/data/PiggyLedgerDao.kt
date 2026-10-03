@@ -199,6 +199,9 @@ interface PiggyLedgerDao {
     @Query("SELECT * FROM accounts")
     suspend fun getAllAccountsSync(): List<Account>
 
+    @Query("SELECT * FROM accounts WHERE is_deleted = 0")
+    suspend fun getActiveAccountsSync(): List<Account>
+
     @Query("SELECT * FROM loans")
     suspend fun getAllLoansSync(): List<Loan>
 
@@ -324,6 +327,9 @@ interface PiggyLedgerDao {
 
     @Query("DELETE FROM ai_chat_messages")
     suspend fun clearChatMessages()
+
+    @Query("DELETE FROM ai_chat_messages WHERE id = :id")
+    suspend fun deleteChatMessageById(id: String)
 
     @Query("SELECT * FROM user_preferences")
     suspend fun getAllUserPreferencesSync(): List<UserPreferencesEntity>

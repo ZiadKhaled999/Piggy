@@ -491,6 +491,23 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                 fontWeight = FontWeight.Bold
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        TextButton(
+                            onClick = {
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_sms_denied), Toast.LENGTH_SHORT)
+                                currentPage++
+                            },
+                            modifier = Modifier.testTag("skip_sms_permission_button")
+                        ) {
+                            Text(
+                                text = stringResource(R.string.onboarding_sms_skip),
+                                color = TextLight,
+                                fontSize = if (isSmallScreen) 13.sp else 14.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 } else if (pageIndex == 4) {
                     // NOTIFICATION PERMISSION SLIDE - Larger realistic phone mockup + overlapping card
@@ -675,6 +692,23 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                 color = Color.White,
                                 fontSize = if (isSmallScreen) 13.5.sp else 15.5.sp,
                                 fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        TextButton(
+                            onClick = {
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_notif_denied), Toast.LENGTH_SHORT)
+                                currentPage++
+                            },
+                            modifier = Modifier.testTag("skip_notif_permission_button")
+                        ) {
+                            Text(
+                                text = stringResource(R.string.onboarding_notif_skip),
+                                color = TextLight,
+                                fontSize = if (isSmallScreen) 13.sp else 14.5.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
@@ -1358,12 +1392,12 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                         for (step in 0..3) {
                             currentStep = step
                             progressAnim.snapTo(0f)
-                            val duration = 1100 + step * 100
+                            val duration = 400 + step * 50
                             progressAnim.animateTo(
                                 targetValue = 1f,
                                 animationSpec = tween(durationMillis = duration)
                             )
-                            delay(120)
+                            delay(80)
                         }
                         isCompleted = true
                         isPlanFinished = true
@@ -1475,8 +1509,8 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                                 enter = fadeIn() + scaleIn(),
                                                 exit = fadeOut() + scaleOut()
                                             ) {
-                                                ExpressiveLoadingIndicator(
-                                                    size = 22.dp,
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(22.dp),
                                                     color = PinkPrimary,
                                                     strokeWidth = 2.5.dp
                                                 )
@@ -1818,21 +1852,16 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
             }
 
             if (currentPage !in 7..9) {
-                val isNavEnabled = when (currentPage) {
-                    3 -> false // Inactive until user clicks "Enable Secure Tracking"
-                    4 -> false // Inactive until user clicks "Enable Notifications"
-                    11 -> isPlanFinished
-                    else -> true
-                }
-
-                // Custom Progress Button
+                // Custom Progress Button - always responsive
                 ProgressNextButton(
                     currentPage = currentPage,
                     totalPages = pages.size,
                     isSmallScreen = isSmallScreen,
-                    enabled = isNavEnabled,
+                    enabled = true,
                     onNext = {
-                        if (!isNavEnabled) return@ProgressNextButton
+                        if (currentPage == 11 && !isPlanFinished) {
+                            isPlanFinished = true
+                        }
                         if (currentPage < pages.size - 1) {
                             if (currentPage == 5 && selectedIntent == -1) {
                                 com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT)

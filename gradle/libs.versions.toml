@@ -42,6 +42,7 @@ robolectric = "4.16.1"
 roborazzi = "1.59.0"
 vico = "1.15.0"
 firebaseBom = "34.15.0"
+firebaseCrashlyticsPlugin = "3.0.3"
 secretsGradlePlugin = "2.0.1"
 googleServices = "4.5.0"
 posthog = "3.+"
@@ -124,6 +125,8 @@ vico-core = { group = "com.patrykandpatrick.vico", name = "core", version.ref = 
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-ai = { group = "com.google.firebase", name = "firebase-ai" }
 firebase-appcheck-recaptcha = { group = "com.google.firebase", name = "firebase-appcheck-recaptcha" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 posthog-android = { group = "com.posthog", name = "posthog-android", version.ref = "posthog" }
 clerk-android-ui = { group = "com.clerk", name = "clerk-android-ui", version.ref = "clerk" }
 lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", version.ref = "lottie" }
@@ -141,3 +144,4 @@ google-devtools-ksp = { id = "com.google.devtools.ksp", version.ref = "googleDev
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 secrets = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "secretsGradlePlugin" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlyticsPlugin" }

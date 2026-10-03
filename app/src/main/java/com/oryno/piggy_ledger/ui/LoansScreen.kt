@@ -475,7 +475,7 @@ fun LoansScreen(
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 24.dp)
+                contentPadding = PaddingValues(bottom = 100.dp)
             ) {
                 items(filteredLoans) { loan ->
                     val isPaidOff = loan.isPaidOff

@@ -63,10 +63,14 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.WarningAmber
+import com.oryno.piggy_ledger.ui.theme.NavyDark
+import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -1529,10 +1533,12 @@ fun ThinkingIndicator() {
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        GeminiSparkleIcon(
-            modifier = Modifier.size(24.dp),
-            color = Color(0xFFDB2777),
-            isPulsing = true
+        ContainedLoadingIndicator(
+            containerSize = 32.dp,
+            indicatorSize = 18.dp,
+            containerColor = Color(0xFFFCE7F3),
+            indicatorColor = Color(0xFFDB2777),
+            elevation = 0.dp
         )
         Spacer(modifier = Modifier.width(12.dp))
         AnimatedContent(
@@ -1901,103 +1907,156 @@ fun ChatMessageItem(
             }
         }
     } else {
-        // AI Response Layout (Image 1 style: Sparkle icon + Clean Answer Typography)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.Top
-        ) {
-            GeminiSparkleIcon(
+        val json = remember { Json { ignoreUnknownKeys = true; isLenient = true; classDiscriminator = "type" } }
+        val decodedResponse: SovereignAiResponse? = remember(message.content) {
+            try {
+                json.decodeFromString<SovereignAiResponse>(message.content)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        val isConnectionError = decodedResponse?.currentArchetype == "CONNECTION_ERROR" || 
+                decodedResponse?.uiBlocks?.any { 
+                    it is UiBlock.ConnectionErrorBlock || 
+                    (it is UiBlock.ActionBannerBlock && (
+                        it.title?.contains("Connection", ignoreCase = true) == true || 
+                        it.title?.contains("اتصال", ignoreCase = true) == true || 
+                        it.message.contains("Connection", ignoreCase = true) || 
+                        it.message.contains("اتصال", ignoreCase = true) || 
+                        it.message.contains("network", ignoreCase = true) ||
+                        it.actionPayload.contains("Retry", ignoreCase = true) ||
+                        it.actionPayload.contains("المحاولة", ignoreCase = true)
+                    ))
+                } == true
+
+        if (isConnectionError) {
+            val errorBlock = decodedResponse?.uiBlocks?.firstOrNull { 
+                it is UiBlock.ConnectionErrorBlock || it is UiBlock.ActionBannerBlock 
+            }
+            val title = when (errorBlock) {
+                is UiBlock.ConnectionErrorBlock -> errorBlock.title
+                is UiBlock.ActionBannerBlock -> errorBlock.title ?: stringResource(R.string.ai_connection_issue_title)
+                else -> stringResource(R.string.ai_connection_issue_title)
+            }
+            val desc = when (errorBlock) {
+                is UiBlock.ConnectionErrorBlock -> errorBlock.message
+                is UiBlock.ActionBannerBlock -> errorBlock.message
+                else -> stringResource(R.string.ai_connection_issue_desc)
+            }
+            val action = when (errorBlock) {
+                is UiBlock.ConnectionErrorBlock -> errorBlock.actionPayload
+                is UiBlock.ActionBannerBlock -> errorBlock.actionPayload.ifBlank { stringResource(R.string.ai_retry) }
+                else -> stringResource(R.string.ai_retry)
+            }
+
+            Box(
                 modifier = Modifier
-                    .size(22.dp)
-                    .padding(top = 4.dp),
-                color = Color(0xFF1E293B),
-                isPulsing = false
-            )
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                ConnectionErrorCard(
+                    title = title,
+                    message = desc,
+                    actionText = action,
+                    onRetryClick = { onCtaClick("RETRY_LAST") }
+                )
+            }
+        } else {
+            // AI Response Layout (Image 1 style: Sparkle icon + Clean Answer Typography)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.Top
+            ) {
+                GeminiSparkleIcon(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .padding(top = 4.dp),
+                    color = Color(0xFF1E293B),
+                    isPulsing = false
+                )
 
-            Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
-                val json = remember { Json { ignoreUnknownKeys = true; isLenient = true; classDiscriminator = "type" } }
-                val decodedResponse: SovereignAiResponse? = remember(message.content) {
-                    try {
-                        json.decodeFromString<SovereignAiResponse>(message.content)
-                    } catch (e: Exception) {
-                        null
+                Column(modifier = Modifier.weight(1f)) {
+                    val rawRationale = com.oryno.piggy_ledger.ai.AiSanitizer.sanitizeThinking(decodedResponse?.archetypeRationale ?: message.content)
+                    val processedResponse = remember(rawRationale) {
+                        parseResponseTextAndNextSteps(rawRationale)
                     }
-                }
+                    val mainAnswerText = processedResponse.mainText
+                    val nextStepsList = processedResponse.nextSteps
 
-                val rawRationale = com.oryno.piggy_ledger.ai.AiSanitizer.sanitizeThinking(decodedResponse?.archetypeRationale ?: message.content)
-                val processedResponse = remember(rawRationale) {
-                    parseResponseTextAndNextSteps(rawRationale)
-                }
-                val mainAnswerText = processedResponse.mainText
-                val nextStepsList = processedResponse.nextSteps
+                    // Rapid, smooth streaming display - dynamically chunked so it completes briskly in ~250-350ms
+                    var charCount by remember(message.id, mainAnswerText, shouldStream) {
+                        mutableStateOf(if (shouldStream) 0 else mainAnswerText.length)
+                    }
 
-                // Rapid, smooth streaming display - dynamically chunked so it completes briskly in ~250-350ms
-                var charCount by remember(message.id, mainAnswerText, shouldStream) {
-                    mutableStateOf(if (shouldStream) 0 else mainAnswerText.length)
-                }
-
-                LaunchedEffect(message.id, shouldStream, mainAnswerText) {
-                    if (shouldStream && charCount < mainAnswerText.length) {
-                        val totalLength = mainAnswerText.length
-                        // Dynamically scale step so text streams rapidly and pleasantly in ~15-20 frames (~250-320ms)
-                        val chunkStep = maxOf(12, totalLength / 18)
-                        while (charCount < totalLength) {
-                            delay(16)
-                            charCount = minOf(charCount + chunkStep, totalLength)
+                    LaunchedEffect(message.id, shouldStream, mainAnswerText) {
+                        if (shouldStream && charCount < mainAnswerText.length) {
+                            val totalLength = mainAnswerText.length
+                            // Dynamically scale step so text streams rapidly and pleasantly in ~15-20 frames (~250-320ms)
+                            val chunkStep = maxOf(12, totalLength / 18)
+                            while (charCount < totalLength) {
+                                delay(16)
+                                charCount = minOf(charCount + chunkStep, totalLength)
+                            }
+                            onAnimationComplete()
+                        } else {
+                            charCount = mainAnswerText.length
                         }
-                        onAnimationComplete()
-                    } else {
-                        charCount = mainAnswerText.length
                     }
-                }
 
-                val displayedText = remember(mainAnswerText, charCount) {
-                    mainAnswerText.take(charCount)
-                }
+                    val displayedText = remember(mainAnswerText, charCount) {
+                        mainAnswerText.take(charCount)
+                    }
 
-                // AI Answer Content in clean, high-contrast light typography (tap to instantly finish streaming)
-                SelectionContainer(
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        enabled = charCount < mainAnswerText.length
+                    // AI Answer Content in clean, high-contrast light typography (tap to instantly finish streaming)
+                    SelectionContainer(
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            enabled = charCount < mainAnswerText.length
+                        ) {
+                            charCount = mainAnswerText.length
+                            onAnimationComplete()
+                        }
                     ) {
-                        charCount = mainAnswerText.length
-                        onAnimationComplete()
-                    }
-                ) {
-                    Column {
-                        if (displayedText.isNotBlank()) {
-                            FormattedMarkdownText(displayedText)
-                            Spacer(modifier = Modifier.height(10.dp))
-                        }
+                        Column {
+                            if (displayedText.isNotBlank()) {
+                                FormattedMarkdownText(displayedText)
+                                Spacer(modifier = Modifier.height(10.dp))
+                            }
 
-                // Render UI Blocks
-                decodedResponse?.uiBlocks?.forEach { block ->
-                    when (block) {
-                        is UiBlock.KpiCardBlock -> KpiCard(block)
-                        is UiBlock.StreakStatusBlock -> StreakStatus(block)
-                        is UiBlock.MetricGridBlock -> MetricGrid(block)
-                        is UiBlock.InteractiveChartBlock -> InteractiveChart(block)
-                        is UiBlock.ReflectivePollBlock -> ReflectivePoll(block)
-                        is UiBlock.LedgerItemBlock -> LedgerItem(block)
-                        is UiBlock.ActionBannerBlock -> ActionBanner(
-                            block = block, 
-                            onUpgradeClick = onNavigateToPaywall,
-                            onRetryClick = { onCtaClick("RETRY_LAST") }
-                        )
-                        is UiBlock.HighlightTextBlock -> HighlightedText(block)
-                        is UiBlock.GroupBlock -> GroupBlockRenderer(block)
+                            // Render UI Blocks
+                            decodedResponse?.uiBlocks?.forEach { block ->
+                                when (block) {
+                                    is UiBlock.KpiCardBlock -> KpiCard(block)
+                                    is UiBlock.StreakStatusBlock -> StreakStatus(block)
+                                    is UiBlock.MetricGridBlock -> MetricGrid(block)
+                                    is UiBlock.InteractiveChartBlock -> InteractiveChart(block)
+                                    is UiBlock.ReflectivePollBlock -> ReflectivePoll(block)
+                                    is UiBlock.LedgerItemBlock -> LedgerItem(block)
+                                    is UiBlock.ConnectionErrorBlock -> ConnectionErrorCard(
+                                        title = block.title,
+                                        message = block.message,
+                                        actionText = block.actionPayload,
+                                        onRetryClick = { onCtaClick("RETRY_LAST") }
+                                    )
+                                    is UiBlock.ActionBannerBlock -> ActionBanner(
+                                        block = block, 
+                                        onUpgradeClick = onNavigateToPaywall,
+                                        onRetryClick = { onCtaClick("RETRY_LAST") }
+                                    )
+                                    is UiBlock.HighlightTextBlock -> HighlightedText(block)
+                                    is UiBlock.GroupBlock -> GroupBlockRenderer(block)
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                            }
+                        }
                     }
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
-                    }
-                }
 
                 // Bottom actions row with Copy and Native TTS speech actions
                 Row(
@@ -2099,6 +2158,7 @@ fun ChatMessageItem(
             }
         }
     }
+}
 }
 
 @Composable
@@ -2926,55 +2986,154 @@ fun LedgerItem(block: UiBlock.LedgerItemBlock) {
 }
 
 @Composable
+fun ConnectionErrorCard(
+    title: String,
+    message: String,
+    actionText: String,
+    onRetryClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = NavyDark,
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, PinkPrimary.copy(alpha = 0.25f)),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.WarningAmber,
+                    contentDescription = null,
+                    tint = PinkPrimary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = title.ifBlank { stringResource(R.string.ai_connection_issue_title) },
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = message.ifBlank { stringResource(R.string.ai_connection_issue_desc) },
+                color = Color(0xFF94A3B8),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Normal,
+                lineHeight = 22.sp
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(
+                onClick = onRetryClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PinkPrimary,
+                    contentColor = Color.White
+                ),
+                shape = CircleShape,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(19.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = actionText.ifBlank { stringResource(R.string.ai_retry) },
+                        color = Color.White,
+                        fontSize = 15.5.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun ActionBanner(
     block: UiBlock.ActionBannerBlock, 
     onUpgradeClick: () -> Unit = {},
     onRetryClick: () -> Unit = {}
 ) {
-    val isUpgrade = block.message.contains("upgrade", ignoreCase = true) || 
-            block.message.contains("pro", ignoreCase = true) ||
-            block.actionPayload.contains("upgrade", ignoreCase = true) ||
-            block.actionPayload.contains("ترقية", ignoreCase = true)
+    val isConnection = block.title?.contains("Connection", ignoreCase = true) == true ||
+            block.title?.contains("اتصال", ignoreCase = true) == true ||
+            block.message.contains("Connection", ignoreCase = true) ||
+            block.message.contains("اتصال", ignoreCase = true) ||
+            block.message.contains("network", ignoreCase = true) ||
+            block.actionPayload.contains("Retry", ignoreCase = true) ||
+            block.actionPayload.contains("المحاولة", ignoreCase = true)
 
-    val containerColor = if (isUpgrade) Color(0xFFFDF2F8) else Color(0xFFFEF2F2)
-    val borderColor = if (isUpgrade) Color(0xFFFBCFE8) else Color(0xFFFECACA)
-    val textColor = if (isUpgrade) Color(0xFF831843) else Color(0xFF991B1B)
-    val buttonColor = if (isUpgrade) Color(0xFFDB2777) else Color(0xFFDC2626)
+    if (isConnection) {
+        ConnectionErrorCard(
+            title = block.title ?: stringResource(R.string.ai_connection_issue_title),
+            message = block.message,
+            actionText = block.actionPayload.ifBlank { stringResource(R.string.ai_retry) },
+            onRetryClick = onRetryClick
+        )
+    } else {
+        val isUpgrade = block.message.contains("upgrade", ignoreCase = true) || 
+                block.message.contains("pro", ignoreCase = true) ||
+                block.actionPayload.contains("upgrade", ignoreCase = true) ||
+                block.actionPayload.contains("ترقية", ignoreCase = true)
 
-    Surface(
-        color = containerColor,
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, borderColor),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        val containerColor = if (isUpgrade) Color(0xFFFDF2F8) else Color(0xFFFEF2F2)
+        val borderColor = if (isUpgrade) Color(0xFFFBCFE8) else Color(0xFFFECACA)
+        val textColor = if (isUpgrade) Color(0xFF831843) else Color(0xFF991B1B)
+        val buttonColor = if (isUpgrade) Color(0xFFDB2777) else Color(0xFFDC2626)
+
+        Surface(
+            color = containerColor,
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, borderColor),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = block.message,
-                color = textColor,
-                fontSize = 13.5.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f),
-                lineHeight = 19.sp
-            )
-            if (block.actionPayload.isNotBlank()) {
-                Spacer(modifier = Modifier.width(12.dp))
-                Button(
-                    onClick = {
-                        if (isUpgrade) onUpgradeClick() else onRetryClick()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = block.actionPayload,
-                        color = Color.White,
-                        fontSize = 12.5.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = block.message,
+                    color = textColor,
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f),
+                    lineHeight = 19.sp
+                )
+                if (block.actionPayload.isNotBlank()) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Button(
+                        onClick = {
+                            if (isUpgrade) onUpgradeClick() else onRetryClick()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = block.actionPayload,
+                            color = Color.White,
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }

@@ -78,10 +78,19 @@ sealed class UiBlock {
     ) : UiBlock()
 
     @Serializable
+    @SerialName("CONNECTION_ERROR")
+    data class ConnectionErrorBlock(
+        val title: String = "Connection Issue",
+        val message: String = "Connection failed. Check network connection and try again.",
+        @SerialName("action_payload") val actionPayload: String = "Retry"
+    ) : UiBlock()
+
+    @Serializable
     @SerialName("ACTION_BANNER")
     data class ActionBannerBlock(
         val message: String = "",
-        @SerialName("action_payload") val actionPayload: String = ""
+        @SerialName("action_payload") val actionPayload: String = "",
+        val title: String? = null
     ) : UiBlock()
 
     @Serializable

@@ -1229,4 +1229,9 @@
     <string name="permissions_continue_btn">Continue to App</string>
     <string name="permissions_locked_warning">Please enable both SMS and Notification permissions to continue using Piggy Ledger.</string>
     <string name="permissions_grant_all_critical">Enable Required Permissions</string>
+
+    <!-- AI Connection Error -->
+    <string name="ai_connection_issue_title">Connection Issue</string>
+    <string name="ai_connection_issue_desc">Connection failed. Check network connection and try again.</string>
+    <string name="ai_retry">Retry</string>
 </resources>

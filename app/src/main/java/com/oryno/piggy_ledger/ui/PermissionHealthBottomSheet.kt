@@ -135,11 +135,6 @@ fun PermissionHealthChecker() {
                 hasNotification = PermissionUtils.hasNotificationPermission(context)
                 hasContacts = PermissionUtils.hasContactsPermission(context)
                 hasMic = PermissionUtils.hasMicrophonePermission(context)
-
-                // If critical permissions are ever disabled, immediately reset manual close flag so sheet reopens instantly
-                if (!PermissionUtils.hasSmsPermission(context) || !PermissionUtils.hasNotificationPermission(context)) {
-                    isManuallyClosed = false
-                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -148,10 +143,10 @@ fun PermissionHealthChecker() {
         }
     }
 
-    // Show bottom sheet if critical permissions are missing, or if open and not closed yet
-    val shouldShow = !isCriticalGranted || (!isManuallyClosed && !isCriticalGranted)
+    // Show bottom sheet if critical permissions are missing, and user hasn't dismissed it
+    val shouldShow = !isCriticalGranted && !isManuallyClosed
 
-    if (shouldShow && !isManuallyClosed) {
+    if (shouldShow) {
         PermissionHealthBottomSheet(
             hasSms = hasSms,
             hasNotification = hasNotification,
@@ -164,9 +159,7 @@ fun PermissionHealthChecker() {
                 hasMic = PermissionUtils.hasMicrophonePermission(context)
             },
             onDismiss = {
-                if (isCriticalGranted) {
-                    isManuallyClosed = true
-                }
+                isManuallyClosed = true
             }
         )
     }
@@ -187,18 +180,12 @@ fun PermissionHealthBottomSheet(
 
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { newState ->
-            if (!isCriticalGranted) {
-                newState != SheetValue.Hidden
-            } else {
-                true
-            }
-        }
+        confirmValueChange = { true }
     )
 
-    // Intercept back button when critical permissions are not granted
-    BackHandler(enabled = !isCriticalGranted) {
-        // Prevent dismissal while critical permissions are missing
+    // Intercept back button to dismiss the bottom sheet cleanly
+    BackHandler(enabled = true) {
+        onDismiss()
     }
 
     // Permission Launchers
@@ -227,16 +214,12 @@ fun PermissionHealthBottomSheet(
     }
 
     ModalBottomSheet(
-        onDismissRequest = {
-            if (isCriticalGranted) {
-                onDismiss()
-            }
-        },
+        onDismissRequest = onDismiss,
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = Color.White,
         properties = ModalBottomSheetProperties(
-            shouldDismissOnBackPress = isCriticalGranted
+            shouldDismissOnBackPress = true
         ),
         dragHandle = {
             BottomSheetDefaults.DragHandle(
@@ -254,7 +237,7 @@ fun PermissionHealthBottomSheet(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Top Bar: Mascot Image at top + Close Button on Top Right (only unlocked)
+            // Top Bar: Mascot Image at top + Close Button on Top Right (always accessible)
             Box(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -269,24 +252,22 @@ fun PermissionHealthBottomSheet(
                         .align(Alignment.Center)
                 )
 
-                // Close Button appears only when critical permissions are enabled
-                if (isCriticalGranted) {
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFF1F5F9))
-                            .align(Alignment.TopEnd)
-                            .testTag("permission_sheet_close_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = TextDark,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                // Close Button is always available so user is never trapped
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFF1F5F9))
+                        .align(Alignment.TopEnd)
+                        .testTag("permission_sheet_close_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = TextDark,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
 
@@ -461,6 +442,23 @@ fun PermissionHealthBottomSheet(
                         text = stringResource(R.string.permissions_grant_all_critical),
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .testTag("permission_sheet_maybe_later_button")
+                ) {
+                    Text(
+                        text = stringResource(R.string.onboarding_sms_skip),
+                        color = TextLight,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp
                     )
                 }
             }

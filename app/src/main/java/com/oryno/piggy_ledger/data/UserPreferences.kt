@@ -49,6 +49,78 @@ class UserPreferences(private val context: Context) {
                 null
             }
         }
+
+        fun saveLanguageSelectedSync(context: Context, selected: Boolean) {
+            try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .edit().putBoolean("has_language_selected", selected).apply()
+            } catch (e: Exception) {
+                android.util.Log.e("UserPreferences", "Failed to save language selected sync", e)
+            }
+        }
+
+        fun getLanguageSelectedSync(context: Context): Boolean {
+            return try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .getBoolean("has_language_selected", false)
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        fun saveHeardAboutUsSync(context: Context, heard: Boolean) {
+            try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .edit().putBoolean("has_heard_about_us", heard).apply()
+            } catch (e: Exception) {
+                android.util.Log.e("UserPreferences", "Failed to save heard about us sync", e)
+            }
+        }
+
+        fun getHeardAboutUsSync(context: Context): Boolean {
+            return try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .getBoolean("has_heard_about_us", false)
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        fun saveOnboardedSync(context: Context, onboarded: Boolean) {
+            try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .edit().putBoolean("has_onboarded", onboarded).apply()
+            } catch (e: Exception) {
+                android.util.Log.e("UserPreferences", "Failed to save onboarded sync", e)
+            }
+        }
+
+        fun getOnboardedSync(context: Context): Boolean {
+            return try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .getBoolean("has_onboarded", false)
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        fun saveAuthenticatedSync(context: Context, auth: Boolean) {
+            try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .edit().putBoolean("is_authenticated", auth).apply()
+            } catch (e: Exception) {
+                android.util.Log.e("UserPreferences", "Failed to save authenticated sync", e)
+            }
+        }
+
+        fun getAuthenticatedSync(context: Context): Boolean {
+            return try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .getBoolean("is_authenticated", false)
+            } catch (e: Exception) {
+                false
+            }
+        }
     }
 
     val appLanguage: Flow<String?> = context.dataStore.data.map { prefs ->
@@ -96,19 +168,19 @@ class UserPreferences(private val context: Context) {
     }
 
     val hasOnboarded: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[HAS_ONBOARDED] ?: false
+        prefs[HAS_ONBOARDED] ?: getOnboardedSync(context)
     }
     
     val hasLanguageSelected: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[HAS_LANGUAGE_SELECTED] ?: false
+        prefs[HAS_LANGUAGE_SELECTED] ?: getLanguageSelectedSync(context)
     }
 
     val hasHeardAboutUs: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[HAS_HEARD_ABOUT_US] ?: false
+        prefs[HAS_HEARD_ABOUT_US] ?: getHeardAboutUsSync(context)
     }
 
     val isAuthenticated: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[IS_AUTHENTICATED] ?: false
+        prefs[IS_AUTHENTICATED] ?: getAuthenticatedSync(context)
     }
 
     val authUserEmail: Flow<String> = context.dataStore.data.map { prefs ->
@@ -171,6 +243,7 @@ class UserPreferences(private val context: Context) {
     }
 
     suspend fun saveOnboarding(completed: Boolean) {
+        saveOnboardedSync(context, completed)
         context.dataStore.edit { prefs ->
             prefs[HAS_ONBOARDED] = completed
         }
@@ -178,6 +251,7 @@ class UserPreferences(private val context: Context) {
     }
     
     suspend fun saveLanguageSelected(selected: Boolean) {
+        saveLanguageSelectedSync(context, selected)
         context.dataStore.edit { prefs ->
             prefs[HAS_LANGUAGE_SELECTED] = selected
         }
@@ -185,6 +259,7 @@ class UserPreferences(private val context: Context) {
     }
 
     suspend fun saveHeardAboutUs(completed: Boolean) {
+        saveHeardAboutUsSync(context, completed)
         context.dataStore.edit { prefs ->
             prefs[HAS_HEARD_ABOUT_US] = completed
         }
@@ -192,6 +267,7 @@ class UserPreferences(private val context: Context) {
     }
 
     suspend fun saveAuthentication(authenticated: Boolean, email: String = "", name: String = "", photoUrl: String = "") {
+        saveAuthenticatedSync(context, authenticated)
         context.dataStore.edit { prefs ->
             prefs[IS_AUTHENTICATED] = authenticated
             prefs[AUTH_USER_EMAIL] = email
@@ -353,19 +429,22 @@ class UserPreferences(private val context: Context) {
                 prefs[APP_LANGUAGE] = appLanguage
             }
         }
+        saveAuthenticatedSync(context, false)
     }
 
     suspend fun getInitialDestination(): com.oryno.piggy_ledger.ui.Screen {
         val prefs = context.dataStore.data.first()
-        val hasLang = prefs[HAS_LANGUAGE_SELECTED] ?: false
+        val isAuth = prefs[IS_AUTHENTICATED] ?: getAuthenticatedSync(context)
+        if (isAuth) return com.oryno.piggy_ledger.ui.Screen.MainContainer
+
+        val hasLang = prefs[HAS_LANGUAGE_SELECTED] ?: getLanguageSelectedSync(context)
         if (!hasLang) return com.oryno.piggy_ledger.ui.Screen.LanguageSelection
-        val hasHeard = prefs[HAS_HEARD_ABOUT_US] ?: false
+        val hasHeard = prefs[HAS_HEARD_ABOUT_US] ?: getHeardAboutUsSync(context)
         if (!hasHeard) return com.oryno.piggy_ledger.ui.Screen.HearAboutUs
-        val hasOnboarded = prefs[HAS_ONBOARDED] ?: false
+        val hasOnboarded = prefs[HAS_ONBOARDED] ?: getOnboardedSync(context)
         if (!hasOnboarded) return com.oryno.piggy_ledger.ui.Screen.Onboarding
-        val isAuth = prefs[IS_AUTHENTICATED] ?: false
-        if (!isAuth) return com.oryno.piggy_ledger.ui.Screen.Auth
-        return com.oryno.piggy_ledger.ui.Screen.MainContainer
+
+        return com.oryno.piggy_ledger.ui.Screen.Auth
     }
 
     suspend fun clearAll() {

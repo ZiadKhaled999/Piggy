@@ -1230,4 +1230,9 @@
     <string name="permissions_continue_btn">المتابعة للتطبيق</string>
     <string name="permissions_locked_warning">يرجى تفعيل إذن الرسائل والإشعارات للمتابعة واستخدام تطبيق بيجى.</string>
     <string name="permissions_grant_all_critical">تفعيل الأذونات المطلوبة</string>
+
+    <!-- AI Connection Error -->
+    <string name="ai_connection_issue_title">مشكلة في الاتصال</string>
+    <string name="ai_connection_issue_desc">فشل الاتصال. تحقق من اتصال الشبكة وحاول مرة ثانية.</string>
+    <string name="ai_retry">إعادة المحاولة</string>
 </resources>

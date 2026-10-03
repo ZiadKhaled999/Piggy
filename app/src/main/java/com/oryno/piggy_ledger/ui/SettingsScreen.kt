@@ -977,7 +977,7 @@ fun PiggyLedgerProView(
 
     if (isPro == null) {
         Box(modifier = Modifier.fillMaxSize().height(200.dp), contentAlignment = Alignment.Center) {
-            ExpressiveLoadingIndicator(size = 40.dp)
+            CircularProgressIndicator(modifier = Modifier.size(40.dp), color = PinkPrimary)
         }
     } else if (isPro == true) {
         val configuration = LocalConfiguration.current
@@ -1724,8 +1724,8 @@ fun PiggyLedgerPaywall(
                 )
             ) {
                 if (isPurchasing) {
-                    ExpressiveLoadingIndicator(
-                        size = 24.dp,
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
                         color = Color.White,
                         strokeWidth = 2.5.dp
                     )
@@ -1835,8 +1835,8 @@ fun SwipeToUpgradeButton(
             contentAlignment = Alignment.Center
         ) {
             if (isPurchasing) {
-                ExpressiveLoadingIndicator(
-                    size = 26.dp,
+                CircularProgressIndicator(
+                    modifier = Modifier.size(26.dp),
                     color = accentColor,
                     strokeWidth = 2.5.dp
                 )
@@ -2178,7 +2178,7 @@ fun SlideToPurchase(
                     .background(PinkPrimary),
                 contentAlignment = Alignment.Center
             ) {
-                ExpressiveLoadingIndicator(size = 24.dp, color = Color.White, strokeWidth = 2.dp)
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
             }
         }
     }

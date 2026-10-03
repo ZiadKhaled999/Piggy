@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
@@ -27,6 +28,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -186,7 +188,7 @@ fun SignOutBottomSheet(
 
                 is LogoutState.Syncing -> {
                     Spacer(modifier = Modifier.height(16.dp))
-                    ExpressiveLoadingIndicator(size = 44.dp)
+                    CircularProgressIndicator(modifier = Modifier.size(44.dp), color = PinkPrimary, strokeWidth = 3.dp)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.logout_syncing_msg),

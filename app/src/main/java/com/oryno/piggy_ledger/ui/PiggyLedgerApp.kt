@@ -17,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -451,83 +453,80 @@ fun MainContainer(
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                Scaffold(
-                    bottomBar = {
-                        FloatingNavBar(
-                            navController = bottomNavController,
-                            onAiClick = { appNavController.navigate(Screen.AiChat) }
+                NavHost(
+                    navController = bottomNavController,
+                    startDestination = Screen.Dashboard,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    composable<Screen.Dashboard> {
+                        LaunchedEffect(Unit) {
+                            PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Dashboard"))
+                        }
+                        DashboardScreen(
+                            viewModel = viewModel,
+                            onMenuClick = { isDrawerOpen = true },
+                            onNavigateToCreateGoal = { appNavController.navigate(Screen.CreateGoal) },
+                            onNavigateToMyGoals = { bottomNavController.navigate(Screen.MyGoals) },
+                            onNavigateToLoans = { bottomNavController.navigate(Screen.Loans) },
+                            onNavigateToAccounts = { bottomNavController.navigate(Screen.Accounts) },
+                            onNavigateToAnalytics = { bottomNavController.navigate(Screen.Analytics) },
+                            onNavigateToSettingsPro = { appNavController.navigate(Screen.Settings(SettingsMode.PRO.name)) },
+                            onNavigateToStreak = { appNavController.navigate(Screen.StreakAchievements) },
+                            onNotificationsClick = { appNavController.navigate(Screen.Notifications) }
                         )
                     }
-                ) { innerPadding ->
-                    NavHost(
-                        navController = bottomNavController,
-                        startDestination = Screen.Dashboard,
-                        modifier = Modifier.padding(innerPadding)
-                    ) {
-                        composable<Screen.Dashboard> {
-                            LaunchedEffect(Unit) {
-                                PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Dashboard"))
-                            }
-                            DashboardScreen(
-                                viewModel = viewModel,
-                                onMenuClick = { isDrawerOpen = true },
-                                onNavigateToCreateGoal = { appNavController.navigate(Screen.CreateGoal) },
-                                onNavigateToMyGoals = { bottomNavController.navigate(Screen.MyGoals) },
-                                onNavigateToLoans = { bottomNavController.navigate(Screen.Loans) },
-                                onNavigateToAccounts = { bottomNavController.navigate(Screen.Accounts) },
-                                onNavigateToAnalytics = { bottomNavController.navigate(Screen.Analytics) },
-                                onNavigateToSettingsPro = { appNavController.navigate(Screen.Settings(SettingsMode.PRO.name)) },
-                                onNavigateToStreak = { appNavController.navigate(Screen.StreakAchievements) },
-                                onNotificationsClick = { appNavController.navigate(Screen.Notifications) }
-                            )
+                    
+                    composable<Screen.MyGoals> {
+                        LaunchedEffect(Unit) {
+                            PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "My Goals"))
                         }
-                        
-                        composable<Screen.MyGoals> {
-                            LaunchedEffect(Unit) {
-                                PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "My Goals"))
-                            }
-                            MyGoalsScreen(
-                                viewModel = viewModel,
-                                onNavigateToGoal = { id -> appNavController.navigate(Screen.GoalDetail(id)) },
-                                onNavigateToCreateGoal = { appNavController.navigate(Screen.CreateGoal) },
-                                onBack = { bottomNavController.popBackStack() }
-                            )
+                        MyGoalsScreen(
+                            viewModel = viewModel,
+                            onNavigateToGoal = { id -> appNavController.navigate(Screen.GoalDetail(id)) },
+                            onNavigateToCreateGoal = { appNavController.navigate(Screen.CreateGoal) },
+                            onBack = { bottomNavController.popBackStack() }
+                        )
+                    }
+                    
+                    composable<Screen.Loans> {
+                        LaunchedEffect(Unit) {
+                            PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Loans"))
                         }
-                        
-                        composable<Screen.Loans> {
-                            LaunchedEffect(Unit) {
-                                PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Loans"))
-                            }
-                            LoansScreen(
-                                viewModel = viewModel,
-                                onBack = { bottomNavController.popBackStack() }
-                            )
-                        }
+                        LoansScreen(
+                            viewModel = viewModel,
+                            onBack = { bottomNavController.popBackStack() }
+                        )
+                    }
 
-                        composable<Screen.Accounts> {
-                            LaunchedEffect(Unit) {
-                                PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Accounts"))
-                            }
-                            AccountsScreen(
-                                viewModel = viewModel,
-                                onNavigateToAddAccount = { appNavController.navigate(Screen.AddAccount) },
-                                onNavigateToEditAccount = { id -> appNavController.navigate(Screen.EditAccount(id)) },
-                                onBack = { bottomNavController.popBackStack() },
-                                onNavigateToSettingsPro = { appNavController.navigate(Screen.Settings(SettingsMode.PRO.name)) }
-                            )
+                    composable<Screen.Accounts> {
+                        LaunchedEffect(Unit) {
+                            PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Accounts"))
                         }
+                        AccountsScreen(
+                            viewModel = viewModel,
+                            onNavigateToAddAccount = { appNavController.navigate(Screen.AddAccount) },
+                            onNavigateToEditAccount = { id -> appNavController.navigate(Screen.EditAccount(id)) },
+                            onBack = { bottomNavController.popBackStack() },
+                            onNavigateToSettingsPro = { appNavController.navigate(Screen.Settings(SettingsMode.PRO.name)) }
+                        )
+                    }
 
-                        composable<Screen.Analytics> {
-                            LaunchedEffect(Unit) {
-                                PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Analytics"))
-                            }
-                            AnalyticsScreen(
-                                viewModel = viewModel,
-                                onBack = { bottomNavController.popBackStack() }
-                            )
+                    composable<Screen.Analytics> {
+                        LaunchedEffect(Unit) {
+                            PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Analytics"))
                         }
+                        AnalyticsScreen(
+                            viewModel = viewModel,
+                            onBack = { bottomNavController.popBackStack() }
+                        )
                     }
                 }
+
+                FloatingNavBar(
+                    navController = bottomNavController,
+                    onAiClick = { appNavController.navigate(Screen.AiChat) },
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
 
                 // Overlay to intercept clicks and dismiss drawer when it is open
                 if (drawerProgress > 0f) {
@@ -680,7 +679,11 @@ fun DeadlineInAppAlert(
 }
 
 @Composable
-fun FloatingNavBar(navController: NavHostController, onAiClick: () -> Unit = {}) {
+fun FloatingNavBar(
+    navController: NavHostController,
+    onAiClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     val items = remember {
         listOf(
             NavItem(Screen.Dashboard, Icons.Default.Home),
@@ -694,57 +697,87 @@ fun FloatingNavBar(navController: NavHostController, onAiClick: () -> Unit = {})
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Box(
+        modifier = modifier.fillMaxWidth()
     ) {
+        // Frosted glass blur backdrop behind the bottom navbar
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .matchParentSize()
+                .blur(20.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color(0xFF1E1E2E).copy(alpha = 0.04f),
+                            Color(0xFF1E1E2E).copy(alpha = 0.14f),
+                            Color(0xFF1E1E2E).copy(alpha = 0.28f)
+                        )
+                    )
+                )
+        )
+
         Row(
             modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(32.dp))
-                .background(Color(0xFF1E1E2E).copy(alpha = 0.95f))
-                .padding(horizontal = 6.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(bottom = 16.dp, start = 16.dp, end = 16.dp, top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            items.forEach { item ->
-                val isSelected = currentDestination?.hierarchy?.any { it.hasRoute(item.screen::class) } == true
-                
-                NavBarItem(
-                    item = item,
-                    isSelected = isSelected,
-                    onClick = {
-                        if (item.screen == Screen.Dashboard) {
-                            navController.navigate(Screen.Dashboard) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    inclusive = true
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .shadow(
+                        elevation = 16.dp,
+                        shape = RoundedCornerShape(32.dp),
+                        spotColor = Color.Black.copy(alpha = 0.35f)
+                    )
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(Color(0xFF1E1E2E).copy(alpha = 0.85f))
+                    .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)), RoundedCornerShape(32.dp))
+                    .padding(horizontal = 6.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items.forEach { item ->
+                    val isSelected = currentDestination?.hierarchy?.any { it.hasRoute(item.screen::class) } == true
+                    
+                    NavBarItem(
+                        item = item,
+                        isSelected = isSelected,
+                        onClick = {
+                            if (item.screen == Screen.Dashboard) {
+                                navController.navigate(Screen.Dashboard) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        inclusive = true
+                                    }
+                                    launchSingleTop = true
                                 }
-                                launchSingleTop = true
-                            }
-                        } else {
-                            navController.navigate(item.screen) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+                            } else {
+                                navController.navigate(item.screen) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
                         }
-                    }
-                )
+                    )
+                }
             }
-        }
-        
-        FloatingActionButton(
-            onClick = onAiClick,
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            shape = CircleShape
-        ) {
-            Icon(Icons.Default.AutoAwesome, contentDescription = "Sovereign AI")
+            
+            FloatingActionButton(
+                onClick = onAiClick,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = CircleShape,
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 8.dp)
+            ) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = "Sovereign AI")
+            }
         }
     }
 }

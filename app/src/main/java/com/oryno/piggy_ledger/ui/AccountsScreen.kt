@@ -403,7 +403,8 @@ fun AccountsScreen(
                             .fillMaxWidth()
                             .weight(1f)
                             .padding(horizontal = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(bottom = 100.dp)
                     ) {
                         items(displayedTransactions, key = { it.id }) { tx ->
                             val formattedDate = remember(tx.timestamp) {

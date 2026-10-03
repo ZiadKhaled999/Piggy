@@ -433,7 +433,14 @@ class AiChatViewModel(
         }
     }
 
-    fun sendMessage(userText: String) {
+    private fun isNetworkAvailable(): Boolean {
+        val cm = context?.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager ?: return true
+        val network = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(network) ?: return false
+        return caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    fun sendMessage(userText: String, isRetry: Boolean = false) {
         if (!isPremium.value && aiMessagesCount.value >= 3) {
             triggerPaywallPrompt()
             return
@@ -462,9 +469,34 @@ class AiChatViewModel(
                 val currentHistory = chatHistory.value
                 val isFirstMessage = currentHistory.isEmpty()
                 val isPro = isPremium.value
+                val isArabic = isArabicQuery(userText)
                 
-                // 1. Save user message with active conversation ID
-                repository.saveMessage(role = "user", content = userText, conversationId = convId)
+                // 1. Save user message with active conversation ID (only if not retrying an existing message)
+                if (!isRetry) {
+                    repository.saveMessage(role = "user", content = userText, conversationId = convId)
+                }
+
+                // Check immediate network availability
+                if (!isNetworkAvailable()) {
+                    val headerTitle = if (isArabic) "مشكلة في الاتصال" else "Connection Issue"
+                    val cleanUserError = if (isArabic) "فشل الاتصال. تحقق من اتصال الشبكة وحاول مرة ثانية." else "Connection failed. Check network connection and try again."
+                    val actionLabel = if (isArabic) "إعادة المحاولة" else "Retry"
+
+                    val errorMsg = SovereignAiResponse(
+                        thinkingProcess = null,
+                        currentArchetype = "CONNECTION_ERROR",
+                        archetypeRationale = "",
+                        uiBlocks = listOf(
+                            UiBlock.ConnectionErrorBlock(
+                                title = headerTitle,
+                                message = cleanUserError,
+                                actionPayload = actionLabel
+                            )
+                        )
+                    )
+                    repository.saveMessage(role = "assistant", content = json.encodeToString(SovereignAiResponse.serializer(), errorMsg), conversationId = convId)
+                    return@launch
+                }
                 
                 val contextData = repository.fetchContextData(context)
                 
@@ -472,7 +504,6 @@ class AiChatViewModel(
                 val apiMessages = mutableListOf<ChatMessageRequest>()
                 
                 // System prompt + dynamic language directive + context
-                val isArabic = isArabicQuery(userText)
                 val languageDirective = if (isArabic) {
                     """
                     ### CRITICAL LANGUAGE MANDATE:
@@ -493,7 +524,7 @@ class AiChatViewModel(
                 apiMessages.add(ChatMessageRequest(role = "system", content = fullSystemPrompt))
                 
                 // Add previous history with cleaned text content (completely free of thinking blocks)
-                val recentHistory = currentHistory.takeLast(4)
+                val recentHistory = currentHistory.takeLast(10)
                 recentHistory.forEach { msg ->
                     val cleanedText = if (msg.role == "assistant") {
                         val rawAssistantText = try {
@@ -539,17 +570,6 @@ class AiChatViewModel(
                     }
                 } else {
                     val rawError = responseResult.exceptionOrNull()?.message.orEmpty()
-                    val isNetworkIssue = rawError.contains("Unable to resolve host", ignoreCase = true) ||
-                            rawError.contains("UnknownHostException", ignoreCase = true) ||
-                            rawError.contains("No address associated with hostname", ignoreCase = true) ||
-                            rawError.contains("Failed to connect", ignoreCase = true) ||
-                            rawError.contains("SocketTimeoutException", ignoreCase = true) ||
-                            rawError.contains("ConnectException", ignoreCase = true) ||
-                            rawError.contains("internet connection", ignoreCase = true) ||
-                            rawError.contains("offline", ignoreCase = true) ||
-                            rawError.contains("network", ignoreCase = true) ||
-                            rawError.contains("timeout", ignoreCase = true)
-
                     val isQuotaOrBusy = rawError.contains("resource_exhausted", ignoreCase = true) || 
                             rawError.contains("quota", ignoreCase = true) ||
                             rawError.contains("429", ignoreCase = true) ||
@@ -557,35 +577,18 @@ class AiChatViewModel(
                             rawError.contains("demand", ignoreCase = true) ||
                             rawError.contains("rate limit", ignoreCase = true)
 
-                    val isArabic = isArabicQuery(userText)
-
                     val (headerTitle, cleanUserError, actionLabel) = when {
-                        isNetworkIssue -> {
-                            if (isArabic) {
-                                Triple(
-                                    "# ⚠️ تنبيه الاتصال",
-                                    "يبدو أن جهازك غير متصل بالإنترنت حالياً. يُرجى التحقق من الشبكة والمحاولة مرة ثانية.",
-                                    "إعادة المحاولة"
-                                )
-                            } else {
-                                Triple(
-                                    "# ⚠️ Connection Notice",
-                                    "It looks like your device is offline or the connection is unstable. Please check your network and try again.",
-                                    "Retry"
-                                )
-                            }
-                        }
                         isQuotaOrBusy -> {
                             if (isArabic) {
                                 Triple(
-                                    "# ⏳ استراحة قصيرة",
-                                    "بيجي يمر بضغط خفيف حالياً ويحتاج لحظة بسيطة. يُرجى الضغط على إعادة المحاولة بعد قليل!",
+                                    "الخدمة مشغولة مؤقتاً",
+                                    "بيجي يمر بضغط خفيف حالياً ويحتاج لحظة بسيطة. يُرجى الانتظار ثم الضغط على إعادة المحاولة!",
                                     "إعادة المحاولة"
                                 )
                             } else {
                                 Triple(
-                                    "# ⏳ Taking a Quick Breath",
-                                    "Piggy is currently receiving high demand and needs a quick moment. Please tap Retry in a few seconds!",
+                                    "High Demand",
+                                    "Piggy is currently experiencing high demand and needs a quick moment. Please tap Retry in a few seconds!",
                                     "Retry"
                                 )
                             }
@@ -593,14 +596,14 @@ class AiChatViewModel(
                         else -> {
                             if (isArabic) {
                                 Triple(
-                                    "# ⚠️ تنبيه بسيط",
-                                    "واجه بيجي صعوبة مؤقتة في قراءة هذا الطلب. يُرجى الضغط على زر إعادة المحاولة.",
+                                    "مشكلة في الاتصال",
+                                    "فشل الاتصال. تحقق من اتصال الشبكة وحاول مرة ثانية.",
                                     "إعادة المحاولة"
                                 )
                             } else {
                                 Triple(
-                                    "# ⚠️ Friendly Notice",
-                                    "Piggy ran into a quick hiccup processing your request. Please tap Retry to give it another go.",
+                                    "Connection Issue",
+                                    "Connection failed. Check network connection and try again.",
                                     "Retry"
                                 )
                             }
@@ -609,13 +612,17 @@ class AiChatViewModel(
 
                     val errorMsg = SovereignAiResponse(
                         thinkingProcess = null,
-                        currentArchetype = "",
-                        archetypeRationale = headerTitle,
+                        currentArchetype = "CONNECTION_ERROR",
+                        archetypeRationale = "",
                         uiBlocks = listOf(
-                            UiBlock.ActionBannerBlock(cleanUserError, actionLabel)
+                            UiBlock.ConnectionErrorBlock(
+                                title = headerTitle,
+                                message = cleanUserError,
+                                actionPayload = actionLabel
+                            )
                         )
                     )
-                    responseTextForTitle = if (isArabic) "تنبيه في الخدمة" else "Service Notice"
+                    responseTextForTitle = if (isArabic) "مشكلة في الاتصال" else "Connection Issue"
                     repository.saveMessage(role = "assistant", content = json.encodeToString(SovereignAiResponse.serializer(), errorMsg), conversationId = convId)
                 }
 
@@ -632,9 +639,19 @@ class AiChatViewModel(
     }
 
     fun retryLastMessage() {
-        val lastUserQuery = chatHistory.value.lastOrNull { it.role == "user" }?.content
-        if (!lastUserQuery.isNullOrBlank()) {
-            sendMessage(lastUserQuery)
+        val history = chatHistory.value
+        val lastAssistantMessage = history.lastOrNull { it.role == "assistant" }
+        val lastUserQuery = history.lastOrNull { it.role == "user" }?.content
+        
+        viewModelScope.launch {
+            if (lastAssistantMessage != null) {
+                try {
+                    repository.deleteMessage(lastAssistantMessage.id)
+                } catch (e: Exception) {}
+            }
+            if (!lastUserQuery.isNullOrBlank()) {
+                sendMessage(lastUserQuery, isRetry = true)
+            }
         }
     }
 

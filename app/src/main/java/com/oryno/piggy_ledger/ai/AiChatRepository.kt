@@ -86,18 +86,27 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
         dao.clearChatMessages()
     }
 
+    suspend fun deleteMessage(id: String) {
+        dao.deleteChatMessageById(id)
+    }
+
     suspend fun fetchContextData(context: android.content.Context? = null): String = withContext(Dispatchers.IO) {
         return@withContext try {
             val allAccountsList = dao.getAllAccountsSync().filter { !it.is_deleted }
+            val accountsMap = allAccountsList.associateBy { it.id }
             val accounts = allAccountsList.filter { !it.exclude_from_all }
             val excludedAccountIds = allAccountsList.filter { it.exclude_from_all }.map { it.id }.toSet()
             
             val goals = dao.getActiveGoalsSync()
             val goalTransactions = dao.getActiveTransactionsSync()
             val loans = dao.getAllLoansSync().filter { !it.is_deleted }
-            val allAccountTxs = dao.getAllAccountTransactionsSync().filter { !it.is_deleted && !excludedAccountIds.contains(it.account_id) }
-            val recentTransactions = allAccountTxs.take(30)
-            val pending = dao.getAllPendingTransactionsSync()
+            val loanPayments = dao.getAllLoanPaymentsSync().filter { !it.is_deleted }
+            
+            val allAccountTxs = dao.getAllAccountTransactionsSync()
+                .filter { !it.is_deleted && !excludedAccountIds.contains(it.account_id) }
+                .sortedByDescending { it.timestamp }
+            
+            val pending = dao.getAllPendingTransactionsSync().filter { !it.is_deleted }
             
             val primaryCurrency = accounts.firstOrNull()?.currency ?: "EGP"
             val totalIncome = allAccountTxs.filter { it.amount > 0 }.sumOf { it.amount }
@@ -120,66 +129,74 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
             val goalSummary = if (goals.isEmpty()) "No active goals set." 
                 else goals.joinToString("\n") { g ->
                     val saved = goalTransactions.filter { it.goalId == g.id }.sumOf { it.amount }
-                    "- ${g.name}:\n  Current: $saved $primaryCurrency\n  Target: ${g.targetAmount} $primaryCurrency"
+                    "- ${g.name}: Current $saved / Target ${g.targetAmount} $primaryCurrency"
                 }
                 
             val loanSummary = if (loans.isEmpty()) "No active loans." 
-                else loans.joinToString("\n") { "- ${it.type.name} with ${it.contactName}: Amount ${it.amount} $primaryCurrency (Paid Off: ${it.isPaidOff})" }
+                else loans.joinToString("\n") { loan ->
+                    val pmts = loanPayments.filter { it.loanId == loan.id }
+                    val totalPaid = pmts.sumOf { it.amount }
+                    val remaining = maxOf(0.0, loan.amount - totalPaid)
+                    "- ${loan.type.name} with ${loan.contactName}: Principal ${loan.amount} $primaryCurrency | Paid: $totalPaid | Remaining: $remaining | Paid Off: ${loan.isPaidOff}"
+                }
+
+            val topExpenseMerchants = allAccountTxs.filter { it.amount < 0 }
+                .groupBy { it.merchant.ifBlank { "Uncategorized/Other" } }
+                .mapValues { entry -> entry.value.sumOf { kotlin.math.abs(it.amount) } }
+                .entries.sortedByDescending { it.value }
+                .take(15)
+                .joinToString("\n") { "- ${it.key}: ${it.value} $primaryCurrency" }
+
+            val topIncomeSources = allAccountTxs.filter { it.amount > 0 }
+                .groupBy { it.merchant.ifBlank { "General Income" } }
+                .mapValues { entry -> entry.value.sumOf { it.amount } }
+                .entries.sortedByDescending { it.value }
+                .take(15)
+                .joinToString("\n") { "- ${it.key}: ${it.value} $primaryCurrency" }
                 
-            val txSummary = if (recentTransactions.isEmpty()) "No recent transactions."
-                else recentTransactions.joinToString("\n") { tx ->
-                    val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(tx.timestamp))
-                    "- $dateStr | ${tx.merchant}: ${tx.amount} $primaryCurrency (${tx.source})"
+            val txSummary = if (allAccountTxs.isEmpty()) "No transactions logged in account history."
+                else allAccountTxs.joinToString("\n") { tx ->
+                    val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(tx.timestamp))
+                    val accountName = accountsMap[tx.account_id]?.name ?: "Account"
+                    val typeLabel = if (tx.amount >= 0) "INCOME" else "EXPENSE"
+                    "- $dateStr | $accountName | $typeLabel | ${tx.merchant.ifBlank { "General Transaction" }}: ${tx.amount} $primaryCurrency (${tx.source})"
                 }
                 
             val pendingSummary = if (pending.isEmpty()) "None."
-                else pending.joinToString("\n") { "- ${it.merchant}: ${it.amount} $primaryCurrency" }
+                else pending.joinToString("\n") { "- ${it.merchant}: ${it.amount} $primaryCurrency (${it.sender})" }
                 
             """
-            |USER FINANCIAL CONTEXT
+            |USER FINANCIAL CONTEXT & COMPLETE HISTORICAL TRANSACTION LEDGER
             |
-            |Currency: $primaryCurrency
+            |Primary Currency: $primaryCurrency
+            |Total Historical Income: $totalIncome $primaryCurrency
+            |Total Historical Expenses: $totalExpenses $primaryCurrency
+            |Total Net Balance Across Accounts: $totalNetBalance $primaryCurrency
+            |Total Transactions Recorded: ${allAccountTxs.size}
             |
-            |Current period:
-            |Income: $totalIncome
-            |Expenses: $totalExpenses
-            |Balance: $totalNetBalance
-            |
-            |Accounts:
+            |ACCOUNTS SUMMARY:
             |$accountSummary
             |
-            |Goals:
+            |SAVINGS GOALS:
             |$goalSummary
             |
-            |Loans & Debts:
+            |LOANS & DEBTS:
             |$loanSummary
             |
-            |Recent Transactions:
+            |TOP EXPENSE CATEGORIES / MERCHANTS:
+            |${topExpenseMerchants.ifBlank { "None." }}
+            |
+            |TOP INCOME SOURCES:
+            |${topIncomeSources.ifBlank { "None." }}
+            |
+            |COMPLETE TRANSACTION LEDGER (${allAccountTxs.size} transactions total, sorted newest first):
             |$txSummary
             |
-            |Pending SMS:
+            |PENDING SMS TRANSACTIONS:
             |$pendingSummary
             |
-            |=== KNOWLEDGE HUB INDEX ===
-            |[MODULE 0: USER STREAK & HABIT METRICS]
+            |USER STREAK STATUS:
             |$streakInfo
-            |
-            |[MODULE 1: ACCOUNTS & LIQUIDITY]
-            |Total Net Balance across all accounts: $totalNetBalance $primaryCurrency
-            |$accountSummary
-            |
-            |[MODULE 2: SAVINGS & FINANCIAL GOALS]
-            |$goalSummary
-            |
-            |[MODULE 3: LOANS & DEBT]
-            |$loanSummary
-            |
-            |[MODULE 4: RECENT CASH FLOW TRANSACTIONS]
-            |$txSummary
-            |
-            |[MODULE 5: PENDING SMS TRANSACTIONS]
-            |$pendingSummary
-            |===========================
             """.trimMargin()
         } catch (e: Exception) {
             "Knowledge Hub unavailable."

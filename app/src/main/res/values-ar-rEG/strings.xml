@@ -1228,4 +1228,9 @@
     <string name="clear_provider_keywords">مسح الكل لـ %1$s</string>
     <string name="clear_all">مسح الكل</string>
     <string name="custom_keywords_count">%1$d كلمة مخصصة</string>
+
+    <!-- AI Connection Error -->
+    <string name="ai_connection_issue_title">مشكلة في الاتصال</string>
+    <string name="ai_connection_issue_desc">فشل الاتصال. تحقق من اتصال الشبكة وحاول مرة ثانية.</string>
+    <string name="ai_retry">إعادة المحاولة</string>
 </resources>

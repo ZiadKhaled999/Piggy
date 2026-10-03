@@ -29,6 +29,12 @@ class PiggyLedgerApplication : Application() {
         }
         
         try {
+            com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
+        } catch (e: Exception) {
+            Log.e("PiggyLedgerApp", "Failed to initialize Crashlytics", e)
+        }
+
+        try {
             val config = PostHogAndroidConfig(
                 apiKey = BuildConfig.POSTHOG_API_KEY,
                 host = "https://us.i.posthog.com"

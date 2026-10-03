@@ -159,6 +159,7 @@ fun LanguageSelectionScreen(
             Button(
                 onClick = {
                     selectedLanguage?.let {
+                        com.oryno.piggy_ledger.data.UserPreferences.saveLanguageSelectedSync(context, true)
                         com.oryno.piggy_ledger.data.UserPreferences(context).saveAppLanguageSync(it)
                         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(it))
                         com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
@@ -189,6 +190,9 @@ fun LanguageSelectionScreen(
             OutlinedButton(
                 onClick = {
                     selectedLanguage?.let {
+                        com.oryno.piggy_ledger.data.UserPreferences.saveLanguageSelectedSync(context, true)
+                        com.oryno.piggy_ledger.data.UserPreferences.saveHeardAboutUsSync(context, true)
+                        com.oryno.piggy_ledger.data.UserPreferences.saveOnboardedSync(context, true)
                         com.oryno.piggy_ledger.data.UserPreferences(context).saveAppLanguageSync(it)
                         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(it))
                         com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)

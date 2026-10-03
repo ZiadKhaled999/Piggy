@@ -98,8 +98,13 @@ class SmsNotificationListenerService : NotificationListenerService() {
                 if (isTrusted) {
                     Log.d("SmsNotifListener", "Sender $sender is verified as trusted. Processing SMS...")
                     SmsProcessor.process(applicationContext, sender, text)
-                } else if (text.contains("EGP", ignoreCase = true) || text.contains("جنيه") || text.contains("تحويل") || text.contains("purchase", ignoreCase = true) || text.contains("LE", ignoreCase = true)) {
-                    Log.d("SmsNotifListener", "Sender $sender not in whitelist, but contains financial keywords. Processing as pending...")
+                } else if (text.contains("EGP", ignoreCase = true) || text.contains("LE", ignoreCase = true) ||
+                    text.contains("جنيه") || text.contains("جم") || text.contains("تحويل") ||
+                    text.contains("خصم") || text.contains("سحب") || text.contains("ايداع") ||
+                    text.contains("إيداع") || text.contains("شراء") || text.contains("purchase", ignoreCase = true) ||
+                    text.contains("paid", ignoreCase = true) || text.contains("debited", ignoreCase = true) ||
+                    text.contains("credited", ignoreCase = true) || text.contains("transfer", ignoreCase = true)) {
+                    Log.d("SmsNotifListener", "Sender $sender not in static whitelist, but contains financial keywords. Processing...")
                     SmsProcessor.process(applicationContext, sender, text)
                 } else {
                     Log.d("SmsNotifListener", "SMS from $sender ignored (no financial keywords)")

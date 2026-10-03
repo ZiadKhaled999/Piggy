@@ -167,7 +167,7 @@ fun AnalyticsScreen(
                 RevenueView(allTransactions, isPrivacyMode = isPrivacyMode, appCurrency = appCurrency)
             }
             
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(100.dp))
         }
     }
 }

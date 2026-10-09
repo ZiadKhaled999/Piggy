@@ -1,19 +1,39 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FIX(first-install-crash): mirrors res/xml/backup_rules.xml for Android 12+
+    cloud backup + device transfer. Previously the <cloud-backup> block was empty
+    (restore-everything default), so Play reinstalls silently restored torn
+    WorkManager/Room-WAL/cache files before first launch -> crash loop until wipe.
+    User data (Room main DB, DataStore, user_prefs_sync) stays restorable.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- WorkManager internal state is device-specific and must never be restored -->
+        <exclude domain="database" path="androidx.work.workdb" />
+        <exclude domain="database" path="androidx.work.workdb-shm" />
+        <exclude domain="database" path="androidx.work.workdb-wal" />
+        <exclude domain="database" path="androidx.work.workdb-journal" />
+        <exclude domain="sharedpref" path="androidx.work.util.preferences.xml" />
+        <exclude domain="database" path="androidx.work.system.workdb" />
+
+        <!-- SQLite WAL sidecars: restoring them without a matching main file corrupts
+             the Room DB open on next launch. -->
+        <exclude domain="database" path="piggy_ledger_db-shm" />
+        <exclude domain="database" path="piggy_ledger_db-wal" />
+        <exclude domain="database" path="piggy_ledger_db-journal" />
+
+        <!-- Refetchable downloads: safest to re-download instead of restoring -->
+        <exclude domain="file" path="mascots/" />
+        <exclude domain="file" path="piggy_remote_config_cache.json" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="database" path="androidx.work.workdb" />
+        <exclude domain="database" path="androidx.work.workdb-shm" />
+        <exclude domain="database" path="androidx.work.workdb-wal" />
+        <exclude domain="sharedpref" path="androidx.work.util.preferences.xml" />
+        <exclude domain="database" path="piggy_ledger_db-shm" />
+        <exclude domain="database" path="piggy_ledger_db-wal" />
+        <exclude domain="file" path="mascots/" />
+        <exclude domain="file" path="piggy_remote_config_cache.json" />
     </device-transfer>
-    -->
 </data-extraction-rules>

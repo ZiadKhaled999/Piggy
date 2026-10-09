@@ -28,44 +28,61 @@ class PiggyLedgerApplication : Application() {
             Log.e("PiggyLedgerApp", "Failed to restore saved app locale", e)
         }
         
+        // FIX(first-install-crash): the repo ships no google-services.json (CI injects
+        // it); only touch Crashlytics when Firebase actually initialized, otherwise
+        // the release build can throw here before anything else runs.
         try {
-            com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
+            if (com.google.firebase.FirebaseApp.getApps(this).isNotEmpty()) {
+                com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
+            }
         } catch (e: Exception) {
             Log.e("PiggyLedgerApp", "Failed to initialize Crashlytics", e)
         }
 
+        // FIX: placeholder keys from .env.example ("..._placeholder") are not blank,
+        // so the old isNotBlank() check configured SDKs with invalid keys on Play
+        // builds. Treat placeholders as missing.
         try {
-            val config = PostHogAndroidConfig(
-                apiKey = BuildConfig.POSTHOG_API_KEY,
-                host = "https://us.i.posthog.com"
-            ).apply {
-                captureScreenViews = true
-                captureApplicationLifecycleEvents = true
-                sessionReplay = true
+            val posthogKey = BuildConfig.POSTHOG_API_KEY
+            if (posthogKey.isNotBlank() && !posthogKey.contains("placeholder", ignoreCase = true)) {
+                val config = PostHogAndroidConfig(
+                    apiKey = posthogKey,
+                    host = "https://us.i.posthog.com"
+                ).apply {
+                    captureScreenViews = true
+                    captureApplicationLifecycleEvents = true
+                    sessionReplay = true
+                }
+                PostHogAndroid.setup(this, config)
+            } else {
+                Log.w("PiggyLedgerApp", "PostHog disabled: no real API key")
             }
-            PostHogAndroid.setup(this, config)
         } catch (e: Exception) {
             Log.e("PiggyLedgerApp", "Failed to initialize PostHog", e)
         }
 
         try {
-            if (BuildConfig.REVENUECAT_API_KEY.isNotBlank()) {
+            val revenuecatKey = BuildConfig.REVENUECAT_API_KEY
+            if (revenuecatKey.isNotBlank() && !revenuecatKey.contains("placeholder", ignoreCase = true)) {
                 com.revenuecat.purchases.Purchases.logLevel = com.revenuecat.purchases.LogLevel.INFO
                 com.revenuecat.purchases.Purchases.configure(
-                    com.revenuecat.purchases.PurchasesConfiguration.Builder(this, BuildConfig.REVENUECAT_API_KEY).build()
+                    com.revenuecat.purchases.PurchasesConfiguration.Builder(this, revenuecatKey).build()
                 )
+            } else {
+                Log.w("PiggyLedgerApp", "RevenueCat disabled: no real API key")
             }
         } catch (e: Exception) {
             Log.w("PiggyLedgerApp", "RevenueCat Purchases initialization skipped/failed: ${e.message}")
         }
 
         val clerkKey = BuildConfig.CLERK_PUBLISHABLE_KEY
-        if (clerkKey.isNotBlank()) {
+        // FIX: debug mode was hardcoded ON in production; only enable for debug builds.
+        if (clerkKey.isNotBlank() && !clerkKey.contains("placeholder", ignoreCase = true)) {
             try {
                 Clerk.initialize(
                     this,
                     clerkKey,
-                    options = ClerkConfigurationOptions(enableDebugMode = true),
+                    options = ClerkConfigurationOptions(enableDebugMode = BuildConfig.DEBUG),
                 )
             } catch (e: Exception) {
                 Log.e("PiggyLedgerApp", "Failed to initialize Clerk", e)

@@ -25,6 +25,10 @@ object NotificationScheduler {
     }
 
     private fun scheduleWorkManager(context: Context, type: String, targetHour: Int) {
+        // FIX(first-install-crash): this is called from MainActivity.onCreate with no
+        // guard. A corrupt WorkManager DB (restored backup) must degrade to alarms
+        // only, never crash the launch.
+        try {
         val currentDate = Calendar.getInstance()
         val dueDate = Calendar.getInstance()
 
@@ -48,11 +52,14 @@ object NotificationScheduler {
             .addTag(type)
             .build()
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        WorkManager.getInstance(context.applicationContext).enqueueUniquePeriodicWork(
             type,
             ExistingPeriodicWorkPolicy.KEEP, // Use KEEP so app relaunch doesn't reset delay
             dailyWorkRequest
         )
+        } catch (e: Exception) {
+            Log.e("NotificationScheduler", "WorkManager schedule failed for $type, alarms still active", e)
+        }
     }
 
     fun scheduleAlarm(context: Context, type: String, targetHour: Int) {

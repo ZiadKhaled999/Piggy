@@ -156,8 +156,12 @@ class MainActivity : AppCompatActivity() {
         initialDestination == null
     }
     
-    // Schedule background notifications
-    com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
+    // Schedule background notifications (best-effort: must never crash the launch)
+    try {
+        com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
+    } catch (e: Exception) {
+        android.util.Log.e("MainActivity", "NotificationScheduler failed, continuing launch", e)
+    }
 
     // Request Notification permission for Android 13+ (API 33+) if not granted
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -171,9 +175,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Update widgets so they reflect language changes or app launches
-    com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(this)
-    com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(this)
-    com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(this)
+    // (best-effort: a widget/DB hiccup must never crash the launch).
+    try {
+        com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(this)
+    } catch (e: Exception) {
+        android.util.Log.e("MainActivity", "Summary widget update failed", e)
+    }
+    try {
+        com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(this)
+    } catch (e: Exception) {
+        android.util.Log.e("MainActivity", "Streak widget update failed", e)
+    }
+    try {
+        com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(this)
+    } catch (e: Exception) {
+        android.util.Log.e("MainActivity", "Goals widget update failed", e)
+    }
     
 
     val database = PiggyLedgerDatabase.getInstance(applicationContext)
@@ -183,7 +200,14 @@ class MainActivity : AppCompatActivity() {
     val factory = ViewModelFactory(repository, userPreferences, applicationContext, database)
 
     lifecycleScope.launch {
-        initialDestination = userPreferences.getInitialDestination()
+        // FIX(first-install-crash): getInitialDestination() is already non-throwing,
+        // but the splash gate depends on this assignment — guarantee it resolves.
+        initialDestination = try {
+            userPreferences.getInitialDestination()
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "getInitialDestination failed, using LanguageSelection", e)
+            com.oryno.piggy_ledger.ui.Screen.LanguageSelection
+        }
     }
 
     observeSecuritySettings()
@@ -192,8 +216,18 @@ class MainActivity : AppCompatActivity() {
     activeOpenNotificationId = intent?.getStringExtra("open_notification_id")
     activeShortcutAction = intent?.getStringExtra("shortcut_action")
 
-    appUpdateManager.registerListener(installStateUpdatedListener)
-    checkForAppUpdate()
+    // Play in-app updates: best-effort. Play Core throws on devices without Play
+    // (emulators, sideloads, some OEM ROMs) — never let that crash the launch.
+    try {
+        appUpdateManager.registerListener(installStateUpdatedListener)
+    } catch (e: Exception) {
+        android.util.Log.e("MainActivity", "AppUpdate listener registration failed", e)
+    }
+    try {
+        checkForAppUpdate()
+    } catch (e: Exception) {
+        android.util.Log.e("MainActivity", "AppUpdate check failed", e)
+    }
 
     setContent {
       PiggyLedgerTheme {
@@ -309,7 +343,13 @@ class MainActivity : AppCompatActivity() {
                         .padding(16.dp)
                         .navigationBarsPadding(),
                     action = {
-                        TextButton(onClick = { appUpdateManager.completeUpdate() }) {
+                        TextButton(onClick = {
+                            try {
+                                appUpdateManager.completeUpdate()
+                            } catch (e: Exception) {
+                                android.util.Log.e("MainActivity", "completeUpdate failed", e)
+                            }
+                        }) {
                             Text(stringResource(R.string.restart), color = PinkPrimary)
                         }
                     }
@@ -430,10 +470,14 @@ class MainActivity : AppCompatActivity() {
       checkLockStatus()
       
       // Check if update is downloaded while app was in background
-      appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
-          if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
-              isUpdateReady = true
+      try {
+          appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+              if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+                  isUpdateReady = true
+              }
           }
+      } catch (e: Exception) {
+          android.util.Log.e("MainActivity", "AppUpdate resume check failed", e)
       }
   }
 
@@ -446,11 +490,16 @@ class MainActivity : AppCompatActivity() {
 
   override fun onDestroy() {
       super.onDestroy()
-      appUpdateManager.unregisterListener(installStateUpdatedListener)
+      try {
+          appUpdateManager.unregisterListener(installStateUpdatedListener)
+      } catch (e: Exception) {
+          android.util.Log.e("MainActivity", "AppUpdate unregister failed", e)
+      }
   }
 
   private fun checkForAppUpdate() {
-      appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+      try {
+          appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
           if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
               && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
           ) {
@@ -465,6 +514,11 @@ class MainActivity : AppCompatActivity() {
                   e.printStackTrace()
               }
           }
+      }.addOnFailureListener { e ->
+          android.util.Log.e("MainActivity", "AppUpdate info failed", e)
+      }
+      } catch (e: Exception) {
+          android.util.Log.e("MainActivity", "AppUpdate check failed", e)
       }
   }
 

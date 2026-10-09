@@ -860,18 +860,24 @@ class PiggyLedgerViewModel(
         }
     }
 
+    // FIX(onboarding-again): completion used to be fire-and-forget — the UI navigated
+    // away immediately while the DataStore edit was still in flight. A process kill
+    // or crash in that window lost the flag and the user saw onboarding again on
+    // next launch. Callers now navigate inside onSaved, which runs after the
+    // DataStore commit (and best-effort cloud snapshot) completes.
     fun completeOnboarding(
         intent: Int,
         intensity: Int,
         savingMode: String,
         relatesToLoans: Boolean? = null,
         relatesToAccounts: Boolean? = null,
-        relatesToEmergency: Boolean? = null
+        relatesToEmergency: Boolean? = null,
+        onSaved: () -> Unit = {}
     ) {
         viewModelScope.launch {
             userPreferences.saveOnboarding(true)
             userPreferences.savePersonalization(intent, intensity, savingMode)
-            
+
             val answersMap = mutableMapOf(
                 "personalized_intent" to intent.toString(),
                 "personalized_intensity" to intensity.toString(),
@@ -882,42 +888,66 @@ class PiggyLedgerViewModel(
             relatesToAccounts?.let { answersMap["relates_to_accounts"] = it.toString() }
             relatesToEmergency?.let { answersMap["relates_to_emergency"] = it.toString() }
 
-            repository.saveOnboardingAnswers(answersMap)
+            try {
+                repository.saveOnboardingAnswers(answersMap)
+            } catch (e: Exception) {
+                android.util.Log.e("PiggyLedgerVM", "saveOnboardingAnswers failed (flag already saved)", e)
+            }
 
-            PostHog.capture(
-                event = "onboarding_completed",
-                properties = mapOf(
-                    "personalized_intent" to intent,
-                    "personalized_intensity" to intensity,
-                    "saving_mode" to savingMode
+            try {
+                PostHog.capture(
+                    event = "onboarding_completed",
+                    properties = mapOf(
+                        "personalized_intent" to intent,
+                        "personalized_intensity" to intensity,
+                        "saving_mode" to savingMode
+                    )
                 )
-            )
+            } catch (e: Exception) {
+                android.util.Log.e("PiggyLedgerVM", "onboarding_completed analytics failed", e)
+            }
+            onSaved()
         }
     }
-    
-    fun completeLanguageSelection() {
+
+    fun completeLanguageSelection(onSaved: () -> Unit = {}) {
         viewModelScope.launch {
             userPreferences.saveLanguageSelected(true)
-            val currentLang = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags()
-            repository.saveOnboardingAnswer("language", currentLang)
-            PostHog.capture("language_selection_completed", properties = mapOf("\$set" to mapOf("language" to currentLang)))
+            try {
+                val currentLang = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                repository.saveOnboardingAnswer("language", currentLang)
+                PostHog.capture("language_selection_completed", properties = mapOf("\$set" to mapOf("language" to currentLang)))
+            } catch (e: Exception) {
+                android.util.Log.e("PiggyLedgerVM", "language selection side-effects failed (flag already saved)", e)
+            }
+            onSaved()
         }
     }
 
-    fun completeHearAboutUs(source: String) {
+    fun completeHearAboutUs(source: String, onSaved: () -> Unit = {}) {
         viewModelScope.launch {
             userPreferences.saveHeardAboutUs(true)
-            repository.saveOnboardingAnswer("hear_about_us_source", source)
-            PostHog.capture("hear_about_us_answered", properties = mapOf("source" to source, "\$set" to mapOf("hear_about_us_source" to source)))
+            try {
+                repository.saveOnboardingAnswer("hear_about_us_source", source)
+                PostHog.capture("hear_about_us_answered", properties = mapOf("source" to source, "\$set" to mapOf("hear_about_us_source" to source)))
+            } catch (e: Exception) {
+                android.util.Log.e("PiggyLedgerVM", "hear-about-us side-effects failed (flag already saved)", e)
+            }
+            onSaved()
         }
     }
 
-    fun resetAppFlow() {
+    // FIX(onboarding-again): the "already have an account" shortcut used to fire
+    // three independent racing coroutines (each with its own read-modify-write cloud
+    // snapshot) and navigate immediately. One sequential coroutine + onSaved makes
+    // the skip durable before leaving the screen.
+    fun completeAlreadyHaveAccount(onSaved: () -> Unit = {}) {
         viewModelScope.launch {
-            userPreferences.saveOnboarding(false)
-            userPreferences.saveLanguageSelected(false)
-            userPreferences.saveAuthentication(false)
-            PostHog.capture("app_flow_reset")
+            userPreferences.saveLanguageSelected(true)
+            userPreferences.saveHeardAboutUs(true)
+            userPreferences.saveOnboarding(true)
+            userPreferences.savePersonalization(1, 1, "Balanced")
+            onSaved()
         }
     }
 

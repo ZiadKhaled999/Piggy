@@ -127,18 +127,18 @@ fun PiggyLedgerApp(
                     }
                     LanguageSelectionScreen(
                         onLanguageSelected = {
-                            viewModel.completeLanguageSelection()
-                            navController.navigate(Screen.HearAboutUs) {
-                                popUpTo(Screen.LanguageSelection) { inclusive = true }
-                            }
+                            viewModel.completeLanguageSelection(onSaved = {
+                                navController.navigate(Screen.HearAboutUs) {
+                                    popUpTo(Screen.LanguageSelection) { inclusive = true }
+                                }
+                            })
                         },
                         onAlreadyHaveAccount = {
-                            viewModel.completeLanguageSelection()
-                            viewModel.completeHearAboutUs("already_have_account")
-                            viewModel.completeOnboarding(1, 1, "Balanced")
-                            navController.navigate(Screen.Auth) {
-                                popUpTo(Screen.LanguageSelection) { inclusive = true }
-                            }
+                            viewModel.completeAlreadyHaveAccount(onSaved = {
+                                navController.navigate(Screen.Auth) {
+                                    popUpTo(Screen.LanguageSelection) { inclusive = true }
+                                }
+                            })
                         }
                     )
                 }
@@ -150,10 +150,11 @@ fun PiggyLedgerApp(
                     }
                     HearAboutUsScreen(
                         onContinue = { source ->
-                            viewModel.completeHearAboutUs(source)
-                            navController.navigate(Screen.Onboarding) {
-                                popUpTo(Screen.HearAboutUs) { inclusive = true }
-                            }
+                            viewModel.completeHearAboutUs(source, onSaved = {
+                                navController.navigate(Screen.Onboarding) {
+                                    popUpTo(Screen.HearAboutUs) { inclusive = true }
+                                }
+                            })
                         }
                     )
                 }
@@ -164,10 +165,11 @@ fun PiggyLedgerApp(
                     }
                     OnboardingScreen(
                         onComplete = { intent, intensity, savingMode, relatesLoans, relatesAccounts, relatesEmergency ->
-                            viewModel.completeOnboarding(intent, intensity, savingMode, relatesLoans, relatesAccounts, relatesEmergency)
-                            navController.navigate(Screen.Auth) {
-                                popUpTo(Screen.Onboarding) { inclusive = true }
-                            }
+                            viewModel.completeOnboarding(intent, intensity, savingMode, relatesLoans, relatesAccounts, relatesEmergency, onSaved = {
+                                navController.navigate(Screen.Auth) {
+                                    popUpTo(Screen.Onboarding) { inclusive = true }
+                                }
+                            })
                         }
                     )
                 }

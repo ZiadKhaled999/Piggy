@@ -1,20 +1,48 @@
 package com.oryno.piggy_ledger.data
 
 import android.content.Context
+import android.util.Log
+import androidx.datastore.core.CorruptionException
+import androidx.datastore.preferences.core.ReplaceFileCorruptionHandler
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.io.IOException
 
-val Context.dataStore by preferencesDataStore(name = "user_prefs")
+// FIX(first-install-crash): a torn preferences_pb (killed write, cloud-backup
+// restore of a half-written file) used to throw on EVERY read -> crash loop
+// until the user wiped storage. The corruption handler atomically replaces a
+// corrupt file with defaults so the app always starts.
+val Context.dataStore by preferencesDataStore(
+    name = "user_prefs",
+    corruptionHandler = ReplaceFileCorruptionHandler(
+        produceNewData = { emptyPreferences() }
+    )
+)
 
 class UserPreferences(private val context: Context) {
+    // FIX(first-install-crash): every flow goes through this guarded stream so
+    // a corrupt/IO-broken DataStore emits defaults instead of crashing
+    // collectors (MainActivity launch gate, lock-status, auth observers).
+    private val safeData: Flow<Preferences>
+        get() = context.dataStore.data.catch { e ->
+            if (e is IOException || e is CorruptionException) {
+                Log.e("UserPreferences", "DataStore read failed, using defaults", e)
+                emit(emptyPreferences())
+            } else {
+                throw e
+            }
+        }
     companion object {
         val HAS_ONBOARDED = booleanPreferencesKey("has_onboarded")
         val HAS_LANGUAGE_SELECTED = booleanPreferencesKey("has_language_selected")
@@ -123,7 +151,7 @@ class UserPreferences(private val context: Context) {
         }
     }
 
-    val appLanguage: Flow<String?> = context.dataStore.data.map { prefs ->
+    val appLanguage: Flow<String?> = safeData.map { prefs ->
         prefs[APP_LANGUAGE] ?: getSavedAppLanguageSync(context)
     }
 
@@ -143,79 +171,79 @@ class UserPreferences(private val context: Context) {
         }
     }
 
-    val appCurrency: Flow<String> = context.dataStore.data.map { prefs ->
+    val appCurrency: Flow<String> = safeData.map { prefs ->
         prefs[APP_CURRENCY] ?: "EGP"
     }
 
-    val preferredAccountId: Flow<String?> = context.dataStore.data.map { prefs ->
+    val preferredAccountId: Flow<String?> = safeData.map { prefs ->
         prefs[PREFERRED_ACCOUNT_ID]
     }
 
-    val customIdentifiersJson: Flow<String> = context.dataStore.data.map { prefs ->
+    val customIdentifiersJson: Flow<String> = safeData.map { prefs ->
         prefs[CUSTOM_IDENTIFIERS_JSON] ?: "{}"
     }
 
-    val personalizedIntent: Flow<Int> = context.dataStore.data.map { prefs ->
+    val personalizedIntent: Flow<Int> = safeData.map { prefs ->
         prefs[PERSONALIZED_INTENT] ?: -1
     }
 
-    val personalizedIntensity: Flow<Int> = context.dataStore.data.map { prefs ->
+    val personalizedIntensity: Flow<Int> = safeData.map { prefs ->
         prefs[PERSONALIZED_INTENSITY] ?: -1
     }
 
-    val savingMode: Flow<String> = context.dataStore.data.map { prefs ->
+    val savingMode: Flow<String> = safeData.map { prefs ->
         prefs[SAVING_MODE] ?: "piggy"
     }
 
-    val hasOnboarded: Flow<Boolean> = context.dataStore.data.map { prefs ->
+    val hasOnboarded: Flow<Boolean> = safeData.map { prefs ->
         prefs[HAS_ONBOARDED] ?: getOnboardedSync(context)
     }
     
-    val hasLanguageSelected: Flow<Boolean> = context.dataStore.data.map { prefs ->
+    val hasLanguageSelected: Flow<Boolean> = safeData.map { prefs ->
         prefs[HAS_LANGUAGE_SELECTED] ?: getLanguageSelectedSync(context)
     }
 
-    val hasHeardAboutUs: Flow<Boolean> = context.dataStore.data.map { prefs ->
+    val hasHeardAboutUs: Flow<Boolean> = safeData.map { prefs ->
         prefs[HAS_HEARD_ABOUT_US] ?: getHeardAboutUsSync(context)
     }
 
-    val isAuthenticated: Flow<Boolean> = context.dataStore.data.map { prefs ->
+    val isAuthenticated: Flow<Boolean> = safeData.map { prefs ->
         prefs[IS_AUTHENTICATED] ?: getAuthenticatedSync(context)
     }
 
-    val authUserEmail: Flow<String> = context.dataStore.data.map { prefs ->
+    val authUserEmail: Flow<String> = safeData.map { prefs ->
         prefs[AUTH_USER_EMAIL] ?: ""
     }
 
-    val authUserName: Flow<String> = context.dataStore.data.map { prefs ->
+    val authUserName: Flow<String> = safeData.map { prefs ->
         prefs[AUTH_USER_NAME] ?: ""
     }
 
-    val authUserPhotoUrl: Flow<String> = context.dataStore.data.map { prefs ->
+    val authUserPhotoUrl: Flow<String> = safeData.map { prefs ->
         prefs[AUTH_USER_PHOTO_URL] ?: ""
     }
 
-    val isBiometricLockEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+    val isBiometricLockEnabled: Flow<Boolean> = safeData.map { prefs ->
         prefs[IS_BIOMETRIC_LOCK_ENABLED] ?: false
     }
 
-    val lockTimeoutSeconds: Flow<Long> = context.dataStore.data.map { prefs ->
+    val lockTimeoutSeconds: Flow<Long> = safeData.map { prefs ->
         prefs[LOCK_TIMEOUT_SECONDS] ?: 0L // 0 means instant
     }
 
-    val lastExitTime: Flow<Long> = context.dataStore.data.map { prefs ->
+    val lastExitTime: Flow<Long> = safeData.map { prefs ->
         prefs[LAST_EXIT_TIME] ?: 0L
     }
 
-    val isScreenshotProtectionEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+    val isScreenshotProtectionEnabled: Flow<Boolean> = safeData.map { prefs ->
         prefs[IS_SCREENSHOT_PROTECTION_ENABLED] ?: false
     }
 
-    val isPrivacyModeEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+    val isPrivacyModeEnabled: Flow<Boolean> = safeData.map { prefs ->
         prefs[IS_PRIVACY_MODE_ENABLED] ?: false
     }
 
-    val isPremium: Flow<Boolean> = context.dataStore.data.map { prefs ->
+    val isPremium: Flow<Boolean> = safeData.map { prefs ->
         val isPremiumFlag = prefs[IS_PREMIUM] ?: false
         val expiry = prefs[PREMIUM_EXPIRY_TIMESTAMP] ?: 0L
         val isLifetime = prefs[IS_LIFETIME_PREMIUM] ?: false
@@ -225,7 +253,7 @@ class UserPreferences(private val context: Context) {
         false
     }
 
-    val aiMessagesCount: Flow<Int> = context.dataStore.data.map { prefs ->
+    val aiMessagesCount: Flow<Int> = safeData.map { prefs ->
         prefs[AI_MESSAGES_COUNT] ?: 0
     }
 
@@ -358,7 +386,7 @@ class UserPreferences(private val context: Context) {
         try {
             val user = com.clerk.api.Clerk.userFlow.value
             val userId = user?.id ?: "local_user"
-            val prefs = context.dataStore.data.first()
+            val prefs = safeData.first()
             val dao = PiggyLedgerDatabase.getInstance(context.applicationContext).piggyLedgerDao()
             val existing = dao.getUserPreferencesByUserId(userId)
             val entity = UserPreferencesEntity(
@@ -433,18 +461,26 @@ class UserPreferences(private val context: Context) {
     }
 
     suspend fun getInitialDestination(): com.oryno.piggy_ledger.ui.Screen {
-        val prefs = context.dataStore.data.first()
-        val isAuth = prefs[IS_AUTHENTICATED] ?: getAuthenticatedSync(context)
-        if (isAuth) return com.oryno.piggy_ledger.ui.Screen.MainContainer
+        // FIX(first-install-crash): never throw out of the launch gate. Any
+        // residual failure (disk I/O, restored file) falls back to the first
+        // onboarding screen instead of crash-looping on the splash screen.
+        return try {
+            val prefs = safeData.first()
+            val isAuth = prefs[IS_AUTHENTICATED] ?: getAuthenticatedSync(context)
+            if (isAuth) return com.oryno.piggy_ledger.ui.Screen.MainContainer
 
-        val hasLang = prefs[HAS_LANGUAGE_SELECTED] ?: getLanguageSelectedSync(context)
-        if (!hasLang) return com.oryno.piggy_ledger.ui.Screen.LanguageSelection
-        val hasHeard = prefs[HAS_HEARD_ABOUT_US] ?: getHeardAboutUsSync(context)
-        if (!hasHeard) return com.oryno.piggy_ledger.ui.Screen.HearAboutUs
-        val hasOnboarded = prefs[HAS_ONBOARDED] ?: getOnboardedSync(context)
-        if (!hasOnboarded) return com.oryno.piggy_ledger.ui.Screen.Onboarding
+            val hasLang = prefs[HAS_LANGUAGE_SELECTED] ?: getLanguageSelectedSync(context)
+            if (!hasLang) return com.oryno.piggy_ledger.ui.Screen.LanguageSelection
+            val hasHeard = prefs[HAS_HEARD_ABOUT_US] ?: getHeardAboutUsSync(context)
+            if (!hasHeard) return com.oryno.piggy_ledger.ui.Screen.HearAboutUs
+            val hasOnboarded = prefs[HAS_ONBOARDED] ?: getOnboardedSync(context)
+            if (!hasOnboarded) return com.oryno.piggy_ledger.ui.Screen.Onboarding
 
-        return com.oryno.piggy_ledger.ui.Screen.Auth
+            com.oryno.piggy_ledger.ui.Screen.Auth
+        } catch (e: Exception) {
+            Log.e("UserPreferences", "getInitialDestination failed, using LanguageSelection", e)
+            com.oryno.piggy_ledger.ui.Screen.LanguageSelection
+        }
     }
 
     suspend fun clearAll() {
@@ -460,10 +496,16 @@ class UserPreferences(private val context: Context) {
         // one edit is still pointless duplicate network traffic, so it's
         // removed rather than just tolerated.
         val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.SyncWorker>().build()
-        androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
-            "SyncWork",
-            androidx.work.ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
+        // FIX(first-install-crash): a corrupt WorkManager DB must not crash
+        // DataStore save paths; the sync is best-effort here.
+        try {
+            androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
+                "SyncWork",
+                androidx.work.ExistingWorkPolicy.REPLACE,
+                workRequest
+            )
+        } catch (e: Exception) {
+            Log.e("UserPreferences", "SyncWork enqueue failed, will retry later", e)
+        }
     }
 }

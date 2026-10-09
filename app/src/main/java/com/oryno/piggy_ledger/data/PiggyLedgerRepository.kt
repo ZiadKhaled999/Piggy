@@ -7,12 +7,18 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
 
     private fun triggerSync() {
         // Single trigger only — see matching comment in UserPreferences.kt.
-        val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.SyncWorker>().build()
-        androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
-            "SyncWork",
-            androidx.work.ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
+        // FIX(first-install-crash): best-effort; a broken WorkManager DB must
+        // not crash the DB write that triggered the sync.
+        try {
+            val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.SyncWorker>().build()
+            androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
+                "SyncWork",
+                androidx.work.ExistingWorkPolicy.REPLACE,
+                workRequest
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("PiggyLedgerRepo", "SyncWork enqueue failed, will retry later", e)
+        }
     }
 
     val allGoals: Flow<List<Goal>> = dao.getAllGoals()

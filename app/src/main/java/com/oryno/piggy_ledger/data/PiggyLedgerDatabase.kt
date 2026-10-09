@@ -1,6 +1,7 @@
 package com.oryno.piggy_ledger.data
 
 import android.content.Context
+import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -204,18 +205,55 @@ abstract class PiggyLedgerDatabase : RoomDatabase() {
             }
         }
 
+        // FIX(first-install-crash): version 21 shipped as a version bump with no
+        // entity change and no migration, so every v20 user upgrading via Play
+        // hit fallbackToDestructiveMigration (silent total data wipe). The empty
+        // migration preserves user data on 20 -> 21.
+        val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // No schema change in v21; marker only.
+            }
+        }
+
+        private const val DB_NAME = "piggy_ledger_db"
+        private const val TAG = "PiggyLedgerDB"
+
+        private fun buildInstance(appContext: Context): PiggyLedgerDatabase {
+            return Room.databaseBuilder(
+                appContext,
+                PiggyLedgerDatabase::class.java,
+                DB_NAME
+            )
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21)
+            .fallbackToDestructiveMigration()
+            .build()
+        }
+
         fun getInstance(context: Context): PiggyLedgerDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    PiggyLedgerDatabase::class.java,
-                    "piggy_ledger_db"
-                )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20)
-                .fallbackToDestructiveMigration()
-                .build()
-                INSTANCE = instance
-                instance
+                val cached = INSTANCE
+                if (cached != null) {
+                    cached
+                } else {
+                    val appContext = context.applicationContext
+                    val built = buildInstance(appContext)
+                    // FIX(first-install-crash): Room opens the SQLite file lazily,
+                    // so a corrupt/restored file used to explode at a random later
+                    // caller on the main thread -> crash loop until wipe. Force the
+                    // open here where we can recover (delete + recreate once).
+                    val verified = try {
+                        built.openHelper.readableDatabase
+                        built
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Database file unusable, recreating empty DB", e)
+                        try { built.close() } catch (_: Exception) {}
+                        try { appContext.deleteDatabase(DB_NAME) } catch (_: Exception) {}
+                        try { appContext.getDatabasePath(DB_NAME).delete() } catch (_: Exception) {}
+                        buildInstance(appContext)
+                    }
+                    INSTANCE = verified
+                    verified
+                }
             }
         }
     }

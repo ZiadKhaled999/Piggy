@@ -1,13 +1,29 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FIX(first-install-crash): the previous file was an empty <full-backup-content>,
+    which backs up EVERYTHING — including the WorkManager DB, SQLite WAL sidecars
+    and refetchable download caches. Restoring those onto a fresh Play install
+    plants torn/device-specific files before first launch -> startup crash loop
+    until the user wipes storage. The excludes below keep user data (Room DB main
+    file, DataStore, user_prefs_sync) restorable while dropping volatile files.
+    See also res/xml/data_extraction_rules.xml (Android 12+).
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- WorkManager internal state is device-specific and must never be restored -->
+    <exclude domain="database" path="androidx.work.workdb" />
+    <exclude domain="database" path="androidx.work.workdb-shm" />
+    <exclude domain="database" path="androidx.work.workdb-wal" />
+    <exclude domain="database" path="androidx.work.workdb-journal" />
+    <exclude domain="sharedpref" path="androidx.work.util.preferences.xml" />
+    <exclude domain="database" path="androidx.work.system.workdb" />
+
+    <!-- SQLite WAL sidecars: restoring them without a matching main file corrupts
+         the Room DB open on next launch. The main piggy_ledger_db file is still backed up. -->
+    <exclude domain="database" path="piggy_ledger_db-shm" />
+    <exclude domain="database" path="piggy_ledger_db-wal" />
+    <exclude domain="database" path="piggy_ledger_db-journal" />
+
+    <!-- Refetchable downloads: safest to re-download instead of restoring -->
+    <exclude domain="file" path="mascots/" />
+    <exclude domain="file" path="piggy_remote_config_cache.json" />
 </full-backup-content>

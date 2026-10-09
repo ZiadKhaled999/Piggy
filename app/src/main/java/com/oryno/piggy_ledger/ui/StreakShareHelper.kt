@@ -28,8 +28,7 @@ object StreakShareHelper {
 
     fun createStreakImageBitmap(context: Context, streakCount: Int): Bitmap {
         return when {
-            streakCount in 7..99 -> createBalloonStreakBitmap(context, streakCount)
-            streakCount >= 100 -> createDay100ActivePiggyStreakBitmap(context, streakCount)
+            streakCount >= 7 -> createBalloonStreakBitmap(context, streakCount)
             else -> createStarterStreakBitmap(context, maxOf(1, streakCount))
         }
     }
@@ -186,9 +185,11 @@ object StreakShareHelper {
     }
 
     /**
-     * Tier 2 (Days 7 to 99): The Balloon Liftoff Card
+     * Tier 2 (Days 7+): The Balloon Liftoff Card
      * Piggy in full-body pose holding balloon strings, with 3D metallic Rose-Gold balloons
-     * displaying the exact streak day number (7 to 99), festive confetti, and celebratory atmosphere.
+     * displaying the exact streak day number (one balloon per digit: 1-2 balloons for 7-99,
+     * 3 for 100-999, 4+ shrinking to fit for larger streaks),
+     * festive confetti, and celebratory atmosphere.
      */
     private fun createBalloonStreakBitmap(context: Context, streakCount: Int): Bitmap {
         val width = 1080
@@ -265,7 +266,7 @@ object StreakShareHelper {
 
             // Draw 3D Rose-Gold Balloon Digit
             draw3dRoseGoldBalloonDigit(canvas, digits[0], balloonCenterX, balloonCenterY, balloonWidth, balloonHeight, 0f)
-        } else {
+        } else if (digits.length == 2) {
             // Two Digit Balloons (10 to 99)
             val spacing = 205f
             val leftBalloonX = width / 2f - spacing / 2f
@@ -285,6 +286,35 @@ object StreakShareHelper {
             // Draw 3D Inflatable Rose-Gold Balloon Digits with slight festive tilt
             draw3dRoseGoldBalloonDigit(canvas, digits[0], leftBalloonX, balloonCenterY, balloonWidth, balloonHeight, -7f)
             draw3dRoseGoldBalloonDigit(canvas, digits[1], rightBalloonX, balloonCenterY, balloonWidth, balloonHeight, 7f)
+        } else {
+            // Three or more Digit Balloons (100+): same Balloon Liftoff style as 7-99,
+            // one balloon per digit, shrunk to fit. N balloons for N digits.
+            val n = digits.length
+            val balloonWidth = when {
+                n == 3 -> 160f
+                n == 4 -> 135f
+                n == 5 -> 112f
+                else -> (750f / n).coerceIn(80f, 160f)
+            }
+            val balloonHeight = balloonWidth + 85f
+            val spacing = balloonWidth + 15f
+            val centerX = width / 2f
+            val startX = centerX - spacing * (n - 1) / 2f
+            val knotY = balloonCenterY + balloonHeight / 2f - 8f
+
+            // Draw elegant curved ribbon strings converging into Piggy's raised hoof
+            for (i in digits.indices) {
+                val bx = startX + i * spacing
+                val curve = if (n == 1) 0f else -40f + 80f * i / (n - 1)
+                drawBalloonString(canvas, bx, knotY, handX, handY, curveFactor = curve)
+            }
+
+            // Draw 3D Inflatable Rose-Gold Balloon Digits with slight festive tilt
+            for (i in digits.indices) {
+                val bx = startX + i * spacing
+                val tilt = if (n == 1) 0f else -8f + 16f * i / (n - 1)
+                draw3dRoseGoldBalloonDigit(canvas, digits[i], bx, balloonCenterY, balloonWidth, balloonHeight, tilt)
+            }
         }
 
         // Draw Mascot

@@ -607,7 +607,6 @@ fun DetailSettingsView(
                         subtitle = stringResource(id = R.string.egypt),
                         flagResId = R.drawable.ic_flag_eg,
                         isSelected = effectiveLocale.contains("ar-EG"),
-                        isPremium = true,
                         onClick = {
                             viewModel.setAppLanguage("ar-EG")
                         }
@@ -847,87 +846,55 @@ fun SettingsLanguageOption(
     subtitle: String,
     flagResId: Int,
     isSelected: Boolean,
-    isPremium: Boolean = false,
     onClick: () -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Card(
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) PinkPrimary.copy(alpha = 0.08f) else androidx.compose.ui.graphics.Color(0xFFF8FAFC)
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) PinkPrimary else androidx.compose.ui.graphics.Color(0xFFE2E8F0)
+        )
+    ) {
+        Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = if (isSelected) PinkPrimary.copy(alpha = 0.08f) else androidx.compose.ui.graphics.Color(0xFFF8FAFC)
-            ),
-            border = androidx.compose.foundation.BorderStroke(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) PinkPrimary else androidx.compose.ui.graphics.Color(0xFFE2E8F0)
-            )
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
+            Image(
+                painter = painterResource(id = flagResId),
+                contentDescription = null,
                 modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    painter = painterResource(id = flagResId),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape),
-                    contentScale = ContentScale.Crop
+                    .size(32.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = NavyDark
                 )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = NavyDark
-                    )
-                    Text(
-                        text = subtitle,
-                        fontSize = 13.sp,
-                        color = TextLight
-                    )
-                }
-                if (isSelected) {
-                    androidx.compose.material3.RadioButton(
-                        selected = true,
-                        onClick = null,
-                        colors = RadioButtonDefaults.colors(selectedColor = PinkPrimary)
-                    )
-                }
+                Text(
+                    text = subtitle,
+                    fontSize = 13.sp,
+                    color = TextLight
+                )
             }
-        }
-        if (isPremium) {
-            val isRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 6.dp, y = (-4).dp)
-                    .size(24.dp)
-                    .background(androidx.compose.ui.graphics.Color.White, androidx.compose.foundation.shape.CircleShape)
-                    .border(1.5.dp, androidx.compose.ui.graphics.Color(0xFFFBBF24), androidx.compose.foundation.shape.CircleShape)
-                    .padding(3.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-                    val w = size.width
-                    val h = size.height
-                    val path = androidx.compose.ui.graphics.Path().apply {
-                        moveTo(w * 0.1f, h * 0.85f)
-                        lineTo(w * 0.1f, h * 0.35f)
-                        lineTo(w * 0.35f, h * 0.6f)
-                        lineTo(w * 0.5f, h * 0.15f)
-                        lineTo(w * 0.65f, h * 0.6f)
-                        lineTo(w * 0.9f, h * 0.35f)
-                        lineTo(w * 0.9f, h * 0.85f)
-                        close()
-                    }
-                    drawPath(path = path, color = androidx.compose.ui.graphics.Color(0xFFFBBF24))
-                }
+            if (isSelected) {
+                androidx.compose.material3.RadioButton(
+                    selected = true,
+                    onClick = null,
+                    colors = RadioButtonDefaults.colors(selectedColor = PinkPrimary)
+                )
             }
         }
     }

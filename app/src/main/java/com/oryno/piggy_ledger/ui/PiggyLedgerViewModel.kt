@@ -67,17 +67,25 @@ class PiggyLedgerViewModel(
     init {
         refreshStreak()
         viewModelScope.launch {
-            var hasSyncedOnStart = false
-            com.clerk.api.Clerk.sessionFlow.collect { session ->
-                if (session != null && !hasSyncedOnStart) {
-                    hasSyncedOnStart = true
-                    triggerCloudSync()
+            try {
+                var hasSyncedOnStart = false
+                com.clerk.api.Clerk.sessionFlow.collect { session ->
+                    if (session != null && !hasSyncedOnStart) {
+                        hasSyncedOnStart = true
+                        triggerCloudSync()
+                    }
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("PiggyLedgerVM", "Session flow collection failed", e)
             }
         }
         viewModelScope.launch {
-            userPreferences.isPrivacyModeEnabled.collect { savedState ->
-                _isPrivacyModeEnabled.value = savedState
+            try {
+                userPreferences.isPrivacyModeEnabled.collect { savedState ->
+                    _isPrivacyModeEnabled.value = savedState
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("PiggyLedgerVM", "Privacy mode collection failed", e)
             }
         }
     }

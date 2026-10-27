@@ -121,7 +121,19 @@ class MainActivity : AppCompatActivity() {
   private var initialDestination by mutableStateOf<Screen?>(null)
   private var activeShortcutAction by mutableStateOf<String?>(null)
   private var activeOpenNotificationId by mutableStateOf<String?>(null)
-  private lateinit var userPreferences: UserPreferences
+  private val userPreferences: UserPreferences by lazy { UserPreferences(applicationContext) }
+
+  private val notificationPermissionLauncher = registerForActivityResult(
+      ActivityResultContracts.RequestPermission()
+  ) { isGranted ->
+      if (isGranted) {
+          try {
+              com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
+          } catch (e: Exception) {
+              android.util.Log.e("MainActivity", "NotificationScheduler failed after permission grant", e)
+          }
+      }
+  }
 
   private var isUpdateReady by mutableStateOf(false)
   private val appUpdateManager by lazy { AppUpdateManagerFactory.create(this) }
@@ -166,12 +178,12 @@ class MainActivity : AppCompatActivity() {
 
     // Request Notification permission for Android 13+ (API 33+) if not granted
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-                if (isGranted) {
-                    com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
-                }
-            }.launch(Manifest.permission.POST_NOTIFICATIONS)
+        try {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Failed to launch notification permission request", e)
         }
     }
 
@@ -197,7 +209,6 @@ class MainActivity : AppCompatActivity() {
     val database = PiggyLedgerDatabase.getInstance(applicationContext)
     
     val repository = PiggyLedgerRepository(database.piggyLedgerDao(), applicationContext)
-    userPreferences = UserPreferences(applicationContext)
     val factory = ViewModelFactory(repository, userPreferences, applicationContext, database)
 
     lifecycleScope.launch {
@@ -366,39 +377,48 @@ class MainActivity : AppCompatActivity() {
   private fun checkBiometricLock(userPreferences: UserPreferences) {
       if (isPromptShowing) return
       lifecycleScope.launch {
-          val isAuth = userPreferences.isAuthenticated.first()
-          val isEnabled = userPreferences.isBiometricLockEnabled.first()
-          if (!isAuth || !isEnabled) {
-              isAuthenticatedByBiometric = true
-              isBiometricCheckComplete = true
-              return@launch
-          }
+          try {
+              val isAuth = userPreferences.isAuthenticated.first()
+              val isEnabled = userPreferences.isBiometricLockEnabled.first()
+              if (!isAuth || !isEnabled) {
+                  isAuthenticatedByBiometric = true
+                  isBiometricCheckComplete = true
+                  return@launch
+              }
 
-          val biometricManager = BiometricManager.from(this@MainActivity)
-          val canAuthenticate = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
-          if (canAuthenticate == BiometricManager.BIOMETRIC_SUCCESS) {
-              isPromptShowing = true
-              com.oryno.piggy_ledger.ui.BiometricHelper.authenticateToUnhide(
-                  context = this@MainActivity,
-                  onSuccess = {
-                      isAuthenticatedByBiometric = true
-                      isBiometricCheckComplete = true
-                      lifecycleScope.launch {
-                          userPreferences.saveLastExitTime(System.currentTimeMillis())
-                          kotlinx.coroutines.delay(500)
+              val biometricManager = BiometricManager.from(this@MainActivity)
+              val canAuthenticate = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+              if (canAuthenticate == BiometricManager.BIOMETRIC_SUCCESS) {
+                  isPromptShowing = true
+                  com.oryno.piggy_ledger.ui.BiometricHelper.authenticateToUnhide(
+                      context = this@MainActivity,
+                      onSuccess = {
+                          isAuthenticatedByBiometric = true
+                          isBiometricCheckComplete = true
+                          lifecycleScope.launch {
+                              try {
+                                  userPreferences.saveLastExitTime(System.currentTimeMillis())
+                                  kotlinx.coroutines.delay(500)
+                              } catch (_: Exception) {}
+                              isPromptShowing = false
+                          }
+                      },
+                      onError = {
+                          isAuthenticatedByBiometric = false
+                          isBiometricCheckComplete = true
                           isPromptShowing = false
                       }
-                  },
-                  onError = {
-                      isAuthenticatedByBiometric = false
-                      isBiometricCheckComplete = true
-                      isPromptShowing = false
-                  }
-              )
-          } else {
-              // Hardware unavailable or nothing enrolled on emulator/device
+                  )
+              } else {
+                  // Hardware unavailable or nothing enrolled on emulator/device
+                  isAuthenticatedByBiometric = true
+                  isBiometricCheckComplete = true
+              }
+          } catch (e: Exception) {
+              android.util.Log.e("MainActivity", "checkBiometricLock failed", e)
               isAuthenticatedByBiometric = true
               isBiometricCheckComplete = true
+              isPromptShowing = false
           }
       }
   }
@@ -486,17 +506,19 @@ override fun onResume() {
         // periodic was delayed/failed. Uses APPEND_OR_REPLACE so it chains
         // after any in-flight sync.
         // Also check if a full resync was flagged due to retry exhaustion.
-        try {
-            val isAuth = userPreferences.isAuthenticated.first()
-            val needsFullResync = com.oryno.piggy_ledger.service.SyncWorker.needsFullResync(this)
-            if (isAuth || needsFullResync) {
-                com.oryno.piggy_ledger.service.SyncWorker.scheduleOneTime(this)
-                if (needsFullResync) {
-                    com.oryno.piggy_ledger.service.SyncWorker.clearFullResyncFlag(this)
+        lifecycleScope.launch {
+            try {
+                val isAuth = userPreferences.isAuthenticated.first()
+                val needsFullResync = com.oryno.piggy_ledger.service.SyncWorker.needsFullResync(this@MainActivity)
+                if (isAuth || needsFullResync) {
+                    com.oryno.piggy_ledger.service.SyncWorker.scheduleOneTime(this@MainActivity)
+                    if (needsFullResync) {
+                        com.oryno.piggy_ledger.service.SyncWorker.clearFullResyncFlag(this@MainActivity)
+                    }
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Foreground sync trigger failed", e)
             }
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Foreground sync trigger failed", e)
         }
     }
 

@@ -74,7 +74,7 @@ class SyncWorker(
         // Token expired or invalid - force refresh
         Log.i("SyncWorker", "Token expired, attempting force refresh")
         try {
-            result = session.fetchToken(GetTokenOptions(forceRefresh = true))
+            result = session.fetchToken(GetTokenOptions(skipCache = true))
             if (result is ClerkResult.Success && !result.value.jwt.isNullOrEmpty()) {
                 Log.i("SyncWorker", "Token force-refreshed successfully")
                 return "Bearer ${result.value.jwt}"
@@ -102,7 +102,7 @@ class SyncWorker(
             else -> true // syncAll returned false without exception - assume transient (5xx, timeout)
         }
 
-        if (isTransient) {
+        return if (isTransient) {
             Log.w("SyncWorker", "Transient failure (attempt $runAttemptCount), will retry with backoff")
             Result.retry()
         } else {

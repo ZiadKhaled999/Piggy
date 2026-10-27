@@ -395,7 +395,7 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, isPrivacyMode: Boolean
                     Icon(
                         painter = painterResource(id = R.drawable.ic_chat_delete),
                         contentDescription = "Delete",
-                        tint = NavyDark.copy(alpha = 0.3f),
+                        tint = Color.Black,
                         modifier = Modifier.size(20.dp)
                     )
                 }

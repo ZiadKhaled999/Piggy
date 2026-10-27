@@ -183,43 +183,55 @@ class PiggyLedgerApplication : Application() {
         }
 
         // FIX(sync): if previous sync attempts were capped, force a full resync now
-        if (com.oryno.piggy_ledger.service.SyncWorker.needsFullResync(this)) {
-            Log.i("PiggyLedgerApp", "Full resync flagged, triggering immediate sync")
-            com.oryno.piggy_ledger.service.SyncWorker.scheduleOneTime(this)
-            com.oryno.piggy_ledger.service.SyncWorker.clearFullResyncFlag(this)
+        try {
+            if (com.oryno.piggy_ledger.service.SyncWorker.needsFullResync(this)) {
+                Log.i("PiggyLedgerApp", "Full resync flagged, triggering immediate sync")
+                com.oryno.piggy_ledger.service.SyncWorker.scheduleOneTime(this)
+                com.oryno.piggy_ledger.service.SyncWorker.clearFullResyncFlag(this)
+            }
+        } catch (e: Exception) {
+            Log.e("PiggyLedgerApp", "Failed to check or trigger full resync", e)
         }
 
         // FIX(sync): register network callback to trigger sync when connectivity
         // is restored. This ensures offline changes sync as soon as WiFi returns,
         // even if WorkManager periodic/one-time work gave up or is delayed.
-        registerNetworkCallback()
+        try {
+            registerNetworkCallback()
+        } catch (e: Exception) {
+            Log.e("PiggyLedgerApp", "Failed to register network callback", e)
+        }
     }
 
     private fun registerNetworkCallback() {
-        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val networkRequest = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-            .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
-            .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
-            .build()
+        try {
+            val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
+            val networkRequest = NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+                .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+                .build()
 
-        networkCallback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                Log.i("PiggyLedgerApp", "Network became available, triggering sync")
-                // Small delay to let Clerk session stabilize if needed
-                CoroutineScope(Dispatchers.IO).launch {
-                    kotlinx.coroutines.delay(2000)
-                    com.oryno.piggy_ledger.service.SyncWorker.scheduleOneTime(this@PiggyLedgerApplication)
+            networkCallback = object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    Log.i("PiggyLedgerApp", "Network became available, triggering sync")
+                    // Small delay to let Clerk session stabilize if needed
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            kotlinx.coroutines.delay(2000)
+                            com.oryno.piggy_ledger.service.SyncWorker.scheduleOneTime(this@PiggyLedgerApplication)
+                        } catch (e: Exception) {
+                            Log.e("PiggyLedgerApp", "Network callback sync trigger failed", e)
+                        }
+                    }
+                }
+
+                override fun onLost(network: Network) {
+                    Log.i("PiggyLedgerApp", "Network lost")
                 }
             }
 
-            override fun onLost(network: Network) {
-                Log.i("PiggyLedgerApp", "Network lost")
-            }
-        }
-
-        try {
             connectivityManager.registerNetworkCallback(networkRequest, networkCallback!!)
         } catch (e: Exception) {
             Log.e("PiggyLedgerApp", "Failed to register network callback", e)

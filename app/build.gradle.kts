@@ -20,8 +20,8 @@ android {
     applicationId = "com.oryno.piggy_ledger"
     minSdk = 24
     targetSdk = 36
-    versionCode = 822
-    versionName = "4.3.14"
+    versionCode = 823
+    versionName = "4.3.15"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -190,6 +190,7 @@ dependencies {
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.biometric)
   implementation(libs.androidx.datastore.preferences)
+  implementation(libs.androidx.datastore)
   implementation(libs.androidx.fragment.ktx)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -55,5 +55,5 @@
 -keep class com.oryno.piggy_ledger.service.** { *; }
 
 # R8 Optimization Speed Tuning
--optimizationpasses 2
+-optimizationpasses 1
 

@@ -111,7 +111,7 @@ android {
       isCrunchPngs = true
       isMinifyEnabled = true
       isShrinkResources = true
-      proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
+      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
 
       val releaseConfig = signingConfigs.findByName("release")
       val debugConfig = signingConfigs.findByName("debugConfig")

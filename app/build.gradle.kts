@@ -250,3 +250,13 @@ dependencies {
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
 }
+
+// Ensure Crashlytics upload and symbol tasks depend on processReleaseGoogleServices
+tasks.whenTaskAdded {
+  if (name == "uploadCrashlyticsMappingFileRelease" || name.contains("Crashlytics", ignoreCase = true)) {
+    try {
+      dependsOn("processReleaseGoogleServices")
+    } catch (_: Exception) {}
+  }
+}
+

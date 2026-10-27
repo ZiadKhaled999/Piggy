@@ -36,6 +36,7 @@
 # Google Play Services & Firebase
 -dontwarn com.google.android.gms.**
 -dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.internal.recaptchabase.**
 
 # AndroidX & Biometric
 -keep class androidx.biometric.** { *; }
@@ -52,4 +53,7 @@
 
 # Services
 -keep class com.oryno.piggy_ledger.service.** { *; }
+
+# R8 Optimization Speed Tuning
+-optimizationpasses 2
 

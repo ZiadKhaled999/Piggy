@@ -506,6 +506,14 @@ class PiggyLedgerViewModel(
     }
 
     private suspend fun wipeLocalData() = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        // FIX(sync): cancel queued/periodic sync workers BEFORE wiping. A stray
+        // pull running after clearAllTables() while still authed would
+        // repopulate the just-wiped rows from cloud.
+        try {
+            com.oryno.piggy_ledger.service.SyncWorker.cancelAll(context.applicationContext)
+        } catch (e: Exception) {
+            android.util.Log.e("PiggyLedgerViewModel", "Cancel sync workers failed", e)
+        }
         try {
             PiggyLedgerDatabase.getInstance(context.applicationContext).clearAllTables()
         } catch (e: Exception) {

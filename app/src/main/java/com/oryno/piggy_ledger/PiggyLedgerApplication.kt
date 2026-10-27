@@ -165,5 +165,13 @@ class PiggyLedgerApplication : Application() {
         } catch (e: Exception) {
             Log.e("PiggyLedgerApp", "Failed to schedule PiggyRemoteConfigWorker", e)
         }
+
+        // FIX(sync): periodic cloud sync (6h, CONNECTED, KEEP) so data converges
+        // even without edits; one-time triggers cover immediacy. Best-effort.
+        try {
+            com.oryno.piggy_ledger.service.SyncWorker.schedulePeriodic(this)
+        } catch (e: Exception) {
+            Log.e("PiggyLedgerApp", "Failed to schedule SyncWorker", e)
+        }
     }
 }

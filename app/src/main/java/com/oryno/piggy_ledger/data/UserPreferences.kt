@@ -435,7 +435,9 @@ class UserPreferences(private val context: Context) {
             } else {
                 prefs.remove(PREFERRED_ACCOUNT_ID)
             }
-            // prefs[APP_CURRENCY] = entity.appCurrency
+            // FIX(sync): currency was never applied from cloud (line commented
+            // out) while push logged it — multi-device currency diverged forever.
+            prefs[APP_CURRENCY] = entity.appCurrency
         }
     }
 
@@ -495,17 +497,8 @@ class UserPreferences(private val context: Context) {
         // mutex now makes concurrent calls safe, but firing sync twice for
         // one edit is still pointless duplicate network traffic, so it's
         // removed rather than just tolerated.
-        val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.SyncWorker>().build()
-        // FIX(first-install-crash): a corrupt WorkManager DB must not crash
-        // DataStore save paths; the sync is best-effort here.
-        try {
-            androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
-                "SyncWork",
-                androidx.work.ExistingWorkPolicy.REPLACE,
-                workRequest
-            )
-        } catch (e: Exception) {
-            Log.e("UserPreferences", "SyncWork enqueue failed, will retry later", e)
-        }
+        // FIX(sync): delegate to SyncWorker.scheduleOneTime (KEEP + CONNECTED +
+        // backoff). See matching comment in PiggyLedgerRepository.kt.
+        com.oryno.piggy_ledger.service.SyncWorker.scheduleOneTime(context)
     }
 }

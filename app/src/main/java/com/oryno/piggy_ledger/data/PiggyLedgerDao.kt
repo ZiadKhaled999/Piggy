@@ -274,6 +274,9 @@ interface PiggyLedgerDao {
     @Query("SELECT * FROM onboarding_answers WHERE `key` = :key")
     suspend fun getOnboardingAnswerByKey(key: String): OnboardingAnswer?
 
+    @Query("SELECT * FROM onboarding_answers WHERE `key` = :key ORDER BY updatedAt DESC")
+    suspend fun getOnboardingAnswersByKey(key: String): List<OnboardingAnswer>
+
     @Query("UPDATE onboarding_answers SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
     suspend fun deleteOnboardingAnswerById(id: String, updatedAt: Long = System.currentTimeMillis())
 

@@ -157,7 +157,9 @@ data class UserPreferencesEntity(
     val premiumExpiryTimestamp: Long = 0L,
     val isLifetimePremium: Boolean = false,
     val preferredAccountId: String? = null,
-    @kotlinx.serialization.Transient
+    // FIX(sync): appCurrency must ride the wire. @Transient excluded it from the
+    // Ktor JSON payload, so currency never synced (server column exists). Room
+    // column already exists, so removing it needs no migration.
     val appCurrency: String = "EGP",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),

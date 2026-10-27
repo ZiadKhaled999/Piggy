@@ -9,16 +9,9 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
         // Single trigger only — see matching comment in UserPreferences.kt.
         // FIX(first-install-crash): best-effort; a broken WorkManager DB must
         // not crash the DB write that triggered the sync.
-        try {
-            val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.oryno.piggy_ledger.service.SyncWorker>().build()
-            androidx.work.WorkManager.getInstance(context).enqueueUniqueWork(
-                "SyncWork",
-                androidx.work.ExistingWorkPolicy.REPLACE,
-                workRequest
-            )
-        } catch (e: Exception) {
-            android.util.Log.e("PiggyLedgerRepo", "SyncWork enqueue failed, will retry later", e)
-        }
+        // FIX(sync): delegate to SyncWorker.scheduleOneTime (KEEP + CONNECTED +
+        // backoff) so rapid writes coalesce and offline edits wait for reconnect.
+        com.oryno.piggy_ledger.service.SyncWorker.scheduleOneTime(context)
     }
 
     val allGoals: Flow<List<Goal>> = dao.getAllGoals()
@@ -79,7 +72,10 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
     suspend fun updateAccount(account: Account) {
         val user = com.clerk.api.Clerk.userFlow.value
         val userId = user?.id ?: "local_user"
-        val updatedAccount = if (account.userId.isBlank()) account.copy(userId = userId, isSynced = false) else account.copy(isSynced = false)
+        // FIX(sync): bump updatedAt so last-writer-wins compares the edit time,
+        // not the row's creation time.
+        val now = System.currentTimeMillis()
+        val updatedAccount = if (account.userId.isBlank()) account.copy(userId = userId, isSynced = false, updatedAt = now) else account.copy(isSynced = false, updatedAt = now)
         dao.updateAccount(updatedAccount)
         triggerSync()
     }
@@ -93,6 +89,9 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
                 android.util.Log.e("Repository", "Failed cloud deletion for account: $id", e)
             }
         }
+        // FIX(sync): the tombstone (is_deleted=1, isSynced=0) above is the real
+        // delete channel (DELETE route 404s) — it must enqueue a push.
+        triggerSync()
     }
     suspend fun insertAccountTransaction(transaction: AccountTransaction) {
         val user = com.clerk.api.Clerk.userFlow.value
@@ -104,7 +103,8 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
     suspend fun markLoanAsPaid(id: String) {
         val loan = dao.getLoanById(id)
         if (loan != null) {
-            dao.updateLoan(loan.copy(isPaidOff = true, isSynced = false))
+            // FIX(sync): bump updatedAt, see updateAccount above.
+            dao.updateLoan(loan.copy(isPaidOff = true, isSynced = false, updatedAt = System.currentTimeMillis()))
             triggerSync()
         }
     }
@@ -116,6 +116,8 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("goals", id)
         }
+        // FIX(sync): enqueue the tombstone push (see deleteAccount above).
+        triggerSync()
     }
 
     suspend fun getFullBackup(streakDates: Set<String>): BackupData {
@@ -156,31 +158,45 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
 
     suspend fun saveOnboardingAnswer(key: String, value: String) {
         val now = System.currentTimeMillis()
+        // FIX(sync): stable id per key. Timestamp ids created a new row per save
+        // so duplicates accumulated locally and remotely; reuse the newest row's
+        // id (upsert) and tombstone any older duplicates for the same key.
+        val existing = dao.getOnboardingAnswersByKey(key)
+        val keepId = existing.firstOrNull()?.id ?: "${now}_$key"
         val answer = OnboardingAnswer(
-            id = "${now}_$key",
-            userId = null,
+            id = keepId,
+            userId = existing.firstOrNull()?.userId,
             key = key,
             value = value,
             updatedAt = now,
             isSynced = false
         )
         dao.insertOnboardingAnswer(answer)
+        for (dup in existing.drop(1)) {
+            try { dao.deleteOnboardingAnswerById(dup.id, now) } catch (_e: Exception) {}
+        }
         triggerSync()
     }
 
     suspend fun saveOnboardingAnswers(answers: Map<String, String>) {
         val now = System.currentTimeMillis()
-        val list = answers.map { (k, v) ->
-            OnboardingAnswer(
-                id = "${now}_$k",
-                userId = null,
-                key = k,
-                value = v,
-                updatedAt = now,
-                isSynced = false
+        for ((k, v) in answers) {
+            val existing = dao.getOnboardingAnswersByKey(k)
+            val keepId = existing.firstOrNull()?.id ?: "${now}_$k"
+            dao.insertOnboardingAnswer(
+                OnboardingAnswer(
+                    id = keepId,
+                    userId = existing.firstOrNull()?.userId,
+                    key = k,
+                    value = v,
+                    updatedAt = now,
+                    isSynced = false
+                )
             )
+            for (dup in existing.drop(1)) {
+                try { dao.deleteOnboardingAnswerById(dup.id, now) } catch (_e: Exception) {}
+            }
         }
-        dao.insertOnboardingAnswers(list)
         triggerSync()
     }
 }

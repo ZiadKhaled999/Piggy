@@ -236,13 +236,22 @@ class SyncManager(private val context: Context) {
             val itemsToInsert = mutableListOf<StreakDateEntity>()
             for (remoteItem in remote) {
                 val localItem = localMap[remoteItem.id]
-                if (localItem == null || localItem.isSynced) {
+                if (localItem == null) {
                     itemsToInsert.add(remoteItem.copy(isSynced = true))
+                } else if (localItem.isSynced) {
+                    // FIX(sync): parity with every other table — stale cloud rows
+                    // must not overwrite newer synced locals. Tombstones still
+                    // propagate when newer (updatedAt comparison covers both).
+                    if (remoteItem.updatedAt > localItem.updatedAt) {
+                        itemsToInsert.add(remoteItem.copy(isSynced = true))
+                    }
                 }
             }
             if (itemsToInsert.isNotEmpty()) dao.insertStreakDates(itemsToInsert)
         }
-        val remoteStreakDates = dao.getAllStreakDatesSync().map { it.dateStr }.toSet()
+        // FIX(sync): prefs merge must exclude tombstones, else a deleted date
+        // re-enters SharedPreferences via union and resurrects on next push.
+        val remoteStreakDates = dao.getAllStreakDatesSync().filter { !it.is_deleted }.map { it.dateStr }.toSet()
         if (remoteStreakDates.isNotEmpty()) {
             StreakManager.syncFromCloud(context, remoteStreakDates)
         }

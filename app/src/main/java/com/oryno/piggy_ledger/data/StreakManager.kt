@@ -219,6 +219,17 @@ object StreakManager {
                 }
                 val dao = PiggyLedgerDatabase.getInstance(context.applicationContext).piggyLedgerDao()
                 dao.insertStreakDates(entities)
+                // FIX(sync): removals (removeTodayAction) previously left the old
+                // Room row alive+synced, so the prefs-union pull resurrected it.
+                // Tombstone rows for this user whose date left the prefs set.
+                try {
+                    val now = System.currentTimeMillis()
+                    for (row in dao.getAllStreakDatesSync()) {
+                        if (row.userId == userId && !row.is_deleted && !dates.contains(row.dateStr)) {
+                            dao.deleteStreakDateById(row.id, now)
+                        }
+                    }
+                } catch (_e: Exception) {}
                 
                 com.oryno.piggy_ledger.service.SyncManager(context).syncAll()
             } catch (e: Exception) {

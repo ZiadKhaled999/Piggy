@@ -617,7 +617,7 @@ fun EditAccountScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.delete_account), tint = Color(0xFFEF4444))
+                    Icon(painterResource(id = R.drawable.ic_chat_delete), contentDescription = stringResource(R.string.delete_account), tint = Color(0xFFEF4444), modifier = Modifier.size(24.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.delete_account), fontWeight = FontWeight.Bold, color = Color(0xFFEF4444), fontSize = 16.sp)
                 }

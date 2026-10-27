@@ -290,7 +290,7 @@ fun DashboardScreen(
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
                     ) {
                         Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.SpaceBetween) {
-                            Icon(Icons.Default.TrendingDown, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(24.dp))
+                            Icon(painter = painterResource(id = R.drawable.ic_nav_analytics), contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(28.dp))
                             Column {
                                 Text(stringResource(R.string.spent), color = TextLight, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                 val excludedIds = remember(accounts) { accounts.filter { it.exclude_from_all }.map { it.id }.toSet() }
@@ -313,7 +313,7 @@ fun DashboardScreen(
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
                     ) {
                         Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.SpaceBetween) {
-                            Icon(Icons.Default.AccountBalance, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(24.dp))
+                            Icon(painter = painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(28.dp))
                             Column {
                                 Text(stringResource(R.string.payoffs), color = TextLight, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                 Text(
@@ -588,7 +588,7 @@ fun DashboardScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary, contentColor = Color.White)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.AutoAwesome,
+                                painter = painterResource(id = R.drawable.ic_nav_ai),
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -894,10 +894,10 @@ fun VirtualCardsWidget(
                                         .size(32.dp)
                                 ) {
                                     Icon(
-                                        imageVector = if (isPrivacyMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        painter = if (isPrivacyMode) painterResource(id = R.drawable.ic_eye_closed) else painterResource(id = R.drawable.ic_eye_open),
                                         contentDescription = "Toggle Privacy Mode",
                                         tint = Color.White,
-                                        modifier = Modifier.size(17.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
 
@@ -984,7 +984,7 @@ fun VirtualCardsWidget(
                                             modifier = Modifier.size(24.dp)
                                         ) {
                                             Icon(
-                                                imageVector = if (isCardIdVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                                painter = if (isCardIdVisible) painterResource(id = R.drawable.ic_eye_open) else painterResource(id = R.drawable.ic_eye_closed),
                                                 contentDescription = "Toggle ID Visibility",
                                                 tint = Color.White.copy(alpha = 0.6f),
                                                 modifier = Modifier.size(16.dp)

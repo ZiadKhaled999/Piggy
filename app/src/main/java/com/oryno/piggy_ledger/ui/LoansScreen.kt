@@ -1,6 +1,7 @@
 
 package com.oryno.piggy_ledger.ui
 import com.oryno.piggy_ledger.ui.getCurrencySymbol
+import androidx.compose.ui.res.painterResource
 
 import java.util.Locale
 import androidx.compose.material.icons.filled.AttachMoney
@@ -169,268 +170,8 @@ fun LoansScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf(0) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(horizontal = 24.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(Color.White, androidx.compose.foundation.shape.CircleShape)
-                    .border(1.dp, Color(0xFFE2E8F0), androidx.compose.foundation.shape.CircleShape)
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_icon), tint = NavyDark, modifier = Modifier.size(20.dp))
-            }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.loans_payoffs_title), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark)
-                Text(stringResource(R.string.keep_tabs_subtitle), fontSize = 14.sp, color = TextLight, fontWeight = FontWeight.Medium)
-            }
-            IconButton(
-                onClick = { viewModel.togglePrivacyMode(screenContext) },
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(Color.White, androidx.compose.foundation.shape.CircleShape)
-                    .border(1.dp, Color(0xFFE2E8F0), androidx.compose.foundation.shape.CircleShape)
-            ) {
-                Icon(
-                    imageVector = if (isPrivacyMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                    contentDescription = "Toggle Privacy",
-                    tint = NavyDark,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            val isNarrow = maxWidth < 340.dp
-            
-            if (isNarrow) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            shape = RoundedCornerShape(16.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                        ) {
-                             Column(modifier = Modifier.padding(10.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = PinkAccent, modifier = Modifier.size(10.dp))
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", owedToMe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
-                        }
-                        
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            shape = RoundedCornerShape(16.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                        ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.AutoMirrored.Filled.TrendingDown, contentDescription = null, tint = BlackAccent, modifier = Modifier.size(10.dp))
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", iOwe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
-                        }
-                    }
-                    
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(stringResource(R.string.net_ledger), fontSize = 9.sp, fontWeight = FontWeight.Black, color = TextLight)
-                            Text(
-                                text = if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else (if (netLedger >= 0) "+${getCurrencySymbol(appCurrency)}${String.format("%.0f", netLedger)}" else "-${getCurrencySymbol(appCurrency)}${String.format("%.0f", -netLedger)}"), 
-                                fontSize = 15.sp, 
-                                fontWeight = FontWeight.Bold, 
-                                color = if (netLedger >= 0) PinkAccent else BlackAccent,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-            } else {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFFF1F5F9),
-                    shape = RoundedCornerShape(28.dp),
-                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            shape = RoundedCornerShape(24.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                        ) {
-                            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = PinkAccent, modifier = Modifier.size(10.dp))
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", owedToMe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
-                        }
-                        
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            shape = RoundedCornerShape(24.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                        ) {
-                            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.AutoMirrored.Filled.TrendingDown, contentDescription = null, tint = BlackAccent, modifier = Modifier.size(10.dp))
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", iOwe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
-                        }
-                        
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            shape = RoundedCornerShape(24.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                        ) {
-                            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
-                                Text(stringResource(R.string.net_ledger), fontSize = 8.sp, fontWeight = FontWeight.Black, color = TextLight, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else (if (netLedger >= 0) "+${getCurrencySymbol(appCurrency)}${String.format("%.0f", netLedger)}" else "-${getCurrencySymbol(appCurrency)}${String.format("%.0f", -netLedger)}"), 
-                                    fontSize = 16.sp, 
-                                    fontWeight = FontWeight.Bold, 
-                                    color = if (netLedger >= 0) PinkAccent else BlackAccent,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text(stringResource(R.string.search_person_notes), color = TextLight, fontSize = 14.sp, fontWeight = FontWeight.Medium) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextLight, modifier = Modifier.size(20.dp)) },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = Color(0xFFF8FAFC),
-                    focusedContainerColor = Color(0xFFF8FAFC),
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = Color(0xFFE2E8F0)
-                ),
-                singleLine = true
-            )
-            
-            Button(
-                onClick = { 
-                    if (viewModel.canAddLoan(loans.size)) {
-                        showAddDialog = true 
-                    } else {
-                        com.oryno.piggy_ledger.ui.ToastUtil.show(screenContext, "Upgrade to Pro to add more loans", Toast.LENGTH_SHORT)
-                    }
-                },
-                modifier = Modifier.height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
-                shape = RoundedCornerShape(16.dp),
-                contentPadding = PaddingValues(horizontal = 20.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(stringResource(R.string.add_record), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .background(Color(0xFFF1F5F9), RoundedCornerShape(16.dp))
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TabButton(text = stringResource(R.string.active_tab), isSelected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
-            TabButton(text = stringResource(R.string.paid_off_tab), isSelected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
-            TabButton(text = stringResource(R.string.show_all_tab), isSelected = selectedTab == 2, onClick = { selectedTab = 2 }, modifier = Modifier.weight(1f))
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        val filteredLoans = loans.filter { loan ->
+    val filteredLoans = remember(loans, selectedTab, searchQuery) {
+        loans.filter { loan ->
             when (selectedTab) {
                 0 -> !loan.isPaidOff
                 1 -> loan.isPaidOff
@@ -439,45 +180,317 @@ fun LoansScreen(
         }.filter { loan ->
             searchQuery.isBlank() || loan.contactName.contains(searchQuery, ignoreCase = true) || loan.note.contains(searchQuery, ignoreCase = true)
         }
-        
-        if (filteredLoans.isEmpty()) {
-            Surface(
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding(),
+        contentPadding = PaddingValues(bottom = 100.dp)
+    ) {
+        item {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .padding(bottom = 24.dp),
-                color = Color(0xFFF8FAFC),
-                shape = RoundedCornerShape(32.dp),
-                border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                    .padding(horizontal = 24.dp)
             ) {
-                Column(
+                Row(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                        .fillMaxWidth()
+                        .padding(top = 16.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
+                    IconButton(
+                        onClick = onBack,
                         modifier = Modifier
-                            .size(80.dp)
-                            .background(Color(0xFFF8FAFC), androidx.compose.foundation.shape.CircleShape),
-                        contentAlignment = Alignment.Center
+                            .size(44.dp)
+                            .background(Color.White, androidx.compose.foundation.shape.CircleShape)
+                            .border(1.dp, Color(0xFFE2E8F0), androidx.compose.foundation.shape.CircleShape)
                     ) {
-                        Icon(Icons.Default.HelpOutline, contentDescription = null, tint = TextLight.copy(alpha = 0.3f), modifier = Modifier.size(40.dp))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_icon), tint = NavyDark, modifier = Modifier.size(20.dp))
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text(stringResource(R.string.no_records_found), fontWeight = FontWeight.ExtraBold, color = Color(0xFF334155), fontSize = 18.sp)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(stringResource(R.string.log_lent_borrowed_desc), color = TextLight, textAlign = TextAlign.Center, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 16.dp))
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.loans_payoffs_title), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark)
+                        Text(stringResource(R.string.keep_tabs_subtitle), fontSize = 14.sp, color = TextLight, fontWeight = FontWeight.Medium)
+                    }
+                    IconButton(
+                        onClick = { viewModel.togglePrivacyMode(screenContext) },
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(Color.White, androidx.compose.foundation.shape.CircleShape)
+                            .border(1.dp, Color(0xFFE2E8F0), androidx.compose.foundation.shape.CircleShape)
+                    ) {
+                        Icon(
+                            painter = if (isPrivacyMode) painterResource(id = R.drawable.ic_eye_closed) else painterResource(id = R.drawable.ic_eye_open),
+                            contentDescription = "Toggle Privacy",
+                            tint = NavyDark,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                BoxWithConstraints(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    val isNarrow = maxWidth < 340.dp
+                    
+                    if (isNarrow) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Card(
+                                    modifier = Modifier.weight(1f),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    shape = RoundedCornerShape(16.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                                ) {
+                                     Column(modifier = Modifier.padding(10.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(painter = painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = PinkAccent, modifier = Modifier.size(10.dp))
+                                            Spacer(modifier = Modifier.width(3.dp))
+                                            Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", owedToMe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                }
+                                
+                                Card(
+                                    modifier = Modifier.weight(1f),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    shape = RoundedCornerShape(16.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(painter = painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = BlackAccent, modifier = Modifier.size(10.dp))
+                                            Spacer(modifier = Modifier.width(3.dp))
+                                            Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", iOwe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                }
+                            }
+                            
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                shape = RoundedCornerShape(16.dp),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                                border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(stringResource(R.string.net_ledger), fontSize = 9.sp, fontWeight = FontWeight.Black, color = TextLight)
+                                    Text(
+                                        text = if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else (if (netLedger >= 0) "+${getCurrencySymbol(appCurrency)}${String.format("%.0f", netLedger)}" else "-${getCurrencySymbol(appCurrency)}${String.format("%.0f", -netLedger)}"), 
+                                        fontSize = 15.sp, 
+                                        fontWeight = FontWeight.Bold, 
+                                        color = if (netLedger >= 0) PinkAccent else BlackAccent,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Color(0xFFF1F5F9),
+                            shape = RoundedCornerShape(28.dp),
+                            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Card(
+                                    modifier = Modifier.weight(1f),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    shape = RoundedCornerShape(24.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                                ) {
+                                    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(painter = painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = PinkAccent, modifier = Modifier.size(10.dp))
+                                            Spacer(modifier = Modifier.width(3.dp))
+                                            Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", owedToMe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                }
+                                
+                                Card(
+                                    modifier = Modifier.weight(1f),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    shape = RoundedCornerShape(24.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                                ) {
+                                    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(painter = painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = BlackAccent, modifier = Modifier.size(10.dp))
+                                            Spacer(modifier = Modifier.width(3.dp))
+                                            Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", iOwe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                }
+                                
+                                Card(
+                                    modifier = Modifier.weight(1f),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    shape = RoundedCornerShape(24.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                                ) {
+                                    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
+                                        Text(stringResource(R.string.net_ledger), fontSize = 8.sp, fontWeight = FontWeight.Black, color = TextLight, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else (if (netLedger >= 0) "+${getCurrencySymbol(appCurrency)}${String.format("%.0f", netLedger)}" else "-${getCurrencySymbol(appCurrency)}${String.format("%.0f", -netLedger)}"), 
+                                            fontSize = 16.sp, 
+                                            fontWeight = FontWeight.Bold, 
+                                            color = if (netLedger >= 0) PinkAccent else BlackAccent,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text(stringResource(R.string.search_person_notes), color = TextLight, fontSize = 14.sp, fontWeight = FontWeight.Medium) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextLight, modifier = Modifier.size(20.dp)) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = Color(0xFFF8FAFC),
+                            focusedContainerColor = Color(0xFFF8FAFC),
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedBorderColor = Color(0xFFE2E8F0)
+                        ),
+                        singleLine = true
+                    )
+                    
+                    Button(
+                        onClick = { 
+                            if (viewModel.canAddLoan(loans.size)) {
+                                showAddDialog = true 
+                            } else {
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(screenContext, "Upgrade to Pro to add more loans", Toast.LENGTH_SHORT)
+                            }
+                        },
+                        modifier = Modifier.height(52.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
+                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(horizontal = 20.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(stringResource(R.string.add_record), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .background(Color(0xFFF1F5F9), RoundedCornerShape(16.dp))
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TabButton(text = stringResource(R.string.active_tab), isSelected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
+                    TabButton(text = stringResource(R.string.paid_off_tab), isSelected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
+                    TabButton(text = stringResource(R.string.show_all_tab), isSelected = selectedTab == 2, onClick = { selectedTab = 2 }, modifier = Modifier.weight(1f))
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+        
+        if (filteredLoans.isEmpty()) {
+            item {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(bottom = 24.dp),
+                    color = Color(0xFFF8FAFC),
+                    shape = RoundedCornerShape(32.dp),
+                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp, horizontal = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(Color(0xFFF8FAFC), androidx.compose.foundation.shape.CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.HelpOutline, contentDescription = null, tint = TextLight.copy(alpha = 0.3f), modifier = Modifier.size(40.dp))
+                        }
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(stringResource(R.string.no_records_found), fontWeight = FontWeight.ExtraBold, color = Color(0xFF334155), fontSize = 18.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(stringResource(R.string.log_lent_borrowed_desc), color = TextLight, textAlign = TextAlign.Center, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 16.dp))
+                    }
                 }
             }
         } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 100.dp)
-            ) {
-                items(filteredLoans) { loan ->
+            items(filteredLoans, key = { it.id }) { loan ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 6.dp)
+                ) {
                     val isPaidOff = loan.isPaidOff
                     val containerColor = if (isPaidOff) Color(0xFFF1F5F9) else PinkPrimary.copy(alpha = 0.03f)
                     val borderColor = if (isPaidOff) Color(0xFFCBD5E1) else PinkPrimary.copy(alpha = 0.15f)
@@ -498,7 +511,7 @@ fun LoansScreen(
                         ) {
                             val iconTint = if (isPaidOff) Color(0xFF94A3B8) else (if (loan.type == LoanType.LENT) PinkAccent else BlackAccent)
                             val bgTint = if (isPaidOff) Color(0xFFE2E8F0) else (if (loan.type == LoanType.LENT) PinkAccent.copy(alpha = 0.1f) else BlackAccent.copy(alpha = 0.1f))
-                            val icon = if (loan.type == LoanType.LENT) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown
+                            val icon = painterResource(id = R.drawable.ic_nav_loans)
                             val prefix = if (loan.type == LoanType.LENT) "+" else "-"
                             val text = if (loan.type == LoanType.LENT) stringResource(R.string.owed_to_me) else stringResource(R.string.i_owe)
                             val textColor = if (isPaidOff) Color(0xFF94A3B8) else (if (loan.type == LoanType.LENT) PinkAccent else BlackAccent)
@@ -525,7 +538,7 @@ fun LoansScreen(
                                             .background(bgTint, CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                                        Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
                                     }
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -1366,7 +1379,7 @@ fun LoansScreen(
                             }
                         } else {
                             LazyColumn(
-                                modifier = Modifier.fillMaxWidth().heightIn(max = 380.dp),
+                                modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 items(payments) { payment ->
@@ -1406,7 +1419,7 @@ fun LoansScreen(
                                                 Text(sdf.format(java.util.Date(payment.timestamp)), fontSize = 11.sp, color = Color(0xFF94A3B8), modifier = Modifier.padding(top = 2.dp))
                                             }
                                             IconButton(onClick = { viewModel.deleteLoanPayment(payment.id) }) {
-                                                Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
+                                                Icon(painter = painterResource(id = R.drawable.ic_chat_delete), contentDescription = "Delete", tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
                                             }
                                         }
                                     }
@@ -1627,7 +1640,7 @@ fun LoansScreen(
                             ),
                             contentPadding = PaddingValues(horizontal = 8.dp)
                         ) {
-                            Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = Color(0xFFD32F2F), modifier = Modifier.size(18.dp))
+                            Icon(painter = painterResource(id = R.drawable.ic_chat_delete), contentDescription = null, tint = Color(0xFFD32F2F), modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 stringResource(R.string.delete_button),

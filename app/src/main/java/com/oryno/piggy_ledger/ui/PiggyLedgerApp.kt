@@ -688,11 +688,11 @@ fun FloatingNavBar(
 ) {
     val items = remember {
         listOf(
-            NavItem(Screen.Dashboard, Icons.Default.Home),
-            NavItem(Screen.MyGoals, Icons.Default.Dashboard),
-            NavItem(Screen.Loans, Icons.Default.AccountBalance),
-            NavItem(Screen.Accounts, Icons.Default.AccountTree),
-            NavItem(Screen.Analytics, Icons.Default.PieChart)
+            NavItem(Screen.Dashboard, R.drawable.ic_nav_home),
+            NavItem(Screen.MyGoals, R.drawable.ic_nav_goals),
+            NavItem(Screen.Loans, R.drawable.ic_nav_loans),
+            NavItem(Screen.Accounts, R.drawable.ic_nav_accounts),
+            NavItem(Screen.Analytics, R.drawable.ic_nav_analytics)
         )
     }
     
@@ -778,13 +778,13 @@ fun FloatingNavBar(
                 shape = CircleShape,
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 8.dp)
             ) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = "Sovereign AI")
+                Icon(painter = painterResource(id = R.drawable.ic_nav_ai), contentDescription = "Sovereign AI", modifier = Modifier.size(28.dp))
             }
         }
     }
 }
 
-data class NavItem(val screen: Screen, val icon: ImageVector)
+data class NavItem(val screen: Screen, val icon: Int)
 
 @Composable
 fun NavBarItem(
@@ -813,10 +813,10 @@ fun NavBarItem(
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            imageVector = item.icon,
+            painter = painterResource(id = item.icon),
             contentDescription = null,
             tint = if (isSelected) Color.White else Color.White.copy(alpha = 0.5f),
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(24.dp)
         )
     }
 }

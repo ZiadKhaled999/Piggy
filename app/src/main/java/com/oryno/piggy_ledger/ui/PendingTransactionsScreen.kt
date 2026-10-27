@@ -481,7 +481,7 @@ fun ResolveTransactionBottomSheetContent(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.DeleteOutline,
+                        painter = painterResource(id = R.drawable.ic_chat_delete),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )

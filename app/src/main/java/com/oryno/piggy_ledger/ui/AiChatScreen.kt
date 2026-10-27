@@ -319,7 +319,7 @@ fun AiChatScreen(
                                     modifier = Modifier.size(38.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Outlined.Edit,
+                                        painter = painterResource(id = R.drawable.ic_chat_new),
                                         contentDescription = stringResource(R.string.ai_new_chat),
                                         tint = AiTextPrimary,
                                         modifier = Modifier.size(19.dp)
@@ -510,7 +510,7 @@ fun AiChatScreen(
                                     horizontalArrangement = Arrangement.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.AutoAwesome,
+                                        painter = painterResource(id = R.drawable.ic_nav_ai),
                                         contentDescription = null,
                                         tint = Color.White,
                                         modifier = Modifier.size(20.dp)
@@ -1078,7 +1078,7 @@ fun ChatHistorySheetContent(
                                     Spacer(modifier = Modifier.width(10.dp))
                                     if (conv.isPinned) {
                                         Icon(
-                                            imageVector = Icons.Default.PushPin,
+                                            painter = painterResource(id = R.drawable.ic_chat_pin),
                                             contentDescription = "Pinned",
                                             tint = Color(0xFFE11D48),
                                             modifier = Modifier.size(14.dp)
@@ -2077,7 +2077,7 @@ fun ChatMessageItem(
                         modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
-                            imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
+                            painter = if (isCopied) painterResource(id = R.drawable.ic_chat_check) else androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.ContentCopy),
                             contentDescription = stringResource(R.string.ai_copy_response),
                             tint = if (isCopied) Color(0xFF10B981) else AiTextSecondary,
                             modifier = Modifier.size(15.dp)

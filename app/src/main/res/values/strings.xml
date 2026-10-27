@@ -204,6 +204,10 @@
     <string name="note_required_label">NOTE (REQUIRED)</string>
     <string name="monthly_contribution_placeholder">e.g. Monthly contribution</string>
     <string name="confirm_deposit_btn">Confirm Deposit</string>
+    <string name="swipe_right_to_confirm">Swipe right to confirm</string>
+    <string name="tap_anywhere_to_close">Tap anywhere to close</string>
+    <string name="note_placeholder_deposit">Add a note...</string>
+    <string name="enter_amount_first">Please enter an amount</string>
     <string name="established_date_label">ESTABLISHED DATE</string>
     <string name="days_since_start_label">DAYS SINCE START</string>
     <string name="days_count">%1$d days</string>

@@ -259,7 +259,7 @@ fun AccountsScreen(
                                         .clickable { showAccountSwitcher = true },
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(Icons.Default.AccountBalance, null, tint = PinkPrimary, modifier = Modifier.size(18.dp))
+                                    Icon(painter = painterResource(id = R.drawable.ic_nav_accounts), null, tint = PinkPrimary, modifier = Modifier.size(22.dp))
                                 }
                             }
                         }
@@ -546,7 +546,7 @@ fun AccountsScreen(
                                     .background(Color(0xFFE2E8F0)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.AccountBalance, contentDescription = null, tint = PinkPrimary)
+                                Icon(painter = painterResource(id = R.drawable.ic_nav_accounts), contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(24.dp))
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {

@@ -7,9 +7,13 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
+import kotlinx.coroutines.launch
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -177,6 +181,7 @@ fun AnalyticsScreen(
 fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean = false, appCurrency: String = "USD") {
     var selectedPeriod by remember { mutableStateOf(SpendingPeriod.WEEKLY) }
     var showPeriodSheet by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     val expenses = transactions.filter { it.amount < 0 }
 
@@ -322,13 +327,115 @@ fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean 
                 }
             }
             
-            Spacer(Modifier.height(24.dp))
-            
-            SpendingBarChart(points = points, isPrivacyMode = isPrivacyMode, appCurrency = appCurrency)
-            
-            Spacer(Modifier.height(24.dp))
-            
             Spacer(Modifier.height(16.dp))
+            
+            val yearlyPages = remember(points, selectedPeriod) {
+                if (selectedPeriod == SpendingPeriod.YEARLY && points.size > 6) {
+                    points.chunked(6)
+                } else {
+                    listOf(points)
+                }
+            }
+            val yearlyPagerState = rememberPagerState(initialPage = (yearlyPages.size - 1).coerceAtLeast(0)) { yearlyPages.size }
+            val overallYearlyMax = remember(points) { points.maxOfOrNull { it.value } ?: 0.0 }
+
+            if (selectedPeriod == SpendingPeriod.YEARLY && yearlyPages.size > 1) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = {
+                            if (yearlyPagerState.currentPage > 0) {
+                                coroutineScope.launch {
+                                    yearlyPagerState.animateScrollToPage(yearlyPagerState.currentPage - 1)
+                                }
+                            }
+                        },
+                        enabled = yearlyPagerState.currentPage > 0,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Previous Months",
+                            tint = if (yearlyPagerState.currentPage > 0) PinkPrimary else Color.LightGray.copy(alpha = 0.4f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        val activePoints = yearlyPages.getOrNull(yearlyPagerState.currentPage) ?: emptyList()
+                        val rangeText = if (activePoints.isNotEmpty()) {
+                            "${activePoints.first().fullDateLabel} – ${activePoints.last().fullDateLabel}"
+                        } else ""
+                        Text(
+                            text = rangeText,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextSecondary
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            repeat(yearlyPages.size) { index ->
+                                val isSelected = yearlyPagerState.currentPage == index
+                                Box(
+                                    modifier = Modifier
+                                        .height(6.dp)
+                                        .width(if (isSelected) 18.dp else 6.dp)
+                                        .background(
+                                            if (isSelected) PinkPrimary else Color(0xFFE2E8F0),
+                                            CircleShape
+                                        )
+                                )
+                            }
+                        }
+                    }
+
+                    IconButton(
+                        onClick = {
+                            if (yearlyPagerState.currentPage < yearlyPages.size - 1) {
+                                coroutineScope.launch {
+                                    yearlyPagerState.animateScrollToPage(yearlyPagerState.currentPage + 1)
+                                }
+                            }
+                        },
+                        enabled = yearlyPagerState.currentPage < yearlyPages.size - 1,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = "Next Months",
+                            tint = if (yearlyPagerState.currentPage < yearlyPages.size - 1) PinkPrimary else Color.LightGray.copy(alpha = 0.4f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+                
+                Spacer(Modifier.height(12.dp))
+                
+                HorizontalPager(
+                    state = yearlyPagerState,
+                    modifier = Modifier.fillMaxWidth()
+                ) { pageIndex ->
+                    val pagePoints = yearlyPages.getOrNull(pageIndex) ?: emptyList()
+                    SpendingBarChart(
+                        points = pagePoints,
+                        isPrivacyMode = isPrivacyMode,
+                        appCurrency = appCurrency,
+                        customYMax = overallYearlyMax
+                    )
+                }
+            } else {
+                SpendingBarChart(points = points, isPrivacyMode = isPrivacyMode, appCurrency = appCurrency)
+            }
+            
+            Spacer(Modifier.height(20.dp))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -409,11 +516,18 @@ fun SpendingView(transactions: List<AccountTransaction>, isPrivacyMode: Boolean 
 }
 
 @Composable
-fun SpendingBarChart(points: List<SpendingPoint>, isPrivacyMode: Boolean, appCurrency: String = "USD") {
+fun SpendingBarChart(
+    points: List<SpendingPoint>,
+    isPrivacyMode: Boolean,
+    appCurrency: String = "USD",
+    customYMax: Double? = null
+) {
+    if (points.isEmpty()) return
+
     val textMeasurer = rememberTextMeasurer()
     val currencySymbol = getCurrencySymbol(appCurrency)
     
-    val maxVal = points.maxOfOrNull { it.value } ?: 0.0
+    val maxVal = customYMax ?: (points.maxOfOrNull { it.value } ?: 0.0)
     val yMax = if (maxVal <= 0) 10.0 else maxVal * 1.1
 
     Canvas(
@@ -424,8 +538,8 @@ fun SpendingBarChart(points: List<SpendingPoint>, isPrivacyMode: Boolean, appCur
         val width = size.width
         val height = size.height
         
-        val barWidth = (width / points.size) * 0.6f
-        val spacing = (width / points.size) * 0.4f
+        val barWidth = (width / points.size) * 0.55f
+        val spacing = (width / points.size) * 0.45f
         
         val topPadding = 30.dp.toPx()
         val bottomPadding = 30.dp.toPx()
@@ -451,16 +565,23 @@ fun SpendingBarChart(points: List<SpendingPoint>, isPrivacyMode: Boolean, appCur
             
             // Draw Value on Top
             val valStr = if (isPrivacyMode) "•••" else {
-                "$currencySymbol${String.format(Locale.getDefault(), "%,.0f", point.value)}"
+                if (point.value > 0) {
+                    "$currencySymbol${String.format(Locale.getDefault(), "%,.0f", point.value)}"
+                } else {
+                    "${currencySymbol}0"
+                }
             }
-            val valStyle = TextStyle(fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+            val valStyle = TextStyle(fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
             val valMeasurer = textMeasurer.measure(valStr, valStyle)
             
+            val valLeft = (startX + barWidth / 2 - valMeasurer.size.width / 2)
+                .coerceIn(4f, width - valMeasurer.size.width - 4f)
+
             drawText(
                 textMeasurer = textMeasurer,
                 text = valStr,
                 style = valStyle,
-                topLeft = Offset(startX + barWidth / 2 - valMeasurer.size.width / 2, startY - valMeasurer.size.height - 4.dp.toPx())
+                topLeft = Offset(valLeft, startY - valMeasurer.size.height - 4.dp.toPx())
             )
             
             // Draw X-axis Label

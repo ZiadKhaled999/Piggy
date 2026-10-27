@@ -181,6 +181,10 @@
     <string name="note_required_label">ملحوظة (مهمة)</string>
     <string name="monthly_contribution_placeholder">مثلاً: تحويشة الشهر</string>
     <string name="confirm_deposit_btn">أكد الإيداع</string>
+    <string name="swipe_right_to_confirm">اسحب لليمين عشان تأكد</string>
+    <string name="tap_anywhere_to_close">دوس في أي حتة عشان تقفل</string>
+    <string name="note_placeholder_deposit">اكتب ملاحظة...</string>
+    <string name="enter_amount_first">دخل المبلغ الأول</string>
     <string name="established_date_label">تاريخ البداية</string>
     <string name="days_since_start_label">أيام من البداية</string>
     <string name="days_count">%1$d يوم</string>

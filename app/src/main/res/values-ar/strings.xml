@@ -236,6 +236,10 @@
     <string name="note_required_label">ملاحظة (مطلوبة)</string>
     <string name="monthly_contribution_placeholder">مثلاً مساهمة شهرية</string>
     <string name="confirm_deposit_btn">تأكيد الإيداع</string>
+    <string name="swipe_right_to_confirm">اسحب لليمين للتأكيد</string>
+    <string name="tap_anywhere_to_close">اضغط في أي مكان للإغلاق</string>
+    <string name="note_placeholder_deposit">أضف ملاحظة...</string>
+    <string name="enter_amount_first">يرجى إدخال المبلغ أولاً</string>
     <string name="established_date_label">تاريخ البدء</string>
     <string name="days_since_start_label">الأيام منذ البدء</string>
     <string name="days_count">%1$d يوم</string>

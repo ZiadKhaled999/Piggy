@@ -3,7 +3,7 @@ package com.oryno.piggy_ledger.data
 import android.content.Context
 import android.util.Log
 import androidx.datastore.core.CorruptionException
-import androidx.datastore.preferences.core.ReplaceFileCorruptionHandler
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey

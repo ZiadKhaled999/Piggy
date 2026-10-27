@@ -2864,7 +2864,7 @@ fun ManageCustomKeywordsBottomSheet(
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.DeleteOutline,
+                                            painter = painterResource(id = R.drawable.ic_chat_delete),
                                             contentDescription = null,
                                             tint = Color(0xFFEF4444),
                                             modifier = Modifier.size(16.dp)

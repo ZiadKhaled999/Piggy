@@ -1,5 +1,6 @@
 package com.oryno.piggy_ledger.ui
 import android.widget.Toast
+import androidx.compose.ui.res.painterResource
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -317,10 +318,10 @@ fun GoalDetailScreen(
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
-                        imageVector = if (isPrivacyMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        painter = if (isPrivacyMode) painterResource(id = R.drawable.ic_eye_closed) else painterResource(id = R.drawable.ic_eye_open),
                         contentDescription = "Toggle Privacy",
                         tint = NavyDark,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
@@ -408,135 +409,16 @@ fun GoalDetailScreen(
     }
     
     if (showDepositDialog) {
-        var amountStr by remember { mutableStateOf("") }
-        var note by remember { mutableStateOf("") }
-        
-        ModalBottomSheet(
-            onDismissRequest = { showDepositDialog = false },
-            sheetState = sheetState,
-            containerColor = MaterialTheme.colorScheme.background,
-            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.res.painterResource(id = com.oryno.piggy_ledger.R.drawable.img_piggy_pool),
-                    contentDescription = null,
-                    modifier = Modifier.size(100.dp),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Text(
-                    stringResource(R.string.add_deposit),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = NavyDark,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start
-                )
-                Text(
-                    stringResource(R.string.growth_savings_subtitle),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextLight,
-                    letterSpacing = 1.sp,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                OutlinedTextField(
-                    value = amountStr,
-                    onValueChange = { input ->
-                        if (input.all { it.isDigit() || it == '.' }) {
-                            amountStr = input
-                        }
-                    },
-                    leadingIcon = {
-                        Text(
-                            text = currencySymbol,
-                            fontWeight = FontWeight.Bold,
-                            color = NavyDark,
-                            modifier = Modifier.padding(start = 16.dp)
-                        )
-                    },
-                    label = { Text(stringResource(R.string.deposit_amount_label), fontWeight = FontWeight.Bold) },
-                    placeholder = { Text(stringResource(R.string.zero_amount_placeholder)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
-                        focusedBorderColor = PinkPrimary,
-                        focusedLabelColor = PinkPrimary,
-                        unfocusedLabelColor = TextLight,
-                        cursorColor = PinkPrimary,
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
-                    )
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { if (it.length <= 20) note = it },
-                    label = { Text(stringResource(R.string.payment_note), fontWeight = FontWeight.Bold) },
-                    placeholder = { Text(stringResource(R.string.monthly_contribution_placeholder)) },
-                    supportingText = {
-                        Text(
-                            text = "${note.length}/20",
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.End,
-                            color = TextLight,
-                            fontSize = 11.sp
-                        )
-                    },
-                    singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 16.sp),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = PinkPrimary.copy(alpha = 0.5f),
-                        focusedBorderColor = PinkPrimary,
-                        focusedLabelColor = PinkPrimary,
-                        unfocusedLabelColor = TextLight,
-                        cursorColor = PinkPrimary,
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
-                    )
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                Button(
-                    onClick = {
-                        val amount = amountStr.replace(currencySymbol, "").replace("$", "").trim().toDoubleOrNull()
-                        if (amount != null && amount > 0) {
-                            viewModel.addTransaction(goalId, amount, note)
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_savings_added), Toast.LENGTH_SHORT)
-                            showDepositDialog = false
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
-                ) {
-                    Text(stringResource(R.string.confirm_deposit_btn), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
+        DepositBottomSheet(
+            goal = goal,
+            currentSavedAmount = savedAmount,
+            currencySymbol = currencySymbol,
+            onConfirm = { amount, depositNote ->
+                viewModel.addTransaction(goalId, amount, depositNote)
+                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_savings_added), Toast.LENGTH_SHORT)
+            },
+            onDismiss = { showDepositDialog = false }
+        )
     }
 }
 

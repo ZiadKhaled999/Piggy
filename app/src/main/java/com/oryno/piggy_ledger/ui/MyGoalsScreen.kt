@@ -211,10 +211,10 @@ fun MyGoalsScreen(
                     .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(14.dp))
             ) {
                 Icon(
-                    imageVector = if (isPrivacyMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                    painter = if (isPrivacyMode) painterResource(id = R.drawable.ic_eye_closed) else painterResource(id = R.drawable.ic_eye_open),
                     contentDescription = "Toggle Privacy",
                     tint = NavyDark,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
             
@@ -393,7 +393,7 @@ fun GoalCard(goal: Goal, transactions: List<Transaction>, isPrivacyMode: Boolean
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Delete,
+                        painter = painterResource(id = R.drawable.ic_chat_delete),
                         contentDescription = "Delete",
                         tint = NavyDark.copy(alpha = 0.3f),
                         modifier = Modifier.size(20.dp)

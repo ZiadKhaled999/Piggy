@@ -14,6 +14,17 @@ class BootReceiver : BroadcastReceiver() {
         ) {
             Log.d("BootReceiver", "Boot completed or app updated. Rescheduling notifications...")
             NotificationScheduler.scheduleAll(context)
+            
+            // FIX(sync): Also schedule cloud sync on boot so offline changes
+            // get synced after device restart, even if periodic work was
+            // cleared or delayed. Uses APPEND_OR_REPLACE so it won't kill
+            // any in-flight sync from network callback.
+            try {
+                SyncWorker.scheduleOneTime(context)
+                SyncWorker.schedulePeriodic(context)
+            } catch (e: Exception) {
+                Log.e("BootReceiver", "Failed to schedule SyncWorker", e)
+            }
         }
     }
 }

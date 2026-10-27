@@ -1,10 +1,16 @@
 package com.oryno.piggy_ledger
 
 import android.app.Application
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import com.oryno.piggy_ledger.data.UserPreferences
+import com.oryno.piggy_ledger.service.SyncWorker
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
 import com.clerk.api.Clerk
@@ -15,6 +21,9 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 
 class PiggyLedgerApplication : Application() {
+
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+
     override fun onCreate() {
         super.onCreate()
         
@@ -98,7 +107,6 @@ class PiggyLedgerApplication : Application() {
         } catch (e: Exception) {
             Log.e("PiggyLedgerApp", "Failed to initialize NotificationScheduler", e)
         }
-
         
         // Schedule Custom Push Notifications Pull
         try {
@@ -166,12 +174,55 @@ class PiggyLedgerApplication : Application() {
             Log.e("PiggyLedgerApp", "Failed to schedule PiggyRemoteConfigWorker", e)
         }
 
-        // FIX(sync): periodic cloud sync (6h, CONNECTED, KEEP) so data converges
+        // FIX(sync): periodic cloud sync (6h, CONNECTED, UPDATE) so data converges
         // even without edits; one-time triggers cover immediacy. Best-effort.
         try {
             com.oryno.piggy_ledger.service.SyncWorker.schedulePeriodic(this)
         } catch (e: Exception) {
             Log.e("PiggyLedgerApp", "Failed to schedule SyncWorker", e)
+        }
+
+        // FIX(sync): if previous sync attempts were capped, force a full resync now
+        if (com.oryno.piggy_ledger.service.SyncWorker.needsFullResync(this)) {
+            Log.i("PiggyLedgerApp", "Full resync flagged, triggering immediate sync")
+            com.oryno.piggy_ledger.service.SyncWorker.scheduleOneTime(this)
+            com.oryno.piggy_ledger.service.SyncWorker.clearFullResyncFlag(this)
+        }
+
+        // FIX(sync): register network callback to trigger sync when connectivity
+        // is restored. This ensures offline changes sync as soon as WiFi returns,
+        // even if WorkManager periodic/one-time work gave up or is delayed.
+        registerNetworkCallback()
+    }
+
+    private fun registerNetworkCallback() {
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val networkRequest = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+            .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+            .build()
+
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                Log.i("PiggyLedgerApp", "Network became available, triggering sync")
+                // Small delay to let Clerk session stabilize if needed
+                CoroutineScope(Dispatchers.IO).launch {
+                    kotlinx.coroutines.delay(2000)
+                    com.oryno.piggy_ledger.service.SyncWorker.scheduleOneTime(this@PiggyLedgerApplication)
+                }
+            }
+
+            override fun onLost(network: Network) {
+                Log.i("PiggyLedgerApp", "Network lost")
+            }
+        }
+
+        try {
+            connectivityManager.registerNetworkCallback(networkRequest, networkCallback!!)
+        } catch (e: Exception) {
+            Log.e("PiggyLedgerApp", "Failed to register network callback", e)
         }
     }
 }

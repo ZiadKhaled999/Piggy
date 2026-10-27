@@ -30,35 +30,15 @@ class SyncManager(private val context: Context) {
     private val ktorClient = ApiClient.ktorClient
     private val apiUrl = BuildConfig.NEON_API_URL
 
-    private suspend fun getAuthHeader(): String? {
-        val session = Clerk.sessionFlow.value
-        if (session == null) {
-            Log.w("SyncManager", "🔑 Clerk session is null!")
-            return null
-        }
+    suspend fun syncAll(): Boolean = syncAll(null)
 
-        return try {
-            val result = session.fetchToken(GetTokenOptions())
-            if (result is ClerkResult.Success && !result.value.jwt.isNullOrEmpty()) {
-                Log.d("SyncManager", "🔑 Successfully retrieved Clerk JWT token.")
-                "Bearer ${result.value.jwt}"
-            } else {
-                Log.w("SyncManager", "🔑 Token fetch returned empty or non-success result: $result")
-                null
-            }
-        } catch (e: Exception) {
-            Log.w("SyncManager", "Could not fetch Clerk token", e)
-            null
-        }
-    }
-
-    suspend fun syncAll(): Boolean = syncMutex.withLock {
+    suspend fun syncAll(prefetchedAuthHeader: String?): Boolean = syncMutex.withLock {
         withContext(Dispatchers.IO) {
             Log.i("SyncManager", "🔥 syncAll() called! Neon API URL: $apiUrl")
             val user = Clerk.userFlow.value
             val userId = user?.id
 
-            val authHeader = getAuthHeader()
+            val authHeader = prefetchedAuthHeader ?: getAuthHeader()
 
             if (user == null || authHeader == null) {
                 Log.w("SyncManager", "❌ No authenticated user or Auth header is null. Skipping cloud sync.")
@@ -593,6 +573,29 @@ class SyncManager(private val context: Context) {
             if (itemsToInsert.isNotEmpty()) dao.insertOnboardingAnswers(itemsToInsert)
         }
     return pushOk && pullOk
+    }
+
+    // Public helper for callers that don't pre-fetch token (e.g., logout-time sync)
+    private suspend fun getAuthHeader(): String? {
+        val session = Clerk.sessionFlow.value
+        if (session == null) {
+            Log.w("SyncManager", "🔑 Clerk session is null!")
+            return null
+        }
+
+        return try {
+            val result = session.fetchToken(GetTokenOptions())
+            if (result is ClerkResult.Success && !result.value.jwt.isNullOrEmpty()) {
+                Log.d("SyncManager", "🔑 Successfully retrieved Clerk JWT token.")
+                "Bearer ${result.value.jwt}"
+            } else {
+                Log.w("SyncManager", "🔑 Token fetch returned empty or non-success result: $result")
+                null
+            }
+        } catch (e: Exception) {
+            Log.w("SyncManager", "Could not fetch Clerk token", e)
+            null
+        }
     }
 
     suspend fun deleteFromCloud(tableName: String, id: String) = withContext(Dispatchers.IO) {

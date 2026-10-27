@@ -28,6 +28,7 @@ import com.oryno.piggy_ledger.data.PiggyLedgerRepository
 import com.oryno.piggy_ledger.data.UserPreferences
 import com.oryno.piggy_ledger.ui.PiggyLedgerApp
 import com.oryno.piggy_ledger.ui.ViewModelFactory
+import com.oryno.piggy_ledger.service.SyncWorker
 import com.oryno.piggy_ledger.ui.theme.PiggyLedgerTheme
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
@@ -464,22 +465,40 @@ class MainActivity : AppCompatActivity() {
       checkLockStatus()
   }
 
-  override fun onResume() {
-      super.onResume()
-      // Reset auth if we've been gone too long
-      checkLockStatus()
-      
-      // Check if update is downloaded while app was in background
-      try {
-          appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
-              if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
-                  isUpdateReady = true
-              }
-          }
-      } catch (e: Exception) {
-          android.util.Log.e("MainActivity", "AppUpdate resume check failed", e)
-      }
-  }
+override fun onResume() {
+        super.onResume()
+        // Reset auth if we've been gone too long
+        checkLockStatus()
+        
+        // Check if update is downloaded while app was in background
+        try {
+            appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+                if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+                    isUpdateReady = true
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "AppUpdate resume check failed", e)
+        }
+        
+        // FIX(sync): trigger sync when app resumes and user is authenticated.
+        // This catches cases where network callback didn't fire or WorkManager
+        // periodic was delayed/failed. Uses APPEND_OR_REPLACE so it chains
+        // after any in-flight sync.
+        // Also check if a full resync was flagged due to retry exhaustion.
+        try {
+            val isAuth = userPreferences.isAuthenticated.first()
+            val needsFullResync = com.oryno.piggy_ledger.service.SyncWorker.needsFullResync(this)
+            if (isAuth || needsFullResync) {
+                com.oryno.piggy_ledger.service.SyncWorker.scheduleOneTime(this)
+                if (needsFullResync) {
+                    com.oryno.piggy_ledger.service.SyncWorker.clearFullResyncFlag(this)
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Foreground sync trigger failed", e)
+        }
+    }
 
   override fun onStop() {
       super.onStop()

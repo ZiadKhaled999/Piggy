@@ -81,6 +81,12 @@ import com.patrykandpatrick.vico.core.entry.entryOf
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -157,7 +163,7 @@ fun GoalDetailScreen(
         ) {
             item {
                 // Header Spacer
-                Spacer(modifier = Modifier.height(180.dp))
+                Spacer(modifier = Modifier.height(320.dp))
             }
             
             item {
@@ -348,30 +354,14 @@ fun GoalDetailScreen(
                 }
             }
             
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontSize = 18.sp, color = NavyDark)) {
-                        append(currencySymbol)
-                    }
-                    append(if (isPrivacyMode) "••••••" else String.format("%.2f", savedAmount))
-                    if (goal.targetAmount > 0.0) {
-                        withStyle(style = SpanStyle(fontSize = 20.sp, color = TextLight)) {
-                            append(" / ")
-                        }
-                        withStyle(style = SpanStyle(fontSize = 14.sp, color = TextLight)) {
-                            append(currencySymbol)
-                        }
-                        withStyle(style = SpanStyle(fontSize = 20.sp, color = TextLight)) {
-                            append(if (isPrivacyMode) "••••••" else String.format("%.2f", goal.targetAmount))
-                        }
-                    }
-                },
-                fontSize = 42.sp,
-                fontWeight = FontWeight.Bold,
-                color = NavyDark,
-                modifier = Modifier.padding(horizontal = 16.dp),
-                textAlign = TextAlign.Center,
-                lineHeight = 48.sp
+            CircularGoalProgress(
+                savedAmount = savedAmount,
+                targetAmount = goal.targetAmount,
+                currencySymbol = currencySymbol,
+                isPrivacyMode = isPrivacyMode,
+                modifier = Modifier
+                    .size(280.dp)
+                    .padding(16.dp)
             )
         }
 
@@ -705,7 +695,7 @@ fun PolarAreaChart(
 
             drawIntoCanvas { canvas ->
                 val paint = android.graphics.Paint().apply {
-                    color = android.graphics.Color.GRAY
+                    setColor(android.graphics.Color.GRAY)
                     textSize = 10.sp.toPx()
                     textAlign = android.graphics.Paint.Align.CENTER
                     isAntiAlias = true
@@ -861,5 +851,69 @@ fun TabButton(
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
             color = if (isSelected) NavyDark else TextLight
         )
+    }
+}
+
+@Composable
+fun CircularGoalProgress(
+    savedAmount: Double,
+    targetAmount: Double,
+    currencySymbol: String,
+    isPrivacyMode: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val progress = if (targetAmount > 0) (savedAmount / targetAmount).toFloat().coerceIn(0f, 1f) else 1f
+    
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val strokeWidth = 24.dp.toPx()
+            val diameter = size.minDimension - strokeWidth
+            val topLeft = Offset((size.width - diameter) / 2, (size.height - diameter) / 2)
+            val arcSize = Size(diameter, diameter)
+
+            // Background track (subtle pink)
+            drawArc(
+                color = PinkPrimary.copy(alpha = 0.15f),
+                startAngle = 135f,
+                sweepAngle = 270f,
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+            )
+
+            // Progress arc (pink)
+            drawArc(
+                color = PinkPrimary,
+                startAngle = 135f,
+                sweepAngle = 270f * progress,
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+            )
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format(Locale.getDefault(), "%,.0f", savedAmount)}",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Black,
+                color = NavyDark
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.available_now),
+                fontSize = 12.sp,
+                color = TextLight,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }

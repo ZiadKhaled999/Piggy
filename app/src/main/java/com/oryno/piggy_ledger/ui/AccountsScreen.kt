@@ -51,9 +51,11 @@ fun AccountsScreen(
     onNavigateToAddAccount: () -> Unit,
     onNavigateToEditAccount: (String) -> Unit,
     onBack: () -> Unit,
-    onNavigateToSettingsPro: () -> Unit = {}
+    onNavigateToSettingsPro: () -> Unit = {},
+    onNavigateToTransfer: () -> Unit = {}
 ) {
-    val accounts by viewModel.allAccounts.collectAsState()
+    val allAccountsRaw by viewModel.allAccounts.collectAsState()
+    val accounts = remember(allAccountsRaw) { allAccountsRaw.filter { !it.isSystemAccount && !it.is_deleted } }
     val selectedAccountId by viewModel.selectedAccountId.collectAsState()
     val allTransactions by viewModel.allAccountTransactions.collectAsState()
     val monthlyBudget by viewModel.monthlyBudget.collectAsState()
@@ -250,16 +252,33 @@ fun AccountsScreen(
 
                             // Right Action Icons
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                // Account Switcher
+                                // Account Switcher Button
                                 Box(
                                     modifier = Modifier
-                                        .size(36.dp)
+                                        .size(38.dp)
                                         .clip(CircleShape)
-                                        .background(Color.White.copy(alpha = 0.1f))
-                                        .clickable { showAccountSwitcher = true },
+                                        .background(Color.White.copy(alpha = 0.12f))
+                                        .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                                        .clickable { showAccountSwitcher = true }
+                                        .padding(3.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(painter = painterResource(id = R.drawable.ic_nav_accounts), null, tint = PinkPrimary, modifier = Modifier.size(22.dp))
+                                    if (selectedAccount != null) {
+                                        BrandLogo(
+                                            provider = selectedAccount.provider ?: selectedAccount.name,
+                                            accountType = selectedAccount.type,
+                                            iconColorHex = selectedAccount.icon_color,
+                                            logoUrl = selectedAccount.logo_url,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    } else {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_nav_accounts),
+                                            contentDescription = "All Accounts",
+                                            tint = PinkPrimary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -338,6 +357,21 @@ fun AccountsScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = PinkPrimary
                             )
+                        }
+
+                        Button(
+                            onClick = { onNavigateToTransfer() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PinkPrimary,
+                                contentColor = Color.White
+                            ),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Icon(Icons.Default.SwapHoriz, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.transfer), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
 
                         Button(
@@ -582,56 +616,13 @@ fun AccountsScreen(
                                 .padding(horizontal = 24.dp, vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Account logo/icon
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFFF1F5F9)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                val providerRes = getProviderDrawableRes(account.provider)
-                                val logoSource: Any? = when {
-                                    account.local_logo_path != null -> File(account.local_logo_path)
-                                    account.logo_url != null -> account.logo_url
-                                    else -> null
-                                }
-
-                                if (logoSource != null) {
-                                    AsyncImage(
-                                        model = logoSource,
-                                        contentDescription = account.provider ?: "Logo",
-                                        modifier = Modifier.fillMaxSize().padding(4.dp),
-                                        contentScale = ContentScale.Fit
-                                    )
-                                } else if (providerRes != null) {
-                                    Image(
-                                        painter = painterResource(id = providerRes),
-                                        contentDescription = account.provider ?: "Logo",
-                                        modifier = Modifier.fillMaxSize().padding(4.dp),
-                                        contentScale = ContentScale.Fit
-                                    )
-                                } else {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(Color(android.graphics.Color.parseColor(account.icon_color))),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = when (account.type) {
-                                                AccountType.BANK -> Icons.Default.AccountBalance
-                                                AccountType.CARD -> Icons.Default.CreditCard
-                                                AccountType.WALLET -> Icons.Default.AccountBalanceWallet
-                                                AccountType.CASH -> Icons.Default.Payments
-                                            },
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            }
+                            BrandLogo(
+                                provider = account.provider ?: account.name,
+                                accountType = account.type,
+                                iconColorHex = account.icon_color,
+                                logoUrl = account.logo_url,
+                                modifier = Modifier.size(40.dp)
+                            )
 
                             Spacer(modifier = Modifier.width(16.dp))
 
@@ -652,6 +643,12 @@ fun AccountsScreen(
                                     com.oryno.piggy_ledger.data.AccountType.CARD -> stringResource(R.string.card)
                                     com.oryno.piggy_ledger.data.AccountType.CASH -> stringResource(R.string.cash)
                                     com.oryno.piggy_ledger.data.AccountType.WALLET -> stringResource(R.string.e_wallet)
+                                    com.oryno.piggy_ledger.data.AccountType.ASSET_GOLD -> "Gold"
+                                    com.oryno.piggy_ledger.data.AccountType.ASSET_SILVER -> "Silver"
+                                    com.oryno.piggy_ledger.data.AccountType.CERTIFICATE -> "Certificate"
+                                    com.oryno.piggy_ledger.data.AccountType.INVESTMENT -> "Investment"
+                                    com.oryno.piggy_ledger.data.AccountType.ASSET_PROPERTY -> "Property"
+                                    else -> account.type.name
                                 }
                                 Text(
                                     text = "$localizedType • ${getCurrencySymbol(account.currency)} ${String.format(Locale.getDefault(), "%,.2f", account.current_balance)}",
@@ -845,7 +842,11 @@ fun AccountsScreen(
             accounts = accounts,
             onDismiss = { showAddTransactionDialog = false },
             onNavigateToAddAccount = onNavigateToAddAccount,
-            onNavigateToSettingsPro = onNavigateToSettingsPro
+            onNavigateToSettingsPro = onNavigateToSettingsPro,
+            onNavigateToTransfer = {
+                showAddTransactionDialog = false
+                onNavigateToTransfer()
+            }
         )
     }
 

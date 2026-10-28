@@ -1,7 +1,9 @@
 package com.oryno.piggy_ledger.ui
 
 import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,6 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,30 +28,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oryno.piggy_ledger.R
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.layout.ContentScale
 import com.oryno.piggy_ledger.data.Account
 import com.oryno.piggy_ledger.data.AccountType
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
+import java.util.Locale
 
-enum class BottomSheetType {
-    NONE,
-    PROVIDER_SELECT,
-    CURRENCY_SELECT,
-    COLOR_SELECT,
-    BANK_SELECT
-}
-
-data class ProviderInfo(val name: String, val color: Color, val iconColorHex: String)
+data class ProviderOption(
+    val name: String,
+    val domain: String,
+    val defaultColorHex: String
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,133 +58,246 @@ fun AddAccountScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    var currentStep by remember { mutableIntStateOf(0) } // 0: Type, 1: Provider, 2: Name/Style, 3: Balance, 4: Automation/Review
+
     var name by remember { mutableStateOf("") }
     var accountLabel by remember { mutableStateOf("") }
     var type by remember { mutableStateOf(AccountType.BANK) }
     var currency by remember { mutableStateOf("EGP") }
     var startingBalance by remember { mutableStateOf("") }
     var excludeFromAll by remember { mutableStateOf(false) }
-    
+
     // Card specific
     var creditLimit by remember { mutableStateOf("") }
     var availableCredit by remember { mutableStateOf("") }
     var paymentDueDay by remember { mutableStateOf("") }
     var cardNumbers by remember { mutableStateOf("") }
-    
+
     // Bank specific
     var bankAccountNo by remember { mutableStateOf("") }
-    
-    // Wallet specific
+
+    // Provider / Logo
     var provider by remember { mutableStateOf("") }
-    
+    var logoUrl by remember { mutableStateOf<String?>(null) }
+
     // Fees
     var instaPayFee by remember { mutableStateOf(true) }
 
     // Color & Icon Picker State
-    var selectedColorHex by remember { mutableStateOf("#3B82F6") }
+    var selectedColorHex by remember { mutableStateOf("#1E3A8A") }
     var selectedIconName by remember { mutableStateOf("AccountBalance") }
     var userCustomizedColor by remember { mutableStateOf(false) }
 
     val accounts by viewModel.allAccounts.collectAsState()
-    val isPremium by viewModel.isPremium.collectAsState()
 
-    // Bottom Sheet State
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var showBottomSheet by remember { mutableStateOf(false) }
-    var bottomSheetType by remember { mutableStateOf(BottomSheetType.NONE) }
-    var currencySearchQuery by remember { mutableStateOf("") }
-    var bankSearchQuery by remember { mutableStateOf("") }
-
-
-    val availableProviders = listOf(
-        ProviderInfo("Vodafone Cash", Color(0xFFE11D48), "#E11D48"),
-        ProviderInfo("Orange Cash", Color(0xFFEA580C), "#EA580C"),
-        ProviderInfo("e& Cash", Color(0xFF16A34A), "#16A34A"),
-        ProviderInfo("WE Pay", Color(0xFF7C3AED), "#7C3AED")
-    )
-
-    val availableBanks = listOf(
-        "Commercial International Bank (CIB)",
-        "National Bank of Egypt (NBE)",
-        "Banque Misr",
-        "QNB Alahli",
-        "Banque Du Caire",
-        "Arab African International Bank (AAIB)",
-        "HSBC Egypt",
-        "Alex Bank",
-        "Faisal Islamic Bank",
-        "Abu Dhabi Islamic Bank (ADIB)",
-        "Credit Agricole Egypt",
-        "Egyptian Gulf Bank (EG Bank)",
-        "SAIB Bank",
-        "Al Baraka Bank",
-        "Housing and Development Bank (HDB)",
-        "Attijariwafa Bank Egypt",
-        "Arab Bank",
-        "Abu Dhabi Commercial Bank (ADCB)",
-        "EBank (Export Development Bank of Egypt)",
-        "The United Bank of Egypt",
-        "Suez Canal Bank",
-        "Mashreq Bank",
-        "Emirates NBD Egypt",
-        "Citibank Egypt"
-    )
-
-    val customColors = listOf(
-        "#3B82F6" to "Blue",
-        "#8B5CF6" to "Purple",
-        "#10B981" to "Emerald",
-        "#F59E0B" to "Amber",
-        "#EF4444" to "Red",
-        "#EC4899" to "Pink",
-        "#06B6D4" to "Cyan",
-        "#14B8A6" to "Teal",
-        "#6366F1" to "Indigo",
-        "#22C55E" to "Green",
-        "#F43F5E" to "Rose",
-        "#1E293B" to "Slate"
-    )
-
-    val customIcons = listOf(
-        "AccountBalance" to Icons.Default.AccountBalance,
-        "CreditCard" to Icons.Default.CreditCard,
-        "Payments" to Icons.Default.Payments,
-        "AccountBalanceWallet" to Icons.Default.AccountBalanceWallet,
-        "Star" to Icons.Default.Star,
-        "Home" to Icons.Default.Home,
-        "TrendingUp" to Icons.Default.TrendingUp
-    )
-
-    val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = Color(0xFFCBD5E1),
-        unfocusedBorderColor = Color(0xFFE2E8F0),
-        focusedLabelColor = NavyDark,
-        unfocusedLabelColor = TextLight,
-        cursorColor = PinkPrimary,
-        focusedContainerColor = Color(0xFFF8FAFC),
-        unfocusedContainerColor = Color(0xFFF8FAFC)
-    )
-    
-    fun openSheet(type: BottomSheetType) {
-        bottomSheetType = type
-        showBottomSheet = true
+    // Handle back stack navigation
+    BackHandler {
+        if (currentStep > 0) {
+            currentStep--
+        } else {
+            onBack()
+        }
     }
 
     Scaffold(
+        containerColor = Color(0xFFF8FAFC),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.new_account), fontWeight = FontWeight.Bold, color = NavyDark, fontSize = 20.sp) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = NavyDark)
+                title = {
+                    Column {
+                        Text(
+                            text = stringResource(R.string.new_account),
+                            fontWeight = FontWeight.ExtraBold,
+                            color = NavyDark,
+                            fontSize = 19.sp
+                        )
+                        Text(
+                            text = when (currentStep) {
+                                0 -> "Step 1 of 5: Account Type"
+                                1 -> "Step 2 of 5: Provider & Brand"
+                                2 -> "Step 3 of 5: Details & Theme"
+                                3 -> "Step 4 of 5: Currency & Balance"
+                                else -> "Step 5 of 5: Automation & Save"
+                            },
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = PinkPrimary
+                        )
                     }
                 },
-                actions = {
-                    Button(
+                navigationIcon = {
+                    IconButton(
                         onClick = {
+                            if (currentStep > 0) currentStep--
+                            else onBack()
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = NavyDark
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            // STEP PROGRESS INDICATOR
+            LinearProgressIndicator(
+                progress = { ((currentStep + 1) / 5f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp),
+                color = PinkPrimary,
+                trackColor = Color(0xFFE2E8F0)
+            )
+
+            // SLIDE CONTAINER WITH ANIMATED TRANSITIONS
+            AnimatedContent(
+                targetState = currentStep,
+                transitionSpec = {
+                    if (targetState > initialState) {
+                        (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
+                            slideOutHorizontally { width -> -width } + fadeOut()
+                        )
+                    } else {
+                        (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
+                            slideOutHorizontally { width -> width } + fadeOut()
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
+                label = "AccountStepTransition"
+            ) { step ->
+                when (step) {
+                    0 -> Slide0AccountType(
+                        selectedType = type,
+                        onTypeSelected = { selected ->
+                            type = selected
+                            provider = ""
+                            logoUrl = null
+                            if (!userCustomizedColor) {
+                                selectedColorHex = when (selected) {
+                                    AccountType.BANK -> "#1E3A8A"
+                                    AccountType.CARD -> "#8B5CF6"
+                                    AccountType.CASH -> "#10B981"
+                                    AccountType.WALLET -> "#EA580C"
+                                    else -> "#6366F1"
+                                }
+                                selectedIconName = when (selected) {
+                                    AccountType.BANK -> "AccountBalance"
+                                    AccountType.CARD -> "CreditCard"
+                                    AccountType.CASH -> "Payments"
+                                    AccountType.WALLET -> "AccountBalanceWallet"
+                                    else -> "AccountBalance"
+                                }
+                            }
+                            if (selected == AccountType.CASH && name.isBlank()) {
+                                name = "Cash Wallet"
+                            }
+                        },
+                        onNext = {
+                            if (type == AccountType.CASH) {
+                                currentStep = 2 // Skip provider slide for physical cash
+                            } else {
+                                currentStep = 1
+                            }
+                        }
+                    )
+
+                    1 -> Slide1ProviderSelection(
+                        accountType = type,
+                        selectedProvider = provider,
+                        onProviderSelected = { provName, provColor, provLogoUrl ->
+                            provider = provName
+                            logoUrl = provLogoUrl
+                            name = provName
+                            if (!userCustomizedColor) {
+                                selectedColorHex = provColor
+                            }
+                            currentStep = 2
+                        },
+                        onSkipOrCustom = { customName ->
+                            if (customName.isNotBlank()) {
+                                provider = customName
+                                logoUrl = buildLogoDevUrl(customName)
+                                name = customName
+                            }
+                            currentStep = 2
+                        }
+                    )
+
+                    2 -> Slide2NameAndCustomization(
+                        name = name,
+                        onNameChange = { name = it },
+                        accountLabel = accountLabel,
+                        onAccountLabelChange = { accountLabel = it },
+                        selectedColorHex = selectedColorHex,
+                        onColorSelected = {
+                            selectedColorHex = it
+                            userCustomizedColor = true
+                        },
+                        selectedIconName = selectedIconName,
+                        onIconSelected = { selectedIconName = it },
+                        provider = provider,
+                        accountType = type,
+                        logoUrl = logoUrl,
+                        onNext = { currentStep = 3 }
+                    )
+
+                    3 -> Slide3CurrencyAndBalance(
+                        currency = currency,
+                        onCurrencySelected = { currency = it },
+                        accountType = type,
+                        startingBalance = startingBalance,
+                        onStartingBalanceChange = { startingBalance = it },
+                        creditLimit = creditLimit,
+                        onCreditLimitChange = { creditLimit = it },
+                        availableCredit = availableCredit,
+                        onAvailableCreditChange = { availableCredit = it },
+                        paymentDueDay = paymentDueDay,
+                        onPaymentDueDayChange = { paymentDueDay = it },
+                        onNext = { currentStep = 4 }
+                    )
+
+                    4 -> Slide4AutomationAndReview(
+                        name = name,
+                        accountLabel = accountLabel,
+                        accountType = type,
+                        currency = currency,
+                        startingBalance = startingBalance,
+                        creditLimit = creditLimit,
+                        availableCredit = availableCredit,
+                        provider = provider,
+                        logoUrl = logoUrl,
+                        selectedColorHex = selectedColorHex,
+                        cardNumbers = cardNumbers,
+                        onCardNumbersChange = { cardNumbers = it },
+                        bankAccountNo = bankAccountNo,
+                        onBankAccountNoChange = { bankAccountNo = it },
+                        instaPayFee = instaPayFee,
+                        onInstaPayFeeChange = { instaPayFee = it },
+                        excludeFromAll = excludeFromAll,
+                        onExcludeFromAllChange = { excludeFromAll = it },
+                        onCreateAccount = {
                             try {
-                                com.posthog.PostHog.capture(event = "button_clicked", properties = mapOf("button_name" to "Create Account", "screen" to "AddAccountScreen"))
+                                com.posthog.PostHog.capture(
+                                    event = "button_clicked",
+                                    properties = mapOf(
+                                        "button_name" to "Create Account Slide",
+                                        "screen" to "AddAccountScreen"
+                                    )
+                                )
                             } catch (e: Exception) {}
+
                             if (name.isNotBlank() && viewModel.canAddAccount(accounts.size)) {
                                 val limit = creditLimit.toDoubleOrNull() ?: 0.0
                                 val available = availableCredit.toDoubleOrNull() ?: limit
@@ -191,12 +306,16 @@ fun AddAccountScreen(
                                 } else {
                                     startingBalance.toDoubleOrNull() ?: 0.0
                                 }
+
+                                val finalLogoUrl = logoUrl ?: getOnlineProviderLogoUrl(provider)
+
                                 viewModel.addAccount(
                                     Account(
-                                        name = name,
+                                        name = name.trim(),
                                         type = type,
                                         icon_color = selectedColorHex,
                                         icon_name = selectedIconName,
+                                        logo_url = finalLogoUrl,
                                         currency = currency,
                                         starting_balance = initialBalance,
                                         exclude_from_all = excludeFromAll,
@@ -210,783 +329,1186 @@ fun AddAccountScreen(
                                         label = accountLabel.takeIf { it.isNotBlank() }
                                     )
                                 )
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_account_added), Toast.LENGTH_SHORT)
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(
+                                    context,
+                                    context.getString(R.string.toast_account_added),
+                                    Toast.LENGTH_SHORT
+                                )
                                 onBack()
                             } else if (name.isNotBlank()) {
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Upgrade to Pro to add more accounts", Toast.LENGTH_SHORT)
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(
+                                    context,
+                                    context.getString(R.string.toast_upgrade_pro_accounts),
+                                    Toast.LENGTH_SHORT
+                                )
                             }
-                        },
-                        modifier = Modifier.padding(end = 8.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary, disabledContainerColor = PinkPrimary.copy(alpha = 0.5f)),
-                        enabled = name.isNotBlank()
-                    ) {
-                        Text(stringResource(R.string.save), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-            )
-        },
-        containerColor = Color(0xFFF8FAFC)
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // SECTION: General Info
-            SectionCard(title = stringResource(R.string.general_info)) {
-                // Account Name
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(stringResource(R.string.account_name), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        placeholder = { Text(stringResource(R.string.account_name_placeholder), color = TextLight) },
-                        singleLine = true,
-                        textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium, color = NavyDark, fontSize = 16.sp),
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = textFieldColors
+                        }
                     )
                 }
-
-                // Account Label
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(stringResource(R.string.account_label), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                    OutlinedTextField(
-                        value = accountLabel,
-                        onValueChange = { accountLabel = it },
-                        placeholder = { Text(stringResource(R.string.account_label_placeholder), color = TextLight) },
-                        singleLine = true,
-                        textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium, color = NavyDark, fontSize = 16.sp),
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = textFieldColors
-                    )
-                }
-
-                // Account Type
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(stringResource(R.string.account_type), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        val types = listOf<Triple<AccountType, String, androidx.compose.ui.graphics.vector.ImageVector>>(
-                            Triple(AccountType.BANK, stringResource(R.string.bank), Icons.Default.AccountBalance),
-                            Triple(AccountType.CARD, stringResource(R.string.card), Icons.Default.CreditCard),
-                            Triple(AccountType.CASH, stringResource(R.string.cash), Icons.Default.Payments),
-                            Triple(AccountType.WALLET, stringResource(R.string.e_wallet), Icons.Default.AccountBalanceWallet)
-                        )
-                        types.forEach { (accType, label, icon) ->
-                            val isSelected = type == accType
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(if (isSelected) PinkPrimary.copy(alpha = 0.1f) else Color.White)
-                                    .clickable { 
-                                        type = accType 
-                                        provider = ""
-                                        if (!userCustomizedColor) {
-                                            selectedColorHex = when (accType) {
-                                                AccountType.BANK -> "#3B82F6"
-                                                AccountType.CARD -> "#8B5CF6"
-                                                AccountType.CASH -> "#10B981"
-                                                AccountType.WALLET -> "#F59E0B"
-                                            }
-                                            selectedIconName = when (accType) {
-                                                AccountType.BANK -> "AccountBalance"
-                                                AccountType.CARD -> "CreditCard"
-                                                AccountType.CASH -> "Payments"
-                                                AccountType.WALLET -> "AccountBalanceWallet"
-                                            }
-                                        }
-                                    }
-                                    .border(
-                                        width = 1.dp,
-                                        color = if (isSelected) PinkPrimary else Color(0xFFE2E8F0),
-                                        shape = RoundedCornerShape(12.dp)
-                                    )
-                                    .padding(horizontal = 4.dp, vertical = 12.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        imageVector = icon,
-                                        contentDescription = null,
-                                        tint = if (isSelected) PinkPrimary else Color(0xFF64748B),
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = label,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        color = if (isSelected) PinkPrimary else Color(0xFF334155)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    if (type == AccountType.CASH) {
-                        Text(
-                            text = stringResource(R.string.cash_tracking_desc),
-                            fontSize = 12.sp,
-                            color = TextLight,
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
-                }
-
-                // Bank selection for BANK/CARD
-                if (type == AccountType.BANK || type == AccountType.CARD) {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(stringResource(R.string.bank_card_issuer), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFF8FAFC))
-                                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
-                                .clickable { openSheet(BottomSheetType.BANK_SELECT) }
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.AccountBalance, contentDescription = null, tint = PinkPrimary)
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = provider.ifBlank { stringResource(R.string.select_bank) },
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 16.sp,
-                                    color = if (provider.isBlank()) TextLight else NavyDark
-                                )
-                            }
-                            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = TextLight)
-                        }
-                    }
-                }
-
-                // Wallet provider selection for WALLET
-                if (type == AccountType.WALLET) {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(stringResource(R.string.wallet_provider), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFF8FAFC))
-                                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
-                                .clickable { openSheet(BottomSheetType.PROVIDER_SELECT) }
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = PinkPrimary)
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = provider.ifBlank { stringResource(R.string.select_wallet_provider) },
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 16.sp,
-                                    color = if (provider.isBlank()) TextLight else NavyDark
-                                )
-                            }
-                            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = TextLight)
-                        }
-                    }
-                }
-
-                // Starting Balance
-                if (type != AccountType.CARD) {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(stringResource(R.string.starting_balance), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                        OutlinedTextField(
-                            value = startingBalance,
-                            onValueChange = { input -> 
-                                if (input.isEmpty() || input.all { it.isDigit() || it == '.' }) {
-                                    startingBalance = input
-                                }
-                            },
-                            placeholder = { Text(stringResource(R.string.eg_0_00), color = TextLight) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium, color = NavyDark, fontSize = 16.sp),
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = textFieldColors,
-                            leadingIcon = {
-                                Text(
-                                    text = availableCurrencies.find { it.code == currency }?.symbol ?: "EGP",
-                                    color = NavyDark,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(start = 12.dp)
-                                )
-                            }
-                        )
-                    }
-                }
-
-                // Currency Selection
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(stringResource(R.string.currency), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFF8FAFC))
-                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
-                            .clickable { openSheet(BottomSheetType.CURRENCY_SELECT) }
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            val currInfo = availableCurrencies.find { it.code == currency }
-                            Text(
-                                text = currInfo?.flag ?: "🇪🇬",
-                                fontSize = 24.sp
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = if (currInfo != null) "${currInfo.code} - ${currInfo.name}" else "EGP - Egyptian Pound",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = NavyDark
-                            )
-                        }
-                        Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = TextLight)
-                    }
-                }
-            }
-
-            // SECTION: Credit Card Config
-            if (type == AccountType.CARD) {
-                SectionCard(title = stringResource(R.string.credit_card_config)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(stringResource(R.string.credit_limit), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                        OutlinedTextField(
-                            value = creditLimit,
-                            onValueChange = { input ->
-                                if (input.isEmpty() || input.all { it.isDigit() || it == '.' }) creditLimit = input
-                            },
-                            placeholder = { Text(stringResource(R.string.eg_25000), color = TextLight) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium, color = NavyDark, fontSize = 16.sp),
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = textFieldColors,
-                            leadingIcon = {
-                                Text(
-                                    text = availableCurrencies.find { it.code == currency }?.symbol ?: "EGP",
-                                    color = NavyDark,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(start = 12.dp)
-                                )
-                            }
-                        )
-                    }
-
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(stringResource(R.string.available), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                        OutlinedTextField(
-                            value = availableCredit,
-                            onValueChange = { input ->
-                                if (input.isEmpty() || input.all { it.isDigit() || it == '.' }) availableCredit = input
-                            },
-                            placeholder = { Text(stringResource(R.string.eg_12000), color = TextLight) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium, color = NavyDark, fontSize = 16.sp),
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = textFieldColors,
-                            leadingIcon = {
-                                Text(
-                                    text = availableCurrencies.find { it.code == currency }?.symbol ?: "EGP",
-                                    color = NavyDark,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(start = 12.dp)
-                                )
-                            }
-                        )
-                    }
-
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(stringResource(R.string.payment_due_day), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                        OutlinedTextField(
-                            value = paymentDueDay,
-                            onValueChange = { input ->
-                                if (input.isEmpty() || input.all { it.isDigit() }) paymentDueDay = input
-                            },
-                            placeholder = { Text(stringResource(R.string.eg_15), color = TextLight) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium, color = NavyDark, fontSize = 16.sp),
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = textFieldColors
-                        )
-                        Text(
-                            text = stringResource(R.string.payment_due_day_desc),
-                            fontSize = 12.sp,
-                            color = TextLight,
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
-                }
-            }
-
-            // SECTION: SMS & Tracking Settings
-            if (type == AccountType.WALLET || type == AccountType.CARD || type == AccountType.BANK) {
-                SectionCard(title = stringResource(R.string.sms_settings)) {
-                    
-                    if (type == AccountType.WALLET) {
-                        Text(
-                            text = if (provider.isNotBlank()) {
-                                stringResource(R.string.sms_auto_link_provider, provider)
-                            } else {
-                                stringResource(R.string.sms_auto_link_default)
-                            },
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = NavyDark,
-                            lineHeight = 18.sp
-                        )
-                    }
-
-                    if (type == AccountType.CARD) {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(stringResource(R.string.card_numbers_optional), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                            OutlinedTextField(
-                                value = cardNumbers,
-                                onValueChange = { cardNumbers = it },
-                                placeholder = { Text(stringResource(R.string.eg_card_numbers), color = TextLight) },
-                                leadingIcon = { Icon(Icons.Default.CreditCard, contentDescription = null, tint = TextLight) },
-                                textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium, color = NavyDark, fontSize = 16.sp),
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = textFieldColors
-                            )
-                            Text(
-                                text = stringResource(R.string.link_card_digits_desc),
-                                fontSize = 12.sp,
-                                color = TextLight,
-                                modifier = Modifier.padding(top = 2.dp)
-                            )
-                        }
-                    }
-
-                    if (type == AccountType.BANK || type == AccountType.CARD) {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(stringResource(R.string.bank_account_number_optional), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                            OutlinedTextField(
-                                value = bankAccountNo,
-                                onValueChange = { bankAccountNo = it },
-                                placeholder = { Text(stringResource(R.string.eg_account_number), color = TextLight) },
-                                leadingIcon = { Icon(Icons.Default.AccountBalance, contentDescription = null, tint = TextLight) },
-                                textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Medium, color = NavyDark, fontSize = 16.sp),
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = textFieldColors
-                            )
-                            Text(
-                                text = stringResource(R.string.bank_account_desc),
-                                fontSize = 12.sp,
-                                color = TextLight,
-                                modifier = Modifier.padding(top = 2.dp)
-                            )
-                        }
-                    }
-
-                    if (type == AccountType.BANK || type == AccountType.CARD) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 8.dp)
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.add_instapay_fee),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = NavyDark
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.instapay_fee_desc),
-                                    fontSize = 12.sp,
-                                    color = TextLight,
-                                    lineHeight = 16.sp
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Switch(
-                                checked = instaPayFee,
-                                onCheckedChange = { instaPayFee = it },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = PinkPrimary,
-                                    uncheckedThumbColor = Color(0xFF94A3B8),
-                                    uncheckedTrackColor = Color(0xFFE2E8F0)
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-
-            // SECTION: Advanced
-            SectionCard(title = stringResource(R.string.advanced)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.exclude_from_all_accounts),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
-                            color = NavyDark
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.exclude_from_all_desc),
-                            fontSize = 12.sp,
-                            color = TextLight,
-                            lineHeight = 16.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Switch(
-                        checked = excludeFromAll,
-                        onCheckedChange = { excludeFromAll = it },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = PinkPrimary,
-                            uncheckedThumbColor = Color(0xFF94A3B8),
-                            uncheckedTrackColor = Color(0xFFE2E8F0)
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(40.dp))
-        }
-    }
-
-    // Bottom Sheets
-    if (showBottomSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showBottomSheet = false },
-            sheetState = sheetState,
-            containerColor = Color.White,
-            dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFFCBD5E1)) }
-        ) {
-            when (bottomSheetType) {
-                BottomSheetType.PROVIDER_SELECT -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 24.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.select_provider),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = NavyDark,
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-                        )
-                        LazyColumn {
-                            items(availableProviders) { item ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            provider = item.name
-                                            if (!userCustomizedColor) {
-                                                selectedColorHex = item.iconColorHex
-                                            }
-                                            showBottomSheet = false
-                                        }
-                                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    BrandLogo(
-                                        provider = item.name,
-                                        accountType = AccountType.WALLET,
-                                        iconColorHex = item.iconColorHex,
-                                        modifier = Modifier.size(40.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Text(
-                                        text = item.name,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
-                                        color = NavyDark
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-                BottomSheetType.CURRENCY_SELECT -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(0.8f)
-                            .padding(bottom = 24.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.select_currency),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = NavyDark,
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-                        )
-                        OutlinedTextField(
-                            value = currencySearchQuery,
-                            onValueChange = { currencySearchQuery = it },
-                            placeholder = { Text(stringResource(R.string.search_ellipsis), color = TextLight) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextLight) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 24.dp, vertical = 8.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = textFieldColors
-                        )
-                        val filteredCurrencies = availableCurrencies.filter {
-                            it.code.contains(currencySearchQuery, ignoreCase = true) ||
-                            it.name.contains(currencySearchQuery, ignoreCase = true) ||
-                            it.symbol.contains(currencySearchQuery, ignoreCase = true)
-                        }
-                        LazyColumn {
-                            items(filteredCurrencies) { item ->
-                                val isSelected = currency == item.code
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            currency = item.code
-                                            showBottomSheet = false
-                                        }
-                                        .background(if (isSelected) PinkPrimary.copy(alpha = 0.05f) else Color.Transparent)
-                                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(text = item.flag, fontSize = 28.sp, modifier = Modifier.padding(end = 16.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(text = item.code, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = NavyDark)
-                                        Text(text = item.name, fontSize = 13.sp, color = TextLight)
-                                    }
-                                    if (isSelected) {
-                                        Icon(Icons.Default.Check, contentDescription = null, tint = PinkPrimary)
-                                    } else {
-                                        Text(text = item.symbol, fontWeight = FontWeight.Medium, fontSize = 15.sp, color = TextLight)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                BottomSheetType.BANK_SELECT -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(0.8f)
-                            .padding(bottom = 24.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.select_bank),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = NavyDark,
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-                        )
-                        OutlinedTextField(
-                            value = bankSearchQuery,
-                            onValueChange = { bankSearchQuery = it },
-                            placeholder = { Text(stringResource(R.string.search_banks_ellipsis), color = TextLight) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextLight) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 24.dp, vertical = 8.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = textFieldColors
-                        )
-                        val filteredBanks = availableBanks.filter {
-                            it.contains(bankSearchQuery, ignoreCase = true)
-                        }
-                        LazyColumn {
-                            items(filteredBanks) { bankName ->
-                                val isSelected = provider == bankName
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            provider = bankName
-                                            showBottomSheet = false
-                                        }
-                                        .background(if (isSelected) PinkPrimary.copy(alpha = 0.05f) else Color.Transparent)
-                                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    BrandLogo(
-                                        provider = bankName,
-                                        accountType = AccountType.BANK,
-                                        iconColorHex = null,
-                                        modifier = Modifier.size(40.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Text(
-                                        text = bankName,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
-                                        color = NavyDark,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    if (isSelected) {
-                                        Icon(Icons.Default.Check, contentDescription = null, tint = PinkPrimary)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                BottomSheetType.COLOR_SELECT -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp)
-                            .padding(bottom = 32.dp),
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.icon_and_color),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = NavyDark,
-                            modifier = Modifier.padding(top = 16.dp)
-                        )
-                        // Preview Card
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
-                                .size(80.dp)
-                                .clip(CircleShape)
-                                .background(Color(android.graphics.Color.parseColor(selectedColorHex))),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            val currentIcon = customIcons.find { it.first == selectedIconName }?.second ?: Icons.Default.AccountBalance
-                            Icon(imageVector = currentIcon, contentDescription = null, tint = Color.White, modifier = Modifier.size(36.dp))
-                        }
-                        
-                        // Colors
-                        Text(stringResource(R.string.select_color), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(6),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            items(customColors) { (colorHex, _) ->
-                                val isColorSelected = selectedColorHex == colorHex
-                                Box(
-                                    modifier = Modifier
-                                        .aspectRatio(1f)
-                                        .clip(CircleShape)
-                                        .background(Color(android.graphics.Color.parseColor(colorHex)))
-                                        .border(
-                                            width = if (isColorSelected) 3.dp else 0.dp,
-                                            color = if (isColorSelected) NavyDark else Color.Transparent,
-                                            shape = CircleShape
-                                        )
-                                        .clickable {
-                                            selectedColorHex = colorHex
-                                            userCustomizedColor = true
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (isColorSelected) {
-                                        Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                    }
-                                }
-                            }
-                        }
-
-                        // Icons
-                        Text(stringResource(R.string.select_icon), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(5),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            items(customIcons) { (name, iconVector) ->
-                                val isIconSelected = selectedIconName == name
-                                Box(
-                                    modifier = Modifier
-                                        .aspectRatio(1f)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(if (isIconSelected) PinkPrimary else Color(0xFFF1F5F9))
-                                        .clickable {
-                                            selectedIconName = name
-                                            userCustomizedColor = true
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = iconVector,
-                                        contentDescription = null,
-                                        tint = if (isIconSelected) Color.White else Color(0xFF64748B),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        Button(
-                            onClick = { showBottomSheet = false },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
-                        ) {
-                            Text(stringResource(R.string.done), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
-                        }
-                    }
-                }
-                BottomSheetType.NONE -> {}
             }
         }
     }
 }
 
+// ==========================================
+// SLIDE 0: CHOOSE ACCOUNT TYPE
+// ==========================================
 @Composable
-fun SectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+fun Slide0AccountType(
+    selectedType: AccountType,
+    onTypeSelected: (AccountType) -> Unit,
+    onNext: () -> Unit
+) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = title,
-            fontSize = 16.sp,
+            text = "SELECT ACCOUNT TYPE",
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
-            color = NavyDark,
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+            color = Color(0xFF94A3B8),
+            letterSpacing = 1.2.sp
         )
+        Text(
+            text = "What kind of account are you tracking?",
+            fontSize = 15.sp,
+            color = TextLight,
+            modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
+        )
+
+        val accountTypes = listOf(
+            Triple(AccountType.BANK, "Bank Account", "Checking, Savings & CD accounts"),
+            Triple(AccountType.CARD, "Credit / Debit Card", "Revolving credit, limit & due day tracking"),
+            Triple(AccountType.WALLET, "E-Wallet", "Vodafone Cash, Orange, e&, WE & InstaPay"),
+            Triple(AccountType.CASH, "Cash & Physical Wallet", "Track paper currency and physical spendings")
+        )
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            accountTypes.forEach { (type, title, subtitle) ->
+                val isSelected = selectedType == type
+                val icon = when (type) {
+                    AccountType.BANK -> Icons.Default.AccountBalance
+                    AccountType.CARD -> Icons.Default.CreditCard
+                    AccountType.WALLET -> Icons.Default.AccountBalanceWallet
+                    AccountType.CASH -> Icons.Default.Payments
+                    else -> Icons.Default.AccountBalance
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { onTypeSelected(type) },
+                    color = Color.White,
+                    shape = RoundedCornerShape(20.dp),
+                    border = BorderStroke(
+                        width = if (isSelected) 2.dp else 1.dp,
+                        color = if (isSelected) PinkPrimary else Color(0xFFE2E8F0)
+                    ),
+                    shadowElevation = if (isSelected) 3.dp else 0.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(if (isSelected) PinkPrimary.copy(alpha = 0.12f) else Color(0xFFF1F5F9)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = if (isSelected) PinkPrimary else NavyDark,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = title,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = NavyDark
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = subtitle,
+                                fontSize = 12.sp,
+                                color = Color(0xFF64748B),
+                                lineHeight = 16.sp
+                            )
+                        }
+
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = { onTypeSelected(type) },
+                            colors = RadioButtonDefaults.colors(selectedColor = PinkPrimary)
+                        )
+                    }
+                }
+            }
+        }
+
+        Button(
+            onClick = onNext,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+        ) {
+            Text("Next: Choose Provider", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+        }
+    }
+}
+
+// ==========================================
+// SLIDE 1: PROVIDER SELECTION WITH LOGO.DEV
+// ==========================================
+@Composable
+fun Slide1ProviderSelection(
+    accountType: AccountType,
+    selectedProvider: String,
+    onProviderSelected: (name: String, colorHex: String, logoUrl: String) -> Unit,
+    onSkipOrCustom: (customName: String) -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    var customInput by remember { mutableStateOf("") }
+
+    val walletProviders = remember {
+        listOf(
+            ProviderOption("Vodafone Cash", "vodafone.com", "#E11D48"),
+            ProviderOption("Orange Cash", "orange.com", "#EA580C"),
+            ProviderOption("e& Cash", "eand.com", "#16A34A"),
+            ProviderOption("WE Pay", "te.eg", "#7C3AED"),
+            ProviderOption("InstaPay", "instapay.eg", "#701A75"),
+            ProviderOption("Telda", "telda.app", "#0F172A")
+        )
+    }
+
+    val bankProviders = remember {
+        listOf(
+            ProviderOption("Commercial International Bank (CIB)", "cibeg.com", "#1E3A8A"),
+            ProviderOption("National Bank of Egypt (NBE)", "nbe.com.eg", "#005B41"),
+            ProviderOption("Banque Misr", "banquemisr.com", "#900C3F"),
+            ProviderOption("QNB Alahli", "qnbalahli.com", "#6F1E51"),
+            ProviderOption("Banque Du Caire", "bdc.com.eg", "#E05B00"),
+            ProviderOption("Arab African International Bank (AAIB)", "aaib.com", "#1E3A8A"),
+            ProviderOption("HSBC Egypt", "hsbc.com.eg", "#E50914"),
+            ProviderOption("Alex Bank", "alexbank.com", "#4D1A7F"),
+            ProviderOption("Faisal Islamic Bank", "faisalbank.com.eg", "#1B4D3E"),
+            ProviderOption("Abu Dhabi Islamic Bank (ADIB)", "adib.eg", "#0D9488"),
+            ProviderOption("Credit Agricole Egypt", "credit-agricole.com.eg", "#059669"),
+            ProviderOption("Emirates NBD Egypt", "emiratesnbd.com.eg", "#1E3A8A"),
+            ProviderOption("Housing and Development Bank (HDB)", "hdb-egypt.com", "#059669"),
+            ProviderOption("Egyptian Gulf Bank (EG Bank)", "eg-bank.com", "#0A2540"),
+            ProviderOption("SAIB Bank", "saib.com.eg", "#1E3A8A"),
+            ProviderOption("Al Baraka Bank", "albaraka.com.eg", "#8B5A2B"),
+            ProviderOption("Attijariwafa Bank Egypt", "attijariwafabank.com.eg", "#EAB308"),
+            ProviderOption("Arab Bank", "arabbank.com.eg", "#006400"),
+            ProviderOption("Abu Dhabi Commercial Bank (ADCB)", "adcb.com.eg", "#D32F2F"),
+            ProviderOption("Citibank Egypt", "citibank.com", "#0288D1"),
+            ProviderOption("Mashreq Bank", "mashreqbank.com", "#FF5722"),
+            ProviderOption("Suez Canal Bank", "scbank.com.eg", "#0D47A1"),
+            ProviderOption("The United Bank", "theubeg.com", "#1565C0"),
+            ProviderOption("EBank", "ebank.com.eg", "#008080")
+        )
+    }
+
+    val activeList = if (accountType == AccountType.WALLET) walletProviders else bankProviders
+    val filteredList = activeList.filter {
+        it.name.contains(searchQuery, ignoreCase = true) || it.domain.contains(searchQuery, ignoreCase = true)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Text(
+            text = if (accountType == AccountType.WALLET) "SELECT WALLET PROVIDER" else "SELECT BANK / ISSUER",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF94A3B8),
+            letterSpacing = 1.2.sp
+        )
+        Text(
+            text = "Official logos are verified online and cached automatically",
+            fontSize = 13.sp,
+            color = TextLight,
+            modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+        )
+
+        // Search Bar
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            placeholder = { Text(if (accountType == AccountType.WALLET) "Search e-wallet..." else "Search bank (e.g. CIB, NBE, Misr)...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF94A3B8)) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                focusedBorderColor = PinkPrimary,
+                unfocusedBorderColor = Color(0xFFE2E8F0)
+            ),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Providers List
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(filteredList) { prov ->
+                val logoUrl = buildLogoDevUrl(prov.domain)
+                val isSelected = selectedProvider == prov.name
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .clickable { onProviderSelected(prov.name, prov.defaultColorHex, logoUrl) },
+                    color = Color.White,
+                    shape = RoundedCornerShape(18.dp),
+                    border = BorderStroke(
+                        width = if (isSelected) 2.dp else 1.dp,
+                        color = if (isSelected) PinkPrimary else Color(0xFFE2E8F0)
+                    ),
+                    shadowElevation = if (isSelected) 2.dp else 0.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BrandLogo(
+                            provider = prov.name,
+                            accountType = accountType,
+                            iconColorHex = prov.defaultColorHex,
+                            logoUrl = logoUrl,
+                            modifier = Modifier.size(44.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = prov.name,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = NavyDark
+                            )
+                            Text(
+                                text = prov.domain,
+                                fontSize = 12.sp,
+                                color = Color(0xFF94A3B8)
+                            )
+                        }
+
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = if (isSelected) PinkPrimary else Color(0xFFCBD5E1)
+                        )
+                    }
+                }
+            }
+
+            // Custom Provider / Other
+            item {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = "Can't find your institution?",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDark
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedTextField(
+                                value = customInput,
+                                onValueChange = { customInput = it },
+                                placeholder = { Text("Enter custom provider name") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = PinkPrimary,
+                                    unfocusedBorderColor = Color(0xFFCBD5E1)
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = { onSkipOrCustom(customInput.trim()) },
+                                enabled = customInput.isNotBlank(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+                            ) {
+                                Text("Use", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Skip to next button
+        OutlinedButton(
+            onClick = { onSkipOrCustom("") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, Color(0xFFCBD5E1))
+        ) {
+            Text("Skip / Enter Custom Details", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = NavyDark)
+        }
+    }
+}
+
+// ==========================================
+// SLIDE 2: NAME, LABEL & CUSTOMIZATION
+// ==========================================
+@Composable
+fun Slide2NameAndCustomization(
+    name: String,
+    onNameChange: (String) -> Unit,
+    accountLabel: String,
+    onAccountLabelChange: (String) -> Unit,
+    selectedColorHex: String,
+    onColorSelected: (String) -> Unit,
+    selectedIconName: String,
+    onIconSelected: (String) -> Unit,
+    provider: String,
+    accountType: AccountType,
+    logoUrl: String?,
+    onNext: () -> Unit
+) {
+    val paletteColors = listOf(
+        "#1E3A8A" to "Navy",
+        "#3B82F6" to "Blue",
+        "#8B5CF6" to "Purple",
+        "#0D9488" to "Teal",
+        "#10B981" to "Emerald",
+        "#F59E0B" to "Amber",
+        "#EA580C" to "Orange",
+        "#E11D48" to "Rose",
+        "#EC4899" to "Pink",
+        "#0F172A" to "Slate",
+        "#4A154B" to "Plum",
+        "#005B41" to "Forest"
+    )
+
+    val iconOptions = listOf(
+        "AccountBalance" to Icons.Default.AccountBalance,
+        "CreditCard" to Icons.Default.CreditCard,
+        "Payments" to Icons.Default.Payments,
+        "AccountBalanceWallet" to Icons.Default.AccountBalanceWallet,
+        "Savings" to Icons.Default.Savings,
+        "Star" to Icons.Default.Star,
+        "TrendingUp" to Icons.Default.TrendingUp,
+        "Home" to Icons.Default.Home
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "NAME & CUSTOMIZATION",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF94A3B8),
+            letterSpacing = 1.2.sp
+        )
+        Text(
+            text = "Give your account a recognizable title & styling",
+            fontSize = 13.sp,
+            color = TextLight,
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+        )
+
+        // Live Mini Card Preview
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp)),
+            color = try { Color(android.graphics.Color.parseColor(selectedColorHex)) } catch (e: Exception) { NavyDark },
+            shape = RoundedCornerShape(20.dp),
+            shadowElevation = 3.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                BrandLogo(
+                    provider = provider.ifBlank { name },
+                    accountType = accountType,
+                    iconColorHex = selectedColorHex,
+                    logoUrl = logoUrl,
+                    modifier = Modifier.size(46.dp)
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column {
+                    Text(
+                        text = name.ifBlank { "Account Name" },
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                    if (accountLabel.isNotBlank()) {
+                        Text(
+                            text = accountLabel,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Account Name Field
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            content()
+            Text("Account Name *", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+            OutlinedTextField(
+                value = name,
+                onValueChange = onNameChange,
+                placeholder = { Text("e.g. CIB Salary, Vodafone Cash") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedBorderColor = PinkPrimary,
+                    unfocusedBorderColor = Color(0xFFE2E8F0)
+                )
+            )
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Label / Nickname Field
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text("Account Label / Purpose (Optional)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+            OutlinedTextField(
+                value = accountLabel,
+                onValueChange = onAccountLabelChange,
+                placeholder = { Text("e.g. Salary, Emergency, Daily Spend") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedBorderColor = PinkPrimary,
+                    unfocusedBorderColor = Color(0xFFE2E8F0)
+                )
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Color Palette Picker
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text("Brand Color", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                paletteColors.take(6).forEach { (hex, _) ->
+                    val color = Color(android.graphics.Color.parseColor(hex))
+                    val isSelected = selectedColorHex.equals(hex, ignoreCase = true)
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                            .clickable { onColorSelected(hex) }
+                            .border(if (isSelected) 3.dp else 0.dp, Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSelected) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                paletteColors.drop(6).forEach { (hex, _) ->
+                    val color = Color(android.graphics.Color.parseColor(hex))
+                    val isSelected = selectedColorHex.equals(hex, ignoreCase = true)
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                            .clickable { onColorSelected(hex) }
+                            .border(if (isSelected) 3.dp else 0.dp, Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSelected) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Button(
+            onClick = onNext,
+            enabled = name.isNotBlank(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+        ) {
+            Text("Next: Balance & Currency", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+        }
+    }
+}
+
+// ==========================================
+// SLIDE 3: CURRENCY & BALANCE
+// ==========================================
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Slide3CurrencyAndBalance(
+    currency: String,
+    onCurrencySelected: (String) -> Unit,
+    accountType: AccountType,
+    startingBalance: String,
+    onStartingBalanceChange: (String) -> Unit,
+    creditLimit: String,
+    onCreditLimitChange: (String) -> Unit,
+    availableCredit: String,
+    onAvailableCreditChange: (String) -> Unit,
+    paymentDueDay: String,
+    onPaymentDueDayChange: (String) -> Unit,
+    onNext: () -> Unit
+) {
+    var showCurrencyDialog by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "CURRENCY & BALANCE",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF94A3B8),
+            letterSpacing = 1.2.sp
+        )
+        Text(
+            text = "Set account currency and current balance or limits",
+            fontSize = 13.sp,
+            color = TextLight,
+            modifier = Modifier.padding(top = 4.dp, bottom = 18.dp)
+        )
+
+        // Currency Selector Card
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .clickable { showCurrencyDialog = true },
+            color = Color.White,
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                val currInfo = availableCurrencies.find { it.code == currency }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = currInfo?.flag ?: "🇪🇬", fontSize = 24.sp)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "${currInfo?.code ?: "EGP"} (${currInfo?.symbol ?: "EGP"})",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = NavyDark
+                        )
+                        Text(
+                            text = currInfo?.name ?: "Egyptian Pound",
+                            fontSize = 12.sp,
+                            color = Color(0xFF94A3B8)
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = PinkPrimary.copy(alpha = 0.1f)
+                ) {
+                    Text(
+                        text = "Change",
+                        color = PinkPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        if (accountType != AccountType.CARD) {
+            // Starting Balance for Bank, Wallet, Cash
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Starting / Current Balance", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                OutlinedTextField(
+                    value = startingBalance,
+                    onValueChange = { input ->
+                        if (input.isEmpty() || input.all { it.isDigit() || it == '.' }) {
+                            onStartingBalanceChange(input)
+                        }
+                    },
+                    placeholder = { Text("0.00") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    leadingIcon = {
+                        Text(
+                            text = availableCurrencies.find { it.code == currency }?.symbol ?: currency,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDark,
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = PinkPrimary,
+                        unfocusedBorderColor = Color(0xFFE2E8F0)
+                    )
+                )
+            }
+        } else {
+            // Card Credit Limit & Available Credit
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Total Credit Limit *", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    OutlinedTextField(
+                        value = creditLimit,
+                        onValueChange = { input ->
+                            if (input.isEmpty() || input.all { it.isDigit() || it == '.' }) onCreditLimitChange(input)
+                        },
+                        placeholder = { Text("e.g. 50000") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        leadingIcon = {
+                            Text(
+                                text = currency,
+                                fontWeight = FontWeight.Bold,
+                                color = NavyDark,
+                                modifier = Modifier.padding(start = 12.dp)
+                            )
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = PinkPrimary,
+                            unfocusedBorderColor = Color(0xFFE2E8F0)
+                        )
+                    )
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Currently Available Credit", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    OutlinedTextField(
+                        value = availableCredit,
+                        onValueChange = { input ->
+                            if (input.isEmpty() || input.all { it.isDigit() || it == '.' }) onAvailableCreditChange(input)
+                        },
+                        placeholder = { Text(creditLimit.ifBlank { "Same as credit limit" }) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = PinkPrimary,
+                            unfocusedBorderColor = Color(0xFFE2E8F0)
+                        )
+                    )
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Payment Due Day of Month (1-31)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    OutlinedTextField(
+                        value = paymentDueDay,
+                        onValueChange = { input ->
+                            if (input.isEmpty() || input.all { it.isDigit() }) onPaymentDueDayChange(input)
+                        },
+                        placeholder = { Text("e.g. 15 or 25") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = PinkPrimary,
+                            unfocusedBorderColor = Color(0xFFE2E8F0)
+                        )
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Button(
+            onClick = onNext,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+        ) {
+            Text("Next: Automation & Review", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+        }
+    }
+
+    // Currency Selection Modal BottomSheet
+    if (showCurrencyDialog) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        var query by remember { mutableStateOf("") }
+        val filtered = availableCurrencies.filter {
+            it.code.contains(query, ignoreCase = true) || it.name.contains(query, ignoreCase = true)
+        }
+
+        ModalBottomSheet(
+            onDismissRequest = { showCurrencyDialog = false },
+            sheetState = sheetState,
+            containerColor = Color.White,
+            dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFFCBD5E1)) }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.75f)
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 24.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Select Currency",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = NavyDark
+                    )
+                    IconButton(onClick = { showCurrencyDialog = false }) {
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = Color(0xFF94A3B8))
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = { Text("Search currency by code or name...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextLight) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color(0xFFF8FAFC),
+                        unfocusedContainerColor = Color(0xFFF8FAFC),
+                        focusedBorderColor = PinkPrimary,
+                        unfocusedBorderColor = Color(0xFFE2E8F0)
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(filtered) { curr ->
+                        val isSelected = curr.code.equals(currency, ignoreCase = true)
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    onCurrencySelected(curr.code)
+                                    showCurrencyDialog = false
+                                },
+                            color = if (isSelected) PinkPrimary.copy(alpha = 0.08f) else Color.Transparent,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp, horizontal = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(curr.flag, fontSize = 26.sp)
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = curr.code,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        color = if (isSelected) PinkPrimary else NavyDark
+                                    )
+                                    Text(curr.name, fontSize = 12.sp, color = TextLight)
+                                }
+                                if (isSelected) {
+                                    Icon(Icons.Default.Check, contentDescription = null, tint = PinkPrimary)
+                                } else {
+                                    Text(
+                                        text = curr.symbol,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF64748B),
+                                        fontSize = 15.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ==========================================
+// SLIDE 4: AUTOMATION & REVIEW
+// ==========================================
+@Composable
+fun Slide4AutomationAndReview(
+    name: String,
+    accountLabel: String,
+    accountType: AccountType,
+    currency: String,
+    startingBalance: String,
+    creditLimit: String,
+    availableCredit: String,
+    provider: String,
+    logoUrl: String?,
+    selectedColorHex: String,
+    cardNumbers: String,
+    onCardNumbersChange: (String) -> Unit,
+    bankAccountNo: String,
+    onBankAccountNoChange: (String) -> Unit,
+    instaPayFee: Boolean,
+    onInstaPayFeeChange: (Boolean) -> Unit,
+    excludeFromAll: Boolean,
+    onExcludeFromAllChange: (Boolean) -> Unit,
+    onCreateAccount: () -> Unit
+) {
+    val currencySym = getCurrencySymbol(currency)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "AUTOMATION & REVIEW",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF94A3B8),
+            letterSpacing = 1.2.sp
+        )
+        Text(
+            text = "Review your card and configure automated SMS linking",
+            fontSize = 13.sp,
+            color = TextLight,
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+        )
+
+        // FINAL CARD PREVIEW (Credit Card / Bank Card Aesthetic)
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp)),
+            color = try { Color(android.graphics.Color.parseColor(selectedColorHex)) } catch (e: Exception) { NavyDark },
+            shape = RoundedCornerShape(24.dp),
+            shadowElevation = 4.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    BrandLogo(
+                        provider = provider.ifBlank { name },
+                        accountType = accountType,
+                        iconColorHex = selectedColorHex,
+                        logoUrl = logoUrl,
+                        modifier = Modifier.size(46.dp)
+                    )
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.White.copy(alpha = 0.2f)
+                    ) {
+                        Text(
+                            text = accountType.name,
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                val displayBalance = if (accountType == AccountType.CARD) {
+                    val limit = creditLimit.toDoubleOrNull() ?: 0.0
+                    val avail = availableCredit.toDoubleOrNull() ?: limit
+                    avail - limit
+                } else {
+                    startingBalance.toDoubleOrNull() ?: 0.0
+                }
+
+                Text(
+                    text = "BALANCE",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.7f),
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = "$currencySym ${String.format(Locale.getDefault(), "%,.2f", displayBalance)}",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Column {
+                        Text(
+                            text = name,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        if (accountLabel.isNotBlank()) {
+                            Text(
+                                text = accountLabel,
+                                fontSize = 12.sp,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+
+                    if (cardNumbers.isNotBlank()) {
+                        Text(
+                            text = "•••• ${cardNumbers.takeLast(4)}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // SMS Linking Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text(
+                    text = "SMS Automation & Identifier",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = NavyDark
+                )
+
+                if (accountType == AccountType.CARD) {
+                    OutlinedTextField(
+                        value = cardNumbers,
+                        onValueChange = onCardNumbersChange,
+                        placeholder = { Text("Last 4 digits of card (e.g. 1234)") },
+                        leadingIcon = { Icon(Icons.Default.CreditCard, contentDescription = null, tint = TextLight) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
+                if (accountType == AccountType.BANK) {
+                    OutlinedTextField(
+                        value = bankAccountNo,
+                        onValueChange = onBankAccountNoChange,
+                        placeholder = { Text("Account number or last 4 digits") },
+                        leadingIcon = { Icon(Icons.Default.AccountBalance, contentDescription = null, tint = TextLight) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
+                // InstaPay Fee Toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Add InstaPay Fee automatically", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NavyDark)
+                        Text("Deducts 0.1% (min 1 EGP, max 20 EGP) on transfers", fontSize = 11.sp, color = TextLight)
+                    }
+                    Switch(
+                        checked = instaPayFee,
+                        onCheckedChange = onInstaPayFeeChange,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = PinkPrimary
+                        )
+                    )
+                }
+
+                HorizontalDivider(color = Color(0xFFF1F5F9))
+
+                // Exclude from Total Toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Exclude from Total Balance", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NavyDark)
+                        Text("Hide from net worth & dashboard totals", fontSize = 11.sp, color = TextLight)
+                    }
+                    Switch(
+                        checked = excludeFromAll,
+                        onCheckedChange = onExcludeFromAllChange,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = PinkPrimary
+                        )
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Save Button
+        Button(
+            onClick = onCreateAccount,
+            enabled = name.isNotBlank(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+        ) {
+            Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Create Account", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
     }
 }

@@ -753,6 +753,363 @@ object BackupHelper {
         sb.append("</Workbook>\n")
         return sb.toString()
     }
+
+    fun parseFullJson(jsonString: String): FullBackupData {
+        val goals = mutableListOf<Goal>()
+        val transactions = mutableListOf<Transaction>()
+        val loans = mutableListOf<Loan>()
+        val loanPayments = mutableListOf<LoanPayment>()
+        val accounts = mutableListOf<Account>()
+        val accountTransactions = mutableListOf<AccountTransaction>()
+        val pendingTransactions = mutableListOf<PendingTransaction>()
+        val streakDates = mutableSetOf<String>()
+
+        try {
+            val root = org.json.JSONObject(jsonString)
+
+            if (root.has("goals")) {
+                val arr = root.getJSONArray("goals")
+                for (i in 0 until arr.length()) {
+                    val obj = arr.getJSONObject(i)
+                    goals.add(
+                        Goal(
+                            id = obj.optString("id", java.util.UUID.randomUUID().toString()),
+                            name = obj.optString("name", "Goal"),
+                            targetAmount = obj.optDouble("targetAmount", 0.0),
+                            createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+                        )
+                    )
+                }
+            }
+
+            if (root.has("transactions")) {
+                val arr = root.getJSONArray("transactions")
+                for (i in 0 until arr.length()) {
+                    val obj = arr.getJSONObject(i)
+                    transactions.add(
+                        Transaction(
+                            id = obj.optString("id", java.util.UUID.randomUUID().toString()),
+                            goalId = obj.optString("goalId", ""),
+                            amount = obj.optDouble("amount", 0.0),
+                            note = obj.optString("note", ""),
+                            timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
+                            deadline = if (obj.has("deadline") && !obj.isNull("deadline")) obj.optLong("deadline") else null
+                        )
+                    )
+                }
+            }
+
+            if (root.has("loans")) {
+                val arr = root.getJSONArray("loans")
+                for (i in 0 until arr.length()) {
+                    val obj = arr.getJSONObject(i)
+                    val typeStr = obj.optString("type", "LENT")
+                    loans.add(
+                        Loan(
+                            id = obj.optString("id", java.util.UUID.randomUUID().toString()),
+                            type = if (typeStr == "BORROWED") LoanType.BORROWED else LoanType.LENT,
+                            amount = obj.optDouble("amount", 0.0),
+                            contactName = obj.optString("contactName", "Contact"),
+                            phone = obj.optString("phone", "").takeIf { it.isNotEmpty() },
+                            email = obj.optString("email", "").takeIf { it.isNotEmpty() },
+                            photoUri = obj.optString("photoUri", "").takeIf { it.isNotEmpty() },
+                            social = obj.optString("social", "").takeIf { it.isNotEmpty() },
+                            note = obj.optString("note", ""),
+                            isPaidOff = obj.optBoolean("isPaidOff", false),
+                            timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
+                            deadline = if (obj.has("deadline") && !obj.isNull("deadline")) obj.optLong("deadline") else null
+                        )
+                    )
+                }
+            }
+
+            if (root.has("loanPayments")) {
+                val arr = root.getJSONArray("loanPayments")
+                for (i in 0 until arr.length()) {
+                    val obj = arr.getJSONObject(i)
+                    loanPayments.add(
+                        LoanPayment(
+                            id = obj.optString("id", java.util.UUID.randomUUID().toString()),
+                            loanId = obj.optString("loanId", ""),
+                            amount = obj.optDouble("amount", 0.0),
+                            timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
+                            note = obj.optString("note", "").takeIf { it.isNotEmpty() }
+                        )
+                    )
+                }
+            }
+
+            if (root.has("accounts")) {
+                val arr = root.getJSONArray("accounts")
+                for (i in 0 until arr.length()) {
+                    val obj = arr.getJSONObject(i)
+                    val typeStr = obj.optString("type", "CASH")
+                    val accType = try { AccountType.valueOf(typeStr) } catch (e: Exception) { AccountType.CASH }
+                    accounts.add(
+                        Account(
+                            id = obj.optString("id", java.util.UUID.randomUUID().toString()),
+                            name = obj.optString("name", "Account"),
+                            type = accType,
+                            icon_color = obj.optString("icon_color", "0xFFE91E63"),
+                            icon_name = obj.optString("icon_name", "AccountBalanceWallet"),
+                            logo_url = obj.optString("logo_url", "").takeIf { it.isNotEmpty() },
+                            local_logo_path = obj.optString("local_logo_path", "").takeIf { it.isNotEmpty() },
+                            currency = obj.optString("currency", "EGP"),
+                            starting_balance = obj.optDouble("starting_balance", 0.0),
+                            current_balance = obj.optDouble("current_balance", 0.0),
+                            exclude_from_all = obj.optBoolean("exclude_from_all", false),
+                            credit_limit = if (obj.has("credit_limit") && !obj.isNull("credit_limit")) obj.optDouble("credit_limit") else null,
+                            available_credit = if (obj.has("available_credit") && !obj.isNull("available_credit")) obj.optDouble("available_credit") else null,
+                            payment_due_day = if (obj.has("payment_due_day") && !obj.isNull("payment_due_day")) obj.optInt("payment_due_day") else null,
+                            card_numbers = obj.optString("card_numbers", "").takeIf { it.isNotEmpty() },
+                            bank_account_no = obj.optString("bank_account_no", "").takeIf { it.isNotEmpty() },
+                            provider = obj.optString("provider", "").takeIf { it.isNotEmpty() },
+                            insta_pay_fee = obj.optBoolean("insta_pay_fee", false),
+                            label = obj.optString("label", "").takeIf { it.isNotEmpty() }
+                        )
+                    )
+                }
+            }
+
+            if (root.has("accountTransactions")) {
+                val arr = root.getJSONArray("accountTransactions")
+                for (i in 0 until arr.length()) {
+                    val obj = arr.getJSONObject(i)
+                    accountTransactions.add(
+                        AccountTransaction(
+                            id = obj.optString("id", java.util.UUID.randomUUID().toString()),
+                            account_id = obj.optString("account_id", ""),
+                            amount = obj.optDouble("amount", 0.0),
+                            merchant = obj.optString("merchant", ""),
+                            timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
+                            source = obj.optString("source", "MANUAL")
+                        )
+                    )
+                }
+            }
+
+            if (root.has("pendingTransactions")) {
+                val arr = root.getJSONArray("pendingTransactions")
+                for (i in 0 until arr.length()) {
+                    val obj = arr.getJSONObject(i)
+                    pendingTransactions.add(
+                        PendingTransaction(
+                            id = obj.optString("id", java.util.UUID.randomUUID().toString()),
+                            amount = obj.optDouble("amount", 0.0),
+                            merchant = obj.optString("merchant", ""),
+                            raw_sms_body = obj.optString("raw_sms_body", ""),
+                            sender = obj.optString("sender", ""),
+                            timestamp = obj.optLong("timestamp", System.currentTimeMillis())
+                        )
+                    )
+                }
+            }
+
+            if (root.has("streakDates")) {
+                val arr = root.getJSONArray("streakDates")
+                for (i in 0 until arr.length()) {
+                    streakDates.add(arr.getString(i))
+                }
+            }
+        } catch (e: Exception) {
+            // Error handling fallback
+        }
+
+        return FullBackupData(
+            goals = goals,
+            transactions = transactions,
+            loans = loans,
+            loanPayments = loanPayments,
+            accounts = accounts,
+            accountTransactions = accountTransactions,
+            pendingTransactions = pendingTransactions,
+            streakDates = streakDates
+        )
+    }
+
+    fun parseFullExcelXml(xmlString: String): FullBackupData {
+        val goals = mutableListOf<Goal>()
+        val transactions = mutableListOf<Transaction>()
+        val loans = mutableListOf<Loan>()
+        val loanPayments = mutableListOf<LoanPayment>()
+        val accounts = mutableListOf<Account>()
+        val accountTransactions = mutableListOf<AccountTransaction>()
+        val pendingTransactions = mutableListOf<PendingTransaction>()
+        val streakDates = mutableSetOf<String>()
+
+        try {
+            // Regex-based XML worksheet parser for Excel Spreadsheet 2003 format
+            val worksheetRegex = Regex("<Worksheet\\s+ss:Name=\"([^\"]+)\">(.*?)</Worksheet>", RegexOption.DOT_MATCHES_ALL)
+            val rowRegex = Regex("<Row[^>]*>(.*?)</Row>", RegexOption.DOT_MATCHES_ALL)
+            val dataRegex = Regex("<Data[^>]*>(.*?)</Data>", RegexOption.DOT_MATCHES_ALL)
+
+            val matches = worksheetRegex.findAll(xmlString)
+            for (match in matches) {
+                val sheetName = match.groupValues[1]
+                val sheetContent = match.groupValues[2]
+
+                val rows = rowRegex.findAll(sheetContent).map { rowMatch ->
+                    dataRegex.findAll(rowMatch.groupValues[1]).map { dataMatch ->
+                        dataMatch.groupValues[1]
+                            .replace("&amp;", "&")
+                            .replace("&lt;", "<")
+                            .replace("&gt;", ">")
+                            .replace("&quot;", "\"")
+                            .replace("&apos;", "'")
+                            .trim()
+                    }.toList()
+                }.toList()
+
+                if (rows.size <= 1) continue // Skip empty or header-only sheets
+
+                val dataRows = rows.drop(1) // Skip table header
+
+                when (sheetName) {
+                    "Accounts" -> {
+                        for (r in dataRows) {
+                            if (r.isEmpty()) continue
+                            accounts.add(
+                                Account(
+                                    id = r.getOrNull(0) ?: java.util.UUID.randomUUID().toString(),
+                                    name = r.getOrNull(1) ?: "Account",
+                                    type = try { AccountType.valueOf(r.getOrNull(2) ?: "CASH") } catch (e: Exception) { AccountType.CASH },
+                                    icon_color = "0xFF3B82F6",
+                                    currency = r.getOrNull(3) ?: "EGP",
+                                    starting_balance = r.getOrNull(4)?.toDoubleOrNull() ?: 0.0,
+                                    current_balance = r.getOrNull(5)?.toDoubleOrNull() ?: 0.0,
+                                    exclude_from_all = r.getOrNull(6)?.equals("Yes", ignoreCase = true) == true,
+                                    card_numbers = r.getOrNull(7)?.takeIf { it != "-" },
+                                    provider = r.getOrNull(8)?.takeIf { it != "-" },
+                                    insta_pay_fee = r.getOrNull(9)?.equals("Yes", ignoreCase = true) == true
+                                )
+                            )
+                        }
+                    }
+                    "Account Transactions" -> {
+                        for (r in dataRows) {
+                            if (r.isEmpty()) continue
+                            accountTransactions.add(
+                                AccountTransaction(
+                                    id = r.getOrNull(0) ?: java.util.UUID.randomUUID().toString(),
+                                    account_id = r.getOrNull(1) ?: "",
+                                    amount = r.getOrNull(2)?.toDoubleOrNull() ?: 0.0,
+                                    merchant = r.getOrNull(3) ?: "",
+                                    timestamp = System.currentTimeMillis(),
+                                    source = r.getOrNull(5) ?: "EXCEL_IMPORT"
+                                )
+                            )
+                        }
+                    }
+                    "Goals" -> {
+                        for (r in dataRows) {
+                            if (r.isEmpty()) continue
+                            goals.add(
+                                Goal(
+                                    id = r.getOrNull(0) ?: java.util.UUID.randomUUID().toString(),
+                                    name = r.getOrNull(1) ?: "Goal",
+                                    targetAmount = r.getOrNull(2)?.toDoubleOrNull() ?: 0.0,
+                                    createdAt = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    }
+                    "Goal Transactions" -> {
+                        for (r in dataRows) {
+                            if (r.isEmpty()) continue
+                            transactions.add(
+                                Transaction(
+                                    id = r.getOrNull(0) ?: java.util.UUID.randomUUID().toString(),
+                                    goalId = r.getOrNull(1) ?: "",
+                                    amount = r.getOrNull(2)?.toDoubleOrNull() ?: 0.0,
+                                    note = r.getOrNull(3) ?: "",
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    }
+                    "Loans" -> {
+                        for (r in dataRows) {
+                            if (r.isEmpty()) continue
+                            val typeStr = r.getOrNull(1) ?: "LENT"
+                            loans.add(
+                                Loan(
+                                    id = r.getOrNull(0) ?: java.util.UUID.randomUUID().toString(),
+                                    type = if (typeStr == "BORROWED") LoanType.BORROWED else LoanType.LENT,
+                                    contactName = r.getOrNull(2) ?: "Contact",
+                                    amount = r.getOrNull(3)?.toDoubleOrNull() ?: 0.0,
+                                    note = r.getOrNull(4) ?: "",
+                                    isPaidOff = r.getOrNull(6)?.equals("Paid Off", ignoreCase = true) == true,
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    }
+                    "Loan Payments" -> {
+                        for (r in dataRows) {
+                            if (r.isEmpty()) continue
+                            loanPayments.add(
+                                LoanPayment(
+                                    id = r.getOrNull(0) ?: java.util.UUID.randomUUID().toString(),
+                                    loanId = r.getOrNull(1) ?: "",
+                                    amount = r.getOrNull(2)?.toDoubleOrNull() ?: 0.0,
+                                    note = r.getOrNull(3)?.takeIf { it != "-" },
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    }
+                    "Pending SMS Queue" -> {
+                        for (r in dataRows) {
+                            if (r.isEmpty()) continue
+                            pendingTransactions.add(
+                                PendingTransaction(
+                                    id = r.getOrNull(0) ?: java.util.UUID.randomUUID().toString(),
+                                    sender = r.getOrNull(1) ?: "",
+                                    amount = r.getOrNull(2)?.toDoubleOrNull() ?: 0.0,
+                                    merchant = r.getOrNull(3) ?: "",
+                                    raw_sms_body = r.getOrNull(4) ?: "",
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // Fallback gracefully
+        }
+
+        return FullBackupData(
+            goals = goals,
+            transactions = transactions,
+            loans = loans,
+            loanPayments = loanPayments,
+            accounts = accounts,
+            accountTransactions = accountTransactions,
+            pendingTransactions = pendingTransactions,
+            streakDates = streakDates
+        )
+    }
+
+    fun parseBackupFile(content: String, format: String): FullBackupData {
+        val trimmed = content.trim()
+        return when {
+            trimmed.startsWith("{") || format.equals("JSON", ignoreCase = true) -> {
+                parseFullJson(trimmed)
+            }
+            trimmed.contains("<Workbook") || format.equals("EXCEL", ignoreCase = true) -> {
+                val excelData = parseFullExcelXml(trimmed)
+                if (excelData.accounts.isNotEmpty() || excelData.goals.isNotEmpty() || excelData.loans.isNotEmpty()) {
+                    excelData
+                } else {
+                    parseFullCsv(trimmed)
+                }
+            }
+            else -> {
+                parseFullCsv(trimmed)
+            }
+        }
+    }
 }
 
 data class FullBackupData(

@@ -215,7 +215,7 @@ fun PiggyLedgerApp(
                                 viewModel.addGoal(name, amount)
                                 navController.popBackStack()
                             } else {
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Upgrade to Pro to add more goals", Toast.LENGTH_SHORT)
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_upgrade_pro_goals), Toast.LENGTH_SHORT)
                             }
                         },
                         onBack = { navController.popBackStack() }
@@ -298,6 +298,71 @@ fun PiggyLedgerApp(
                         onBack = { navController.popBackStack() },
                         isPremium = isPremium,
                         openNotificationId = openNotificationId
+                    )
+                }
+
+                composable<Screen.ServicesHub> {
+                    LaunchedEffect(Unit) {
+                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Services Hub"))
+                    }
+                    ServicesHubScreen(
+                        onBack = { navController.popBackStack() },
+                        onNavigateToSubscriptions = { navController.navigate(Screen.Subscriptions) },
+                        onNavigateToWealth = { navController.navigate(Screen.WealthCommodities) }
+                    )
+                }
+
+                composable<Screen.TransferMoney> {
+                    LaunchedEffect(Unit) {
+                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Transfer Money"))
+                    }
+                    TransferMoneyScreen(
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable<Screen.Subscriptions> {
+                    LaunchedEffect(Unit) {
+                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Subscriptions"))
+                    }
+                    SubscriptionsScreen(
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable<Screen.WealthCommodities> {
+                    LaunchedEffect(Unit) {
+                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Wealth Commodities"))
+                    }
+                    WealthCommoditiesScreen(
+                        onBack = { navController.popBackStack() },
+                        onNavigateToAssetDetail = { id -> navController.navigate(Screen.AssetDetail(id)) },
+                        onNavigateToMarketDetail = { type, variant ->
+                            navController.navigate(Screen.MarketCommodityDetail(type, variant))
+                        }
+                    )
+                }
+
+                composable<Screen.MarketCommodityDetail> { backStackEntry ->
+                    val screen = backStackEntry.toRoute<Screen.MarketCommodityDetail>()
+                    LaunchedEffect(screen.type, screen.variant) {
+                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Market Commodity Detail", "type" to screen.type, "variant" to screen.variant))
+                    }
+                    MarketCommodityDetailScreen(
+                        type = screen.type,
+                        variant = screen.variant,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable<Screen.AssetDetail> { backStackEntry ->
+                    val screen = backStackEntry.toRoute<Screen.AssetDetail>()
+                    LaunchedEffect(screen.assetId) {
+                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "Asset Detail", "asset_id" to screen.assetId))
+                    }
+                    AssetDetailScreen(
+                        assetId = screen.assetId,
+                        onBack = { navController.popBackStack() }
                     )
                 }
 
@@ -474,7 +539,11 @@ fun MainContainer(
                             onNavigateToAnalytics = { bottomNavController.navigate(Screen.Analytics) },
                             onNavigateToSettingsPro = { appNavController.navigate(Screen.Settings(SettingsMode.PRO.name)) },
                             onNavigateToStreak = { appNavController.navigate(Screen.StreakAchievements) },
-                            onNotificationsClick = { appNavController.navigate(Screen.Notifications) }
+                            onNotificationsClick = { appNavController.navigate(Screen.Notifications) },
+                            onNavigateToServicesHub = { appNavController.navigate(Screen.ServicesHub) },
+                            onNavigateToTransfer = { appNavController.navigate(Screen.TransferMoney) },
+                            onNavigateToSubscriptions = { appNavController.navigate(Screen.Subscriptions) },
+                            onNavigateToWealth = { appNavController.navigate(Screen.WealthCommodities) }
                         )
                     }
                     
@@ -509,7 +578,8 @@ fun MainContainer(
                             onNavigateToAddAccount = { appNavController.navigate(Screen.AddAccount) },
                             onNavigateToEditAccount = { id -> appNavController.navigate(Screen.EditAccount(id)) },
                             onBack = { bottomNavController.popBackStack() },
-                            onNavigateToSettingsPro = { appNavController.navigate(Screen.Settings(SettingsMode.PRO.name)) }
+                            onNavigateToSettingsPro = { appNavController.navigate(Screen.Settings(SettingsMode.PRO.name)) },
+                            onNavigateToTransfer = { appNavController.navigate(Screen.TransferMoney) }
                         )
                     }
 

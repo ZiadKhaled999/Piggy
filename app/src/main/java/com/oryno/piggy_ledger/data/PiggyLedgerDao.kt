@@ -372,4 +372,93 @@ interface PiggyLedgerDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAiChatMessages(messages: List<AiChatMessage>)
+
+    // Double-Entry Journal & Postings DAOs
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertJournalEntry(journalEntry: JournalEntryEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPosting(posting: PostingEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPostings(postings: List<PostingEntity>)
+
+    @Query("SELECT * FROM journal_entries WHERE is_deleted = 0 ORDER BY date DESC")
+    fun getAllJournalEntriesFlow(): Flow<List<JournalEntryEntity>>
+
+    @Query("SELECT * FROM postings WHERE journalEntryId = :journalEntryId AND is_deleted = 0")
+    fun getPostingsForJournalEntry(journalEntryId: String): Flow<List<PostingEntity>>
+
+    @Query("SELECT * FROM postings WHERE journalEntryId = :journalEntryId AND is_deleted = 0")
+    suspend fun getPostingsForJournalEntrySync(journalEntryId: String): List<PostingEntity>
+
+    // Subscriptions DAOs
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSubscription(subscription: SubscriptionEntity)
+
+    @Update
+    suspend fun updateSubscription(subscription: SubscriptionEntity)
+
+    @Query("UPDATE subscriptions SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteSubscriptionById(id: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM subscriptions WHERE is_deleted = 0 ORDER BY nextRenewalDate ASC")
+    fun getAllSubscriptionsFlow(): Flow<List<SubscriptionEntity>>
+
+    @Query("SELECT * FROM subscriptions WHERE is_deleted = 0 ORDER BY nextRenewalDate ASC")
+    suspend fun getAllSubscriptionsSync(): List<SubscriptionEntity>
+
+    @Query("SELECT * FROM accounts WHERE id = :id")
+    suspend fun getAccountByIdSync(id: String): Account?
+
+    @Query("SELECT * FROM accounts WHERE type = :type AND isSystemAccount = 1 LIMIT 1")
+    suspend fun getSystemAccountByType(type: AccountType): Account?
+
+    @Query("SELECT * FROM journal_entries WHERE isSynced = 0")
+    suspend fun getUnsyncedJournalEntries(): List<JournalEntryEntity>
+
+    @Query("SELECT * FROM postings WHERE isSynced = 0")
+    suspend fun getUnsyncedPostings(): List<PostingEntity>
+
+    @Query("SELECT * FROM subscriptions WHERE isSynced = 0")
+    suspend fun getUnsyncedSubscriptions(): List<SubscriptionEntity>
+
+    // Wealth Asset DAOs
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAsset(asset: AssetEntity)
+
+    @Update
+    suspend fun updateAsset(asset: AssetEntity)
+
+    @Query("UPDATE assets SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteAssetById(id: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM assets WHERE is_deleted = 0 ORDER BY createdAt DESC")
+    fun getAllAssetsFlow(): Flow<List<AssetEntity>>
+
+    @Query("SELECT * FROM assets WHERE is_deleted = 0 ORDER BY createdAt DESC")
+    suspend fun getAllAssetsSync(): List<AssetEntity>
+
+    @Query("SELECT * FROM assets WHERE id = :id AND is_deleted = 0")
+    suspend fun getAssetByIdSync(id: String): AssetEntity?
+
+    // Live Market Rates DAOs
+    @Query("SELECT * FROM live_market_rates WHERE id = 'singleton_rates' LIMIT 1")
+    suspend fun getLiveMarketRatesSync(): LiveMarketRatesEntity?
+
+    @Query("SELECT * FROM live_market_rates WHERE id = 'singleton_rates' LIMIT 1")
+    fun getLiveMarketRatesFlow(): Flow<LiveMarketRatesEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrUpdateMarketRates(rates: LiveMarketRatesEntity)
+
+    // Portfolio History DAOs
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPortfolioSnapshot(snapshot: PortfolioHistoryEntity)
+
+    @Query("SELECT * FROM portfolio_history ORDER BY date ASC")
+    fun getPortfolioHistoryFlow(): Flow<List<PortfolioHistoryEntity>>
+
+    @Query("SELECT * FROM portfolio_history ORDER BY date ASC")
+    suspend fun getPortfolioHistorySync(): List<PortfolioHistoryEntity>
 }

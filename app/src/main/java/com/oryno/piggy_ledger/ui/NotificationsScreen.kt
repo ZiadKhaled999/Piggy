@@ -104,7 +104,7 @@ fun NotificationsScreen(
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = NavyDark, modifier = Modifier.size(20.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
-            Text("Announcements", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.announcements_title), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark, modifier = Modifier.weight(1f))
             
             IconButton(
                 onClick = { showFilterSheet = true },
@@ -122,7 +122,13 @@ fun NotificationsScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Showing: $filterType", fontSize = 14.sp, color = TextLight, fontWeight = FontWeight.Medium)
+            val filterLabel = when (filterType) {
+                "All" -> stringResource(R.string.filter_all)
+                "Unread" -> stringResource(R.string.filter_unread)
+                "Read" -> stringResource(R.string.filter_read)
+                else -> filterType
+            }
+            Text(stringResource(R.string.showing_filter, filterLabel), fontSize = 14.sp, color = TextLight, fontWeight = FontWeight.Medium)
             
             TextButton(
                 onClick = {
@@ -131,7 +137,7 @@ fun NotificationsScreen(
                     readIds = readIds + allIds
                 }
             ) {
-                Text("Mark all as read", color = PinkPrimary, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.mark_all_read), color = PinkPrimary, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -140,9 +146,9 @@ fun NotificationsScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFCBD5E1))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("No announcements yet", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    Text(stringResource(R.string.no_announcements_yet), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("We'll notify you when there's news", fontSize = 14.sp, color = TextLight)
+                    Text(stringResource(R.string.no_announcements_desc), fontSize = 14.sp, color = TextLight)
                 }
             }
         } else {
@@ -201,7 +207,7 @@ fun NotificationsScreen(
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
                 ) {
-                    Text("Got it", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.got_it_btn), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -218,10 +224,16 @@ fun NotificationsScreen(
                     .padding(24.dp)
                     .padding(bottom = 24.dp)
             ) {
-                Text("Filter Announcements", fontSize = 22.sp, fontWeight = FontWeight.Black, color = NavyDark)
+                Text(stringResource(R.string.filter_announcements_title), fontSize = 22.sp, fontWeight = FontWeight.Black, color = NavyDark)
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 listOf("All", "Unread", "Read").forEach { option ->
+                    val optionText = when (option) {
+                        "All" -> stringResource(R.string.filter_all)
+                        "Unread" -> stringResource(R.string.filter_unread)
+                        "Read" -> stringResource(R.string.filter_read)
+                        else -> option
+                    }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -234,7 +246,7 @@ fun NotificationsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(option, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = NavyDark)
+                        Text(optionText, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = NavyDark)
                         if (filterType == option) {
                             Icon(Icons.Default.Check, contentDescription = null, tint = PinkPrimary)
                         }

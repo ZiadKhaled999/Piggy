@@ -304,6 +304,36 @@ class PiggyLedgerViewModel(
         }
     }
 
+    fun restoreBackup(backup: com.oryno.piggy_ledger.data.FullBackupData, onComplete: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            try {
+                repository.restoreFullBackup(backup)
+                refreshStreak()
+                com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+                com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+                com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+                try {
+                    PostHog.capture(
+                        event = "data_imported",
+                        properties = mapOf(
+                            "total_goals" to backup.goals.size,
+                            "total_loans" to backup.loans.size,
+                            "total_transactions" to backup.transactions.size,
+                            "total_accounts" to backup.accounts.size,
+                            "total_account_transactions" to backup.accountTransactions.size
+                        )
+                    )
+                } catch (e: Exception) {
+                    // Ignore analytics error
+                }
+                onComplete(true)
+            } catch (e: Exception) {
+                android.util.Log.e("PiggyLedgerViewModel", "Failed to restore backup", e)
+                onComplete(false)
+            }
+        }
+    }
+
     val appCurrency = userPreferences.appCurrency.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), "USD"
     )

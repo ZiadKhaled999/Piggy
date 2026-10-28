@@ -2,6 +2,7 @@ package com.oryno.piggy_ledger.ui
 
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -40,6 +41,41 @@ import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
 import kotlinx.coroutines.launch
+
+enum class BottomSheetType {
+    NONE,
+    PROVIDER_SELECT,
+    CURRENCY_SELECT,
+    COLOR_SELECT,
+    BANK_SELECT
+}
+
+data class ProviderInfo(val name: String, val color: Color, val iconColorHex: String)
+
+@Composable
+fun SectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = title,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = NavyDark
+            )
+            content()
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -309,12 +345,14 @@ fun EditAccountScreen(
                                                 AccountType.CARD -> "#8B5CF6"
                                                 AccountType.CASH -> "#10B981"
                                                 AccountType.WALLET -> "#F59E0B"
+                                                else -> "#6366F1"
                                             }
                                             selectedIconName = when (accType) {
                                                 AccountType.BANK -> "AccountBalance"
                                                 AccountType.CARD -> "CreditCard"
                                                 AccountType.CASH -> "Payments"
                                                 AccountType.WALLET -> "AccountBalanceWallet"
+                                                else -> "AccountBalance"
                                             }
                                         }
                                     }

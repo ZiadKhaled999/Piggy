@@ -293,7 +293,7 @@ class MainActivity : AppCompatActivity() {
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Your app is locked for your privacy and security",
+                            text = stringResource(R.string.app_locked_privacy_desc),
                             fontSize = 14.sp,
                             color = Color(0xFF64748B),
                             textAlign = TextAlign.Center
@@ -304,7 +304,7 @@ class MainActivity : AppCompatActivity() {
                             colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
                             shape = RoundedCornerShape(20.dp),
                             modifier = Modifier
-                                .fillMaxWidth(0.85f)
+                                .fillMaxWidth(0.92f)
                                 .height(52.dp)
                         ) {
                             Icon(
@@ -314,32 +314,9 @@ class MainActivity : AppCompatActivity() {
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Unlock with Biometrics",
+                                text = stringResource(R.string.unlock_with_biometrics),
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(14.dp))
-                        // Fallback button so emulator and devices without active biometrics are never permanently locked
-                        OutlinedButton(
-                            onClick = {
-                                isAuthenticatedByBiometric = true
-                                isBiometricCheckComplete = true
-                                lifecycleScope.launch {
-                                    userPreferences.saveLastExitTime(System.currentTimeMillis())
-                                }
-                            },
-                            shape = RoundedCornerShape(20.dp),
-                            border = BorderStroke(1.dp, PinkPrimary),
-                            modifier = Modifier
-                                .fillMaxWidth(0.85f)
-                                .height(48.dp)
-                        ) {
-                            Text(
-                                text = "Unlock App",
-                                color = PinkPrimary,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 15.sp
+                                fontSize = 14.sp
                             )
                         }
                     }

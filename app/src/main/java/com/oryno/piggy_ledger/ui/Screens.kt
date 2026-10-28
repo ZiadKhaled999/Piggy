@@ -27,4 +27,10 @@ sealed class Screen {
     @Serializable data object StreakAchievements : Screen()
     @Serializable data object AiChat : Screen()
     @Serializable data object Notifications : Screen()
+    @Serializable data object ServicesHub : Screen()
+    @Serializable data object TransferMoney : Screen()
+    @Serializable data object Subscriptions : Screen()
+    @Serializable data object WealthCommodities : Screen()
+    @Serializable data class AssetDetail(val assetId: String) : Screen()
+    @Serializable data class MarketCommodityDetail(val type: String, val variant: String) : Screen()
 }

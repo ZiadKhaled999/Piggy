@@ -1742,7 +1742,7 @@ fun PiggyLedgerPaywall(
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://piggyapp.top/pricing"))
                             context.startActivity(intent)
                         } catch (e: Exception) {
-                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, "Could not open link", Toast.LENGTH_SHORT)
+                            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_could_not_open_link), Toast.LENGTH_SHORT)
                         }
                     }
                 )
@@ -2003,17 +2003,20 @@ fun SlideToPurchase(
     val dragOffset = remember { Animatable(0f) }
     val coroutineScope = rememberCoroutineScope()
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .height(64.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(PinkPrimary.copy(alpha = 0.08f))
-            .border(1.5.dp, PinkPrimary.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
-            .onSizeChanged { widthPx = it.width },
-        contentAlignment = Alignment.CenterStart
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .height(64.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(PinkPrimary.copy(alpha = 0.08f))
+                .border(1.5.dp, PinkPrimary.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                .onSizeChanged { widthPx = it.width },
+            contentAlignment = Alignment.CenterStart
+        ) {
         // Target slot (drop zone box at the far right inside track)
         Box(
             modifier = Modifier
@@ -2148,6 +2151,7 @@ fun SlideToPurchase(
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
             }
         }
+    }
     }
 }
 

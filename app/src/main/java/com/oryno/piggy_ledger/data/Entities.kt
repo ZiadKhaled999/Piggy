@@ -6,12 +6,121 @@ import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
+enum class JournalType {
+    EXPENSE, INCOME, TRANSFER, ASSET_BUY, CERT_PURCHASE
+}
+
+@Serializable
+enum class AssetType {
+    GOLD, SILVER, CERTIFICATE
+}
+
+@Serializable
+@Entity(tableName = "assets")
+data class AssetEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val userId: String = "",
+    val type: AssetType,
+    val name: String,
+    val weightGrams: Double = 0.0,
+    val purity: String = "21k", // "24k", "21k", "18k", "999", "925", "900"
+    val principalAmount: Double = 0.0,
+    val annualRate: Double = 0.0,
+    val purchasePrice: Double = 0.0,
+    val startDate: Long = System.currentTimeMillis(),
+    val maturityDate: Long? = null,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
+)
+
+@Serializable
+@Entity(tableName = "live_market_rates")
+data class LiveMarketRatesEntity(
+    @PrimaryKey val id: String = "singleton_rates",
+    val gold24k: Double = 4120.0,
+    val gold21k: Double = 3605.0,
+    val gold18k: Double = 3090.0,
+    val silver999: Double = 52.0,
+    val silver925: Double = 48.0,
+    val silver900: Double = 46.8,
+    val lastUpdated: Long = System.currentTimeMillis()
+)
+
+@Serializable
+@Entity(tableName = "portfolio_history")
+data class PortfolioHistoryEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val date: Long = System.currentTimeMillis(),
+    val totalPortfolioValue: Double = 0.0
+)
+
+@Serializable
+@Entity(tableName = "journal_entries")
+data class JournalEntryEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val userId: String = "",
+    val date: Long = System.currentTimeMillis(),
+    val description: String,
+    val type: JournalType,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
+)
+
+@Serializable
+@Entity(
+    tableName = "postings",
+    indices = [
+        androidx.room.Index("journalEntryId"),
+        androidx.room.Index("accountId")
+    ]
+)
+data class PostingEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val journalEntryId: String,
+    val accountId: String,
+    val amount: Double,
+    val isDebit: Boolean,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
+)
+
+@Serializable
+@Entity(
+    tableName = "subscriptions",
+    indices = [androidx.room.Index("accountId")]
+)
+data class SubscriptionEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val userId: String = "",
+    val name: String,
+    val logoUrl: String? = null,
+    val amount: Double,
+    val currency: String = "EGP",
+    val billingCycle: String = "MONTHLY",
+    val nextRenewalDate: Long = System.currentTimeMillis(),
+    val accountId: String = "",
+    val autoDebit: Boolean = false,
+    val isActive: Boolean = true,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false,
+    val is_deleted: Boolean = false
+)
+
+@Serializable
 @Entity(tableName = "goals")
 data class Goal(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val userId: String = "",
     val name: String,
     val targetAmount: Double,
+    val backedByAssetId: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false,
@@ -81,7 +190,7 @@ enum class LoanType {
 
 @Serializable
 enum class AccountType {
-    BANK, CARD, CASH, WALLET
+    BANK, CARD, CASH, WALLET, INVESTMENT, ASSET_GOLD, ASSET_SILVER, ASSET_PROPERTY, CERTIFICATE, LIABILITY, EXPENSE_SYSTEM, INCOME_SYSTEM, EQUITY_SYSTEM
 }
 
 @Serializable
@@ -107,6 +216,13 @@ data class Account(
     val provider: String? = null,
     val insta_pay_fee: Boolean = false,
     val label: String? = null,
+    val goldWeightGrams: Double? = null,
+    val goldKarat: Int? = null,
+    val isAutoUpdateGoldPrice: Boolean = false,
+    val certificatePrincipal: Double? = null,
+    val certificateInterestRate: Double? = null,
+    val certificatePayoutFrequency: String? = null,
+    val isSystemAccount: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false,

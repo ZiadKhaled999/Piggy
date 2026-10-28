@@ -19,6 +19,8 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
     val allTransactions: Flow<List<Transaction>> = dao.getAllTransactionsFlow()
     val allAccounts: Flow<List<Account>> = dao.getAllAccounts()
     val includedAccounts: Flow<List<Account>> = dao.getIncludedAccounts()
+    val allSubscriptions: Flow<List<SubscriptionEntity>> = dao.getAllSubscriptionsFlow()
+    val allJournalEntries: Flow<List<JournalEntryEntity>> = dao.getAllJournalEntriesFlow()
 
     suspend fun getPendingUploadCount(): Int = dao.getTotalUnsyncedCount()
 
@@ -144,6 +146,36 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
         )
     }
 
+    suspend fun restoreFullBackup(backup: FullBackupData) {
+        if (backup.goals.isNotEmpty()) {
+            dao.insertGoals(backup.goals)
+        }
+        if (backup.transactions.isNotEmpty()) {
+            dao.insertTransactions(backup.transactions)
+        }
+        if (backup.loans.isNotEmpty()) {
+            dao.insertLoans(backup.loans)
+        }
+        if (backup.loanPayments.isNotEmpty()) {
+            dao.insertLoanPayments(backup.loanPayments)
+        }
+        if (backup.accounts.isNotEmpty()) {
+            dao.insertAccounts(backup.accounts)
+        }
+        if (backup.accountTransactions.isNotEmpty()) {
+            dao.insertAccountTransactions(backup.accountTransactions)
+        }
+        if (backup.pendingTransactions.isNotEmpty()) {
+            dao.insertPendingTransactions(backup.pendingTransactions)
+        }
+        if (backup.streakDates.isNotEmpty()) {
+            val currentDates = StreakManager.getActionDates(context)
+            val mergedDates = currentDates.toMutableSet().apply { addAll(backup.streakDates) }
+            StreakManager.setActionDates(context, mergedDates)
+        }
+        triggerSync()
+    }
+
 
     val allPendingTransactions: Flow<List<PendingTransaction>> = dao.getAllPendingTransactionsFlow()
     suspend fun insertPendingTransaction(transaction: PendingTransaction) {
@@ -197,6 +229,32 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
                 try { dao.deleteOnboardingAnswerById(dup.id, now) } catch (_e: Exception) {}
             }
         }
+        triggerSync()
+    }
+
+    suspend fun ensureSystemAccountsCreated() {
+        SystemAccountsHelper.ensureSystemAccountsCreated(dao)
+    }
+
+    suspend fun insertSubscription(subscription: SubscriptionEntity) {
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        val updated = if (subscription.userId.isBlank()) subscription.copy(userId = userId) else subscription
+        dao.insertSubscription(updated)
+        triggerSync()
+    }
+
+    suspend fun updateSubscription(subscription: SubscriptionEntity) {
+        val user = com.clerk.api.Clerk.userFlow.value
+        val userId = user?.id ?: "local_user"
+        val now = System.currentTimeMillis()
+        val updated = subscription.copy(userId = userId, isSynced = false, updatedAt = now)
+        dao.updateSubscription(updated)
+        triggerSync()
+    }
+
+    suspend fun deleteSubscription(id: String) {
+        dao.deleteSubscriptionById(id)
         triggerSync()
     }
 }

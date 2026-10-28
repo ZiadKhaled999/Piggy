@@ -392,100 +392,104 @@ private fun SwipeRightToConfirmBar(
     isEnabled: Boolean,
     onConfirmed: () -> Unit
 ) {
-    val density = LocalDensity.current
-    var trackWidthPx by remember { mutableFloatStateOf(0f) }
-    val thumbSizeDp = 48.dp
-    val thumbSizePx = with(density) { thumbSizeDp.toPx() }
-    val maxDragPx = (trackWidthPx - thumbSizePx - with(density) { 8.dp.toPx() }).coerceAtLeast(0f)
-
-    val dragOffset = remember { Animatable(0f) }
-    val scope = rememberCoroutineScope()
-
-    val progress = if (maxDragPx > 0f) (dragOffset.value / maxDragPx).coerceIn(0f, 1f) else 0f
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .clip(RoundedCornerShape(28.dp))
-            .background(Color(0xFFF1F5F9))
-            .border(BorderStroke(1.dp, Color(0xFFE2E8F0)), RoundedCornerShape(28.dp))
-            .onSizeChanged { size ->
-                trackWidthPx = size.width.toFloat()
-            },
-        contentAlignment = Alignment.CenterStart
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr
     ) {
-        // Green fill behind thumb as it slides
+        val density = LocalDensity.current
+        var trackWidthPx by remember { mutableFloatStateOf(0f) }
+        val thumbSizeDp = 48.dp
+        val thumbSizePx = with(density) { thumbSizeDp.toPx() }
+        val maxDragPx = (trackWidthPx - thumbSizePx - with(density) { 8.dp.toPx() }).coerceAtLeast(0f)
+
+        val dragOffset = remember { Animatable(0f) }
+        val scope = rememberCoroutineScope()
+
+        val progress = if (maxDragPx > 0f) (dragOffset.value / maxDragPx).coerceIn(0f, 1f) else 0f
+
         Box(
             modifier = Modifier
-                .fillMaxHeight()
-                .width(with(density) { (dragOffset.value + thumbSizePx + with(density) { 4.dp.toPx() }).toDp() })
+                .fillMaxWidth()
+                .height(56.dp)
                 .clip(RoundedCornerShape(28.dp))
-                .background(Color(0xFF10B981).copy(alpha = 0.15f + (progress * 0.45f)))
-        )
-
-        // Center Guide Text
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+                .background(Color(0xFFF1F5F9))
+                .border(BorderStroke(1.dp, Color(0xFFE2E8F0)), RoundedCornerShape(28.dp))
+                .onSizeChanged { size ->
+                    trackWidthPx = size.width.toFloat()
+                },
+            contentAlignment = Alignment.CenterStart
         ) {
-            Text(
-                text = stringResource(R.string.swipe_right_to_confirm),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = if (isEnabled) Color(0xFF475569) else Color(0xFF94A3B8),
-                modifier = Modifier.padding(start = 24.dp)
+            // Green fill behind thumb as it slides
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(with(density) { (dragOffset.value + thumbSizePx + with(density) { 4.dp.toPx() }).toDp() })
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(Color(0xFF10B981).copy(alpha = 0.15f + (progress * 0.45f)))
             )
-        }
 
-        // Draggable Arrow Thumb
-        Box(
-            modifier = Modifier
-                .offset { IntOffset(dragOffset.value.roundToInt() + with(density) { 4.dp.roundToPx() }, 0) }
-                .size(thumbSizeDp)
-                .shadow(elevation = 3.dp, shape = CircleShape)
-                .clip(CircleShape)
-                .background(if (progress > 0.8f) Color(0xFF10B981) else Color.White)
-                .pointerInput(maxDragPx, isEnabled) {
-                    detectHorizontalDragGestures(
-                        onDragEnd = {
-                            scope.launch {
-                                if (maxDragPx > 0f && dragOffset.value >= maxDragPx * 0.65f) {
-                                    // Successfully completed swipe
-                                    dragOffset.animateTo(
-                                        targetValue = maxDragPx,
-                                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
-                                    )
-                                    onConfirmed()
-                                    // Reset back after confirmation triggers
-                                    delay(200)
-                                    dragOffset.snapTo(0f)
-                                } else {
-                                    // Snap back
-                                    dragOffset.animateTo(
-                                        targetValue = 0f,
-                                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                                    )
+            // Center Guide Text
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.swipe_right_to_confirm),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isEnabled) Color(0xFF475569) else Color(0xFF94A3B8),
+                    modifier = Modifier.padding(start = 24.dp)
+                )
+            }
+
+            // Draggable Arrow Thumb
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(dragOffset.value.roundToInt() + with(density) { 4.dp.roundToPx() }, 0) }
+                    .size(thumbSizeDp)
+                    .shadow(elevation = 3.dp, shape = CircleShape)
+                    .clip(CircleShape)
+                    .background(if (progress > 0.8f) Color(0xFF10B981) else Color.White)
+                    .pointerInput(maxDragPx, isEnabled) {
+                        detectHorizontalDragGestures(
+                            onDragEnd = {
+                                scope.launch {
+                                    if (maxDragPx > 0f && dragOffset.value >= maxDragPx * 0.65f) {
+                                        // Successfully completed swipe
+                                        dragOffset.animateTo(
+                                            targetValue = maxDragPx,
+                                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                                        )
+                                        onConfirmed()
+                                        // Reset back after confirmation triggers
+                                        delay(200)
+                                        dragOffset.snapTo(0f)
+                                    } else {
+                                        // Snap back
+                                        dragOffset.animateTo(
+                                            targetValue = 0f,
+                                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                                        )
+                                    }
+                                }
+                            },
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+                                scope.launch {
+                                    val newOffset = (dragOffset.value + dragAmount).coerceIn(0f, maxDragPx)
+                                    dragOffset.snapTo(newOffset)
                                 }
                             }
-                        },
-                        onHorizontalDrag = { change, dragAmount ->
-                            change.consume()
-                            scope.launch {
-                                val newOffset = (dragOffset.value + dragAmount).coerceIn(0f, maxDragPx)
-                                dragOffset.snapTo(newOffset)
-                            }
-                        }
-                    )
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = "Swipe to confirm",
-                tint = if (progress > 0.8f) Color.White else Color(0xFF10B981),
-                modifier = Modifier.size(20.dp)
-            )
+                        )
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (progress > 0.8f) Icons.Default.Check else Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "Swipe to confirm",
+                    tint = if (progress > 0.8f) Color.White else Color(0xFF10B981),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }

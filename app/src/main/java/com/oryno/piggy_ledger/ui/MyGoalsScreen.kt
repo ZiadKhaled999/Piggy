@@ -1,6 +1,6 @@
 package com.oryno.piggy_ledger.ui
-import com.oryno.piggy_ledger.ui.getCurrencySymbol
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,23 +8,23 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,10 +33,7 @@ import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.data.Goal
 import com.oryno.piggy_ledger.data.Transaction
 import com.oryno.piggy_ledger.ui.theme.*
-
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
-import android.widget.Toast
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,14 +49,14 @@ fun MyGoalsScreen(
     val appCurrency by viewModel.appCurrency.collectAsState()
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
-    
+
     var goalToDelete by remember { mutableStateOf<Goal?>(null) }
     val sheetState = rememberModalBottomSheetState()
     var confirmNameInput by remember { mutableStateOf("") }
 
     if (goalToDelete != null) {
         ModalBottomSheet(
-            onDismissRequest = { 
+            onDismissRequest = {
                 goalToDelete = null
                 confirmNameInput = ""
             },
@@ -80,9 +77,9 @@ fun MyGoalsScreen(
                     fontWeight = FontWeight.Bold,
                     color = NavyDark
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
@@ -110,18 +107,18 @@ fun MyGoalsScreen(
                         )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Text(
                     text = stringResource(R.string.delete_goal_warning),
                     fontSize = 14.sp,
                     color = TextLight,
                     textAlign = TextAlign.Center
                 )
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 Text(
                     text = stringResource(R.string.delete_goal_confirm_hint),
                     fontSize = 14.sp,
@@ -129,9 +126,9 @@ fun MyGoalsScreen(
                     color = NavyDark,
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 OutlinedTextField(
                     value = confirmNameInput,
                     onValueChange = { confirmNameInput = it },
@@ -144,11 +141,11 @@ fun MyGoalsScreen(
                     ),
                     singleLine = true
                 )
-                
+
                 Spacer(modifier = Modifier.height(32.dp))
-                
+
                 val canDelete = confirmNameInput.trim() == goalToDelete?.name?.trim()
-                
+
                 Button(
                     onClick = {
                         goalToDelete?.let {
@@ -164,7 +161,7 @@ fun MyGoalsScreen(
                     enabled = canDelete,
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFF4D4D), // Danger Red
+                        containerColor = Color(0xFFFF4D4D),
                         disabledContainerColor = Color(0xFFFF4D4D).copy(alpha = 0.3f)
                     )
                 ) {
@@ -179,273 +176,275 @@ fun MyGoalsScreen(
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFFF8FAFC))
             .statusBarsPadding()
-            .padding(horizontal = 24.dp)
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
         ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.back_icon),
-                    tint = NavyDark
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(8.dp))
-            
-            Text(stringResource(R.string.my_goals), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = NavyDark, modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            IconButton(
-                onClick = { viewModel.togglePrivacyMode(context) },
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(Color.White, RoundedCornerShape(14.dp))
-                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(14.dp))
+            // TOP BAR
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    painter = if (isPrivacyMode) painterResource(id = R.drawable.ic_eye_closed) else painterResource(id = R.drawable.ic_eye_open),
-                    contentDescription = "Toggle Privacy",
-                    tint = NavyDark,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(8.dp))
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back_icon),
+                        tint = NavyDark
+                    )
+                }
 
-            if (goals.isNotEmpty()) {
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = stringResource(R.string.my_goals),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = NavyDark,
+                    modifier = Modifier.weight(1f)
+                )
+
                 IconButton(
-                    onClick = onNavigateToCreateGoal,
+                    onClick = { viewModel.togglePrivacyMode(context) },
                     modifier = Modifier
-                        .size(48.dp)
-                        .background(PinkPrimary.copy(alpha = 0.1f), RoundedCornerShape(14.dp))
+                        .size(44.dp)
+                        .background(Color.White, RoundedCornerShape(12.dp))
+                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = stringResource(R.string.add_goal),
-                        tint = PinkPrimary
+                        painter = if (isPrivacyMode) painterResource(id = R.drawable.ic_eye_closed) else painterResource(id = R.drawable.ic_eye_open),
+                        contentDescription = "Toggle Privacy",
+                        tint = NavyDark,
+                        modifier = Modifier.size(20.dp)
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (goals.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_no_goals),
+                            contentDescription = null,
+                            modifier = Modifier.size(240.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                        Text(
+                            stringResource(R.string.no_goals_yet),
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = NavyDark
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            stringResource(R.string.start_first_goal),
+                            fontSize = 15.sp,
+                            color = TextLight,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentPadding = PaddingValues(bottom = 100.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    items(goals) { goal ->
+                        val goalTransactions = remember(allTransactions, goal.id) {
+                            allTransactions.filter { it.goalId == goal.id }
+                        }
+                        GoalCard(
+                            goal = goal,
+                            transactions = goalTransactions,
+                            isPrivacyMode = isPrivacyMode,
+                            onClick = { onNavigateToGoal(goal.id) },
+                            onDeleteClick = { goalToDelete = goal },
+                            appCurrency = appCurrency
+                        )
+                    }
                 }
             }
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        if (goals.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Image(
-                        painter = painterResource(id = R.drawable.img_no_goals),
-                        contentDescription = null,
-                        modifier = Modifier.size(280.dp),
-                        contentScale = ContentScale.Fit
-                    )
-                    Text(
-                        stringResource(R.string.no_goals_yet),
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = NavyDark
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        stringResource(R.string.start_first_goal),
-                        fontSize = 16.sp,
-                        color = TextLight
-                    )
-                    Spacer(modifier = Modifier.height(40.dp))
-                    
-                    OutlinedButton(
-                        onClick = onNavigateToCreateGoal,
-                        modifier = Modifier
-                            .height(60.dp)
-                            .padding(horizontal = 8.dp),
-                        shape = RoundedCornerShape(30.dp),
-                        border = androidx.compose.foundation.BorderStroke(2.dp, PinkPrimary.copy(alpha = 0.4f)),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = PinkPrimary
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = stringResource(R.string.add_goal),
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 18.sp
-                        )
-                    }
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 100.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(goals) { goal ->
-                    val goalTransactions = remember(allTransactions, goal.id) {
-                        allTransactions.filter { it.goalId == goal.id }
-                    }
-                    GoalCard(
-                        goal = goal, 
-                        transactions = goalTransactions, 
-                        isPrivacyMode = isPrivacyMode,
-                        onClick = { onNavigateToGoal(goal.id) },
-                        onDeleteClick = { goalToDelete = goal },
-                        appCurrency = appCurrency
-                    )
-                }
-            }
+
+        // FLOATING ACTION BUTTON FOR ADD GOAL (Floating above bottom navigation)
+        FloatingActionButton(
+            onClick = onNavigateToCreateGoal,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 120.dp, end = 20.dp)
+                .size(56.dp),
+            shape = CircleShape,
+            containerColor = PinkPrimary,
+            contentColor = Color.White,
+            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_goal), modifier = Modifier.size(26.dp))
         }
     }
 }
 
+// REDESIGNED CLEAN SLATE-GRAY GOAL CARD
 @Composable
-fun GoalCard(goal: Goal, transactions: List<Transaction>, isPrivacyMode: Boolean, onClick: () -> Unit, onDeleteClick: () -> Unit, appCurrency: String = "USD") {
+fun GoalCard(
+    goal: Goal,
+    transactions: List<Transaction>,
+    isPrivacyMode: Boolean,
+    onClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    appCurrency: String = "USD"
+) {
     val savedAmount = transactions.sumOf { it.amount }
     val isOpenSavings = goal.targetAmount <= 0.0
     val progress = if (goal.targetAmount > 0) (savedAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f) else 0f
     val isCompleted = !isOpenSavings && savedAmount >= goal.targetAmount
-    
+    val currencySym = getCurrencySymbol(appCurrency)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = PinkPrimary.copy(alpha = 0.05f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(2.dp, PinkPrimary.copy(alpha = 0.3f))
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(18.dp)
         ) {
+            // Header Row: Goal Name, Badge & Options
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = goal.name, 
-                        fontSize = 18.sp, 
-                        fontWeight = FontWeight.Bold, 
-                        color = NavyDark
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = if (isPrivacyMode) {
-                            if (isOpenSavings) stringResource(R.string.open_savings) else stringResource(R.string.target) + " ${getCurrencySymbol(appCurrency)}••••••"
-                        } else {
-                            if (isOpenSavings) stringResource(R.string.open_savings) else stringResource(R.string.target) + " ${getCurrencySymbol(appCurrency)}${String.format("%.0f", goal.targetAmount)}"
-                        },
-                        fontSize = 12.sp,
-                        color = TextLight
-                    )
-                }
-                
-                if (isCompleted) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle, 
-                        contentDescription = stringResource(R.string.completed_badge),
-                        tint = PinkAccent,
-                        modifier = Modifier.size(24.dp)
-                    )
-                } else if (isOpenSavings) {
-                    Surface(
-                        color = PinkPrimary.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(12.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(PinkPrimary.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = stringResource(R.string.open_badge),
-                            color = PinkPrimary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        Icon(
+                            imageVector = if (isOpenSavings) Icons.Default.Savings else Icons.Default.Flag,
+                            contentDescription = null,
+                            tint = PinkPrimary,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
-                } else {
-                    Text(
-                        text = if (isPrivacyMode) "••%" else "${(progress * 100).toInt()}%",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = NavyDark
-                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            text = goal.name,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDark
+                        )
+                        Text(
+                            text = if (isOpenSavings) stringResource(R.string.open_savings) else "${(progress * 100).toInt()}% ${stringResource(R.string.completed_status)}",
+                            fontSize = 12.sp,
+                            color = TextLight
+                        )
+                    }
                 }
-                
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                IconButton(
-                    onClick = onDeleteClick,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_chat_delete),
-                        contentDescription = "Delete",
-                        tint = Color.Black,
-                        modifier = Modifier.size(20.dp)
-                    )
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (isCompleted) {
+                        Surface(
+                            color = Color(0xFFDCFCE7),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text(
+                                text = "Done ✓",
+                                color = Color(0xFF15803D),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = onDeleteClick,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_chat_delete),
+                            contentDescription = "Delete",
+                            tint = Color(0xFF94A3B8),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
-            
+
             if (!isOpenSavings) {
-                Spacer(modifier = Modifier.height(16.dp))
-                
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Sleek Linear Progress Bar
                 LinearProgressIndicator(
                     progress = { if (isPrivacyMode) 0f else progress },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp)),
-                    color = PinkAccent,
-                    trackColor = PinkPrimary.copy(alpha = 0.1f)
+                    color = PinkPrimary,
+                    trackColor = Color(0xFFF1F5F9)
                 )
             }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Bottom Metrics Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                val sym = getCurrencySymbol(appCurrency)
-                val remaining = goal.targetAmount - savedAmount
-                val savedText = if (isPrivacyMode) {
-                    stringResource(R.string.amount_saved, "$sym••••••")
-                } else if (isOpenSavings) {
-                    stringResource(R.string.amount_saved, "$sym${String.format("%.2f", savedAmount)}")
-                } else if (remaining < 0) {
-                    stringResource(R.string.amount_total_extra, "$sym${String.format("%.2f", savedAmount)}", "$sym${String.format("%.2f", -remaining)}")
-                } else {
-                    stringResource(R.string.amount_saved, "$sym${String.format("%.2f", savedAmount)}")
-                }
-                Text(
-                    text = savedText,
-                    color = if (remaining < 0 && !isOpenSavings) PinkAccent else TextLight,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 13.sp
-                )
-                
-                if (remaining > 0 && !isOpenSavings) {
+                Column {
+                    Text("SAVED", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
                     Text(
-                        text = if (isPrivacyMode) stringResource(R.string.remaining_left, "$sym••••••") else stringResource(R.string.remaining_left, "$sym${String.format("%.2f", remaining)}"),
-                        color = NavyDark,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp
+                        text = if (isPrivacyMode) "$currencySym••••••" else "$currencySym${String.format(Locale.getDefault(), "%,.2f", savedAmount)}",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Black,
+                        color = NavyDark
                     )
+                }
+
+                if (!isOpenSavings) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("TARGET", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
+                        Text(
+                            text = if (isPrivacyMode) "$currencySym••••••" else "$currencySym${String.format(Locale.getDefault(), "%,.0f", goal.targetAmount)}",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PinkPrimary
+                        )
+                    }
                 }
             }
         }

@@ -84,16 +84,16 @@ fun CreateGoalScreen(
         Text(stringResource(R.string.goal_type), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
         Spacer(modifier = Modifier.height(8.dp))
         
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             val targetSelected = !isOpenedBalance
             val openedSelected = isOpenedBalance
 
             Surface(
                 modifier = Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
                     .clickable { isOpenedBalance = false },
                 shape = RoundedCornerShape(16.dp),
                 color = if (targetSelected) PinkPrimary.copy(alpha = 0.08f) else Color(0xFFF8FAFC),
@@ -102,46 +102,49 @@ fun CreateGoalScreen(
                     color = if (targetSelected) PinkPrimary else Color(0xFFE2E8F0)
                 )
             ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.target_goal_title),
                             fontWeight = FontWeight.ExtraBold,
                             color = if (targetSelected) PinkPrimary else NavyDark,
-                            fontSize = 14.sp
+                            fontSize = 15.sp
                         )
-                        if (targetSelected) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = stringResource(R.string.selected_badge),
-                                tint = PinkPrimary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .border(1.2.dp, Color(0xFFCBD5E1), androidx.compose.foundation.shape.CircleShape)
-                            )
-                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.target_goal_desc),
+                            fontSize = 12.sp,
+                            color = if (targetSelected) NavyDark.copy(alpha = 0.8f) else TextLight
+                        )
                     }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = stringResource(R.string.target_goal_desc),
-                        fontSize = 11.sp,
-                        color = if (targetSelected) NavyDark.copy(alpha = 0.8f) else TextLight,
-                        lineHeight = 14.sp
-                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    if (targetSelected) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = stringResource(R.string.selected_badge),
+                            tint = PinkPrimary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .border(1.2.dp, Color(0xFFCBD5E1), androidx.compose.foundation.shape.CircleShape)
+                        )
+                    }
                 }
             }
             
             Surface(
                 modifier = Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
                     .clickable { isOpenedBalance = true },
                 shape = RoundedCornerShape(16.dp),
                 color = if (openedSelected) PinkPrimary.copy(alpha = 0.08f) else Color(0xFFF8FAFC),
@@ -150,40 +153,43 @@ fun CreateGoalScreen(
                     color = if (openedSelected) PinkPrimary else Color(0xFFE2E8F0)
                 )
             ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.open_savings),
                             fontWeight = FontWeight.ExtraBold,
                             color = if (openedSelected) PinkPrimary else NavyDark,
-                            fontSize = 14.sp
+                            fontSize = 15.sp
                         )
-                        if (openedSelected) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = stringResource(R.string.selected_badge),
-                                tint = PinkPrimary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .border(1.2.dp, Color(0xFFCBD5E1), androidx.compose.foundation.shape.CircleShape)
-                            )
-                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.open_savings_desc),
+                            fontSize = 12.sp,
+                            color = if (openedSelected) NavyDark.copy(alpha = 0.8f) else TextLight
+                        )
                     }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = stringResource(R.string.open_savings_desc),
-                        fontSize = 11.sp,
-                        color = if (openedSelected) NavyDark.copy(alpha = 0.8f) else TextLight,
-                        lineHeight = 14.sp
-                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    if (openedSelected) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = stringResource(R.string.selected_badge),
+                            tint = PinkPrimary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .border(1.2.dp, Color(0xFFCBD5E1), androidx.compose.foundation.shape.CircleShape)
+                        )
+                    }
                 }
             }
         }

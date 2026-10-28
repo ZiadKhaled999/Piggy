@@ -67,7 +67,11 @@ fun DashboardScreen(
     onNavigateToAnalytics: () -> Unit,
     onNavigateToSettingsPro: () -> Unit = {},
     onNavigateToStreak: () -> Unit = {},
-    onNotificationsClick: () -> Unit = {}
+    onNotificationsClick: () -> Unit = {},
+    onNavigateToServicesHub: () -> Unit = {},
+    onNavigateToTransfer: () -> Unit = {},
+    onNavigateToSubscriptions: () -> Unit = {},
+    onNavigateToWealth: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val streakCount by viewModel.streakCount.collectAsStateWithLifecycle()
@@ -270,6 +274,15 @@ fun DashboardScreen(
                             viewModel.addAccount(defaultAccount)
                         }
                     }
+                )
+            }
+
+            // 1.5 Services & Features Hub (Swipable Cards: Subscriptions, Wealth)
+            item {
+                ServicesHubSection(
+                    onNavigateToSeeAll = onNavigateToServicesHub,
+                    onNavigateToSubscriptions = onNavigateToSubscriptions,
+                    onNavigateToWealth = onNavigateToWealth
                 )
             }
 

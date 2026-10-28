@@ -38,11 +38,13 @@ import com.oryno.piggy_ledger.ui.theme.TextLight
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
+import androidx.compose.ui.res.painterResource
+
 data class ServiceCardData(
     val id: String,
     val titleRes: Int,
     val subtitleRes: Int,
-    val icon: ImageVector,
+    val iconRes: Int,
     val iconColor: Color,
     val iconBgColor: Color
 )
@@ -60,16 +62,16 @@ fun ServicesHubSection(
                 id = "subscriptions",
                 titleRes = R.string.subscriptions_title,
                 subtitleRes = R.string.subscriptions_desc,
-                icon = Icons.Default.EventRepeat,
-                iconColor = Color(0xFFDB2777),
+                iconRes = R.drawable.ic_service_subscriptions,
+                iconColor = Color.Unspecified,
                 iconBgColor = Color(0xFFFDF2F8)
             ),
             ServiceCardData(
                 id = "wealth",
                 titleRes = R.string.wealth_assets_title,
                 subtitleRes = R.string.wealth_assets_desc,
-                icon = Icons.Default.MonetizationOn,
-                iconColor = Color(0xFFD97706),
+                iconRes = R.drawable.ic_service_wealth,
+                iconColor = Color.Unspecified,
                 iconBgColor = Color(0xFFFEF3C7)
             )
         )
@@ -191,10 +193,10 @@ fun ServicesHubSection(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = item.icon,
+                            painter = painterResource(id = item.iconRes),
                             contentDescription = null,
-                            tint = item.iconColor,
-                            modifier = Modifier.size(24.dp)
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(32.dp)
                         )
                     }
 

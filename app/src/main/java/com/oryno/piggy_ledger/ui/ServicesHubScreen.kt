@@ -18,7 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -78,8 +78,7 @@ fun ServicesHubScreen(
                 RatioCard(
                     title = stringResource(R.string.subscriptions_title),
                     subtitle = stringResource(R.string.subscriptions_desc),
-                    icon = Icons.Default.EventRepeat,
-                    iconColor = Color(0xFFDB2777),
+                    iconRes = R.drawable.ic_service_subscriptions,
                     iconBgColor = Color(0xFFFDF2F8),
                     ratio = 1f / 1f,
                     onClick = onNavigateToSubscriptions
@@ -91,8 +90,7 @@ fun ServicesHubScreen(
                 RatioCard(
                     title = stringResource(R.string.wealth_assets_title),
                     subtitle = stringResource(R.string.wealth_assets_desc),
-                    icon = Icons.Default.MonetizationOn,
-                    iconColor = Color(0xFFD97706),
+                    iconRes = R.drawable.ic_service_wealth,
                     iconBgColor = Color(0xFFFEF3C7),
                     ratio = 1f / 1f,
                     onClick = onNavigateToWealth
@@ -109,8 +107,7 @@ fun ServicesHubScreen(
 fun RatioCard(
     title: String,
     subtitle: String,
-    icon: ImageVector,
-    iconColor: Color,
+    iconRes: Int,
     iconBgColor: Color,
     ratio: Float,
     onClick: () -> Unit,
@@ -137,10 +134,10 @@ fun RatioCard(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = icon,
+                    painter = painterResource(id = iconRes),
                     contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(36.dp)
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(48.dp)
                 )
             }
 

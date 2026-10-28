@@ -13,7 +13,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material3.*
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -259,26 +261,52 @@ private fun AssetTrendChart(
     modifier: Modifier = Modifier
 ) {
     val color = if (isProfit) Color(0xFF10B981) else Color(0xFFEF4444)
-    Box(modifier = modifier) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val rightPadding = 70.dp.toPx()
-            val width = size.width - rightPadding
-            val height = size.height
-            
-            val points = mutableListOf<Float>()
-            val count = 15
-            for (i in 0 until count) {
-                val ratio = i.toFloat() / (count - 1)
-                val base = initialValue + (currentValue - initialValue) * ratio
-                val jitter = if (i > 0 && i < count - 1) {
-                    (kotlin.math.sin(i.toDouble() * 2.0) * 0.05 * (currentValue.coerceAtLeast(initialValue)))
-                } else 0.0
-                points.add((base + jitter).toFloat())
-            }
+    val points = remember(initialValue, currentValue) {
+        val pts = mutableListOf<Float>()
+        val count = 15
+        for (i in 0 until count) {
+            val ratio = i.toFloat() / (count - 1)
+            val base = initialValue + (currentValue - initialValue) * ratio
+            val jitter = if (i > 0 && i < count - 1) {
+                (kotlin.math.sin(i.toDouble() * 2.0) * 0.05 * (currentValue.coerceAtLeast(initialValue)))
+            } else 0.0
+            pts.add((base + jitter).toFloat())
+        }
+        pts
+    }
 
+    var selectedPrice by remember { mutableStateOf<Float?>(null) }
+    val chartWidthState = remember { mutableFloatStateOf(0f) }
+
+    Box(modifier = modifier.pointerInput(points) {
+        detectTapGestures { offset ->
+            val cw = chartWidthState.floatValue
+            if (cw <= 0f || points.size < 2) return@detectTapGestures
+            val stepX = cw / (points.size - 1)
+            val idx = (offset.x / stepX).toInt().coerceIn(0, points.lastIndex)
+            selectedPrice = points[idx]
+        }
+    }) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
             val minVal = points.minOrNull()?.coerceAtMost(initialValue.toFloat()) ?: 0f
             val maxVal = points.maxOrNull()?.coerceAtLeast(currentValue.toFloat()) ?: 1f
             val range = (maxVal - minVal).coerceAtLeast(1f)
+
+            val paint = android.graphics.Paint().apply {
+                setColor(android.graphics.Color.parseColor("#94A3B8"))
+                textSize = 9.sp.toPx()
+                textAlign = android.graphics.Paint.Align.RIGHT
+                isAntiAlias = true
+            }
+            val labels = (0..4).map { i ->
+                val ratio = i.toFloat() / 4f
+                String.format(Locale.getDefault(), "%,.0f", minVal + (maxVal - minVal) * ratio)
+            }
+            val maxLabelWidth = labels.maxOfOrNull { paint.measureText(it) } ?: 0f
+            val rightPadding = maxLabelWidth + 12.dp.toPx()
+            val width = size.width - rightPadding
+            val height = size.height
+            chartWidthState.floatValue = width
 
             val stepX = width / (points.size - 1)
             val path = Path()
@@ -316,13 +344,6 @@ private fun AssetTrendChart(
             val dashEffect = android.graphics.DashPathEffect(floatArrayOf(8f, 8f), 0f)
 
             drawIntoCanvas { canvas ->
-                val paint = android.graphics.Paint().apply {
-                    setColor(android.graphics.Color.parseColor("#94A3B8"))
-                    textSize = 9.sp.toPx()
-                    textAlign = android.graphics.Paint.Align.LEFT
-                    isAntiAlias = true
-                }
-
                 val gridPaint = android.graphics.Paint().apply {
                     setColor(android.graphics.Color.parseColor("#E2E8F0"))
                     strokeWidth = 1.dp.toPx()
@@ -333,55 +354,34 @@ private fun AssetTrendChart(
                 for (i in 0..gridLines) {
                     val ratio = i.toFloat() / gridLines
                     val y = height - (ratio * height * 0.7f + height * 0.15f)
-                    
+
                     canvas.nativeCanvas.drawLine(0f, y, width, y, gridPaint)
 
                     val labelVal = minVal + (maxVal - minVal) * ratio
                     canvas.nativeCanvas.drawText(
                         String.format(Locale.getDefault(), "%,.0f", labelVal),
-                        width + 8.dp.toPx(),
+                        size.width - 4.dp.toPx(),
                         y + 3.dp.toPx(),
                         paint
                     )
                 }
+            }
+        }
 
-                // Highlight latest value with a badge pill on the right
-                val lastVal = currentValue.toFloat()
-                val lastNorm = (lastVal - minVal) / range
-                val lastY = height - (lastNorm * height * 0.7f + height * 0.15f)
-
-                val badgePaint = android.graphics.Paint().apply {
-                    setColor(android.graphics.Color.parseColor(if (isProfit) "#10B981" else "#EF4444"))
-                    isAntiAlias = true
-                }
-                val textPaint = android.graphics.Paint().apply {
-                    setColor(android.graphics.Color.WHITE)
-                    textSize = 9.sp.toPx()
-                    textAlign = android.graphics.Paint.Align.CENTER
-                    isAntiAlias = true
-                    typeface = android.graphics.Typeface.DEFAULT_BOLD
-                }
-
-                val textStr = String.format(Locale.getDefault(), "%,.0f", lastVal)
-                val textWidth = textPaint.measureText(textStr)
-                val badgeWidth = textWidth + 12.dp.toPx()
-                val badgeHeight = 18.dp.toPx()
-
-                canvas.nativeCanvas.drawRoundRect(
-                    width + 6.dp.toPx(),
-                    lastY - badgeHeight / 2,
-                    width + 6.dp.toPx() + badgeWidth,
-                    lastY + badgeHeight / 2,
-                    8.dp.toPx(),
-                    8.dp.toPx(),
-                    badgePaint
-                )
-
-                canvas.nativeCanvas.drawText(
-                    textStr,
-                    width + 6.dp.toPx() + badgeWidth / 2,
-                    lastY + 3.dp.toPx(),
-                    textPaint
+        selectedPrice?.let { price ->
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp),
+                shape = RoundedCornerShape(8.dp),
+                color = color
+            ) {
+                Text(
+                    text = String.format(Locale.getDefault(), "%,.2f", price),
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
             }
         }

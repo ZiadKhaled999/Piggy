@@ -612,7 +612,7 @@ fun Step0AmountScreen(
     }
 }
 
-// SLIDE 1: CATEGORY SELECTION WITH EXPANDED ARC WHEEL PICKER & AUTO-SELECTION
+// SLIDE 1: CATEGORY SELECTION (simple vertical scrollable list, tap to choose)
 @Composable
 fun Step1CategoryArcWheelScreen(
     categories: List<TransactionCategory>,
@@ -621,42 +621,6 @@ fun Step1CategoryArcWheelScreen(
     onCreateCategoryClicked: () -> Unit,
     onNext: () -> Unit
 ) {
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = 0)
-    val snapBehavior = rememberSnapFlingBehavior(lazyListState = listState, snapPosition = SnapPosition.Center)
-
-    // AUTO-SELECT CATEGORY THAT EXACTLY ALIGNS IN FRONT OF THE CENTER INDICATOR PILL
-    // Selection only resolves once scrolling settles, so a fast swipe can't leave the
-    // marker pointing at an item that was only momentarily closest to the center.
-    LaunchedEffect(listState) {
-        var wasScrolling = false
-        var initialized = false
-        snapshotFlow { listState.isScrollInProgress to listState.layoutInfo }.collect { (scrolling, layoutInfo) ->
-            val viewportH = layoutInfo.viewportSize.height
-            if (viewportH == 0 || layoutInfo.visibleItemsInfo.isEmpty()) return@collect
-            val center = viewportH / 2f
-            fun resolve() {
-                val closest = layoutInfo.visibleItemsInfo.minByOrNull {
-                    abs((it.offset + it.size / 2f) - center)
-                }
-                val idx = closest?.index
-                if (idx != null && idx in categories.indices) {
-                    onCategorySelected(categories[idx])
-                }
-            }
-            if (!initialized) {
-                initialized = true
-                resolve()
-                return@collect
-            }
-            if (scrolling) {
-                wasScrolling = true
-            } else if (wasScrolling) {
-                wasScrolling = false
-                resolve()
-            }
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -671,195 +635,97 @@ fun Step1CategoryArcWheelScreen(
             letterSpacing = 1.2.sp
         )
         Text(
-            text = stringResource(R.string.swipe_to_scroll_auto_select),
+            text = "Tap a category to select it",
             fontSize = 13.sp,
             color = TextLight,
             modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
         )
 
-        // ARC WHEEL PICKER CONTAINER
-        BoxWithConstraints(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
-                .clip(RoundedCornerShape(24.dp))
-                .background(Color.White)
-                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(24.dp)),
-            contentAlignment = Alignment.Center
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            val containerHeight = maxHeight
-            val itemHeight = 56.dp
-            val verticalPadding = (containerHeight - itemHeight) / 2
-
-            // Arc Line & Dark Indicator Notch on the right edge
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val w = size.width
-                val h = size.height
-                val centerPx = h / 2f
-
-                // Gentle circular arc line along the right side
-                val arcApexX = w - 32.dp.toPx()
-                val path = Path().apply {
-                    moveTo(w + 24.dp.toPx(), -24.dp.toPx())
-                    quadraticTo(
-                        arcApexX, centerPx,
-                        w + 24.dp.toPx(), h + 24.dp.toPx()
-                    )
+            items(categories) { cat ->
+                val isSelected = selectedCategory?.key == cat.key
+                val catDisplayName = if (cat.customName != null) {
+                    cat.customName
+                } else if (cat.nameRes != null) {
+                    stringResource(cat.nameRes)
+                } else {
+                    resolveCategoryDisplayName(cat.key)
                 }
-                drawPath(
-                    path = path,
-                    color = Color(0xFFE2E8F0),
-                    style = Stroke(width = 2.dp.toPx())
-                )
-
-                // Dark horizontal indicator pill (marker notch) sitting right on the arc
-                val pillW = 28.dp.toPx()
-                val pillH = 20.dp.toPx()
-                drawRoundRect(
-                    color = Color(0xFF334155),
-                    topLeft = androidx.compose.ui.geometry.Offset(arcApexX - pillW / 2f, centerPx - pillH / 2f),
-                    size = androidx.compose.ui.geometry.Size(pillW, pillH),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(pillH / 2f)
-                )
-            }
-
-            // Lazy Column for scrolling categories (with generous end padding so items NEVER touch the arc!)
-            LazyColumn(
-                state = listState,
-                flingBehavior = snapBehavior,
-                contentPadding = PaddingValues(vertical = verticalPadding),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(end = 52.dp, start = 16.dp)
-            ) {
-                items(categories.size + 1) { index ->
-                    val itemCategory = if (index < categories.size) categories[index] else null
-                    val isCreateNewOption = index == categories.size
-                    val isSelected = if (itemCategory != null) {
-                        selectedCategory?.key == itemCategory.key
-                    } else false
-
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { onCategorySelected(cat) },
+                    color = if (isSelected) PinkPrimary.copy(alpha = 0.08f) else Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) PinkPrimary else Color(0xFFE2E8F0)),
+                    shadowElevation = if (isSelected) 2.dp else 0.dp
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp)
-                            .graphicsLayer {
-                                val visibleInfo = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
-                                if (visibleInfo != null) {
-                                    val itemCenterY = visibleInfo.offset + visibleInfo.size / 2f
-                                    val containerCenterY = listState.layoutInfo.viewportSize.height / 2f
-                                    val dist = itemCenterY - containerCenterY
-                                    val maxDist = containerCenterY * 0.85f
-                                    val normDist = (dist / maxDist).coerceIn(-1.5f, 1.5f)
-
-                                    // Gentle curve displacement: moves INWARDS (to the left, away from the arc)
-                                    val curveOffsetPx = (1.0f - cos(normDist * (PI / 2.4f))).toFloat() * 48.dp.toPx()
-                                    translationX = -curveOffsetPx
-
-                                    val scaleFactor = (1.0f - abs(normDist) * 0.28f).coerceIn(0.72f, 1.0f)
-                                    scaleX = scaleFactor
-                                    scaleY = scaleFactor
-                                    alpha = (1.0f - abs(normDist) * 0.55f).coerceIn(0.25f, 1.0f)
-                                    rotationZ = normDist * 8f
-                                }
-                            }
-                            .clickable {
-                                if (isCreateNewOption) {
-                                    onCreateCategoryClicked()
-                                } else if (itemCategory != null) {
-                                    onCategorySelected(itemCategory)
-                                }
-                            },
-                        horizontalArrangement = Arrangement.End,
+                            .padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (isCreateNewOption) {
-                            // "Create New" option
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = PinkPrimary.copy(alpha = 0.08f),
-                                border = BorderStroke(1.dp, PinkPrimary.copy(alpha = 0.3f)),
-                                modifier = Modifier.padding(end = 12.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.new_category_plus),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = PinkPrimary,
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                        Surface(
+                            modifier = Modifier.size(44.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            color = if (isSelected) PinkPrimary.copy(alpha = 0.12f) else Color(0xFFF1F5F9)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = cat.icon,
+                                    contentDescription = catDisplayName,
+                                    tint = if (isSelected) PinkPrimary else Color(0xFF94A3B8),
+                                    modifier = Modifier.size(22.dp)
                                 )
-                            }
-
-                            Surface(
-                                modifier = Modifier.size(width = 54.dp, height = 40.dp),
-                                shape = RoundedCornerShape(20.dp),
-                                color = PinkPrimary.copy(alpha = 0.12f),
-                                border = BorderStroke(1.5.dp, PinkPrimary)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = "Create Category",
-                                        tint = PinkPrimary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
-                        } else if (itemCategory != null) {
-                            val catDisplayName = if (itemCategory.customName != null) {
-                                itemCategory.customName
-                            } else if (itemCategory.nameRes != null) {
-                                stringResource(itemCategory.nameRes)
-                            } else {
-                                resolveCategoryDisplayName(itemCategory.key)
-                            }
-
-                            // Category Label (Visible for all, highlighted when selected)
-                            if (isSelected) {
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = Color(0xFFF1F5F9),
-                                    modifier = Modifier.padding(end = 12.dp)
-                                ) {
-                                    Text(
-                                        text = catDisplayName,
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = NavyDark,
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
-                                    )
-                                }
-                            } else {
-                                Text(
-                                    text = catDisplayName,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF94A3B8),
-                                    modifier = Modifier.padding(end = 12.dp)
-                                )
-                            }
-
-                            // Category Icon in Pill Container
-                            Surface(
-                                modifier = Modifier.size(width = 56.dp, height = 40.dp),
-                                shape = RoundedCornerShape(20.dp),
-                                color = if (isSelected) Color.White else Color(0xFFF8FAFC),
-                                border = BorderStroke(
-                                    width = if (isSelected) 2.dp else 1.dp,
-                                    color = if (isSelected) PinkPrimary else Color(0xFFF1F5F9)
-                                )
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = itemCategory.icon,
-                                        contentDescription = catDisplayName,
-                                        tint = if (isSelected) PinkPrimary else Color(0xFF94A3B8),
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
                             }
                         }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Text(
+                            text = catDisplayName,
+                            fontSize = 15.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) NavyDark else Color(0xFF475569),
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (isSelected) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+            }
+
+            item {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { onCreateCategoryClicked() },
+                    color = PinkPrimary.copy(alpha = 0.06f),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, PinkPrimary.copy(alpha = 0.3f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.new_category_plus),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = PinkPrimary
+                        )
                     }
                 }
             }
@@ -867,7 +733,6 @@ fun Step1CategoryArcWheelScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Continue Button
         Button(
             onClick = onNext,
             enabled = selectedCategory != null,
@@ -883,7 +748,6 @@ fun Step1CategoryArcWheelScreen(
         }
     }
 }
-
 // SLIDE 2: ACCOUNT SELECTION
 @Composable
 fun Step2AccountSelectionScreen(

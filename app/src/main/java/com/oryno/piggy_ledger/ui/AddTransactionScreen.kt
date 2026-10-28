@@ -9,6 +9,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -621,21 +622,37 @@ fun Step1CategoryArcWheelScreen(
     onNext: () -> Unit
 ) {
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = 0)
-    val snapBehavior = rememberSnapFlingBehavior(lazyListState = listState)
+    val snapBehavior = rememberSnapFlingBehavior(lazyListState = listState, snapPosition = SnapPosition.Center)
 
     // AUTO-SELECT CATEGORY THAT EXACTLY ALIGNS IN FRONT OF THE CENTER INDICATOR PILL
+    // Selection only resolves once scrolling settles, so a fast swipe can't leave the
+    // marker pointing at an item that was only momentarily closest to the center.
     LaunchedEffect(listState) {
-        snapshotFlow {
-            val layoutInfo = listState.layoutInfo
-            val viewportCenterY = layoutInfo.viewportSize.height / 2f
-            val closestItem = layoutInfo.visibleItemsInfo.minByOrNull {
-                val itemCenterY = it.offset + it.size / 2f
-                abs(itemCenterY - viewportCenterY)
+        var wasScrolling = false
+        var initialized = false
+        snapshotFlow { listState.isScrollInProgress to listState.layoutInfo }.collect { (scrolling, layoutInfo) ->
+            val viewportH = layoutInfo.viewportSize.height
+            if (viewportH == 0 || layoutInfo.visibleItemsInfo.isEmpty()) return@collect
+            val center = viewportH / 2f
+            fun resolve() {
+                val closest = layoutInfo.visibleItemsInfo.minByOrNull {
+                    abs((it.offset + it.size / 2f) - center)
+                }
+                val idx = closest?.index
+                if (idx != null && idx in categories.indices) {
+                    onCategorySelected(categories[idx])
+                }
             }
-            closestItem?.index
-        }.collect { closestIdx ->
-            if (closestIdx != null && closestIdx in categories.indices) {
-                onCategorySelected(categories[closestIdx])
+            if (!initialized) {
+                initialized = true
+                resolve()
+                return@collect
+            }
+            if (scrolling) {
+                wasScrolling = true
+            } else if (wasScrolling) {
+                wasScrolling = false
+                resolve()
             }
         }
     }
@@ -681,12 +698,12 @@ fun Step1CategoryArcWheelScreen(
                 val centerPx = h / 2f
 
                 // Gentle circular arc line along the right side
-                val arcApexX = w - 16.dp.toPx()
+                val arcApexX = w - 32.dp.toPx()
                 val path = Path().apply {
-                    moveTo(w + 20.dp.toPx(), -20.dp.toPx())
+                    moveTo(w + 24.dp.toPx(), -24.dp.toPx())
                     quadraticTo(
                         arcApexX, centerPx,
-                        w + 20.dp.toPx(), h + 20.dp.toPx()
+                        w + 24.dp.toPx(), h + 24.dp.toPx()
                     )
                 }
                 drawPath(
@@ -696,8 +713,8 @@ fun Step1CategoryArcWheelScreen(
                 )
 
                 // Dark horizontal indicator pill (marker notch) sitting right on the arc
-                val pillW = 24.dp.toPx()
-                val pillH = 12.dp.toPx()
+                val pillW = 28.dp.toPx()
+                val pillH = 20.dp.toPx()
                 drawRoundRect(
                     color = Color(0xFF334155),
                     topLeft = androidx.compose.ui.geometry.Offset(arcApexX - pillW / 2f, centerPx - pillH / 2f),
@@ -737,13 +754,14 @@ fun Step1CategoryArcWheelScreen(
                                     val normDist = (dist / maxDist).coerceIn(-1.5f, 1.5f)
 
                                     // Gentle curve displacement: moves INWARDS (to the left, away from the arc)
-                                    val curveOffsetPx = (1.0f - cos(normDist * (PI / 2.6f))).toFloat() * 26.dp.toPx()
+                                    val curveOffsetPx = (1.0f - cos(normDist * (PI / 2.4f))).toFloat() * 48.dp.toPx()
                                     translationX = -curveOffsetPx
 
-                                    val scaleFactor = (1.0f - abs(normDist) * 0.22f).coerceIn(0.76f, 1.0f)
+                                    val scaleFactor = (1.0f - abs(normDist) * 0.28f).coerceIn(0.72f, 1.0f)
                                     scaleX = scaleFactor
                                     scaleY = scaleFactor
-                                    alpha = (1.0f - abs(normDist) * 0.45f).coerceIn(0.35f, 1.0f)
+                                    alpha = (1.0f - abs(normDist) * 0.55f).coerceIn(0.25f, 1.0f)
+                                    rotationZ = normDist * 8f
                                 }
                             }
                             .clickable {

@@ -128,15 +128,23 @@ fun PiggyLedgerApp(
                     LanguageSelectionScreen(
                         onLanguageSelected = {
                             viewModel.completeLanguageSelection(onSaved = {
-                                navController.navigate(Screen.HearAboutUs) {
-                                    popUpTo(Screen.LanguageSelection) { inclusive = true }
+                                try {
+                                    navController.navigate(Screen.HearAboutUs) {
+                                        popUpTo(Screen.LanguageSelection) { inclusive = true }
+                                    }
+                                } catch (e: Exception) {
+                                    android.util.Log.e("PiggyLedgerApp", "Navigation to HearAboutUs failed", e)
                                 }
                             })
                         },
                         onAlreadyHaveAccount = {
                             viewModel.completeAlreadyHaveAccount(onSaved = {
-                                navController.navigate(Screen.Auth) {
-                                    popUpTo(Screen.LanguageSelection) { inclusive = true }
+                                try {
+                                    navController.navigate(Screen.Auth) {
+                                        popUpTo(Screen.LanguageSelection) { inclusive = true }
+                                    }
+                                } catch (e: Exception) {
+                                    android.util.Log.e("PiggyLedgerApp", "Navigation to Auth failed", e)
                                 }
                             })
                         }

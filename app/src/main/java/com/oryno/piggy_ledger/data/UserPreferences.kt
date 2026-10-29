@@ -78,6 +78,15 @@ class UserPreferences(private val context: Context) {
             }
         }
 
+        fun saveAppLanguageSync(context: Context, lang: String) {
+            try {
+                val sharedPrefs = context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                sharedPrefs.edit().putString("app_language", lang).apply()
+            } catch (e: Exception) {
+                android.util.Log.e("UserPreferences", "Failed to save language synchronously", e)
+            }
+        }
+
         fun saveLanguageSelectedSync(context: Context, selected: Boolean) {
             try {
                 context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)

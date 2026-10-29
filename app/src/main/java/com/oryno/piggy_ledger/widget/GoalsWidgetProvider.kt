@@ -136,16 +136,20 @@ class GoalsWidgetProvider : AppWidgetProvider() {
 
     companion object {
         fun triggerUpdate(context: Context) {
-            val appWidgetManager = AppWidgetManager.getInstance(context)
-            val componentName = ComponentName(context, GoalsWidgetProvider::class.java)
-            val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
-            if (appWidgetIds.isNotEmpty()) {
-                val intent = Intent(context, GoalsWidgetProvider::class.java).apply {
-                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+            try {
+                val appWidgetManager = AppWidgetManager.getInstance(context) ?: return
+                val componentName = ComponentName(context, GoalsWidgetProvider::class.java)
+                val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
+                if (appWidgetIds != null && appWidgetIds.isNotEmpty()) {
+                    val intent = Intent(context, GoalsWidgetProvider::class.java).apply {
+                        action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+                    }
+                    context.sendBroadcast(intent)
+                    appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.lv_goals)
                 }
-                context.sendBroadcast(intent)
-                appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.lv_goals)
+            } catch (e: Exception) {
+                android.util.Log.e("GoalsWidgetProvider", "triggerUpdate failed", e)
             }
         }
     }

@@ -256,42 +256,74 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
             title = buildAnnotatedString { append(stringResource(R.string.onboarding_personalize_intensity_title)) },
             subtitle = stringResource(R.string.onboarding_personalize_intensity_subtitle)
         ),
+        // 7: Financial Stress Insight (CNBC)
         OnboardingPageData(
             imageRes = R.drawable.img_piggy_hello,
             title = buildAnnotatedString { append("") },
             subtitle = ""
         ),
+        // 8: Relatable Statement 1
         OnboardingPageData(
             imageRes = R.drawable.img_piggy_hello,
             title = buildAnnotatedString { append("") },
             subtitle = ""
         ),
+        // 9: Relatable Statement 2
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+        // 10: Relatable Statement 3
         OnboardingPageData(
             imageRes = R.drawable.img_piggy_hello,
             title = buildAnnotatedString { append("") },
             subtitle = ""
         ),
 
+        // 11: PwC Global Workforce Financial Stress Insight
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+
+        // 12: Consistency / Habit Streak
         OnboardingPageData(
             imageRes = R.drawable.img_piggy_hello,
             title = buildAnnotatedString { append(stringResource(R.string.onboarding_streak_title)) },
             subtitle = stringResource(R.string.onboarding_streak_subtitle)
         ),
+
+        // 13: Gallup Workplace Daily Stress Insight
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+
+        // 14: Personalized Roadmap
         OnboardingPageData(
             imageRes = R.drawable.img_piggy_hello,
             title = buildAnnotatedString { append(stringResource(R.string.onboarding_personalize_roadmap_title)) },
             subtitle = stringResource(R.string.onboarding_personalize_roadmap_subtitle)
         ),
+
+        // 15: Supercharge Comparison (x1 vs x7)
         OnboardingPageData(
             imageRes = R.drawable.img_piggy_hello,
             title = buildAnnotatedString { append(stringResource(R.string.onboarding_choose_pace_title)) },
             subtitle = stringResource(R.string.onboarding_choose_pace_subtitle)
         ),
+
+        // 16: Flash Sale
         OnboardingPageData(
             imageRes = R.drawable.img_app_logo,
             title = buildAnnotatedString { append("") },
             subtitle = ""
         ),
+
+        // 17: Ready to Start
         OnboardingPageData(
             imageRes = R.drawable.img_app_logo,
             title = buildAnnotatedString {
@@ -308,10 +340,13 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(if (currentPage in listOf(7, 11, 13)) Color(0xFFFFFAEE) else Color.White)
             .statusBarsPadding()
             .navigationBarsPadding()
-            .padding(horizontal = if (currentPage in 7..9 || currentPage == 11) 4.dp else horizontalPadding, vertical = if (currentPage in 7..9) 6.dp else (if (isSmallScreen) 12.dp else 16.dp)),
+            .padding(
+                horizontal = if (currentPage in 8..10 || currentPage == 14) 4.dp else if (currentPage in listOf(7, 11, 13)) 0.dp else horizontalPadding,
+                vertical = if (currentPage in 8..10 || currentPage in listOf(7, 11, 13)) 6.dp else (if (isSmallScreen) 12.dp else 16.dp)
+            ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Upper Content with Crossfade Page Transition
@@ -970,20 +1005,27 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                         }
                     }
                 
-                } else if (pageIndex in 7..9) {
+                } else if (pageIndex == 7) {
+                    // FINANCIAL STRESS INSIGHT (CNBC)
+                    FinancialStressSlide(
+                        onContinue = { currentPage++ },
+                        onBack = { currentPage-- },
+                        isSmallScreen = isSmallScreen
+                    )
+                } else if (pageIndex in 8..10) {
                     val cardBgColor = when (pageIndex) {
-                        7 -> Color(0xFFB38952) // Warm Amber / Burnt Ochre
-                        8 -> Color(0xFF5B78A7) // Slate Indigo / Periwinkle
+                        8 -> Color(0xFFB38952) // Warm Amber / Burnt Ochre
+                        9 -> Color(0xFF5B78A7) // Slate Indigo / Periwinkle
                         else -> Color(0xFF386851) // Deep Sage / Forest Green
                     }
                     val relatableText = when (pageIndex) {
-                        7 -> stringResource(R.string.onboarding_relatable_statement_1)
-                        8 -> stringResource(R.string.onboarding_relatable_statement_2)
+                        8 -> stringResource(R.string.onboarding_relatable_statement_1)
+                        9 -> stringResource(R.string.onboarding_relatable_statement_2)
                         else -> stringResource(R.string.onboarding_relatable_statement_3)
                     }
                     val imageRes = when (pageIndex) {
-                        7 -> R.drawable.img_relatable_debt_1785176852844
-                        8 -> R.drawable.img_relatable_accounts_1785176864908
+                        8 -> R.drawable.img_relatable_debt_1785176852844
+                        9 -> R.drawable.img_relatable_accounts_1785176864908
                         else -> R.drawable.img_relatable_emergency_1785176876312
                     }
 
@@ -1025,7 +1067,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                                     .height(4.dp),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                val currentStep = pageIndex - 6
+                                val currentStep = pageIndex - 7
                                 val totalSteps = 5
                                 for (step in 1..totalSteps) {
                                     val isFilled = step <= currentStep + 1
@@ -1137,9 +1179,9 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                             Button(
                                 onClick = {
                                     when (pageIndex) {
-                                        7 -> relatesToLoans = false
-                                        8 -> relatesToAccounts = false
-                                        9 -> relatesToEmergency = false
+                                        8 -> relatesToLoans = false
+                                        9 -> relatesToAccounts = false
+                                        10 -> relatesToEmergency = false
                                     }
                                     if (currentPage < pages.size - 1) currentPage++
                                 },
@@ -1164,12 +1206,12 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                             Button(
                                 onClick = {
                                     when (pageIndex) {
-                                        7 -> {
+                                        8 -> {
                                             relatesToLoans = true
                                             selectedIntent = 1
                                         }
-                                        8 -> relatesToAccounts = true
-                                        9 -> relatesToEmergency = true
+                                        9 -> relatesToAccounts = true
+                                        10 -> relatesToEmergency = true
                                     }
                                     if (currentPage < pages.size - 1) currentPage++
                                 },
@@ -1192,7 +1234,18 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                             }
                         }
                     }
-} else if (pageIndex == 10) {
+                } else if (pageIndex == 11) {
+                    // PWC RESEARCH INSIGHT SLIDE (After "Do you relate" slides)
+                    PwcInsightSlide(
+                        onContinue = {
+                            if (currentPage < pages.size - 1) currentPage++
+                        },
+                        onBack = {
+                            if (currentPage > 0) currentPage--
+                        },
+                        isSmallScreen = isSmallScreen
+                    )
+                } else if (pageIndex == 12) {
                     // STREAK / HABIT SLIDE
                     Column(
                         modifier = Modifier
@@ -1368,7 +1421,18 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
 
                         Spacer(modifier = Modifier.height(if (isSmallScreen) 20.dp else 30.dp))
                     }
-                } else if (pageIndex == 11) {
+                } else if (pageIndex == 13) {
+                    // GALLUP RESEARCH INSIGHT SLIDE (After Habit slide)
+                    GallupInsightSlide(
+                        onContinue = {
+                            if (currentPage < pages.size - 1) currentPage++
+                        },
+                        onBack = {
+                            if (currentPage > 0) currentPage--
+                        },
+                        isSmallScreen = isSmallScreen
+                    )
+                } else if (pageIndex == 14) {
                     val stepTitles = listOf(
                         stringResource(R.string.onboarding_roadmap_step1),
                         stringResource(R.string.onboarding_roadmap_step2),
@@ -1626,7 +1690,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
 
                         Spacer(modifier = Modifier.height(if (isSmallScreen) 20.dp else 30.dp))
                     }
-                } else if (pageIndex == 12) {
+                } else if (pageIndex == 15) {
                     val anim1 = remember { Animatable(0f) }
                     val anim2 = remember { Animatable(0f) }
                     LaunchedEffect(Unit) {
@@ -1773,7 +1837,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                             }
                         }
                     }
-                } else if (pageIndex == 13) {
+                } else if (pageIndex == 16) {
                     OnboardingFlashSaleScreen(
                         titleFontSize = titleFontSize,
                         subtitleFontSize = subtitleFontSize,
@@ -1835,7 +1899,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
             contentAlignment = Alignment.Center
         ) {
             // Back Button (Optional/Visible when not on first page)
-            if (currentPage > 0 && currentPage !in 7..9 && (currentPage != 11 || isPlanFinished)) {
+            if (currentPage > 0 && currentPage !in 8..10 && currentPage !in listOf(7, 11, 13) && (currentPage != 14 || isPlanFinished)) {
                 TextButton(
                     onClick = { currentPage-- },
                     modifier = Modifier
@@ -1851,7 +1915,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                 }
             }
 
-            if (currentPage !in 7..9) {
+            if (currentPage !in 8..10 && currentPage !in listOf(7, 11, 13)) {
                 // Custom Progress Button - always responsive
                 ProgressNextButton(
                     currentPage = currentPage,
@@ -1859,7 +1923,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                     isSmallScreen = isSmallScreen,
                     enabled = true,
                     onNext = {
-                        if (currentPage == 11 && !isPlanFinished) {
+                        if (currentPage == 14 && !isPlanFinished) {
                             isPlanFinished = true
                         }
                         if (currentPage < pages.size - 1) {

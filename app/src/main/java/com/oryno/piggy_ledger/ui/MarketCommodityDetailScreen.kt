@@ -9,9 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.filled.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material3.*
 import androidx.compose.ui.input.pointer.pointerInput
@@ -61,14 +60,16 @@ fun MarketCommodityDetailScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     val currentRate = when (type) {
-        "GOLD" -> when (variant) {
+        "GOLD" -> when (variant.lowercase()) {
             "24k" -> uiState.liveRates.gold24k
             "18k" -> uiState.liveRates.gold18k
+            "overall", "all" -> (uiState.liveRates.gold24k + uiState.liveRates.gold21k + uiState.liveRates.gold18k) / 3.0
             else -> uiState.liveRates.gold21k
         }
-        "SILVER" -> when (variant) {
+        "SILVER" -> when (variant.lowercase()) {
             "925" -> uiState.liveRates.silver925
             "900" -> uiState.liveRates.silver900
+            "overall", "all" -> (uiState.liveRates.silver999 + uiState.liveRates.silver925 + uiState.liveRates.silver900) / 3.0
             else -> uiState.liveRates.silver999
         }
         else -> 0.0
@@ -111,16 +112,14 @@ fun MarketCommodityDetailScreen(
     ) { padding ->
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 18.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
+                .fillMaxSize(),
+            contentPadding = PaddingValues(top = 16.dp + padding.calculateTopPadding(), bottom = 32.dp + padding.calculateBottomPadding()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // 1. Current Price Card
             item {
                 Surface(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
                     shape = RoundedCornerShape(24.dp),
                     color = Color.White,
                     border = BorderStroke(1.dp, Color(0xFFE2E8F0))
@@ -154,16 +153,16 @@ fun MarketCommodityDetailScreen(
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
                     color = Color.White,
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    shadowElevation = 0.dp
                 ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
+                    Column(modifier = Modifier.padding(vertical = 20.dp)) {
                         Text(
                             text = stringResource(R.string.price_history_24h),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = NavyDark
+                            color = NavyDark,
+                            modifier = Modifier.padding(horizontal = 18.dp)
                         )
                         Spacer(modifier = Modifier.height(20.dp))
 
@@ -177,7 +176,7 @@ fun MarketCommodityDetailScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(stringResource(R.string.h24_ago), fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.Medium)
@@ -190,14 +189,14 @@ fun MarketCommodityDetailScreen(
 
             // 3. Market Stats Grid
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        MarketStatCard(stringResource(R.string.highest_24h), high24h, Modifier.weight(1f))
-                        MarketStatCard(stringResource(R.string.lowest_24h), low24h, Modifier.weight(1f))
+                        MarketStatCard(stringResource(R.string.highest_24h), high24h, Icons.Default.TrendingUp, Modifier.weight(1f))
+                        MarketStatCard(stringResource(R.string.lowest_24h), low24h, Icons.Default.TrendingDown, Modifier.weight(1f))
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        MarketStatCard(stringResource(R.string.market_spread), spread, Modifier.weight(1f))
-                        MarketStatCard(stringResource(R.string.volatility_index), volatility, Modifier.weight(1f), isCurrency = false)
+                        MarketStatCard(stringResource(R.string.market_spread), spread, Icons.Default.SwapHoriz, Modifier.weight(1f))
+                        MarketStatCard(stringResource(R.string.volatility_index), volatility, Icons.Default.Speed, Modifier.weight(1f), isCurrency = false)
                     }
                 }
             }
@@ -205,7 +204,7 @@ fun MarketCommodityDetailScreen(
             // 4. Market Info Note
             item {
                 Surface(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
                     shape = RoundedCornerShape(18.dp),
                     color = PinkPrimary.copy(alpha = 0.05f),
                     border = BorderStroke(1.dp, PinkPrimary.copy(alpha = 0.1f))
@@ -233,22 +232,40 @@ fun MarketCommodityDetailScreen(
 private fun MarketStatCard(
     label: String,
     value: Double,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     modifier: Modifier = Modifier,
     isCurrency: Boolean = true
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         color = Color.White,
         border = BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = label, fontSize = 11.sp, color = TextLight, fontWeight = FontWeight.Bold)
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFFF1F5F9)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = NavyDark,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(text = label, fontSize = 12.sp, color = TextLight, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = if (isCurrency) "${String.format(Locale.getDefault(), "%,.2f", value)} ${stringResource(R.string.currency_egp)}" else "${String.format(Locale.getDefault(), "%.1f", value)}%",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Black,
                 color = NavyDark
             )
         }
@@ -268,135 +285,163 @@ private fun MarketCommodityChart(
         }
     }
 
-    val isRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
-    var selectedPrice by remember { mutableStateOf<Float?>(null) }
-    val chartWidthState = remember { mutableFloatStateOf(0f) }
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    val chartWidthPx = remember { mutableFloatStateOf(0f) }
+    val chartHeightPx = remember { mutableFloatStateOf(0f) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
 
-    Box(modifier = modifier.pointerInput(points) {
-        detectTapGestures { offset ->
-            val cw = chartWidthState.floatValue
-            if (cw <= 0f || points.size < 2) return@detectTapGestures
-            val stepX = cw / (points.size - 1)
-            val rawIndex = if (isRtl) ((cw - offset.x) / stepX) else (offset.x / stepX)
-            val idx = rawIndex.toInt().coerceIn(0, points.lastIndex)
-            selectedPrice = points[idx]
-        }
-    }) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val minVal = points.minOrNull() ?: 0f
-            val maxVal = points.maxOrNull() ?: 1f
-            val range = if (maxVal - minVal == 0f) 1f else maxVal - minVal
+    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+        BoxWithConstraints(modifier = modifier) {
+            val maxContainerWidth = maxWidth
+            val maxContainerHeight = maxHeight
 
-            val paint = android.graphics.Paint().apply {
-                setColor(android.graphics.Color.parseColor("#94A3B8"))
-                textSize = 10.sp.toPx()
-                textAlign = android.graphics.Paint.Align.RIGHT
-                isAntiAlias = true
-            }
-            val labels = (0..4).map { i ->
-                val ratio = i.toFloat() / 4f
-                String.format(Locale.getDefault(), "%.1f", minVal + (maxVal - minVal) * ratio)
-            }
-            val maxLabelWidth = labels.maxOfOrNull { paint.measureText(it) } ?: 0f
-            val rightPadding = maxLabelWidth + 12.dp.toPx()
-            val width = size.width - rightPadding
-            val height = size.height
-            chartWidthState.floatValue = width
-            val stepX = width / (points.size - 1)
-
-            val path = Path()
-            val fillPath = Path()
-
-            points.forEachIndexed { index, value ->
-                val rawX = index * stepX
-                val x = if (isRtl) width - rawX else rawX
-                val normalized = (value - minVal) / range
-                val y = height - (normalized * height * 0.8f + height * 0.1f)
-
-                if (index == 0) {
-                    path.moveTo(x, y)
-                    fillPath.moveTo(x, height)
-                    fillPath.lineTo(x, y)
-                } else {
-                    val prevRawX = (index - 1) * stepX
-                    val prevX = if (isRtl) width - prevRawX else prevRawX
-                    val prevNorm = (points[index - 1] - minVal) / range
-                    val prevY = height - (prevNorm * height * 0.8f + height * 0.1f)
-
-                    val cx = (prevX + x) / 2
-                    path.cubicTo(cx, prevY, cx, y, x, y)
-                    fillPath.cubicTo(cx, prevY, cx, y, x, y)
-                }
-            }
-
-            if (isRtl) {
-                fillPath.lineTo(width, height)
-            } else {
-                fillPath.lineTo(width, height)
-            }
-            fillPath.close()
-
-            // Gradient Fill
-            drawPath(
-                path = fillPath,
-                brush = Brush.verticalGradient(
-                    colors = listOf(PinkPrimary.copy(alpha = 0.25f), Color.Transparent)
-                )
-            )
-
-            // Main Line
-            drawPath(
-                path = path,
-                color = PinkPrimary,
-                style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
-            )
-
-            // Dashed Grid lines & Right Axis Labels
-            val gridLines = 4
-            val dashEffect = android.graphics.DashPathEffect(floatArrayOf(8f, 8f), 0f)
-
-            drawIntoCanvas { canvas ->
-                val gridPaint = android.graphics.Paint().apply {
-                    setColor(android.graphics.Color.parseColor("#E2E8F0"))
-                    strokeWidth = 1.dp.toPx()
-                    pathEffect = dashEffect
-                    style = android.graphics.Paint.Style.STROKE
-                }
-
-                for (i in 0..gridLines) {
-                    val ratio = i.toFloat() / gridLines
-                    val y = height - (ratio * height * 0.8f + height * 0.1f)
-
-                    canvas.nativeCanvas.drawLine(0f, y, width, y, gridPaint)
-
-                    val labelPrice = minVal + (maxVal - minVal) * ratio
-                    canvas.nativeCanvas.drawText(
-                        String.format(Locale.getDefault(), "%.1f", labelPrice),
-                        size.width - 4.dp.toPx(),
-                        y + 4.dp.toPx(),
-                        paint
-                    )
-                }
-            }
-        }
-
-        selectedPrice?.let { price ->
-            Surface(
+            Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp),
-                shape = RoundedCornerShape(8.dp),
-                color = PinkPrimary
+                    .fillMaxSize()
+                    .pointerInput(points) {
+                        detectTapGestures { offset ->
+                            val cw = chartWidthPx.floatValue
+                            if (cw <= 0f || points.size < 2) return@detectTapGestures
+                            val stepX = cw / (points.size - 1)
+                            val idx = (offset.x / stepX).toInt().coerceIn(0, points.lastIndex)
+                            selectedIndex = idx
+                        }
+                    }
             ) {
-                Text(
-                    text = String.format(Locale.getDefault(), "%.2f", price),
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val minVal = points.minOrNull() ?: 0f
+                val maxVal = points.maxOrNull() ?: 1f
+                val range = if (maxVal - minVal == 0f) 1f else maxVal - minVal
+
+                val width = size.width
+                val height = size.height
+                chartWidthPx.floatValue = width
+                chartHeightPx.floatValue = height
+                val stepX = width / (points.size - 1)
+
+                val path = Path()
+                val fillPath = Path()
+
+                points.forEachIndexed { index, value ->
+                    val x = index * stepX
+                    val normalized = (value - minVal) / range
+                    val y = height - (normalized * height * 0.8f + height * 0.1f)
+
+                    if (index == 0) {
+                        path.moveTo(x, y)
+                        fillPath.moveTo(x, height)
+                        fillPath.lineTo(x, y)
+                    } else {
+                        val prevX = (index - 1) * stepX
+                        val prevNorm = (points[index - 1] - minVal) / range
+                        val prevY = height - (prevNorm * height * 0.8f + height * 0.1f)
+
+                        val cx = (prevX + x) / 2
+                        path.cubicTo(cx, prevY, cx, y, x, y)
+                        fillPath.cubicTo(cx, prevY, cx, y, x, y)
+                    }
+                }
+
+                fillPath.lineTo(width, height)
+                fillPath.close()
+
+                // Gradient Fill
+                drawPath(
+                    path = fillPath,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(PinkPrimary.copy(alpha = 0.25f), Color.Transparent)
+                    )
                 )
+
+                // Main Line
+                drawPath(
+                    path = path,
+                    color = PinkPrimary,
+                    style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
+                )
+
+                // Dashed Grid lines
+                val gridLines = 4
+                val dashEffect = android.graphics.DashPathEffect(floatArrayOf(8f, 8f), 0f)
+
+                drawIntoCanvas { canvas ->
+                    val gridPaint = android.graphics.Paint().apply {
+                        setColor(android.graphics.Color.parseColor("#E2E8F0"))
+                        strokeWidth = 1.dp.toPx()
+                        pathEffect = dashEffect
+                        style = android.graphics.Paint.Style.STROKE
+                    }
+
+                    for (i in 0..gridLines) {
+                        val ratio = i.toFloat() / gridLines
+                        val y = height - (ratio * height * 0.8f + height * 0.1f)
+                        canvas.nativeCanvas.drawLine(0f, y, width, y, gridPaint)
+                    }
+                }
+
+                // Highlight selected point on curve
+                selectedIndex?.let { idx ->
+                    if (idx in points.indices) {
+                        val pointX = idx * stepX
+                        val norm = (points[idx] - minVal) / range
+                        val pointY = height - (norm * height * 0.8f + height * 0.1f)
+
+                        drawIntoCanvas { canvas ->
+                            val linePaint = android.graphics.Paint().apply {
+                                setColor(android.graphics.Color.parseColor("#94A3B8"))
+                                strokeWidth = 1.5.dp.toPx()
+                                pathEffect = dashEffect
+                                style = android.graphics.Paint.Style.STROKE
+                            }
+                            canvas.nativeCanvas.drawLine(pointX, 0f, pointX, height, linePaint)
+                        }
+
+                        drawCircle(color = Color.White, radius = 6.dp.toPx(), center = Offset(pointX, pointY))
+                        drawCircle(color = PinkPrimary, radius = 4.dp.toPx(), center = Offset(pointX, pointY))
+                    }
+                }
+            }
+
+            // Dynamic Tooltip position tracking tapped point
+            selectedIndex?.let { idx ->
+                if (idx in points.indices && chartWidthPx.floatValue > 0f) {
+                    val price = points[idx]
+                    val minVal = points.minOrNull() ?: 0f
+                    val maxVal = points.maxOrNull() ?: 1f
+                    val range = if (maxVal - minVal == 0f) 1f else maxVal - minVal
+
+                    val stepX = chartWidthPx.floatValue / (points.size - 1)
+                    val pointX = idx * stepX
+                    val norm = (price - minVal) / range
+                    val pointY = chartHeightPx.floatValue - (norm * chartHeightPx.floatValue * 0.8f + chartHeightPx.floatValue * 0.1f)
+
+                    val pointXDp = with(density) { pointX.toDp() }
+                    val pointYDp = with(density) { pointY.toDp() }
+
+                    val tooltipWidthDp = 80.dp
+                    val tooltipHeightDp = 28.dp
+
+                    val clampedXDp = (pointXDp - tooltipWidthDp / 2).coerceIn(0.dp, (maxContainerWidth - tooltipWidthDp - 12.dp).coerceAtLeast(0.dp))
+                    val clampedYDp = (pointYDp - tooltipHeightDp - 6.dp).coerceIn(0.dp, (maxContainerHeight - tooltipHeightDp).coerceAtLeast(0.dp))
+
+                    Surface(
+                        modifier = Modifier.offset(x = clampedXDp, y = clampedYDp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = PinkPrimary,
+                        shadowElevation = 4.dp
+                    ) {
+                        Text(
+                            text = stringResource(R.string.amount_egp_fmt, String.format(Locale.getDefault(), "%,.0f", price.toDouble())),
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
             }
         }
     }
+}
 }
 

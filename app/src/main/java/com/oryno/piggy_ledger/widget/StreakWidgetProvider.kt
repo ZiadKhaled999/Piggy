@@ -87,14 +87,21 @@ class StreakWidgetProvider : AppWidgetProvider() {
 
     companion object {
         fun triggerUpdate(context: Context) {
-            val intent = Intent(context, StreakWidgetProvider::class.java).apply {
-                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                val ids = AppWidgetManager.getInstance(context).getAppWidgetIds(
+            try {
+                val appWidgetManager = AppWidgetManager.getInstance(context) ?: return
+                val ids = appWidgetManager.getAppWidgetIds(
                     ComponentName(context, StreakWidgetProvider::class.java)
                 )
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                if (ids != null && ids.isNotEmpty()) {
+                    val intent = Intent(context, StreakWidgetProvider::class.java).apply {
+                        action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                    }
+                    context.sendBroadcast(intent)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("StreakWidgetProvider", "triggerUpdate failed", e)
             }
-            context.sendBroadcast(intent)
         }
     }
 }

@@ -289,6 +289,7 @@ fun AddTransactionScreen(
                                 onNext = { if (txAmountStr.toDoubleOrNull() != null && txAmountStr.toDoubleOrNull()!! > 0) currentStep = 1 }
                             )
                             1 -> Step1CategoryArcWheelScreen(
+                                isExpense = isExpense,
                                 categories = allCategories,
                                 selectedCategory = selectedCategory,
                                 onCategorySelected = { selectedCategory = it },
@@ -615,6 +616,7 @@ fun Step0AmountScreen(
 // SLIDE 1: CATEGORY SELECTION (simple vertical scrollable list, tap to choose)
 @Composable
 fun Step1CategoryArcWheelScreen(
+    isExpense: Boolean,
     categories: List<TransactionCategory>,
     selectedCategory: TransactionCategory?,
     onCategorySelected: (TransactionCategory) -> Unit,
@@ -656,35 +658,39 @@ fun Step1CategoryArcWheelScreen(
                 } else {
                     resolveCategoryDisplayName(cat.key)
                 }
+                
+                val highlightColor = if (isExpense) PinkPrimary else Color(0xFF10B981)
+                val selectedBg = Color(0xFFE2E8F0)
+
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
                         .clickable { onCategorySelected(cat) },
-                    color = if (isSelected) PinkPrimary.copy(alpha = 0.08f) else Color.White,
+                    color = if (isSelected) Color(0xFFE2E8F0) else Color.White,
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) PinkPrimary else Color(0xFFE2E8F0)),
-                    shadowElevation = if (isSelected) 2.dp else 0.dp
+                    border = if (isSelected) BorderStroke(1.5.dp, highlightColor) else BorderStroke(1.dp, Color(0xFFE2E8F0))
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .background(if (isSelected) Color(0xFFE2E8F0) else Color.White)
                             .padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Surface(
-                            modifier = Modifier.size(44.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            color = if (isSelected) PinkPrimary.copy(alpha = 0.12f) else Color(0xFFF1F5F9)
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(if (isSelected) Color.Transparent else Color(0xFFF1F5F9)),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = cat.icon,
-                                    contentDescription = catDisplayName,
-                                    tint = if (isSelected) PinkPrimary else Color(0xFF94A3B8),
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = cat.icon,
+                                contentDescription = catDisplayName,
+                                tint = if (isSelected) highlightColor else Color(0xFF94A3B8),
+                                modifier = Modifier.size(22.dp)
+                            )
                         }
                         Spacer(modifier = Modifier.width(14.dp))
                         Text(
@@ -695,7 +701,7 @@ fun Step1CategoryArcWheelScreen(
                             modifier = Modifier.weight(1f)
                         )
                         if (isSelected) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = highlightColor, modifier = Modifier.size(20.dp))
                         }
                     }
                 }
@@ -787,7 +793,7 @@ fun Step2AccountSelectionScreen(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
                         .clickable { onAccountSelected(acc.id) },
-                    color = Color.White,
+                    color = if (isSelected) Color(0xFFE2E8F0) else Color.White,
                     shape = RoundedCornerShape(20.dp),
                     border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) PinkPrimary else Color(0xFFE2E8F0)),
                     shadowElevation = if (isSelected) 2.dp else 0.dp
@@ -795,6 +801,7 @@ fun Step2AccountSelectionScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .background(if (isSelected) Color(0xFFE2E8F0) else Color.White)
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

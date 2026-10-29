@@ -37,6 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
@@ -118,19 +120,6 @@ fun GoalDetailScreen(
     val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
     val establishedDate = remember(goal.createdAt) { dateFormatter.format(Date(goal.createdAt)) }
 
-    val shrinkOffset by remember {
-        derivedStateOf {
-            if (scrollState.firstVisibleItemIndex == 0) {
-                scrollState.firstVisibleItemScrollOffset.toFloat()
-            } else {
-                500f
-            }
-        }
-    }
-    
-    val shrinkThreshold = 300f
-    val shrinkFactor = (shrinkOffset / shrinkThreshold).coerceIn(0f, 1f)
-    
     val now = System.currentTimeMillis()
     val daysRunning = remember(goal.createdAt) {
         val diff = now - goal.createdAt
@@ -149,23 +138,138 @@ fun GoalDetailScreen(
         } else "N/A"
     }
 
+    val shortDateFormatter = remember { SimpleDateFormat("MMM d", Locale.getDefault()) }
+    val startDateFormatted = remember(goal.createdAt) { shortDateFormatter.format(Date(goal.createdAt)) }
+    val endDateFormatted = remember(estDaysToComplete, goal.createdAt) {
+        if (estDaysToComplete != null && estDaysToComplete > 0) {
+            val calendar = Calendar.getInstance()
+            calendar.add(Calendar.DAY_OF_YEAR, estDaysToComplete)
+            shortDateFormatter.format(calendar.time)
+        } else {
+            val calendar = Calendar.getInstance()
+            calendar.timeInMillis = goal.createdAt
+            calendar.add(Calendar.DAY_OF_MONTH, 30)
+            shortDateFormatter.format(calendar.time)
+        }
+    }
+
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        // Content
+        // Top App Bar
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = if (scrollState.firstVisibleItemIndex > 0) 3.dp else 0.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back_icon),
+                        tint = NavyDark
+                    )
+                }
+
+                val isScrolledPast = scrollState.firstVisibleItemIndex > 0
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = if (isScrolledPast) goal.name else stringResource(R.string.budgeting_title),
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isScrolledPast) NavyDark else TextLight,
+                        fontSize = if (isScrolledPast) 16.sp else 13.sp,
+                        letterSpacing = if (isScrolledPast) 0.sp else 1.sp,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    if (isScrolledPast) {
+                        Text(
+                            text = if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format(Locale.getDefault(), "%,.0f", savedAmount)} / $currencySymbol${String.format(Locale.getDefault(), "%,.0f", goal.targetAmount)}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PinkPrimary
+                        )
+                    }
+                }
+
+                IconButton(
+                    onClick = { viewModel.togglePrivacyMode(context) },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        painter = if (isPrivacyMode) painterResource(id = R.drawable.ic_eye_closed) else painterResource(id = R.drawable.ic_eye_open),
+                        contentDescription = "Toggle Privacy",
+                        tint = NavyDark,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        }
+
+        // Scrollable Content
         LazyColumn(
             state = scrollState,
             modifier = Modifier.fillMaxSize()
         ) {
             item {
-                // Header Spacer
-                Spacer(modifier = Modifier.height(320.dp))
+                // Header & Circular Progress Chart Section
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp, bottom = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.total_balance_label),
+                            color = TextLight,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (savedAmount > goal.targetAmount && goal.targetAmount > 0) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isPrivacyMode) stringResource(R.string.amount_extra_simple, "$currencySymbol••••••")
+                                       else stringResource(R.string.amount_extra_simple, "$currencySymbol${String.format(Locale.getDefault(), "%,.2f", savedAmount - goal.targetAmount)}"),
+                                color = PinkPrimary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    CircularGoalProgress(
+                        savedAmount = savedAmount,
+                        targetAmount = goal.targetAmount,
+                        currencySymbol = currencySymbol,
+                        isPrivacyMode = isPrivacyMode,
+                        startDateFormatted = startDateFormatted,
+                        endDateFormatted = endDateFormatted,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    )
+                }
             }
-            
+
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -181,7 +285,7 @@ fun GoalDetailScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(stringResource(R.string.your_budget_title), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                            
+
                             if (goal.targetAmount > 0.0) {
                                 val isCompleted = savedAmount >= goal.targetAmount
                                 Surface(
@@ -198,9 +302,9 @@ fun GoalDetailScreen(
                                 }
                             }
                         }
-                        
+
                         Spacer(modifier = Modifier.height(16.dp))
-                        
+
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
@@ -240,12 +344,12 @@ fun GoalDetailScreen(
                                 }
                             }
                         }
-                        
+
                         Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
             }
-            
+
             stickyHeader {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -282,118 +386,9 @@ fun GoalDetailScreen(
             } else {
                 transactionsContent(transactions = transactions, isPrivacyMode = isPrivacyMode, currencySymbol = currencySymbol)
             }
-            
+
             item {
                 Spacer(modifier = Modifier.height(32.dp))
-            }
-        }
-        
-        // Shrinkable Header Section
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
-                .graphicsLayer {
-                    translationY = -shrinkOffset * 0.5f
-                    alpha = (1f - shrinkFactor * 1.5f).coerceAtLeast(0f)
-                    val scale = (1f - shrinkFactor * 0.3f).coerceAtLeast(0.7f)
-                    scaleX = scale
-                    scaleY = scale
-                },
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_icon), tint = NavyDark)
-                }
-                Text(
-                    text = stringResource(R.string.budgeting_title),
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold,
-                    color = TextLight,
-                    letterSpacing = 1.sp
-                )
-                IconButton(
-                    onClick = { viewModel.togglePrivacyMode(context) },
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        painter = if (isPrivacyMode) painterResource(id = R.drawable.ic_eye_closed) else painterResource(id = R.drawable.ic_eye_open),
-                        contentDescription = "Toggle Privacy",
-                        tint = NavyDark,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.total_balance_label),
-                    color = TextLight,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                if (savedAmount > goal.targetAmount) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isPrivacyMode) stringResource(R.string.amount_extra_simple, "$currencySymbol••••••") else stringResource(R.string.amount_extra_simple, "$currencySymbol${String.format("%.2f", savedAmount - goal.targetAmount)}"),
-                        color = PinkAccent,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-            
-            CircularGoalProgress(
-                savedAmount = savedAmount,
-                targetAmount = goal.targetAmount,
-                currencySymbol = currencySymbol,
-                isPrivacyMode = isPrivacyMode,
-                modifier = Modifier
-                    .size(280.dp)
-                    .padding(16.dp)
-            )
-        }
-
-        // Fixed Top Bar when scrolled
-        if (shrinkFactor > 0.8f) {
-            Surface(
-                modifier = Modifier.fillMaxWidth().height(64.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 2.dp
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_icon), tint = NavyDark)
-                    }
-                    Text(
-                        text = goal.name,
-                        modifier = Modifier.weight(1f),
-                        fontWeight = FontWeight.Bold,
-                        color = NavyDark,
-                        fontSize = 18.sp,
-                        maxLines = 1
-                    )
-                    Text(
-                        text = if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format("%.0f", savedAmount)}",
-                        fontWeight = FontWeight.ExtraBold,
-                        color = PinkPrimary,
-                        fontSize = 18.sp
-                    )
-                }
             }
         }
     }
@@ -860,59 +855,177 @@ fun CircularGoalProgress(
     targetAmount: Double,
     currencySymbol: String,
     isPrivacyMode: Boolean,
+    startDateFormatted: String = "Aug 1",
+    endDateFormatted: String = "Aug 15",
     modifier: Modifier = Modifier
 ) {
     val progress = if (targetAmount > 0) (savedAmount / targetAmount).toFloat().coerceIn(0f, 1f) else 1f
-    
-    Box(
+
+    Column(
         modifier = modifier,
-        contentAlignment = Alignment.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val strokeWidth = 24.dp.toPx()
-            val diameter = size.minDimension - strokeWidth
-            val topLeft = Offset((size.width - diameter) / 2, (size.height - diameter) / 2)
-            val arcSize = Size(diameter, diameter)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(260.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp, vertical = 10.dp)
+            ) {
+                // Wide, tactile, modern arc width (chunky like the uploaded reference)
+                val strokeWidth = 36.dp.toPx()
+                val diameter = (size.minDimension - strokeWidth - 8.dp.toPx()).coerceAtLeast(10f)
+                val radius = diameter / 2f
+                val centerOffset = Offset(size.width / 2f, size.height / 2f)
+                val arcTopLeft = Offset(centerOffset.x - radius, centerOffset.y - radius)
+                val arcSize = Size(diameter, diameter)
 
-            // Background track (subtle pink)
-            drawArc(
-                color = PinkPrimary.copy(alpha = 0.15f),
-                startAngle = 135f,
-                sweepAngle = 270f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
+                val startAngle = 135f
+                val totalSweep = 270f
 
-            // Progress arc (pink)
-            drawArc(
-                color = PinkPrimary,
-                startAngle = 135f,
-                sweepAngle = 270f * progress,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
+                // 1. Soft uncompleted background track (Piggy Rose tint)
+                drawArc(
+                    color = PinkPrimary.copy(alpha = 0.15f),
+                    startAngle = startAngle,
+                    sweepAngle = totalSweep,
+                    useCenter = false,
+                    topLeft = arcTopLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
+
+                // 2. Subtle dots along the uncompleted part of the track
+                val totalDots = 10
+                for (i in 1 until totalDots) {
+                    val dotFraction = i.toFloat() / totalDots
+                    // Only draw dots ahead of current progress so they don't collide with the knob
+                    if (dotFraction > progress + 0.05f && dotFraction < 0.98f) {
+                        val dotAngleDeg = startAngle + totalSweep * dotFraction
+                        val dotAngleRad = Math.toRadians(dotAngleDeg.toDouble())
+                        val dotX = centerOffset.x + radius * cos(dotAngleRad).toFloat()
+                        val dotY = centerOffset.y + radius * sin(dotAngleRad).toFloat()
+
+                        drawCircle(
+                            color = Color(0xFFFDA4AF),
+                            radius = 3.5.dp.toPx(),
+                            center = Offset(dotX, dotY)
+                        )
+                    }
+                }
+
+                // 3. Completed progress arc with signature Piggy Pink gradient
+                // From deep velvety rose -> radiant Piggy Pink -> bright luminous coral-rose tip
+                if (progress > 0.005f) {
+                    val activeSweep = (totalSweep * progress).coerceIn(0.1f, totalSweep)
+
+                    // Rotate canvas so 0° aligns with startAngle (135°)
+                    rotate(degrees = startAngle, pivot = centerOffset) {
+                        drawArc(
+                            brush = Brush.sweepGradient(
+                                0.00f to Color(0xFF9F1239), // Deep Velvet Rose at start
+                                0.22f to Color(0xFFBE123C), // Crimson Rose
+                                0.45f to Color(0xFFE11D48), // Rich Rose
+                                0.62f to Color(0xFFF43F5E), // Signature PinkPrimary
+                                0.75f to Color(0xFFFB7185), // Luminous Coral-Rose at tip
+                                1.00f to Color(0xFF9F1239),
+                                center = centerOffset
+                            ),
+                            startAngle = 0f,
+                            sweepAngle = activeSweep,
+                            useCenter = false,
+                            topLeft = arcTopLeft,
+                            size = arcSize,
+                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                        )
+                    }
+
+                    // 4. Floating white indicator knob at the tip of the progress arc
+                    val knobAngleDeg = startAngle + activeSweep
+                    val knobAngleRad = Math.toRadians(knobAngleDeg.toDouble())
+                    val knobX = centerOffset.x + radius * cos(knobAngleRad).toFloat()
+                    val knobY = centerOffset.y + radius * sin(knobAngleRad).toFloat()
+                    val knobRadius = 15.dp.toPx()
+
+                    // Ambient drop shadow under white knob
+                    drawCircle(
+                        color = Color(0x35000000),
+                        radius = knobRadius + 2.dp.toPx(),
+                        center = Offset(knobX, knobY + 2.dp.toPx())
+                    )
+                    // Crisp white knob
+                    drawCircle(
+                        color = Color.White,
+                        radius = knobRadius,
+                        center = Offset(knobX, knobY)
+                    )
+                }
+            }
+
+            // Center Text: Big bold amount & "Available now"
+            // Dynamic font sizing prevents overlapping the circular chart as amounts scale up (1 vs 100 vs 1000+)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(horizontal = 42.dp)
+            ) {
+                val formattedAmount = if (isPrivacyMode) {
+                    "$currencySymbol••••••"
+                } else {
+                    "$currencySymbol${String.format(Locale.getDefault(), "%,.0f", savedAmount)}"
+                }
+                val amountFontSize = when {
+                    formattedAmount.length <= 4 -> 36.sp
+                    formattedAmount.length <= 6 -> 30.sp
+                    formattedAmount.length <= 8 -> 25.sp
+                    formattedAmount.length <= 11 -> 20.sp
+                    formattedAmount.length <= 14 -> 17.sp
+                    else -> 14.sp
+                }
+                Text(
+                    text = formattedAmount,
+                    fontSize = amountFontSize,
+                    fontWeight = FontWeight.Bold,
+                    color = NavyDark,
+                    letterSpacing = (-0.5).sp,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = stringResource(R.string.available_now),
+                    fontSize = 13.sp,
+                    color = TextLight,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Date labels below left and right terminals of the horseshoe
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 36.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format(Locale.getDefault(), "%,.0f", savedAmount)}",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Black,
-                color = NavyDark
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.available_now),
-                fontSize = 12.sp,
+                text = startDateFormatted,
+                fontSize = 13.sp,
                 color = TextLight,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = endDateFormatted,
+                fontSize = 13.sp,
+                color = TextLight,
+                fontWeight = FontWeight.Medium
             )
         }
     }

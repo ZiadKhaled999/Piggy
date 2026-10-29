@@ -8,6 +8,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.MoreVert
@@ -34,6 +36,8 @@ import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +48,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -161,86 +166,80 @@ fun WealthCommoditiesScreen(
         }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 18.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(top = 16.dp + padding.calculateTopPadding(), bottom = 32.dp + padding.calculateBottomPadding()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // 1. Top Portfolio Performance Card & Dynamic Timeframe Chart
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
                     color = Color.White,
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                     shadowElevation = 0.dp
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(20.dp)
                     ) {
-                        Text(
-                            text = stringResource(R.string.total_portfolio_value),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextLight,
-                            letterSpacing = 1.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Text(
-                            text = "${String.format(Locale.getDefault(), "%,.2f", uiState.totalWealthValue)} ${stringResource(R.string.currency_egp)}",
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = NavyDark
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        // Real Gain / Loss Badge
-                        val isProfit = uiState.overallGainLoss >= 0
-                        val badgeBg = if (isProfit) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
-                        val badgeFg = if (isProfit) Color(0xFF15803D) else Color(0xFFB91C1C)
-                        val icon = if (isProfit) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = badgeBg
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = icon,
-                                        contentDescription = null,
-                                        tint = badgeFg,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "${if (isProfit) "+" else ""}${String.format(Locale.getDefault(), "%,.2f", uiState.overallGainLoss)} ${stringResource(R.string.currency_egp)} (${String.format(Locale.getDefault(), "%.2f", uiState.overallGainLossPercentage)}%)",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = badgeFg
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.padding(horizontal = 18.dp).padding(top = 20.dp, bottom = 12.dp)) {
                             Text(
-                                text = stringResource(R.string.total_return),
+                                text = stringResource(R.string.total_portfolio_value),
                                 fontSize = 11.sp,
-                                color = TextLight
+                                fontWeight = FontWeight.Bold,
+                                color = TextLight,
+                                letterSpacing = 1.sp
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                text = "${String.format(Locale.getDefault(), "%,.2f", uiState.totalWealthValue)} ${stringResource(R.string.currency_egp)}",
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = NavyDark
+                            )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Real Gain / Loss Badge
+                            val isProfit = uiState.overallGainLoss >= 0
+                            val badgeBg = if (isProfit) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
+                            val badgeFg = if (isProfit) Color(0xFF15803D) else Color(0xFFB91C1C)
+                            val icon = if (isProfit) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = badgeBg
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = null,
+                                            tint = badgeFg,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "${if (isProfit) "+" else ""}${String.format(Locale.getDefault(), "%,.2f", uiState.overallGainLoss)} ${stringResource(R.string.currency_egp)} (${String.format(Locale.getDefault(), "%.2f", uiState.overallGainLossPercentage)}%)",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = badgeFg
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.total_return),
+                                    fontSize = 11.sp,
+                                    color = TextLight
+                                )
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        // Real Dynamic Portfolio Line Chart
+                        // Real Dynamic Portfolio Line Chart (Full Width)
                         RealDynamicPortfolioChart(
                             history = uiState.portfolioHistory,
                             currentTotal = uiState.totalWealthValue,
@@ -250,43 +249,43 @@ fun WealthCommoditiesScreen(
                                 .height(130.dp)
                         )
 
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // Timeframe filter chips
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFFDCFCE7)
+                        Column(modifier = Modifier.padding(horizontal = 18.dp).padding(top = 4.dp, bottom = 14.dp)) {
+                            // Timeframe filter chips
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = stringResource(R.string.live_status),
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF15803D),
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(0xFFDCFCE7)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.live_status),
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF15803D),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                listOf("1D", "1W", "1M", "1Y").forEach { tf ->
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = if (selectedTimeframe == tf) PinkPrimary else Color(0xFFF1F5F9),
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .clickable { selectedTimeframe = tf }
-                                    ) {
-                                        Text(
-                                            text = tf,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (selectedTimeframe == tf) Color.White else TextLight,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                        )
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    listOf("1D", "1W", "1M", "1Y").forEach { tf ->
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = if (selectedTimeframe == tf) PinkPrimary else Color(0xFFF1F5F9),
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable { selectedTimeframe = tf }
+                                        ) {
+                                            Text(
+                                                text = tf,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (selectedTimeframe == tf) Color.White else TextLight,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -295,26 +294,50 @@ fun WealthCommoditiesScreen(
                 }
             }
 
-            // 2. Compact Sleek Commodity Market Rates Row
+            // 2. Modern Commodity Market Rates Section
             item {
-                Column {
-                    Text(
-                        text = stringResource(R.string.live_commodity_rates),
-                        fontSize = 14.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = NavyDark
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                Column(modifier = Modifier.padding(horizontal = 18.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.live_commodity_rates),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = NavyDark,
+                            letterSpacing = (-0.5).sp
+                        )
+
+                        IconButton(
+                            onClick = { viewModel.fetchLivePrices(forceRefresh = true) },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = stringResource(R.string.refresh_rates_desc),
+                                tint = PinkPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val overallGoldRate = (uiState.liveRates.gold24k + uiState.liveRates.gold21k + uiState.liveRates.gold18k) / 3.0
 
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 8.dp)
                     ) {
-                        item { CompactRateChip(stringResource(R.string.purity_k24), uiState.liveRates.gold24k, Color(0xFFD97706)) { onNavigateToMarketDetail("GOLD", "24k") } }
-                        item { CompactRateChip(stringResource(R.string.purity_k21), uiState.liveRates.gold21k, Color(0xFFB45309)) { onNavigateToMarketDetail("GOLD", "21k") } }
-                        item { CompactRateChip(stringResource(R.string.purity_k18), uiState.liveRates.gold18k, Color(0xFF92400E)) { onNavigateToMarketDetail("GOLD", "18k") } }
-                        item { CompactRateChip(stringResource(R.string.purity_s999), uiState.liveRates.silver999, Color(0xFF475569)) { onNavigateToMarketDetail("SILVER", "999") } }
-                        item { CompactRateChip(stringResource(R.string.purity_s925), uiState.liveRates.silver925, Color(0xFF64748B)) { onNavigateToMarketDetail("SILVER", "925") } }
-                        item { CompactRateChip(stringResource(R.string.purity_s900), uiState.liveRates.silver900, Color(0xFF94A3B8)) { onNavigateToMarketDetail("SILVER", "900") } }
+                        item { ModernRateCard(stringResource(R.string.overall_gold), overallGoldRate, Color(0xFFD97706), R.drawable.ic_asset_gold) { onNavigateToMarketDetail("GOLD", "Overall") } }
+                        item { ModernRateCard(stringResource(R.string.purity_k24), uiState.liveRates.gold24k, Color(0xFFD97706), R.drawable.ic_asset_gold) { onNavigateToMarketDetail("GOLD", "24k") } }
+                        item { ModernRateCard(stringResource(R.string.purity_k21), uiState.liveRates.gold21k, Color(0xFFB45309), R.drawable.ic_asset_gold) { onNavigateToMarketDetail("GOLD", "21k") } }
+                        item { ModernRateCard(stringResource(R.string.purity_k18), uiState.liveRates.gold18k, Color(0xFF92400E), R.drawable.ic_asset_gold) { onNavigateToMarketDetail("GOLD", "18k") } }
+                        item { ModernRateCard(stringResource(R.string.purity_s999), uiState.liveRates.silver999, Color(0xFF475569), R.drawable.ic_asset_silver) { onNavigateToMarketDetail("SILVER", "999") } }
+                        item { ModernRateCard(stringResource(R.string.purity_s925), uiState.liveRates.silver925, Color(0xFF64748B), R.drawable.ic_asset_silver) { onNavigateToMarketDetail("SILVER", "925") } }
+                        item { ModernRateCard(stringResource(R.string.purity_s900), uiState.liveRates.silver900, Color(0xFF94A3B8), R.drawable.ic_asset_silver) { onNavigateToMarketDetail("SILVER", "900") } }
                     }
                 }
             }
@@ -322,12 +345,12 @@ fun WealthCommoditiesScreen(
             // 3. Asset Diversity Section
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    DiversityIndicator(stringResource(R.string.asset_type_gold), uiState.goldTotalValue, Color(0xFFD97706), Modifier.weight(1f))
-                    DiversityIndicator(stringResource(R.string.asset_type_silver), uiState.silverTotalValue, Color(0xFF475569), Modifier.weight(1f))
-                    DiversityIndicator(stringResource(R.string.certificate_desc), uiState.certificatesTotalValue, Color(0xFF059669), Modifier.weight(1f))
+                    DiversityIndicator(stringResource(R.string.asset_type_gold), uiState.goldTotalValue, Color(0xFFD97706), R.drawable.ic_asset_gold, Modifier.weight(1f))
+                    DiversityIndicator(stringResource(R.string.asset_type_silver), uiState.silverTotalValue, Color(0xFF475569), R.drawable.ic_asset_silver, Modifier.weight(1f))
+                    DiversityIndicator(stringResource(R.string.certificate_desc), uiState.certificatesTotalValue, Color(0xFF059669), R.drawable.ic_asset_certificate, Modifier.weight(1f))
                 }
             }
 
@@ -338,14 +361,14 @@ fun WealthCommoditiesScreen(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = NavyDark,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp).padding(horizontal = 18.dp)
                 )
             }
 
             if (uiState.assets.isEmpty()) {
                 item {
                     Surface(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
                         shape = RoundedCornerShape(18.dp),
                         color = Color.White,
                         border = BorderStroke(1.dp, Color(0xFFE2E8F0))
@@ -382,16 +405,19 @@ fun WealthCommoditiesScreen(
             } else {
                 items(uiState.assets, key = { it.id }) { asset ->
                     val valuation = uiState.assetValuations[asset.id] ?: asset.purchasePrice
-                    AssetHoldingCard(
-                        asset = asset,
-                        valuation = valuation,
-                        onCardClick = { onNavigateToAssetDetail(asset.id) },
-                        onMenuClick = { assetForMenu = asset }
-                    )
+                    Box(modifier = Modifier.padding(horizontal = 18.dp)) {
+                        AssetHoldingCard(
+                            asset = asset,
+                            valuation = valuation,
+                            onCardClick = { onNavigateToAssetDetail(asset.id) },
+                            onMenuClick = { assetForMenu = asset }
+                        )
+                    }
                 }
             }
         }
     }
+
 
     // Delete Confirmation Bottom Sheet (Secure)
     if (assetToDelete != null) {
@@ -413,6 +439,14 @@ fun WealthCommoditiesScreen(
             onSell = {
                 assetToSell = assetForMenu
                 assetForMenu = null
+            },
+            onEditDate = {
+                val currentAsset = assetForMenu!!
+                assetForMenu = null
+                val initialTs = if (currentAsset.startDate > 0) currentAsset.startDate else currentAsset.createdAt
+                showNativeDatePicker(context, initialTs) { newTs ->
+                    viewModel.updateAssetPurchaseDate(currentAsset.id, newTs)
+                }
             },
             onDelete = {
                 assetToDelete = assetForMenu
@@ -452,31 +486,34 @@ fun WealthCommoditiesScreen(
             bankAccounts = uiState.bankAccounts,
             liveRates = uiState.liveRates,
             onDismiss = { showAddModalType = null },
-            onAddGold = { name, grams, karat, priceOverride, fundingAccountId ->
+            onAddGold = { name, grams, karat, priceOverride, purchaseDateMs, fundingAccountId ->
                 viewModel.addGoldAsset(
                     name = name,
                     grams = grams,
                     karat = karat,
                     purchasePriceOverride = priceOverride,
+                    purchaseDateMs = purchaseDateMs,
                     fundingAccountId = fundingAccountId,
                     onSuccess = { showAddModalType = null }
                 )
             },
-            onAddSilver = { name, grams, purity, priceOverride, fundingAccountId ->
+            onAddSilver = { name, grams, purity, priceOverride, purchaseDateMs, fundingAccountId ->
                 viewModel.addSilverAsset(
                     name = name,
                     grams = grams,
                     purity = purity,
                     purchasePriceOverride = priceOverride,
+                    purchaseDateMs = purchaseDateMs,
                     fundingAccountId = fundingAccountId,
                     onSuccess = { showAddModalType = null }
                 )
             },
-            onAddCertificate = { bank, principal, rate, fundingAccountId ->
+            onAddCertificate = { bank, principal, rate, purchaseDateMs, fundingAccountId ->
                 viewModel.addCertificateAsset(
                     bankName = bank,
                     principal = principal,
                     annualInterestRate = rate,
+                    purchaseDateMs = purchaseDateMs,
                     fundingAccountId = fundingAccountId,
                     onSuccess = { showAddModalType = null }
                 )
@@ -530,139 +567,161 @@ private fun RealDynamicPortfolioChart(
         }
     }
 
-    val isRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
-    var selectedPrice by remember { mutableStateOf<Float?>(null) }
-    val chartWidthState = remember { mutableFloatStateOf(0f) }
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    val chartWidthPx = remember { mutableFloatStateOf(0f) }
+    val chartHeightPx = remember { mutableFloatStateOf(0f) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
 
-    Column(modifier = modifier) {
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .pointerInput(points) {
-                    detectTapGestures { offset ->
-                        val cw = chartWidthState.floatValue
-                        if (cw <= 0f || points.size < 2) return@detectTapGestures
-                        val stepX = cw / (points.size - 1)
-                        val rawIndex = if (isRtl) ((cw - offset.x) / stepX) else (offset.x / stepX)
-                        val idx = rawIndex.toInt().coerceIn(0, points.lastIndex)
-                        selectedPrice = points[idx]
-                    }
-                }
-        ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val minVal = points.minOrNull() ?: 0f
-                val maxVal = points.maxOrNull() ?: 1f
-                val range = if (maxVal - minVal == 0f) 1f else maxVal - minVal
+    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+        Column(modifier = modifier) {
+            BoxWithConstraints(modifier = Modifier.weight(1f)) {
+                val maxContainerWidth = maxWidth
+                val maxContainerHeight = maxHeight
 
-                val paint = android.graphics.Paint().apply {
-                    setColor(android.graphics.Color.parseColor("#94A3B8"))
-                    textSize = 9.sp.toPx()
-                    textAlign = android.graphics.Paint.Align.RIGHT
-                    isAntiAlias = true
-                }
-                val labels = (0..4).map { i ->
-                    val ratio = i.toFloat() / 4f
-                    String.format(Locale.getDefault(), "%,.0f", minVal + (maxVal - minVal) * ratio)
-                }
-                val maxLabelWidth = labels.maxOfOrNull { paint.measureText(it) } ?: 0f
-                val rightPadding = maxLabelWidth + 12.dp.toPx()
-                val width = size.width - rightPadding
-                val height = size.height
-                chartWidthState.floatValue = width
-                val stepX = width / (points.size - 1)
-
-                val path = Path()
-                val fillPath = Path()
-
-                points.forEachIndexed { index, value ->
-                    val rawX = index * stepX
-                    val x = if (isRtl) width - rawX else rawX
-                    val normalized = (value - minVal) / range
-                    val y = height - (normalized * height * 0.8f + height * 0.1f)
-
-                    if (index == 0) {
-                        path.moveTo(x, y)
-                        fillPath.moveTo(x, height)
-                        fillPath.lineTo(x, y)
-                    } else {
-                        val prevRawX = (index - 1) * stepX
-                        val prevX = if (isRtl) width - prevRawX else prevRawX
-                        val prevNorm = (points[index - 1] - minVal) / range
-                        val prevY = height - (prevNorm * height * 0.8f + height * 0.1f)
-                        val cx = (prevX + x) / 2
-                        path.cubicTo(cx, prevY, cx, y, x, y)
-                        fillPath.cubicTo(cx, prevY, cx, y, x, y)
-                    }
-                }
-
-                if (isRtl) {
-                    fillPath.lineTo(width, height)
-                } else {
-                    fillPath.lineTo(width, height)
-                }
-                fillPath.close()
-
-                drawPath(
-                    path = fillPath,
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color(0xFF34D399).copy(alpha = 0.35f), Color.Transparent)
-                    )
-                )
-
-                drawPath(
-                    path = path,
-                    color = Color(0xFF059669),
-                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
-                )
-
-                // Dashed Grid lines & Right Axis Labels (on edge)
-                val gridLines = 4
-                val dashEffect = android.graphics.DashPathEffect(floatArrayOf(8f, 8f), 0f)
-
-                drawIntoCanvas { canvas ->
-                    val gridPaint = android.graphics.Paint().apply {
-                        setColor(android.graphics.Color.parseColor("#E2E8F0"))
-                        strokeWidth = 1.dp.toPx()
-                        pathEffect = dashEffect
-                        style = android.graphics.Paint.Style.STROKE
-                    }
-
-                    for (i in 0..gridLines) {
-                        val ratio = i.toFloat() / gridLines
-                        val y = height - (ratio * height * 0.8f + height * 0.1f)
-
-                        canvas.nativeCanvas.drawLine(0f, y, width, y, gridPaint)
-
-                        val labelVal = minVal + (maxVal - minVal) * ratio
-                        val labelStr = String.format(Locale.getDefault(), "%,.0f", labelVal)
-                        canvas.nativeCanvas.drawText(
-                            labelStr,
-                            size.width - 4.dp.toPx(),
-                            y + 3.dp.toPx(),
-                            paint
-                        )
-                    }
-                }
-            }
-
-            selectedPrice?.let { price ->
-                Surface(
+                Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFF059669)
+                        .fillMaxSize()
+                        .pointerInput(points) {
+                            detectTapGestures { offset ->
+                                val cw = chartWidthPx.floatValue
+                                if (cw <= 0f || points.size < 2) return@detectTapGestures
+                                val stepX = cw / (points.size - 1)
+                                val idx = (offset.x / stepX).toInt().coerceIn(0, points.lastIndex)
+                                selectedIndex = idx
+                            }
+                        }
                 ) {
-                    Text(
-                        text = String.format(Locale.getDefault(), "%,.2f", price),
-                        color = Color.White,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val minVal = points.minOrNull() ?: 0f
+                        val maxVal = points.maxOrNull() ?: 1f
+                        val range = if (maxVal - minVal == 0f) 1f else maxVal - minVal
+
+                        val width = size.width
+                        val height = size.height
+                        chartWidthPx.floatValue = width
+                        chartHeightPx.floatValue = height
+                        val stepX = width / (points.size - 1)
+
+                        val path = Path()
+                        val fillPath = Path()
+
+                        points.forEachIndexed { index, value ->
+                            val x = index * stepX
+                            val normalized = (value - minVal) / range
+                            val y = height - (normalized * height * 0.8f + height * 0.1f)
+
+                            if (index == 0) {
+                                path.moveTo(x, y)
+                                fillPath.moveTo(x, height)
+                                fillPath.lineTo(x, y)
+                            } else {
+                                val prevX = (index - 1) * stepX
+                                val prevNorm = (points[index - 1] - minVal) / range
+                                val prevY = height - (prevNorm * height * 0.8f + height * 0.1f)
+                                val cx = (prevX + x) / 2
+                                path.cubicTo(cx, prevY, cx, y, x, y)
+                                fillPath.cubicTo(cx, prevY, cx, y, x, y)
+                            }
+                        }
+
+                        fillPath.lineTo(width, height)
+                        fillPath.close()
+
+                        drawPath(
+                            path = fillPath,
+                            brush = Brush.verticalGradient(
+                                colors = listOf(Color(0xFF34D399).copy(alpha = 0.35f), Color.Transparent)
+                            )
+                        )
+
+                        drawPath(
+                            path = path,
+                            color = Color(0xFF059669),
+                            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                        )
+
+                        // Dashed Grid lines
+                        val gridLines = 4
+                        val dashEffect = android.graphics.DashPathEffect(floatArrayOf(8f, 8f), 0f)
+
+                        drawIntoCanvas { canvas ->
+                            val gridPaint = android.graphics.Paint().apply {
+                                setColor(android.graphics.Color.parseColor("#E2E8F0"))
+                                strokeWidth = 1.dp.toPx()
+                                pathEffect = dashEffect
+                                style = android.graphics.Paint.Style.STROKE
+                            }
+
+                            for (i in 0..gridLines) {
+                                val ratio = i.toFloat() / gridLines
+                                val y = height - (ratio * height * 0.8f + height * 0.1f)
+                                canvas.nativeCanvas.drawLine(0f, y, width, y, gridPaint)
+                            }
+                        }
+
+                        // Selected point highlight line & dot
+                        selectedIndex?.let { idx ->
+                            if (idx in points.indices) {
+                                val pointX = idx * stepX
+                                val norm = (points[idx] - minVal) / range
+                                val pointY = height - (norm * height * 0.8f + height * 0.1f)
+
+                                drawIntoCanvas { canvas ->
+                                    val linePaint = android.graphics.Paint().apply {
+                                        setColor(android.graphics.Color.parseColor("#94A3B8"))
+                                        strokeWidth = 1.5.dp.toPx()
+                                        pathEffect = dashEffect
+                                        style = android.graphics.Paint.Style.STROKE
+                                    }
+                                    canvas.nativeCanvas.drawLine(pointX, 0f, pointX, height, linePaint)
+                                }
+
+                                drawCircle(color = Color.White, radius = 6.dp.toPx(), center = Offset(pointX, pointY))
+                                drawCircle(color = Color(0xFF059669), radius = 4.dp.toPx(), center = Offset(pointX, pointY))
+                            }
+                        }
+                    }
+
+                    // Dynamic Tooltip position tracking tapped point
+                    selectedIndex?.let { idx ->
+                        if (idx in points.indices && chartWidthPx.floatValue > 0f) {
+                            val price = points[idx]
+                            val minVal = points.minOrNull() ?: 0f
+                            val maxVal = points.maxOrNull() ?: 1f
+                            val range = if (maxVal - minVal == 0f) 1f else maxVal - minVal
+
+                            val stepX = chartWidthPx.floatValue / (points.size - 1)
+                            val pointX = idx * stepX
+                            val norm = (price - minVal) / range
+                            val pointY = chartHeightPx.floatValue - (norm * chartHeightPx.floatValue * 0.8f + chartHeightPx.floatValue * 0.1f)
+
+                            val pointXDp = with(density) { pointX.toDp() }
+                            val pointYDp = with(density) { pointY.toDp() }
+
+                            val tooltipWidthDp = 80.dp
+                            val tooltipHeightDp = 28.dp
+
+                            val clampedXDp = (pointXDp - tooltipWidthDp / 2).coerceIn(0.dp, (maxContainerWidth - tooltipWidthDp - 12.dp).coerceAtLeast(0.dp))
+                            val clampedYDp = (pointYDp - tooltipHeightDp - 6.dp).coerceIn(0.dp, (maxContainerHeight - tooltipHeightDp).coerceAtLeast(0.dp))
+
+                            Surface(
+                                modifier = Modifier.offset(x = clampedXDp, y = clampedYDp),
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF059669),
+                                shadowElevation = 4.dp
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.amount_egp_fmt, String.format(Locale.getDefault(), "%,.0f", price.toDouble())),
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
-        }
 
         // X-Axis Labels (Time)
         Row(
@@ -682,31 +741,75 @@ private fun RealDynamicPortfolioChart(
         }
     }
 }
+}
 
 @Composable
-private fun CompactRateChip(
-    title: String,
+private fun ModernRateCard(
+    purityTitle: String,
     rate: Double,
     color: Color,
+    iconRes: Int,
     onClick: () -> Unit
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        color = color.copy(alpha = 0.08f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        shadowElevation = 1.5.dp,
+        modifier = Modifier.width(142.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(14.dp)
         ) {
-            Text(text = title, fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = color)
-            Spacer(modifier = Modifier.width(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = color.copy(alpha = 0.12f)
+                ) {
+                    Text(
+                        text = purityTitle,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = color,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFF1F5F9)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = iconRes),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             Text(
                 text = "${String.format(Locale.getDefault(), "%,.0f", rate)} ${stringResource(R.string.currency_egp)}",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontSize = 15.5.sp,
+                fontWeight = FontWeight.Black,
                 color = NavyDark
+            )
+
+            Text(
+                text = stringResource(R.string.per_gram_label),
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.Medium,
+                color = TextLight
             )
         }
     }
@@ -738,20 +841,26 @@ private fun AssetHoldingCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val (icon, color) = when (asset.type) {
-                AssetType.GOLD -> Icons.Default.MonetizationOn to Color(0xFFD97706)
-                AssetType.SILVER -> Icons.Default.Shield to Color(0xFF64748B)
-                AssetType.CERTIFICATE -> Icons.Default.Savings to Color(0xFF059669)
+            val (iconRes, color) = when (asset.type) {
+                AssetType.GOLD -> R.drawable.ic_asset_gold to Color(0xFFD97706)
+                AssetType.SILVER -> R.drawable.ic_asset_silver to Color(0xFF475569)
+                AssetType.CERTIFICATE -> R.drawable.ic_asset_certificate to Color(0xFF059669)
             }
 
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(color.copy(alpha = 0.12f)),
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFF1F5F9))
+                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
+                Icon(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(30.dp)
+                )
             }
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -803,14 +912,6 @@ private fun AssetHoldingCard(
                 )
             }
 
-            IconButton(onClick = onMenuClick) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = stringResource(R.string.asset_menu_desc),
-                    tint = TextLight,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
         }
     }
 }
@@ -821,6 +922,7 @@ private fun AssetActionMenuBottomSheet(
     asset: AssetEntity,
     onDismiss: () -> Unit,
     onSell: () -> Unit,
+    onEditDate: () -> Unit,
     onDelete: () -> Unit
 ) {
     ModalBottomSheet(
@@ -855,6 +957,23 @@ private fun AssetActionMenuBottomSheet(
                     Icon(Icons.Default.PointOfSale, contentDescription = null, tint = Color(0xFF10B981))
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(text = stringResource(R.string.action_sell), fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Surface(
+                onClick = onEditDate,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFFF8FAFC),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.DateRange, contentDescription = null, tint = PinkPrimary)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(text = stringResource(R.string.edit_purchase_date), fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -982,9 +1101,9 @@ private fun MultiStepAssetWizardBottomSheet(
     bankAccounts: List<Account>,
     liveRates: com.oryno.piggy_ledger.data.LiveMarketRatesEntity,
     onDismiss: () -> Unit,
-    onAddGold: (name: String, grams: Double, karat: Int, priceOverride: Double?, fundingAccountId: String?) -> Unit,
-    onAddSilver: (name: String, grams: Double, purity: String, priceOverride: Double?, fundingAccountId: String?) -> Unit,
-    onAddCertificate: (bank: String, principal: Double, rate: Double, fundingAccountId: String?) -> Unit
+    onAddGold: (name: String, grams: Double, karat: Int, priceOverride: Double?, purchaseDateMs: Long, fundingAccountId: String?) -> Unit,
+    onAddSilver: (name: String, grams: Double, purity: String, priceOverride: Double?, purchaseDateMs: Long, fundingAccountId: String?) -> Unit,
+    onAddCertificate: (bank: String, principal: Double, rate: Double, purchaseDateMs: Long, fundingAccountId: String?) -> Unit
 ) {
     var currentSlide by remember { mutableIntStateOf(0) }
 
@@ -994,6 +1113,8 @@ private fun MultiStepAssetWizardBottomSheet(
     var purity by remember { mutableStateOf("999") }
     var interestText by remember { mutableStateOf("23.5") }
     var priceOverrideText by remember { mutableStateOf("") }
+    var purchaseDateMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val context = LocalContext.current
     val bankCertDefault = stringResource(R.string.bank_certificate_default)
     var selectedFundingAccountId by remember { mutableStateOf<String?>(null) }
 
@@ -1012,7 +1133,7 @@ private fun MultiStepAssetWizardBottomSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                listOf(0, 1, 2).forEach { idx ->
+                listOf(0, 1, 2, 3).forEach { idx ->
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -1038,55 +1159,66 @@ private fun MultiStepAssetWizardBottomSheet(
                                 color = NavyDark
                             )
 
-                            OutlinedTextField(
-                                value = name,
-                                onValueChange = { name = it },
-                                label = { Text(stringResource(R.string.holding_title_hint)) },
-                                placeholder = { Text(stringResource(R.string.holding_title_placeholder)) },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp)
-                            )
-
                             if (type == AssetType.CERTIFICATE) {
+                                OutlinedTextField(
+                                    value = name,
+                                    onValueChange = { name = it },
+                                    label = { Text(stringResource(R.string.bank_name_label)) },
+                                    placeholder = { Text(stringResource(R.string.e_g_cib_nbe)) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+
                                 OutlinedTextField(
                                     value = gramsText,
                                     onValueChange = { gramsText = it },
                                     label = { Text(stringResource(R.string.principal_amount_label)) },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(14.dp)
+                                    shape = RoundedCornerShape(12.dp)
                                 )
+
                                 OutlinedTextField(
                                     value = interestText,
                                     onValueChange = { interestText = it },
                                     label = { Text(stringResource(R.string.annual_interest_rate_label)) },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(14.dp)
+                                    shape = RoundedCornerShape(12.dp),
+                                    trailingIcon = { Text("%", fontWeight = FontWeight.Bold) }
                                 )
                             } else {
+                                OutlinedTextField(
+                                    value = name,
+                                    onValueChange = { name = it },
+                                    label = { Text(stringResource(R.string.asset_name_label)) },
+                                    placeholder = { Text(stringResource(R.string.e_g_my_gold_coins)) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+
                                 OutlinedTextField(
                                     value = gramsText,
                                     onValueChange = { gramsText = it },
                                     label = { Text(stringResource(R.string.weight_grams_label)) },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(14.dp)
+                                    shape = RoundedCornerShape(12.dp)
                                 )
 
                                 if (type == AssetType.GOLD) {
-                                    Text(stringResource(R.string.gold_karat_label), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                                    Text(stringResource(R.string.select_purity_karat), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         listOf(24, 21, 18).forEach { k ->
                                             FilterChip(
                                                 selected = karat == k,
                                                 onClick = { karat = k },
-                                                label = { Text("${k}K") }
+                                                label = { Text(stringResource(R.string.karat_format, k)) }
                                             )
                                         }
                                     }
                                 } else if (type == AssetType.SILVER) {
-                                    Text(stringResource(R.string.silver_purity_label), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                                    Text(stringResource(R.string.select_purity_type), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         listOf("999", "925", "900").forEach { p ->
                                             FilterChip(
@@ -1114,6 +1246,87 @@ private fun MultiStepAssetWizardBottomSheet(
                     }
 
                     1 -> {
+                        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                            Text(
+                                text = stringResource(R.string.purchase_date_label),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = NavyDark
+                            )
+                            
+                            Text(
+                                text = "When did you acquire this asset?",
+                                fontSize = 14.sp,
+                                color = TextLight
+                            )
+
+                            val formattedDate = remember(purchaseDateMs) {
+                                SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(Date(purchaseDateMs))
+                            }
+
+                            Surface(
+                                onClick = {
+                                    showNativeDatePicker(context, purchaseDateMs) { newTs ->
+                                        purchaseDateMs = newTs
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color(0xFFF8FAFC),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.DateRange, contentDescription = null, tint = PinkPrimary)
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Text(formattedDate, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                                }
+                            }
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    selected = false,
+                                    onClick = { purchaseDateMs = System.currentTimeMillis() },
+                                    label = { Text(stringResource(R.string.quick_today)) }
+                                )
+                                FilterChip(
+                                    selected = false,
+                                    onClick = { purchaseDateMs = System.currentTimeMillis() - (180L * 24 * 3600 * 1000) },
+                                    label = { Text(stringResource(R.string.quick_6m_ago)) }
+                                )
+                                FilterChip(
+                                    selected = false,
+                                    onClick = { purchaseDateMs = System.currentTimeMillis() - (365L * 24 * 3600 * 1000) },
+                                    label = { Text(stringResource(R.string.quick_1y_ago)) }
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { currentSlide = 0 },
+                                    modifier = Modifier.weight(1f).height(50.dp),
+                                    shape = RoundedCornerShape(14.dp)
+                                ) {
+                                    Text(stringResource(R.string.back_btn))
+                                }
+                                Button(
+                                    onClick = { currentSlide = 2 },
+                                    modifier = Modifier.weight(1.5f).height(50.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+                                ) {
+                                    Text(stringResource(R.string.next_step), fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+
+                    2 -> {
                         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                             Text(
                                 text = stringResource(R.string.step_purchase_price_title),
@@ -1161,14 +1374,14 @@ private fun MultiStepAssetWizardBottomSheet(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 OutlinedButton(
-                                    onClick = { currentSlide = 0 },
+                                    onClick = { currentSlide = 1 },
                                     modifier = Modifier.weight(1f).height(50.dp),
                                     shape = RoundedCornerShape(14.dp)
                                 ) {
                                     Text(stringResource(R.string.back_btn))
                                 }
                                 Button(
-                                    onClick = { currentSlide = 2 },
+                                    onClick = { currentSlide = 3 },
                                     modifier = Modifier.weight(1.5f).height(50.dp),
                                     shape = RoundedCornerShape(14.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
@@ -1179,7 +1392,7 @@ private fun MultiStepAssetWizardBottomSheet(
                         }
                     }
 
-                    2 -> {
+                    3 -> {
                         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                             Text(
                                 text = stringResource(R.string.step_funding_title),
@@ -1264,7 +1477,7 @@ private fun MultiStepAssetWizardBottomSheet(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 OutlinedButton(
-                                    onClick = { currentSlide = 1 },
+                                    onClick = { currentSlide = 2 },
                                     modifier = Modifier.weight(1f).height(50.dp),
                                     shape = RoundedCornerShape(14.dp)
                                 ) {
@@ -1275,9 +1488,9 @@ private fun MultiStepAssetWizardBottomSheet(
                                         val grams = gramsText.toDoubleOrNull() ?: 0.0
                                         val priceOverride = priceOverrideText.toDoubleOrNull()
                                         when (type) {
-                                            AssetType.GOLD -> onAddGold(name, grams, karat, priceOverride, selectedFundingAccountId)
-                                            AssetType.SILVER -> onAddSilver(name, grams, purity, priceOverride, selectedFundingAccountId)
-                                            AssetType.CERTIFICATE -> onAddCertificate(name.ifBlank { bankCertDefault }, grams, interestText.toDoubleOrNull() ?: 23.5, selectedFundingAccountId)
+                                            AssetType.GOLD -> onAddGold(name, grams, karat, priceOverride, purchaseDateMs, selectedFundingAccountId)
+                                            AssetType.SILVER -> onAddSilver(name, grams, purity, priceOverride, purchaseDateMs, selectedFundingAccountId)
+                                            AssetType.CERTIFICATE -> onAddCertificate(name.ifBlank { bankCertDefault }, grams, interestText.toDoubleOrNull() ?: 23.5, purchaseDateMs, selectedFundingAccountId)
                                         }
                                     },
                                     modifier = Modifier.weight(1.8f).height(50.dp),
@@ -1413,20 +1626,43 @@ private fun SellAssetBottomSheet(
 }
 
 @Composable
-private fun DiversityIndicator(label: String, value: Double, color: Color, modifier: Modifier = Modifier) {
+private fun DiversityIndicator(
+    label: String,
+    value: Double,
+    color: Color,
+    iconRes: Int,
+    modifier: Modifier = Modifier
+) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        color = color.copy(alpha = 0.05f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.15f))
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
-            Text(text = label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = color)
-            Spacer(modifier = Modifier.height(2.dp))
+        Column(modifier = Modifier.padding(16.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(color.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(text = label, fontSize = 12.sp, color = TextLight, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "${String.format(Locale.getDefault(), "%,.0f", value)} ${stringResource(R.string.currency_egp)}",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Black,
                 color = NavyDark
             )
         }
@@ -1458,13 +1694,13 @@ private fun AssetTypePickerBottomSheet(
                 color = NavyDark
             )
             
-            AssetTypeOption(stringResource(R.string.asset_type_gold), stringResource(R.string.gold_desc), Icons.Default.MonetizationOn, Color(0xFFD97706)) {
+            AssetTypeOption(stringResource(R.string.asset_type_gold), stringResource(R.string.gold_desc), R.drawable.ic_asset_gold, Color(0xFFD97706)) {
                 onTypeSelected(AssetType.GOLD)
             }
-            AssetTypeOption(stringResource(R.string.asset_type_silver), stringResource(R.string.silver_desc), Icons.Default.Shield, Color(0xFF475569)) {
+            AssetTypeOption(stringResource(R.string.asset_type_silver), stringResource(R.string.silver_desc), R.drawable.ic_asset_silver, Color(0xFF475569)) {
                 onTypeSelected(AssetType.SILVER)
             }
-            AssetTypeOption(stringResource(R.string.asset_type_certificate), stringResource(R.string.certificate_desc), Icons.Default.Savings, Color(0xFF059669)) {
+            AssetTypeOption(stringResource(R.string.asset_type_certificate), stringResource(R.string.certificate_desc), R.drawable.ic_asset_certificate, Color(0xFF059669)) {
                 onTypeSelected(AssetType.CERTIFICATE)
             }
         }
@@ -1472,7 +1708,7 @@ private fun AssetTypePickerBottomSheet(
 }
 
 @Composable
-private fun AssetTypeOption(title: String, desc: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, onClick: () -> Unit) {
+private fun AssetTypeOption(title: String, desc: String, iconRes: Int, color: Color, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -1491,7 +1727,7 @@ private fun AssetTypeOption(title: String, desc: String, icon: androidx.compose.
                     .background(color.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
+                Icon(painter = painterResource(id = iconRes), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(26.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {

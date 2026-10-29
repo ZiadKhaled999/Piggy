@@ -312,7 +312,7 @@ fun SettingsMainContent(
 
         SettingsItem(
             title = stringResource(R.string.account_identifiers),
-            iconRes = R.drawable.img_settings_identifiers_1784901671596,
+            iconRes = R.drawable.ic_nav_accounts,
             onClick = {
                 android.util.Log.d("SettingsMainContent", "Account Identifiers clicked")
                 onModeChange(SettingsMode.ACCOUNT_IDENTIFIERS)

@@ -437,8 +437,7 @@ object StreakShareHelper {
         val mascotDrawable: Drawable? = if (activePiggyResId != 0) {
             ContextCompat.getDrawable(context, activePiggyResId)
         } else {
-            ContextCompat.getDrawable(context, R.drawable.img_piggy_active_trans)
-                ?: ContextCompat.getDrawable(context, R.drawable.streak)
+            ContextCompat.getDrawable(context, R.drawable.streak)
                 ?: ContextCompat.getDrawable(context, R.drawable.img_piggy_shades_flame)
                 ?: ContextCompat.getDrawable(context, R.drawable.img_app_logo)
         }

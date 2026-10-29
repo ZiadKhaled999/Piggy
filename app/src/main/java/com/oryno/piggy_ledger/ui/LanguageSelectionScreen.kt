@@ -157,12 +157,19 @@ fun LanguageSelectionScreen(
         ) {
             Button(
                 onClick = {
-                    selectedLanguage?.let {
-                        com.oryno.piggy_ledger.data.UserPreferences.saveLanguageSelectedSync(context, true)
-                        com.oryno.piggy_ledger.data.UserPreferences(context).saveAppLanguageSync(it)
-                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(it))
-                        com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
-                        com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+                    selectedLanguage?.let { lang ->
+                        try {
+                            com.oryno.piggy_ledger.data.UserPreferences.saveLanguageSelectedSync(context, true)
+                            com.oryno.piggy_ledger.data.UserPreferences(context).saveAppLanguageSync(lang)
+                            val currentLocales = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                            if (!currentLocales.contains(lang)) {
+                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
+                            }
+                            com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+                            com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+                        } catch (e: Exception) {
+                            android.util.Log.e("LanguageSelectionScreen", "Error saving language selection", e)
+                        }
                         onLanguageSelected()
                     }
                 },
@@ -188,14 +195,21 @@ fun LanguageSelectionScreen(
 
             OutlinedButton(
                 onClick = {
-                    selectedLanguage?.let {
-                        com.oryno.piggy_ledger.data.UserPreferences.saveLanguageSelectedSync(context, true)
-                        com.oryno.piggy_ledger.data.UserPreferences.saveHeardAboutUsSync(context, true)
-                        com.oryno.piggy_ledger.data.UserPreferences.saveOnboardedSync(context, true)
-                        com.oryno.piggy_ledger.data.UserPreferences(context).saveAppLanguageSync(it)
-                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(it))
-                        com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
-                        com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+                    selectedLanguage?.let { lang ->
+                        try {
+                            com.oryno.piggy_ledger.data.UserPreferences.saveLanguageSelectedSync(context, true)
+                            com.oryno.piggy_ledger.data.UserPreferences.saveHeardAboutUsSync(context, true)
+                            com.oryno.piggy_ledger.data.UserPreferences.saveOnboardedSync(context, true)
+                            com.oryno.piggy_ledger.data.UserPreferences(context).saveAppLanguageSync(lang)
+                            val currentLocales = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                            if (!currentLocales.contains(lang)) {
+                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
+                            }
+                            com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+                            com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+                        } catch (e: Exception) {
+                            android.util.Log.e("LanguageSelectionScreen", "Error saving language for existing account", e)
+                        }
                     }
                     onAlreadyHaveAccount()
                 },

@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import androidx.compose.ui.res.stringResource
+import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.data.PiggyLedgerDatabase
 import com.oryno.piggy_ledger.data.PiggyLedgerRepository
 import com.oryno.piggy_ledger.data.SubscriptionEntity
@@ -73,7 +75,7 @@ fun SubscriptionsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Subscriptions & Recurring Bills",
+                        text = stringResource(R.string.subscriptions_title),
                         fontWeight = FontWeight.Bold,
                         color = NavyDark,
                         fontSize = 18.sp
@@ -83,7 +85,7 @@ fun SubscriptionsScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.back_btn),
                             tint = NavyDark
                         )
                     }
@@ -101,7 +103,7 @@ fun SubscriptionsScreen(
                 contentColor = Color.White,
                 shape = CircleShape
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Subscription")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_subscription))
             }
         }
     ) { padding ->
@@ -128,7 +130,7 @@ fun SubscriptionsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Monthly Recurring Expense",
+                                text = stringResource(R.string.monthly_recurring_expense),
                                 fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = TextLight
@@ -138,7 +140,7 @@ fun SubscriptionsScreen(
                                 color = Color(0xFFFCE7F3)
                             ) {
                                 Text(
-                                    text = "${uiState.subscriptions.size} Active",
+                                    text = stringResource(R.string.active_count, uiState.subscriptions.size),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFDB2777),
@@ -149,7 +151,7 @@ fun SubscriptionsScreen(
 
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "${String.format(Locale.getDefault(), "%,.2f", uiState.totalMonthlyCost)} EGP / mo",
+                            text = "${String.format(Locale.getDefault(), "%,.2f", uiState.totalMonthlyCost)} ${stringResource(R.string.egp_per_mo)}",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             color = NavyDark
@@ -157,7 +159,7 @@ fun SubscriptionsScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "Yearly commitment: ~${String.format(Locale.getDefault(), "%,.0f", uiState.totalYearlyCost)} EGP",
+                            text = stringResource(R.string.yearly_commitment, String.format(Locale.getDefault(), "%,.0f", uiState.totalYearlyCost)),
                             fontSize = 12.sp,
                             color = TextLight
                         )
@@ -169,7 +171,7 @@ fun SubscriptionsScreen(
             item {
                 Column {
                     Text(
-                        text = "Popular Services Catalog",
+                        text = stringResource(R.string.popular_services_catalog),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = NavyDark
@@ -195,7 +197,7 @@ fun SubscriptionsScreen(
             // 3. Active Subscriptions List
             item {
                 Text(
-                    text = "My Active Subscriptions",
+                    text = stringResource(R.string.my_active_subscriptions),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = NavyDark,
@@ -225,14 +227,14 @@ fun SubscriptionsScreen(
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "No subscriptions added yet",
+                                text = stringResource(R.string.no_subscriptions_yet),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = NavyDark
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Tap any service above or tap + to track your recurring memberships.",
+                                text = stringResource(R.string.no_subscriptions_desc),
                                 fontSize = 12.5.sp,
                                 color = TextLight,
                                 textAlign = TextAlign.Center
@@ -318,7 +320,7 @@ private fun CatalogServiceCard(
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "${service.defaultAmount.toInt()} EGP",
+                text = "${service.defaultAmount.toInt()} ${stringResource(R.string.currency_egp)}",
                 fontSize = 11.sp,
                 color = TextLight,
                 textAlign = TextAlign.Center
@@ -387,7 +389,7 @@ private fun SubscriptionCard(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Next renewal: $renewalStr",
+                    text = stringResource(R.string.next_renewal, renewalStr),
                     fontSize = 12.sp,
                     color = TextLight
                 )
@@ -403,7 +405,7 @@ private fun SubscriptionCard(
                 IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete Subscription",
+                        contentDescription = stringResource(R.string.delete_subscription),
                         tint = Color(0xFFEF4444),
                         modifier = Modifier.size(18.dp)
                     )
@@ -432,7 +434,7 @@ private fun AddSubscriptionBottomSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = if (catalogItem != null) "Add ${catalogItem.name}" else "Add New Subscription",
+                text = if (catalogItem != null) stringResource(R.string.add_service_format, catalogItem.name) else stringResource(R.string.add_new_subscription),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = NavyDark
@@ -446,7 +448,7 @@ private fun AddSubscriptionBottomSheet(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Service Name") },
+                label = { Text(stringResource(R.string.service_name)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -454,8 +456,8 @@ private fun AddSubscriptionBottomSheet(
             OutlinedTextField(
                 value = domain,
                 onValueChange = { domain = it },
-                label = { Text("Website Domain (for logo.dev icon)") },
-                placeholder = { Text("e.g. spotify.com") },
+                label = { Text(stringResource(R.string.website_domain_label)) },
+                placeholder = { Text(stringResource(R.string.website_domain_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -463,15 +465,19 @@ private fun AddSubscriptionBottomSheet(
             OutlinedTextField(
                 value = amountText,
                 onValueChange = { amountText = it },
-                label = { Text("Subscription Cost (EGP)") },
+                label = { Text(stringResource(R.string.subscription_cost_label)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
 
-            Text("Billing Frequency", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = NavyDark)
+            Text(stringResource(R.string.billing_frequency), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = NavyDark)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("MONTHLY" to "Monthly", "YEARLY" to "Yearly", "WEEKLY" to "Weekly").forEach { (code, label) ->
+                listOf(
+                    "MONTHLY" to stringResource(R.string.billing_cycle_monthly),
+                    "YEARLY" to stringResource(R.string.billing_cycle_yearly),
+                    "WEEKLY" to stringResource(R.string.billing_cycle_weekly)
+                ).forEach { (code, label) ->
                     FilterChip(
                         selected = billingCycle == code,
                         onClick = { billingCycle = code },
@@ -491,7 +497,7 @@ private fun AddSubscriptionBottomSheet(
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
             ) {
-                Text("Save Subscription", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.save_subscription), fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(16.dp))

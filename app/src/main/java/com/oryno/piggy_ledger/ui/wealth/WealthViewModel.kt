@@ -125,6 +125,7 @@ class WealthViewModel(
         grams: Double,
         karat: Int = 21,
         purchasePriceOverride: Double? = null,
+        purchaseDateMs: Long = System.currentTimeMillis(),
         fundingAccountId: String? = null,
         onSuccess: () -> Unit = {},
         onError: (String) -> Unit = {}
@@ -145,7 +146,9 @@ class WealthViewModel(
                 name = name.ifBlank { "Gold ($grams g, ${karat}K)" },
                 weightGrams = grams,
                 purity = purityStr,
-                purchasePrice = finalPurchasePrice
+                purchasePrice = finalPurchasePrice,
+                startDate = purchaseDateMs,
+                createdAt = purchaseDateMs
             )
 
             val result = acquireAssetUseCase(asset, fundingAccountId)
@@ -158,6 +161,7 @@ class WealthViewModel(
         grams: Double,
         purity: String = "999",
         purchasePriceOverride: Double? = null,
+        purchaseDateMs: Long = System.currentTimeMillis(),
         fundingAccountId: String? = null,
         onSuccess: () -> Unit = {},
         onError: (String) -> Unit = {}
@@ -177,7 +181,9 @@ class WealthViewModel(
                 name = name.ifBlank { "Silver ($grams g)" },
                 weightGrams = grams,
                 purity = purity,
-                purchasePrice = finalPurchasePrice
+                purchasePrice = finalPurchasePrice,
+                startDate = purchaseDateMs,
+                createdAt = purchaseDateMs
             )
 
             val result = acquireAssetUseCase(asset, fundingAccountId)
@@ -189,6 +195,7 @@ class WealthViewModel(
         bankName: String,
         principal: Double,
         annualInterestRate: Double,
+        purchaseDateMs: Long = System.currentTimeMillis(),
         fundingAccountId: String? = null,
         onSuccess: () -> Unit = {},
         onError: (String) -> Unit = {}
@@ -199,11 +206,27 @@ class WealthViewModel(
                 name = "$bankName Certificate (${annualInterestRate}%)",
                 principalAmount = principal,
                 annualRate = annualInterestRate,
-                purchasePrice = principal
+                purchasePrice = principal,
+                startDate = purchaseDateMs,
+                createdAt = purchaseDateMs
             )
 
             val result = acquireAssetUseCase(asset, fundingAccountId)
             result.onSuccess { onSuccess() }.onFailure { ex -> onError(ex.message ?: "Failed to acquire asset") }
+        }
+    }
+
+    fun updateAssetPurchaseDate(assetId: String, newTimestamp: Long) {
+        viewModelScope.launch {
+            val asset = dao.getAssetByIdSync(assetId)
+            if (asset != null) {
+                val updated = asset.copy(
+                    startDate = newTimestamp,
+                    createdAt = newTimestamp,
+                    updatedAt = System.currentTimeMillis()
+                )
+                dao.updateAsset(updated)
+            }
         }
     }
 

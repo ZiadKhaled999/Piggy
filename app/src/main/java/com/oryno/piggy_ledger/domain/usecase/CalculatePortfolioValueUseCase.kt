@@ -52,33 +52,21 @@ class CalculatePortfolioValueUseCase {
     }
 
     private fun calculateGoldValue(asset: AssetEntity, rates: LiveMarketRatesEntity): Double {
-        val purityMultiplier = when (asset.purity.lowercase()) {
-            "24k", "24" -> 1.0
-            "21k", "21" -> 0.875
-            "18k", "18" -> 0.75
-            else -> 0.875
-        }
-        val rateForPurity = when (asset.purity.lowercase()) {
+        val rateForPurity = when (asset.purity.lowercase().trim()) {
             "24k", "24" -> rates.gold24k
             "18k", "18" -> rates.gold18k
             else -> rates.gold21k
         }
-        return asset.weightGrams * (rateForPurity * purityMultiplier)
+        return asset.weightGrams * rateForPurity
     }
 
     private fun calculateSilverValue(asset: AssetEntity, rates: LiveMarketRatesEntity): Double {
-        val purityMultiplier = when (asset.purity) {
-            "999" -> 1.0
-            "925" -> 0.925
-            "900" -> 0.900
-            else -> 1.0
-        }
-        val rateForPurity = when (asset.purity) {
+        val rateForPurity = when (asset.purity.trim()) {
             "925" -> rates.silver925
             "900" -> rates.silver900
             else -> rates.silver999
         }
-        return asset.weightGrams * (rateForPurity * purityMultiplier)
+        return asset.weightGrams * rateForPurity
     }
 
     private fun calculateCertificateValue(asset: AssetEntity, currentDate: Long): Double {

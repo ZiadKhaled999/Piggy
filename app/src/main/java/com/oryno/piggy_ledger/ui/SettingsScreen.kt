@@ -306,7 +306,7 @@ fun SettingsMainContent(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SettingsItem(
             title = stringResource(R.string.pending_transactions),
-            iconRes = R.drawable.img_settings_pending_1784465160290,
+            iconRes = R.drawable.img_pending_empty,
             onClick = onNavigateToPendingTransactions
         )
 

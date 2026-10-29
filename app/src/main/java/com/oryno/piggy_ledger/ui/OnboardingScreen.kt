@@ -1024,9 +1024,9 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                         else -> stringResource(R.string.onboarding_relatable_statement_3)
                     }
                     val imageRes = when (pageIndex) {
-                        8 -> R.drawable.img_relatable_debt_1785176852844
-                        9 -> R.drawable.img_relatable_accounts_1785176864908
-                        else -> R.drawable.img_relatable_emergency_1785176876312
+                        8 -> R.drawable.img_relatable_debt
+                        9 -> R.drawable.img_relatable_accounts
+                        else -> R.drawable.img_relatable_emergency
                     }
 
                     Column(

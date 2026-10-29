@@ -723,7 +723,7 @@ fun PendingTransactionDashboardCard(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Image(
-                    painter = painterResource(id = R.drawable.img_settings_pending_1784465160290),
+                    painter = painterResource(id = R.drawable.img_pending_empty),
                     contentDescription = null,
                     modifier = Modifier
                         .size(40.dp)

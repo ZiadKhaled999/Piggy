@@ -5,6 +5,7 @@ import android.util.Log
 import com.oryno.piggy_ledger.data.PiggyLedgerDatabase
 import com.oryno.piggy_ledger.data.PendingTransaction
 import com.oryno.piggy_ledger.data.Account
+import com.oryno.piggy_ledger.R
 
 object SmsProcessor {
     private fun isPromotionalSms(body: String, sender: String): Boolean {
@@ -96,8 +97,8 @@ object SmsProcessor {
 
                 val notification = androidx.core.app.NotificationCompat.Builder(context, channelId)
                     .setSmallIcon(com.oryno.piggy_ledger.R.drawable.img_app_logo)
-                    .setContentTitle("Failed to Parse SMS")
-                    .setContentText("An SMS from $sender could not be parsed automatically. Tap to review.")
+                    .setContentTitle(context.getString(R.string.sms_notification_unparsed_title))
+                    .setContentText(context.getString(R.string.sms_notification_unparsed_desc, sender))
                     .setContentIntent(pendingIntent)
                     .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
                     .setAutoCancel(true)
@@ -180,8 +181,8 @@ object SmsProcessor {
                 val notification = androidx.core.app.NotificationCompat.Builder(context, channelId)
                     .setSmallIcon(com.oryno.piggy_ledger.R.drawable.img_app_logo)
                     .apply { if (logoBitmap != null) setLargeIcon(logoBitmap) }
-                    .setContentTitle("New Pending Transaction")
-                    .setContentText("A transaction of $amount from $merchant needs your review.")
+                    .setContentTitle(context.getString(R.string.sms_notification_review_title))
+                    .setContentText(context.getString(R.string.sms_notification_review_desc, amount, merchant))
                     .setContentIntent(pendingIntent)
                     .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
                     .setAutoCancel(true)

@@ -846,7 +846,7 @@ fun Step2AccountSelectionScreen(
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, tint = PinkPrimary)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Add New Account", color = PinkPrimary, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.add_new_account_btn), color = PinkPrimary, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -862,7 +862,7 @@ fun Step2AccountSelectionScreen(
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
         ) {
-            Text("Next: Add Description", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(stringResource(R.string.next_add_description), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
             Spacer(modifier = Modifier.width(8.dp))
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
         }
@@ -1069,7 +1069,7 @@ fun Step4ConfirmationScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(stringResource(R.string.transfer_between_accounts), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NavyDark)
                         if (applyInstaPayFee && feeAmt > 0) {
-                            Text("Fee: +$currencySymbol${String.format(Locale.getDefault(), "%,.2f", feeAmt)}", fontSize = 12.sp, color = PinkPrimary, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.fee_format, currencySymbol, String.format(Locale.getDefault(), "%,.2f", feeAmt)), fontSize = 12.sp, color = PinkPrimary, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

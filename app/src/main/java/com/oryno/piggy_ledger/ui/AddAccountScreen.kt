@@ -470,7 +470,7 @@ fun Slide0AccountType(
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
         ) {
-            Text("Next: Choose Provider", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(stringResource(R.string.next_choose_provider), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
             Spacer(modifier = Modifier.width(8.dp))
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
         }
@@ -667,7 +667,7 @@ fun Slide1ProviderSelection(
                             OutlinedTextField(
                                 value = customInput,
                                 onValueChange = { customInput = it },
-                                placeholder = { Text("Enter custom provider name") },
+                                placeholder = { Text(stringResource(R.string.enter_custom_provider_name)) },
                                 singleLine = true,
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp),
@@ -683,7 +683,7 @@ fun Slide1ProviderSelection(
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
                             ) {
-                                Text("Use", fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.use_btn), fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -702,7 +702,7 @@ fun Slide1ProviderSelection(
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, Color(0xFFCBD5E1))
         ) {
-            Text("Skip / Enter Custom Details", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = NavyDark)
+            Text(stringResource(R.string.skip_enter_custom_details), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = NavyDark)
         }
     }
 }
@@ -823,11 +823,11 @@ fun Slide2NameAndCustomization(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text("Account Name *", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+            Text(stringResource(R.string.account_name_required), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
             OutlinedTextField(
                 value = name,
                 onValueChange = onNameChange,
-                placeholder = { Text("e.g. CIB Salary, Vodafone Cash") },
+                placeholder = { Text(stringResource(R.string.account_name_hint)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
@@ -847,11 +847,11 @@ fun Slide2NameAndCustomization(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text("Account Label / Purpose (Optional)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+            Text(stringResource(R.string.account_label_optional), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
             OutlinedTextField(
                 value = accountLabel,
                 onValueChange = onAccountLabelChange,
-                placeholder = { Text("e.g. Salary, Emergency, Daily Spend") },
+                placeholder = { Text(stringResource(R.string.account_label_hint)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
@@ -871,7 +871,7 @@ fun Slide2NameAndCustomization(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("Brand Color", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+            Text(stringResource(R.string.brand_color_label), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -929,7 +929,7 @@ fun Slide2NameAndCustomization(
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
         ) {
-            Text("Next: Balance & Currency", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(stringResource(R.string.next_balance_currency), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
             Spacer(modifier = Modifier.width(8.dp))
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
         }
@@ -1037,7 +1037,7 @@ fun Slide3CurrencyAndBalance(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Starting / Current Balance", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                Text(stringResource(R.string.starting_current_balance), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                 OutlinedTextField(
                     value = startingBalance,
                     onValueChange = { input ->
@@ -1045,7 +1045,7 @@ fun Slide3CurrencyAndBalance(
                             onStartingBalanceChange(input)
                         }
                     },
-                    placeholder = { Text("0.00") },
+                    placeholder = { Text(stringResource(R.string.zero_amount_placeholder)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -1073,13 +1073,13 @@ fun Slide3CurrencyAndBalance(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Total Credit Limit *", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    Text(stringResource(R.string.total_credit_limit_required), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                     OutlinedTextField(
                         value = creditLimit,
                         onValueChange = { input ->
                             if (input.isEmpty() || input.all { it.isDigit() || it == '.' }) onCreditLimitChange(input)
                         },
-                        placeholder = { Text("e.g. 50000") },
+                        placeholder = { Text(stringResource(R.string.credit_limit_hint)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -1101,7 +1101,7 @@ fun Slide3CurrencyAndBalance(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Currently Available Credit", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    Text(stringResource(R.string.currently_available_credit), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                     OutlinedTextField(
                         value = availableCredit,
                         onValueChange = { input ->
@@ -1121,13 +1121,13 @@ fun Slide3CurrencyAndBalance(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Payment Due Day of Month (1-31)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                    Text(stringResource(R.string.payment_due_day_label), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
                     OutlinedTextField(
                         value = paymentDueDay,
                         onValueChange = { input ->
                             if (input.isEmpty() || input.all { it.isDigit() }) onPaymentDueDayChange(input)
                         },
-                        placeholder = { Text("e.g. 15 or 25") },
+                        placeholder = { Text(stringResource(R.string.due_day_hint)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -1152,7 +1152,7 @@ fun Slide3CurrencyAndBalance(
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
         ) {
-            Text("Next: Automation & Review", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(stringResource(R.string.next_automation_review), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
             Spacer(modifier = Modifier.width(8.dp))
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
         }
@@ -1200,7 +1200,7 @@ fun Slide3CurrencyAndBalance(
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    placeholder = { Text("Search currency by code or name...") },
+                    placeholder = { Text(stringResource(R.string.search_currency_hint)) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextLight) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -1440,7 +1440,7 @@ fun Slide4AutomationAndReview(
                     OutlinedTextField(
                         value = cardNumbers,
                         onValueChange = onCardNumbersChange,
-                        placeholder = { Text("Last 4 digits of card (e.g. 1234)") },
+                        placeholder = { Text(stringResource(R.string.card_digits_hint)) },
                         leadingIcon = { Icon(Icons.Default.CreditCard, contentDescription = null, tint = TextLight) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -1451,7 +1451,7 @@ fun Slide4AutomationAndReview(
                     OutlinedTextField(
                         value = bankAccountNo,
                         onValueChange = onBankAccountNoChange,
-                        placeholder = { Text("Account number or last 4 digits") },
+                        placeholder = { Text(stringResource(R.string.account_number_hint)) },
                         leadingIcon = { Icon(Icons.Default.AccountBalance, contentDescription = null, tint = TextLight) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -1465,8 +1465,8 @@ fun Slide4AutomationAndReview(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Add InstaPay Fee automatically", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NavyDark)
-                        Text("Deducts 0.1% (min 1 EGP, max 20 EGP) on transfers", fontSize = 11.sp, color = TextLight)
+                        Text(stringResource(R.string.add_instapay_fee_label), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NavyDark)
+                        Text(stringResource(R.string.instapay_fee_desc_detail), fontSize = 11.sp, color = TextLight)
                     }
                     Switch(
                         checked = instaPayFee,
@@ -1487,8 +1487,8 @@ fun Slide4AutomationAndReview(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Exclude from Total Balance", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NavyDark)
-                        Text("Hide from net worth & dashboard totals", fontSize = 11.sp, color = TextLight)
+                        Text(stringResource(R.string.exclude_from_total_balance), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NavyDark)
+                        Text(stringResource(R.string.exclude_from_total_desc), fontSize = 11.sp, color = TextLight)
                     }
                     Switch(
                         checked = excludeFromAll,
@@ -1516,7 +1516,7 @@ fun Slide4AutomationAndReview(
         ) {
             Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Create Account", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(stringResource(R.string.create_account_btn), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
     }
 }

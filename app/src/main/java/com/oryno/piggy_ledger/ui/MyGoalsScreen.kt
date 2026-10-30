@@ -437,7 +437,7 @@ fun GoalCard(
 
                 if (!isOpenSavings) {
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("TARGET", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
+                        Text(stringResource(R.string.target_label), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
                         Text(
                             text = if (isPrivacyMode) "$currencySym••••••" else "$currencySym${String.format(Locale.getDefault(), "%,.0f", goal.targetAmount)}",
                             fontSize = 15.sp,

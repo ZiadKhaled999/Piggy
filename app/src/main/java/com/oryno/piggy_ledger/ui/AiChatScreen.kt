@@ -2833,11 +2833,11 @@ fun StreakStatus(block: UiBlock.StreakStatusBlock) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text("Discipline Streak", color = AiTextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text(stringResource(R.string.discipline_streak), color = AiTextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text("${block.currentStreak}", color = AiTextPrimary, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-                    Text(" days", color = AiTextSecondary, fontSize = 14.sp, modifier = Modifier.padding(bottom = 3.dp, start = 4.dp))
+                    Text(stringResource(R.string.days_unit), color = AiTextSecondary, fontSize = 14.sp, modifier = Modifier.padding(bottom = 3.dp, start = 4.dp))
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(block.statusMessage, color = AiTextPrimary, fontSize = 13.sp)

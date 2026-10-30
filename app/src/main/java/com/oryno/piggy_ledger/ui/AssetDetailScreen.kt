@@ -194,27 +194,18 @@ private fun AssetHeroCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            val badgeBg = if (isProfit) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
             val badgeFg = if (isProfit) Color(0xFF15803D) else Color(0xFFB91C1C)
             val trendIcon = if (isProfit) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown
 
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = badgeBg
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(imageVector = trendIcon, contentDescription = null, tint = badgeFg, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "${if (isProfit) "+" else ""}${stringResource(R.string.amount_egp_fmt, String.format(Locale.getDefault(), "%,.2f", pnl))} (${String.format(Locale.getDefault(), "%.2f", pnlPct)}%)",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = badgeFg
-                    )
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(imageVector = trendIcon, contentDescription = null, tint = badgeFg, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "${if (isProfit) "+" else ""}${String.format(Locale.getDefault(), "%.2f", pnlPct)}% | ${String.format(Locale.getDefault(), "%,.2f", pnl)} ${stringResource(R.string.currency_egp)}",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = badgeFg
+                )
             }
         }
     }

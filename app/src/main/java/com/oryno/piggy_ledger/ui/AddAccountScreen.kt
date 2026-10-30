@@ -526,7 +526,15 @@ fun Slide1ProviderSelection(
             ProviderOption("Mashreq Bank", "mashreqbank.com", "#FF5722"),
             ProviderOption("Suez Canal Bank", "scbank.com.eg", "#0D47A1"),
             ProviderOption("The United Bank", "theubeg.com", "#1565C0"),
-            ProviderOption("EBank", "ebank.com.eg", "#008080")
+            ProviderOption("EBank", "ebank.com.eg", "#008080"),
+            ProviderOption("First Abu Dhabi Bank (FAB)", "bankfab.com", "#C8102E"),
+            ProviderOption("Al Ahli Bank of Kuwait (ABK)", "abkegypt.com", "#003366"),
+            ProviderOption("National Bank of Kuwait (NBK)", "nbk.com", "#002A54"),
+            ProviderOption("Ahli United Bank (AUB)", "aub.com.eg", "#800020"),
+            ProviderOption("Bank ABC Egypt", "bank-abc.com", "#008080"),
+            ProviderOption("aiBank (Arab Investment Bank)", "aibank.com.eg", "#0F172A"),
+            ProviderOption("MIDBANK", "midbank.com.eg", "#4A154B"),
+            ProviderOption("Arab International Bank (AIB)", "aib.com.eg", "#102A43")
         )
     }
 

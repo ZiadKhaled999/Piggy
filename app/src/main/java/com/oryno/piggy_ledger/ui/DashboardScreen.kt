@@ -21,8 +21,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.Brush
@@ -77,7 +79,7 @@ fun DashboardScreen(
     val streakCount by viewModel.streakCount.collectAsStateWithLifecycle()
     val goals by viewModel.goals.collectAsState()
     val transactions by viewModel.allTransactions.collectAsState()
-    val accounts by viewModel.allAccounts.collectAsState()
+    val accounts by viewModel.userAccounts.collectAsState()
     val loans by viewModel.loans.collectAsState()
     val accountTransactions by viewModel.allAccountTransactions.collectAsState()
     
@@ -830,27 +832,67 @@ fun VirtualCardsWidget(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(210.dp)
+            .height(240.dp)
             .padding(horizontal = 24.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // Back Card (Offset)
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .height(180.dp)
-                .offset(y = (-20).dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = parseHexColor(activeAccount?.icon_color, PinkPrimary).copy(alpha = 0.5f))
-        ) {}
-        
+        // INFINITY ILLUSION CARDS (Background cards)
+        if (accounts.size > 1) {
+            val maxBackgroundCards = (accounts.size - 1).coerceAtMost(4)
+            for (i in maxBackgroundCards downTo 1) {
+                val scale = when(i) {
+                    1 -> 0.95f
+                    2 -> 0.90f
+                    3 -> 0.85f
+                    else -> 0.80f
+                }
+                val offsetY = when(i) {
+                    1 -> (-15).dp
+                    2 -> (-30).dp
+                    3 -> (-45).dp
+                    else -> (-60).dp
+                }
+                val blurVal = when(i) {
+                    1 -> 2.dp
+                    2 -> 4.dp
+                    3 -> 8.dp
+                    else -> 12.dp
+                }
+                val opacity = when(i) {
+                    1 -> 1.0f
+                    2 -> 0.8f
+                    3 -> 0.5f
+                    else -> 0f
+                }
+
+                val backgroundAccount = accounts.getOrNull((safeIndex + i) % accounts.size)
+                
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth(scale)
+                        .height(190.dp)
+                        .offset(y = offsetY)
+                        .graphicsLayer { 
+                            this.alpha = opacity
+                        }
+                        .blur(blurVal),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = parseHexColor(backgroundAccount?.icon_color, PinkPrimary)
+                    )
+                ) {}
+            }
+        }
+
         // Front Card
         val frontGradient = getAccountGradient(activeAccount?.icon_color)
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(190.dp),
-            shape = RoundedCornerShape(28.dp)
+                .height(190.dp)
+                .clickable { onClick() },
+            shape = RoundedCornerShape(28.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize().background(frontGradient)) {
                 // Decor circles

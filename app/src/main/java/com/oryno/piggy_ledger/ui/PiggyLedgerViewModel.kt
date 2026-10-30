@@ -643,6 +643,21 @@ class PiggyLedgerViewModel(
         viewModelScope, SharingStarted.Eagerly, emptyList()
     )
 
+    val userAccounts: StateFlow<List<com.oryno.piggy_ledger.data.Account>> = repository.allAccounts.map { list ->
+        list.filter { account ->
+            !account.isSystemAccount && 
+            !account.is_deleted && 
+            !account.exclude_from_all &&
+            !account.name.contains("Uncategorized", ignoreCase = true) &&
+            !account.name.contains("Opening Balance", ignoreCase = true) &&
+            !account.name.contains("Equity", ignoreCase = true) &&
+            !account.name.contains("Income Balance", ignoreCase = true) &&
+            !account.name.contains("Expense Balance", ignoreCase = true)
+        }
+    }.stateIn(
+        viewModelScope, SharingStarted.Eagerly, emptyList()
+    )
+
     val includedAccounts: StateFlow<List<com.oryno.piggy_ledger.data.Account>> = repository.includedAccounts.stateIn(
         viewModelScope, SharingStarted.Eagerly, emptyList()
     )
@@ -851,6 +866,13 @@ class PiggyLedgerViewModel(
 
     private val _monthlyBudget = MutableStateFlow<Double>(10000.0)
     val monthlyBudget: StateFlow<Double> = _monthlyBudget
+
+    private val _categoryLimits = MutableStateFlow<Map<String, Double>>(emptyMap())
+    val categoryLimits: StateFlow<Map<String, Double>> = _categoryLimits.asStateFlow()
+
+    fun setCategoryLimit(categoryKey: String, limit: Double) {
+        _categoryLimits.value = _categoryLimits.value + (categoryKey to limit)
+    }
 
     fun setMonthlyBudget(budget: Double) {
         _monthlyBudget.value = budget

@@ -122,37 +122,41 @@ fun TransferMoneyScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Upper section: From / To Cards & Amount
-            LazyColumn(
+            // Upper section: From / To Cards & Amount (Compact, non-scrolling)
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // From Account Card
-                item {
+                // From & To Accounts Group
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // From Account Card
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { showFromAccountPicker = true },
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(16.dp),
                         color = Color.White,
                         border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 if (fromAccount != null) {
                                     BrandLogo(
@@ -160,17 +164,17 @@ fun TransferMoneyScreen(
                                         accountType = fromAccount.type,
                                         iconColorHex = fromAccount.icon_color,
                                         logoUrl = fromAccount.logo_url,
-                                        modifier = Modifier.size(44.dp)
+                                        modifier = Modifier.size(34.dp)
                                     )
                                 } else {
                                     Box(
                                         modifier = Modifier
-                                            .size(44.dp)
+                                            .size(34.dp)
                                             .clip(CircleShape)
                                             .background(PinkPrimary.copy(alpha = 0.1f)),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(Icons.Default.AccountBalance, contentDescription = null, tint = PinkPrimary)
+                                        Icon(Icons.Default.AccountBalance, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(18.dp))
                                     }
                                 }
 
@@ -178,26 +182,26 @@ fun TransferMoneyScreen(
                                     Text(
                                         text = fromAccount?.name ?: stringResource(R.string.select_account),
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
+                                        fontSize = 14.sp,
                                         color = NavyDark
                                     )
                                     Text(
                                         text = if (fromAccount != null) "${String.format(Locale.getDefault(), "%,.2f", fromAccount.current_balance)} ${fromAccount.currency}" else stringResource(R.string.select_source_account),
-                                        fontSize = 12.sp,
+                                        fontSize = 11.sp,
                                         color = TextLight
                                     )
                                 }
                             }
 
-                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = TextLight)
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = TextLight, modifier = Modifier.size(20.dp))
                         }
                     }
-                }
 
-                // Swap Button Row
-                item {
+                    // Swap Button Row
                     Box(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(28.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         IconButton(
@@ -206,7 +210,7 @@ fun TransferMoneyScreen(
                                 viewModel.swapAccounts()
                             },
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(28.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFFEEF2FF))
                         ) {
@@ -214,32 +218,30 @@ fun TransferMoneyScreen(
                                 imageVector = Icons.Default.SwapVert,
                                 contentDescription = "Swap Accounts",
                                 tint = Color(0xFF4F46E5),
-                                modifier = Modifier.rotate(rotation).size(20.dp)
+                                modifier = Modifier.rotate(rotation).size(16.dp)
                             )
                         }
                     }
-                }
 
-                // To Account Card
-                item {
+                    // To Account Card
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { showToAccountPicker = true },
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(16.dp),
                         color = Color.White,
                         border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 if (toAccount != null) {
                                     BrandLogo(
@@ -247,17 +249,17 @@ fun TransferMoneyScreen(
                                         accountType = toAccount.type,
                                         iconColorHex = toAccount.icon_color,
                                         logoUrl = toAccount.logo_url,
-                                        modifier = Modifier.size(44.dp)
+                                        modifier = Modifier.size(34.dp)
                                     )
                                 } else {
                                     Box(
                                         modifier = Modifier
-                                            .size(44.dp)
+                                            .size(34.dp)
                                             .clip(CircleShape)
                                             .background(PinkPrimary.copy(alpha = 0.1f)),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(Icons.Default.AccountBalance, contentDescription = null, tint = PinkPrimary)
+                                        Icon(Icons.Default.AccountBalance, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(18.dp))
                                     }
                                 }
 
@@ -265,76 +267,73 @@ fun TransferMoneyScreen(
                                     Text(
                                         text = toAccount?.name ?: stringResource(R.string.select_account),
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
+                                        fontSize = 14.sp,
                                         color = NavyDark
                                     )
                                     Text(
                                         text = if (toAccount != null) "${String.format(Locale.getDefault(), "%,.2f", toAccount.current_balance)} ${toAccount.currency}" else stringResource(R.string.select_target_account),
-                                        fontSize = 12.sp,
+                                        fontSize = 11.sp,
                                         color = TextLight
                                     )
                                 }
                             }
 
-                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = TextLight)
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = TextLight, modifier = Modifier.size(20.dp))
                         }
                     }
                 }
 
                 // Amount Display Card
-                item {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color.White,
-                        border = BorderStroke(1.dp, if (isOverdraft) Color(0xFFEF4444) else Color(0xFFE2E8F0))
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, if (isOverdraft) Color(0xFFEF4444) else Color(0xFFE2E8F0))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        Text(
+                            text = stringResource(R.string.amount_label).uppercase(),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextLight,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (uiState.amountText.isEmpty()) "0.00" else uiState.amountText,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Black,
+                            color = if (isOverdraft) Color(0xFFEF4444) else NavyDark
+                        )
+                        if (isOverdraft) {
                             Text(
-                                text = stringResource(R.string.amount_label).uppercase(),
+                                text = "Insufficient funds",
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextLight,
-                                letterSpacing = 1.sp
+                                color = Color(0xFFEF4444),
+                                fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = if (uiState.amountText.isEmpty()) "0.00" else uiState.amountText,
-                                fontSize = 36.sp,
-                                fontWeight = FontWeight.Black,
-                                color = if (isOverdraft) Color(0xFFEF4444) else NavyDark
-                            )
-                            if (isOverdraft) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Insufficient funds",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFFEF4444),
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
                         }
                     }
                 }
             }
 
-            // Light Theme Numeric Keypad
+            // Light Theme Compact Numeric Keypad
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = Color.White,
-                shadowElevation = 8.dp
+                shadowElevation = 4.dp
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     val buttons = listOf(
                         listOf("1", "2", "3"),
@@ -346,7 +345,7 @@ fun TransferMoneyScreen(
                     buttons.forEach { row ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             row.forEach { label ->
                                 Button(
@@ -374,24 +373,25 @@ fun TransferMoneyScreen(
                                     },
                                     modifier = Modifier
                                         .weight(1f)
-                                        .height(50.dp),
-                                    shape = RoundedCornerShape(12.dp),
+                                        .height(42.dp),
+                                    shape = RoundedCornerShape(10.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(0xFFF1F5F9),
                                         contentColor = NavyDark
-                                    )
+                                    ),
+                                    contentPadding = PaddingValues(0.dp)
                                 ) {
                                     if (label == "DEL") {
-                                        Icon(Icons.Default.Backspace, contentDescription = "Delete", modifier = Modifier.size(20.dp))
+                                        Icon(Icons.Default.Backspace, contentDescription = "Delete", modifier = Modifier.size(18.dp))
                                     } else {
-                                        Text(text = label, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                        Text(text = label, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
 
                     // Confirm Transfer Button
                     Button(
@@ -403,16 +403,16 @@ fun TransferMoneyScreen(
                         enabled = !uiState.isSubmitting && !isOverdraft && enteredAmount > 0,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp),
-                        shape = RoundedCornerShape(16.dp),
+                            .height(46.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
                     ) {
                         if (uiState.isSubmitting) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                         } else {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = stringResource(R.string.confirm_btn), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = stringResource(R.string.confirm_btn), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

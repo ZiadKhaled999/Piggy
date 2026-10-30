@@ -1,5 +1,7 @@
 package com.oryno.piggy_ledger.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -11,20 +13,30 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.zIndex
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MonetizationOn
@@ -53,6 +65,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -64,6 +77,9 @@ import com.oryno.piggy_ledger.data.PiggyLedgerDatabase
 import com.oryno.piggy_ledger.data.PortfolioHistoryEntity
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
+import com.oryno.piggy_ledger.ui.theme.AccentBlue
+import com.oryno.piggy_ledger.ui.theme.PurplePrimary
+import com.oryno.piggy_ledger.ui.theme.IndigoPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
 import com.oryno.piggy_ledger.ui.wealth.WealthViewModel
 import java.util.Locale
@@ -173,13 +189,15 @@ fun WealthCommoditiesScreen(
             // 1. Top Portfolio Performance Card & Dynamic Timeframe Chart
             item {
                 Surface(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 18.dp),
+                    shape = RoundedCornerShape(20.dp),
                     color = Color.White,
-                    shadowElevation = 0.dp
+                    shadowElevation = 0.5.dp
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(horizontal = 18.dp).padding(top = 20.dp, bottom = 12.dp)) {
                             Text(
@@ -200,46 +218,47 @@ fun WealthCommoditiesScreen(
 
                             Spacer(modifier = Modifier.height(6.dp))
 
-                            // Real Gain / Loss Badge
+                            // Clean Percentage | Number Redesign (Off-white rounded badge)
                             val isProfit = uiState.overallGainLoss >= 0
-                            val badgeBg = if (isProfit) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
                             val badgeFg = if (isProfit) Color(0xFF15803D) else Color(0xFFB91C1C)
                             val icon = if (isProfit) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown
 
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = badgeBg
+                            Surface(
+                                shape = RoundedCornerShape(25.dp),
+                                color = Color(0xFFF8FAFC),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = icon,
-                                            contentDescription = null,
-                                            tint = badgeFg,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "${if (isProfit) "+" else ""}${String.format(Locale.getDefault(), "%,.2f", uiState.overallGainLoss)} ${stringResource(R.string.currency_egp)} (${String.format(Locale.getDefault(), "%.2f", uiState.overallGainLossPercentage)}%)",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = badgeFg
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        tint = badgeFg,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "${if (isProfit) "+" else ""}${String.format(Locale.getDefault(), "%.2f", uiState.overallGainLossPercentage)}% | ${String.format(Locale.getDefault(), "%,.2f", uiState.overallGainLoss)} ${stringResource(R.string.currency_egp)}",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = badgeFg
+                                    )
                                 }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = stringResource(R.string.total_return),
-                                    fontSize = 11.sp,
-                                    color = TextLight
-                                )
                             }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(R.string.total_return),
+                                fontSize = 11.sp,
+                                color = TextLight,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
                         }
 
-                        // Real Dynamic Portfolio Line Chart (Full Width)
+                        // Real Dynamic Portfolio Line Chart (Full Width, Black Bold Line)
                         RealDynamicPortfolioChart(
                             history = uiState.portfolioHistory,
                             currentTotal = uiState.totalWealthValue,
@@ -253,22 +272,9 @@ fun WealthCommoditiesScreen(
                             // Timeframe filter chips
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                horizontalArrangement = Arrangement.End,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = Color(0xFFDCFCE7)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.live_status),
-                                        fontSize = 10.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF15803D),
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     listOf("1D", "1W", "1M", "1Y").forEach { tf ->
                                         Surface(
@@ -342,15 +348,61 @@ fun WealthCommoditiesScreen(
                 }
             }
 
-            // 3. Asset Diversity Section
+            // 3. Asset Diversity Section (Services Hub Style)
+            @OptIn(ExperimentalFoundationApi::class)
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    DiversityIndicator(stringResource(R.string.asset_type_gold), uiState.goldTotalValue, Color(0xFFD97706), R.drawable.ic_asset_gold, Modifier.weight(1f))
-                    DiversityIndicator(stringResource(R.string.asset_type_silver), uiState.silverTotalValue, Color(0xFF475569), R.drawable.ic_asset_silver, Modifier.weight(1f))
-                    DiversityIndicator(stringResource(R.string.certificate_desc), uiState.certificatesTotalValue, Color(0xFF059669), R.drawable.ic_asset_certificate, Modifier.weight(1f))
+                val diversityItems = remember(uiState) {
+                    listOf(
+                        Triple(context.getString(R.string.asset_type_gold), uiState.goldTotalValue, R.drawable.ic_asset_gold to Color(0xFFD97706)),
+                        Triple(context.getString(R.string.asset_type_silver), uiState.silverTotalValue, R.drawable.ic_asset_silver to Color(0xFF475569)),
+                        Triple(context.getString(R.string.certificate_desc), uiState.certificatesTotalValue, R.drawable.ic_asset_certificate to Color(0xFF059669))
+                    )
+                }
+                val divPagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { diversityItems.size })
+                
+                LaunchedEffect(divPagerState) {
+                    while (true) {
+                        kotlinx.coroutines.delay(4000L)
+                        if (!divPagerState.isScrollInProgress && diversityItems.size > 1) {
+                            divPagerState.animateScrollToPage(
+                                page = (divPagerState.currentPage + 1) % diversityItems.size
+                            )
+                        }
+                    }
+                }
+
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    androidx.compose.foundation.pager.HorizontalPager(
+                        state = divPagerState,
+                        contentPadding = PaddingValues(horizontal = 24.dp),
+                        pageSpacing = 12.dp,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { page: Int ->
+                        val (label, value, meta) = diversityItems[page]
+                        DiversityIndicator(label, value, meta.second, meta.first)
+                    }
+                    
+                    if (diversityItems.size > 1) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            repeat(diversityItems.size) { index ->
+                                val isSelected = divPagerState.currentPage == index
+                                val width by animateDpAsState(targetValue = if (isSelected) 14.dp else 5.dp, label = "dotWidth")
+                                Box(
+                                    modifier = Modifier
+                                        .padding(horizontal = 2.5.dp)
+                                        .height(5.dp)
+                                        .width(width)
+                                        .clip(CircleShape)
+                                        .background(if (isSelected) PinkPrimary else Color(0xFFCBD5E1))
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -403,16 +455,13 @@ fun WealthCommoditiesScreen(
                     }
                 }
             } else {
-                items(uiState.assets, key = { it.id }) { asset ->
-                    val valuation = uiState.assetValuations[asset.id] ?: asset.purchasePrice
-                    Box(modifier = Modifier.padding(horizontal = 18.dp)) {
-                        AssetHoldingCard(
-                            asset = asset,
-                            valuation = valuation,
-                            onCardClick = { onNavigateToAssetDetail(asset.id) },
-                            onMenuClick = { assetForMenu = asset }
-                        )
-                    }
+                item {
+                    AssetCardStack(
+                        assets = uiState.assets,
+                        assetValuations = uiState.assetValuations,
+                        onNavigateToAssetDetail = onNavigateToAssetDetail,
+                        onMenuClick = { assetForMenu = it }
+                    )
                 }
             }
         }
@@ -630,14 +679,14 @@ private fun RealDynamicPortfolioChart(
                         drawPath(
                             path = fillPath,
                             brush = Brush.verticalGradient(
-                                colors = listOf(Color(0xFF34D399).copy(alpha = 0.35f), Color.Transparent)
+                                colors = listOf(Color.Black.copy(alpha = 0.12f), Color.Transparent)
                             )
                         )
 
                         drawPath(
                             path = path,
-                            color = Color(0xFF059669),
-                            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                            color = Color.Black,
+                            style = Stroke(width = 4.5.dp.toPx(), cap = StrokeCap.Round)
                         )
 
                         // Dashed Grid lines
@@ -677,7 +726,7 @@ private fun RealDynamicPortfolioChart(
                                 }
 
                                 drawCircle(color = Color.White, radius = 6.dp.toPx(), center = Offset(pointX, pointY))
-                                drawCircle(color = Color(0xFF059669), radius = 4.dp.toPx(), center = Offset(pointX, pointY))
+                                drawCircle(color = Color.Black, radius = 4.dp.toPx(), center = Offset(pointX, pointY))
                             }
                         }
                     }
@@ -725,18 +774,18 @@ private fun RealDynamicPortfolioChart(
 
         // X-Axis Labels (Time)
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp).padding(horizontal = 20.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             val labels = when (timeframe) {
                 "1D" -> listOf(stringResource(R.string.h6_ago), stringResource(R.string.now))
                 "1W" -> listOf(stringResource(R.string.d7_ago), stringResource(R.string.today))
-                "1M" -> listOf(stringResource(R.string.d30_ago), stringResource(R.string.today))
+                "1M" -> listOf("Last month", stringResource(R.string.today))
                 "1Y" -> listOf(stringResource(R.string.m12_ago), stringResource(R.string.today))
                 else -> listOf(stringResource(R.string.past), stringResource(R.string.present))
             }
             labels.forEach { label ->
-                Text(text = label, fontSize = 9.sp, color = TextLight, fontWeight = FontWeight.Medium)
+                Text(text = label, fontSize = 10.sp, color = TextLight, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -779,21 +828,6 @@ private fun ModernRateCard(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
-
-                Box(
-                    modifier = Modifier
-                        .size(30.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFF1F5F9)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(id = iconRes),
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -816,9 +850,153 @@ private fun ModernRateCard(
 }
 
 @Composable
-private fun AssetHoldingCard(
+private fun AssetCardStack(
+    assets: List<AssetEntity>,
+    assetValuations: Map<String, Double>,
+    onNavigateToAssetDetail: (String) -> Unit,
+    onMenuClick: (AssetEntity) -> Unit
+) {
+    var currentIndex by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+    val dragX = remember { Animatable(0f) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+
+    // Dynamic stack count:
+    // If 1 card -> 1 card (no background card)
+    // If 2 cards -> 2 cards (1 top + 1 background card)
+    // If 3 cards -> 3 cards (1 top + 2 background cards)
+    // If 4 cards -> 4 cards (1 top + 3 background cards)
+    // If 5+ cards -> max 5 cards (1 top + max 4 background cards)
+    val maxVisible = minOf(assets.size, 5)
+    val visibleIndices = remember(currentIndex, assets.size, maxVisible) {
+        if (assets.isEmpty()) emptyList()
+        else List(maxVisible) { i -> (currentIndex + i) % assets.size }
+    }
+
+    val alphas = listOf(1.0f, 1.0f, 0.80f, 0.45f, 0.0f)
+    val blurs = listOf(0f, 2.5f, 5f, 9f, 15f)
+    val scales = listOf(1.0f, 0.94f, 0.88f, 0.82f, 0.76f)
+    val yOffsets = listOf(0f, -22f, -42f, -60f, -76f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(380.dp)
+            .padding(horizontal = 18.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        visibleIndices.reversed().forEachIndexed { indexInVisible, assetIndex ->
+            val isTopCard = indexInVisible == visibleIndices.lastIndex
+            val positionFromTop = visibleIndices.lastIndex - indexInVisible 
+
+            val asset = assets[assetIndex]
+            val valuation = assetValuations[asset.id] ?: asset.purchasePrice
+
+            // Background scaling, blur and Y-offset logic
+            val dragProgress = (kotlin.math.abs(dragX.value) / 450f).coerceIn(0f, 1f)
+            
+            val baseScale = scales[positionFromTop]
+            val nextScale = scales[(positionFromTop - 1).coerceAtLeast(0)]
+            val currentScale = baseScale + (nextScale - baseScale) * dragProgress
+
+            val baseY = yOffsets[positionFromTop]
+            val nextY = yOffsets[(positionFromTop - 1).coerceAtLeast(0)]
+            val currentY = (baseY + (nextY - baseY) * dragProgress).dp
+            val currentYPx = with(density) { currentY.toPx() }
+
+            val baseAlpha = alphas[positionFromTop]
+            val nextAlpha = alphas[(positionFromTop - 1).coerceAtLeast(0)]
+            val currentAlpha = (baseAlpha + (nextAlpha - baseAlpha) * dragProgress).coerceIn(0f, 1f)
+
+            val baseBlur = blurs[positionFromTop]
+            val nextBlur = blurs[(positionFromTop - 1).coerceAtLeast(0)]
+            val currentBlur = (baseBlur + (nextBlur - baseBlur) * dragProgress).coerceAtLeast(0f).dp
+
+            val themeColors = listOf(PinkPrimary, AccentBlue, PurplePrimary, IndigoPrimary, NavyDark)
+            val cardColor = if (assets.size > 1) {
+                themeColors[assetIndex % themeColors.size]
+            } else {
+                themeColors[positionFromTop % themeColors.size]
+            }
+
+            Box(
+                modifier = Modifier
+                    .graphicsLayer {
+                        if (isTopCard) {
+                            translationX = dragX.value
+                            rotationZ = (dragX.value / 25f).coerceIn(-12f, 12f)
+                        }
+                        translationY = currentYPx
+                        scaleX = currentScale
+                        scaleY = currentScale
+                        this.alpha = currentAlpha
+                        transformOrigin = TransformOrigin(0.5f, 0.0f)
+                    }
+                    .then(
+                        if (currentBlur > 0.dp) {
+                            Modifier.blur(
+                                radius = currentBlur,
+                                edgeTreatment = BlurredEdgeTreatment.Unbounded
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .zIndex(if (isTopCard) 100f else (10f - positionFromTop))
+                    .pointerInput(assets.size, currentIndex) {
+                        if (!isTopCard) return@pointerInput
+                        detectDragGestures(
+                            onDragEnd = {
+                                val threshold = size.width * 0.28f
+                                scope.launch {
+                                    if (kotlin.math.abs(dragX.value) > threshold) {
+                                        val targetX = if (dragX.value > 0) size.width * 1.5f else -size.width * 1.5f
+                                        dragX.animateTo(
+                                            targetValue = targetX,
+                                            animationSpec = spring(
+                                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                                stiffness = Spring.StiffnessMediumLow
+                                            )
+                                        )
+                                        currentIndex = (currentIndex + 1) % assets.size
+                                        dragX.snapTo(0f)
+                                    } else {
+                                        dragX.animateTo(
+                                            targetValue = 0f,
+                                            animationSpec = spring(
+                                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                stiffness = Spring.StiffnessLow
+                                            )
+                                        )
+                                    }
+                                }
+                            },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                scope.launch {
+                                    dragX.snapTo(dragX.value + dragAmount.x)
+                                }
+                            }
+                        )
+                    }
+            ) {
+                SwipeableAssetCard(
+                    asset = asset,
+                    valuation = valuation,
+                    cardBgColor = cardColor,
+                    onCardClick = { onNavigateToAssetDetail(asset.id) },
+                    onMenuClick = { onMenuClick(asset) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SwipeableAssetCard(
     asset: AssetEntity,
     valuation: Double,
+    cardBgColor: Color = PinkPrimary,
     onCardClick: () -> Unit,
     onMenuClick: () -> Unit
 ) {
@@ -827,93 +1005,184 @@ private fun AssetHoldingCard(
     val pnlPct = if (purchaseCost > 0) (pnl / purchaseCost) * 100.0 else 0.0
     val isProfit = pnl >= 0
 
+    val (iconRes, assetTag) = when (asset.type) {
+        AssetType.GOLD -> R.drawable.ic_asset_gold to "${asset.weightGrams}g • ${asset.purity}"
+        AssetType.SILVER -> R.drawable.ic_asset_silver to "${asset.weightGrams}g • ${asset.purity}"
+        AssetType.CERTIFICATE -> R.drawable.ic_asset_certificate to "${asset.annualRate}% APR"
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .height(250.dp)
             .clickable { onCardClick() },
-        shape = RoundedCornerShape(20.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+        shape = RoundedCornerShape(26.dp),
+        color = cardBgColor,
+        shadowElevation = 0.dp
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            val (iconRes, color) = when (asset.type) {
-                AssetType.GOLD -> R.drawable.ic_asset_gold to Color(0xFFD97706)
-                AssetType.SILVER -> R.drawable.ic_asset_silver to Color(0xFF475569)
-                AssetType.CERTIFICATE -> R.drawable.ic_asset_certificate to Color(0xFF059669)
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xFFF1F5F9))
-                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(14.dp)),
-                contentAlignment = Alignment.Center
+            // Top Row: Stacked Category Icons + Right Time/Purity Pill Tag
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    painter = painterResource(id = iconRes),
-                    contentDescription = null,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(30.dp)
-                )
+                // Stacked Avatars / Icons
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.25f))
+                            .border(1.5.dp, Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = iconRes),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                // Top Right Pill
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White.copy(alpha = 0.22f)
+                ) {
+                    Text(
+                        text = assetTag,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1.1f)) {
+            // Middle Section: Bold Title + Valuation
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
                     text = asset.name,
-                    fontSize = 14.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = NavyDark
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(2.dp))
-                val desc = when (asset.type) {
-                    AssetType.GOLD -> "${asset.weightGrams}g • ${asset.purity}"
-                    AssetType.SILVER -> "${asset.weightGrams}g • ${asset.purity}"
-                    AssetType.CERTIFICATE -> "${asset.annualRate}% APR"
-                }
-                Text(
-                    text = desc,
-                    fontSize = 12.sp,
-                    color = TextLight
-                )
-            }
 
-            // Mini Sparkline P&L Chart
-            MiniHoldingSparkline(
-                isProfit = isProfit,
-                modifier = Modifier
-                    .width(48.dp)
-                    .height(26.dp)
-            )
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = "${String.format(Locale.getDefault(), "%,.0f", valuation)} ${stringResource(R.string.currency_egp)}",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = NavyDark
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                val pnlColor = if (isProfit) Color(0xFF15803D) else Color(0xFFB91C1C)
-                Text(
-                    text = "${if (isProfit) "+" else ""}${String.format(Locale.getDefault(), "%,.0f", pnl)} (${String.format(Locale.getDefault(), "%.1f", pnlPct)}%)",
-                    fontSize = 11.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = pnlColor
+                    color = Color.White
+                )
+
+                Text(
+                    text = "(${if (isProfit) "+" else ""}${String.format(Locale.getDefault(), "%.1f", pnlPct)}%)",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (isProfit) Color(0xFF10B981) else Color(0xFFEF4444)
                 )
             }
 
+            // Bottom Section: Interactive Drag/Tap Action Bar + Right Option Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Wide Action Pill
+                Surface(
+                    onClick = onCardClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color.White.copy(alpha = 0.25f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color.White),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = cardBgColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        Text(
+                            text = "swipe to navigate",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+
+                        Text(
+                            text = ">>>",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Options Circle Button
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .clickable { onMenuClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Options",
+                        tint = cardBgColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun AssetHoldingCard(
+    asset: AssetEntity,
+    valuation: Double,
+    onCardClick: () -> Unit,
+    onMenuClick: () -> Unit
+) {
+    SwipeableAssetCard(
+        asset = asset,
+        valuation = valuation,
+        cardBgColor = PinkPrimary,
+        onCardClick = onCardClick,
+        onMenuClick = onMenuClick
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1634,16 +1903,24 @@ private fun DiversityIndicator(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier,
+        modifier = modifier
+            .height(88.dp)
+            .clip(RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
         color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        shadowElevation = 0.dp
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(14.dp))
                     .background(color.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
@@ -1651,20 +1928,33 @@ private fun DiversityIndicator(
                     painter = painterResource(id = iconRes),
                     contentDescription = null,
                     tint = Color.Unspecified,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(32.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
-            Text(text = label, fontSize = 12.sp, color = TextLight, fontWeight = FontWeight.Medium)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "${String.format(Locale.getDefault(), "%,.0f", value)} ${stringResource(R.string.currency_egp)}",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Black,
-                color = NavyDark
-            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = NavyDark,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "${String.format(Locale.getDefault(), "%,.0f", value)} ${stringResource(R.string.currency_egp)}",
+                    fontSize = 12.sp,
+                    color = TextLight,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }

@@ -1,6 +1,11 @@
 package com.oryno.piggy_ledger.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,15 +28,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.animation.core.*
+import kotlinx.coroutines.delay
+import kotlin.math.abs
 import coil.compose.AsyncImage
 import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.data.Account
@@ -54,8 +69,7 @@ fun AccountsScreen(
     onNavigateToSettingsPro: () -> Unit = {},
     onNavigateToTransfer: () -> Unit = {}
 ) {
-    val allAccountsRaw by viewModel.allAccounts.collectAsState()
-    val accounts = remember(allAccountsRaw) { allAccountsRaw.filter { !it.isSystemAccount && !it.is_deleted } }
+    val accounts by viewModel.userAccounts.collectAsState()
     val selectedAccountId by viewModel.selectedAccountId.collectAsState()
     val allTransactions by viewModel.allAccountTransactions.collectAsState()
     val monthlyBudget by viewModel.monthlyBudget.collectAsState()
@@ -158,6 +172,47 @@ fun AccountsScreen(
 
     val progress = if (monthlyBudget > 0) (totalSpent / monthlyBudget).toFloat().coerceIn(0f, 1f) else 0f
 
+    // New calculations for Redesigned Header
+    val lastMonthStart = remember(selectedMonth, selectedYear) {
+        Calendar.getInstance().apply {
+            set(Calendar.YEAR, selectedYear)
+            set(Calendar.MONTH, selectedMonth)
+            set(Calendar.DAY_OF_MONTH, 1)
+            add(Calendar.MONTH, -1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+        }.timeInMillis
+    }
+    val lastMonthEnd = monthStart
+
+    val lastMonthSpent = remember(allTransactions, selectedAccountId, lastMonthStart, lastMonthEnd, excludedAccountIds) {
+        allTransactions.filter { tx ->
+            val matchesAccount = if (selectedAccountId == null) !excludedAccountIds.contains(tx.account_id) else (tx.account_id == selectedAccountId)
+            val matchesTime = tx.timestamp in lastMonthStart until lastMonthEnd
+            matchesAccount && tx.amount < 0
+        }.sumOf { -it.amount }
+    }
+
+    val spendingTrend = totalSpent - lastMonthSpent
+    val trendText = if (spendingTrend >= 0) {
+        "$currencySymbol ${String.format(Locale.getDefault(), "%,.0f", spendingTrend)} more than last month"
+    } else {
+        "$currencySymbol ${String.format(Locale.getDefault(), "%,.0f", -spendingTrend)} less than last month"
+    }
+
+    // Days in current month and days passed
+    val daysPassed = remember(selectedMonth, selectedYear) {
+        val now = Calendar.getInstance()
+        if (now.get(Calendar.MONTH) == selectedMonth && now.get(Calendar.YEAR) == selectedYear) {
+            now.get(Calendar.DAY_OF_MONTH)
+        } else {
+            31 // If it's a past month, assume full month passed for logic
+        }
+    }
+
+    // Logic for warning card: 80% consumed or high burn rate
+    val showBudgetWarning = progress >= 0.8f || (progress >= 0.5f && daysPassed <= 10)
+
     Scaffold(
         containerColor = Color(0xFFF8FAFC)
     ) { paddingValues ->
@@ -211,196 +266,464 @@ fun AccountsScreen(
                     .fillMaxSize()
                     .padding(bottom = 70.dp) // Leave room for bottom bar
             ) {
-                // PREMIUM HEADER
+                val mainColumnScope = this
+                // REDESIGNED PREMIUM HEADER
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-                        .background(NavyDark)
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    PinkPrimary.copy(alpha = 0.25f),
+                                    Color.White
+                                )
+                            )
+                        )
                         .statusBarsPadding()
-                        .padding(horizontal = 24.dp)
-                        .padding(top = 16.dp, bottom = 32.dp)
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    // Background Chart Visualization
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(260.dp)
+                            .align(Alignment.BottomCenter)
                     ) {
-                        // Top Bar: Month Selector & Actions
+                        BackgroundSpendingChart(
+                            transactions = filteredTransactions,
+                            monthStart = monthStart,
+                            monthEnd = monthEnd
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .padding(top = 16.dp, bottom = 28.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Top Bar: Bank Switcher (Left) & Month Selector (Center)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            // Month Selector
+                            // Account Switcher Button (Now Left)
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White)
+                                    .border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                                    .clickable { showAccountSwitcher = true }
+                                    .padding(4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (selectedAccount != null) {
+                                    BrandLogo(
+                                        provider = selectedAccount.provider ?: selectedAccount.name,
+                                        accountType = selectedAccount.type,
+                                        iconColorHex = selectedAccount.icon_color,
+                                        logoUrl = selectedAccount.logo_url,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_nav_accounts),
+                                        contentDescription = "All Accounts",
+                                        tint = PinkPrimary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+
+                            // Month Selector (Center-ish)
                             Row(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color.White.copy(alpha = 0.1f))
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(PinkPrimary.copy(alpha = 0.1f))
                                     .clickable { showMonthBottomSheet = true }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    .padding(horizontal = 14.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = "${monthNames[selectedMonth]} $selectedYear",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
+                                    color = PinkPrimary,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 13.sp
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(18.dp))
                             }
 
-                            // Right Action Icons
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                // Account Switcher Button
-                                Box(
-                                    modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(CircleShape)
-                                        .background(Color.White.copy(alpha = 0.12f))
-                                        .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
-                                        .clickable { showAccountSwitcher = true }
-                                        .padding(3.dp),
-                                    contentAlignment = Alignment.Center
+                            // Placeholder for balance/symmetry
+                            Box(modifier = Modifier.size(40.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Main Metrics
+                        Text(
+                            text = androidx.compose.ui.text.buildAnnotatedString {
+                                append(stringResource(R.string.total_spent_in))
+                                withStyle(style = androidx.compose.ui.text.SpanStyle(color = PinkPrimary, fontWeight = FontWeight.Black)) {
+                                    append(monthNames[selectedMonth])
+                                }
+                            },
+                            color = NavyDark.copy(alpha = 0.6f),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        
+                        Spacer(modifier = Modifier.height(6.dp))
+                        
+                        Text(
+                            text = if (isBalanceVisible) "$currencySymbol ${String.format(Locale.getDefault(), "%,.0f", totalSpent)}" else "$currencySymbol ••••••",
+                            color = NavyDark,
+                            fontSize = 38.sp,
+                            fontWeight = FontWeight.Black
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (spendingTrend <= 0) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                                contentDescription = null,
+                                tint = if (spendingTrend <= 0) Color(0xFF10B981) else Color(0xFFEF4444),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = trendText + stringResource(R.string.spent_vs_last_period),
+                                color = TextLight,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        // Budget Warning Card (Conditional)
+                        if (showBudgetWarning && monthlyBudget > 0) {
+                            val leftInBudget = (monthlyBudget - totalSpent).coerceAtLeast(0.0)
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                colors = CardDefaults.cardColors(containerColor = NavyDark),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(20.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    if (selectedAccount != null) {
-                                        BrandLogo(
-                                            provider = selectedAccount.provider ?: selectedAccount.name,
-                                            accountType = selectedAccount.type,
-                                            iconColorHex = selectedAccount.icon_color,
-                                            logoUrl = selectedAccount.logo_url,
-                                            modifier = Modifier.fillMaxSize()
+                                    Box(contentAlignment = Alignment.Center) {
+                                        CircularProgressIndicator(
+                                            progress = { progress },
+                                            modifier = Modifier.size(50.dp),
+                                            color = if (progress > 0.9f) Color(0xFFEF4444) else PinkPrimary,
+                                            trackColor = Color.White.copy(alpha = 0.1f),
+                                            strokeWidth = 5.dp
                                         )
-                                    } else {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.ic_nav_accounts),
-                                            contentDescription = "All Accounts",
-                                            tint = PinkPrimary,
-                                            modifier = Modifier.size(22.dp)
+                                        Text(
+                                            text = "${(progress * 100).toInt()}%",
+                                            color = Color.White,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(16.dp))
+
+                                    Column {
+                                        Text(
+                                            text = "$currencySymbol ${String.format(Locale.getDefault(), "%,.0f", leftInBudget)} " + stringResource(R.string.left_in_budget),
+                                            color = Color.White,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = when {
+                                                progress > 1.0f -> stringResource(R.string.budget_warning_over)
+                                                progress > 0.9f -> stringResource(R.string.budget_warning_almost)
+                                                daysPassed < 15 && progress > 0.6f -> stringResource(R.string.budget_warning_high_burn)
+                                                else -> stringResource(R.string.budget_warning_monitoring)
+                                            },
+                                            color = Color.White.copy(alpha = 0.7f),
+                                            fontSize = 12.sp,
+                                            lineHeight = 16.sp
                                         )
                                     }
                                 }
                             }
                         }
+                    }
+                }
 
-                        // Main Budget Metric: Spent vs Budget
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(stringResource(R.string.total_spent), color = TextLight, fontSize = 12.sp, letterSpacing = 1.sp)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = if (isBalanceVisible) "$currencySymbol ${String.format(Locale.getDefault(), "%,.0f", totalSpent)}" else "$currencySymbol ••••••",
-                                color = Color.White,
-                                fontSize = 32.sp,
-                                fontWeight = FontWeight.Black
-                            )
+                // 2. MORPHING ACTION BUTTONS CAPSULE BAR (Full Width, before Spending by Category)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(top = 18.dp)
+                ) {
+                    MorphingActionButtonsBar(
+                        filterAllTime = filterAllTime,
+                        onToggleFilter = { filterAllTime = !filterAllTime },
+                        onNavigateToTransfer = onNavigateToTransfer,
+                        onAddTransaction = { showAddTransactionDialog = true }
+                    )
+                }
+
+                // 3. SPENDING BY CATEGORY SECTION
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 20.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.spending_by_category),
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDark
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val categorySpentMap = remember(filteredTransactions) {
+                        val map = mutableMapOf<String, Double>()
+                        filteredTransactions.filter { it.amount < 0 }.forEach { tx ->
+                            val rawKey = if (tx.merchant.contains("|")) {
+                                tx.merchant.split("|", limit = 2)[0]
+                            } else {
+                                tx.merchant
+                            }
+                            val cleaned = cleanCategoryKey(rawKey)
+                            map[cleaned] = (map[cleaned] ?: 0.0) + (-tx.amount)
                         }
+                        map
+                    }
 
-                        // Budget Bar + Details
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            LinearProgressIndicator(
-                                progress = { progress },
-                                modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
-                                color = if (progress > 0.9f) Color(0xFFEF4444) else PinkPrimary,
-                                trackColor = Color.White.copy(alpha = 0.1f)
-                            )
+                    val categoryLimits by viewModel.categoryLimits.collectAsState()
+                    var categoryForLimitDialog by remember { mutableStateOf<TransactionCategory?>(null) }
+
+                    val categories = remember { categoriesList.filter { it.key != "transfer" && it.key != "cat_transfer" } }
+                    val virtualCount = 30000
+                    val initialPage = remember(categories.size) {
+                        if (categories.isNotEmpty()) {
+                            (virtualCount / 2) - ((virtualCount / 2) % categories.size)
+                        } else 0
+                    }
+                    val pagerState = rememberPagerState(initialPage = initialPage) { virtualCount }
+
+                    LaunchedEffect(pagerState) {
+                        while (true) {
+                            delay(3500L)
+                            if (!pagerState.isScrollInProgress) {
+                                pagerState.animateScrollToPage(
+                                    page = pagerState.currentPage + 1,
+                                    animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing)
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalPager(
+                        state = pagerState,
+                        contentPadding = PaddingValues(horizontal = 24.dp),
+                        pageSpacing = 12.dp,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { page ->
+                        val actualIndex = if (categories.isNotEmpty()) (page % categories.size + categories.size) % categories.size else 0
+                        val cat = categories[actualIndex]
+                        val cleanedKey = cleanCategoryKey(cat.key)
+                        val spent = categorySpentMap[cleanedKey] ?: 0.0
+                        val limit = categoryLimits[cleanedKey]
+                        val categoryName = resolveCategoryDisplayName(cat.key)
+
+                        val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                        val scale = 0.96f + (1f - 0.96f) * (1f - abs(pageOffset).coerceIn(0f, 1f))
+                        val alpha = 0.85f + (1f - 0.85f) * (1f - abs(pageOffset).coerceIn(0f, 1f))
+
+                        Surface(
+                            onClick = { categoryForLimitDialog = cat },
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(100.dp)
+                                .graphicsLayer {
+                                    scaleX = scale
+                                    scaleY = scale
+                                    this.alpha = alpha
+                                }
+                        ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth().clickable { showEditBudgetDialog = true },
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("${stringResource(R.string.budget)}: $currencySymbol ${String.format(Locale.getDefault(), "%,.0f", monthlyBudget)}", color = TextLight, fontSize = 11.sp)
-                                Text(stringResource(R.string.percent_used, (progress * 100).toInt()), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(PinkPrimary.copy(alpha = 0.12f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = cat.icon,
+                                        contentDescription = null,
+                                        tint = PinkPrimary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(16.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = categoryName,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = NavyDark,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    val limitSubtext = if (limit != null && limit > 0) {
+                                        val left = (limit - spent).coerceAtLeast(0.0)
+                                        "/ $currencySymbol ${String.format(Locale.getDefault(), "%,.0f", left)} " + stringResource(R.string.left_in_budget)
+                                    } else {
+                                        stringResource(R.string.no_limit)
+                                    }
+                                    Text(
+                                        text = limitSubtext,
+                                        fontSize = 11.sp,
+                                        color = TextLight,
+                                        maxLines = 1
+                                    )
+                                }
+
+                                Text(
+                                    text = "$currencySymbol ${String.format(Locale.getDefault(), "%,.0f", spent)}",
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = NavyDark
+                                )
+                            }
+                        }
+                    }
+
+                    // Spend Limit Bottom Sheet Dialog
+                    if (categoryForLimitDialog != null) {
+                        val catToEdit = categoryForLimitDialog!!
+                        val cleanedKey = cleanCategoryKey(catToEdit.key)
+                        val currentLimit = categoryLimits[cleanedKey] ?: 0.0
+                        var limitInput by remember { mutableStateOf(if (currentLimit > 0) currentLimit.toString() else "") }
+
+                        ModalBottomSheet(
+                            onDismissRequest = { categoryForLimitDialog = null },
+                            containerColor = Color.White
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(24.dp)
+                                    .padding(bottom = 32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Text(
+                                    text = "${stringResource(R.string.set_spend_limit)}: ${resolveCategoryDisplayName(catToEdit.key)}",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = NavyDark
+                                )
+
+                                OutlinedTextField(
+                                    value = limitInput,
+                                    onValueChange = { limitInput = it },
+                                    label = { Text("${stringResource(R.string.limit_amount)} ($currencySymbol)") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+
+                                Button(
+                                    onClick = {
+                                        val newLimit = limitInput.toDoubleOrNull() ?: 0.0
+                                        viewModel.setCategoryLimit(cleanedKey, newLimit)
+                                        categoryForLimitDialog = null
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(50.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+                                ) {
+                                    Text(stringResource(R.string.save), fontWeight = FontWeight.Bold, color = Color.White)
+                                }
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                // TRANSACTIONS HEADER
+                // 4. TRANSACTIONS HEADER TITLE BELOW THE BUTTONS
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = stringResource(R.string.transactions),
+                        text = stringResource(R.string.recent_transactions),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = NavyDark
                     )
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // All/Month Toggle Chip
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFF1F5F9))
-                                .clickable { filterAllTime = !filterAllTime }
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (filterAllTime) Icons.Default.List else Icons.Default.CalendarToday,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = PinkPrimary
-                            )
-                            Text(
-                                text = if (filterAllTime) stringResource(R.string.all_time) else stringResource(R.string.this_month),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = PinkPrimary
-                            )
+                    Text(
+                        text = stringResource(R.string.view_all),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PinkPrimary,
+                        modifier = Modifier.clickable { 
+                            // Open All Transactions Screen (could be a state change or new route)
+                            filterAllTime = true
                         }
-
-                        Button(
-                            onClick = { onNavigateToTransfer() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = PinkPrimary,
-                                contentColor = Color.White
-                            ),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Icon(Icons.Default.SwapHoriz, contentDescription = null, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.transfer), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        }
-
-                        Button(
-                            onClick = { showAddTransactionDialog = true },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = PinkPrimary.copy(alpha = 0.08f),
-                                contentColor = PinkPrimary
-                            ),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.add_btn), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        }
-                    }
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // TRANSACTION LAZY COLUMN
-                if (displayedTransactions.isEmpty()) {
-                    Box(
-                        modifier = Modifier
+                // TRANSACTION CONTAINER
+                Box(
+                    modifier = mainColumnScope.run {
+                        Modifier
                             .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
+                            .weight(1f)
+                    }
+                ) {
+                    if (displayedTransactions.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
@@ -434,8 +757,7 @@ fun AccountsScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
+                            .fillMaxSize()
                             .padding(horizontal = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                         contentPadding = PaddingValues(bottom = 100.dp)
@@ -712,9 +1034,9 @@ fun AccountsScreen(
                         }
                     }
                 }
-            }
         }
     }
+}
 
     // MONTH SELECTOR BOTTOM SHEET
     if (showMonthBottomSheet) {
@@ -989,6 +1311,7 @@ fun AccountsScreen(
                     Text(stringResource(R.string.close), color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
+            }
         }
     }
 }
@@ -1046,3 +1369,219 @@ fun getCategoryAndIconForMerchant(merchant: String): Pair<String, ImageVector> {
             "Other" to Icons.Default.Payments
     }
 }
+
+@Composable
+private fun MorphingActionButtonsBar(
+    filterAllTime: Boolean,
+    onToggleFilter: () -> Unit,
+    onNavigateToTransfer: () -> Unit,
+    onAddTransaction: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var activeIndex by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(3500L)
+            activeIndex = (activeIndex + 1) % 3
+        }
+    }
+
+    Surface(
+        shape = RoundedCornerShape(26.dp),
+        color = Color(0xFF1E293B), // Sleek off-black / dark slate pill background matching uploaded image
+        shadowElevation = 2.dp,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 6.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Button 0: Add Transaction
+            MorphingButton(
+                icon = Icons.Default.Add,
+                label = stringResource(R.string.add_transaction),
+                isExpanded = activeIndex == 0,
+                modifier = Modifier.weight(if (activeIndex == 0) 1.6f else 1.0f),
+                onClick = {
+                    activeIndex = 0
+                    onAddTransaction()
+                }
+            )
+
+            // Button 1: Transfer
+            MorphingButton(
+                icon = Icons.Default.SwapHoriz,
+                label = stringResource(R.string.transfer),
+                isExpanded = activeIndex == 1,
+                modifier = Modifier.weight(if (activeIndex == 1) 1.6f else 1.0f),
+                onClick = {
+                    activeIndex = 1
+                    onNavigateToTransfer()
+                }
+            )
+
+            // Button 2: Filter
+            MorphingButton(
+                icon = if (filterAllTime) Icons.Default.List else Icons.Default.FilterList,
+                label = if (filterAllTime) stringResource(R.string.all_time) else stringResource(R.string.this_month),
+                isExpanded = activeIndex == 2,
+                modifier = Modifier.weight(if (activeIndex == 2) 1.6f else 1.0f),
+                onClick = {
+                    activeIndex = 2
+                    onToggleFilter()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun MorphingButton(
+    icon: ImageVector,
+    label: String,
+    isExpanded: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = if (isExpanded) Color.White else Color.White.copy(alpha = 0.15f)
+    val contentColor = if (isExpanded) NavyDark else Color.White
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        color = backgroundColor,
+        modifier = modifier.height(44.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = if (isExpanded) 12.dp else 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = contentColor,
+                modifier = Modifier.size(18.dp)
+            )
+
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = fadeIn() + expandHorizontally(),
+                exit = fadeOut() + shrinkHorizontally()
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = label,
+                        color = contentColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BackgroundSpendingChart(
+    transactions: List<AccountTransaction>,
+    monthStart: Long,
+    monthEnd: Long
+) {
+    val dailySpending = remember(transactions, monthStart, monthEnd) {
+        val map = mutableMapOf<Int, Double>()
+        val cal = Calendar.getInstance()
+        
+        // Initialize with zeros for each day of month
+        cal.timeInMillis = monthStart
+        val maxDays = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+        for (i in 1..maxDays) map[i] = 0.0
+        
+        // Aggregate
+        transactions.filter { it.amount < 0 }.forEach { tx ->
+            cal.timeInMillis = tx.timestamp
+            val day = cal.get(Calendar.DAY_OF_MONTH)
+            map[day] = (map[day] ?: 0.0) + (-tx.amount)
+        }
+        
+        // Create cumulative points for a growth chart look
+        var runningTotal = 0.0
+        val points = mutableListOf<Double>()
+        for (i in 1..maxDays) {
+            runningTotal += (map[i] ?: 0.0)
+            points.add(runningTotal)
+        }
+        points
+    }
+
+    val layoutDirection = LocalLayoutDirection.current
+    val isRtl = layoutDirection == LayoutDirection.Rtl
+
+    androidx.compose.foundation.Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .graphicsLayer { alpha = 0.15f } // Subtly blended into background
+    ) {
+        if (dailySpending.isEmpty()) return@Canvas
+        
+        val maxVal = dailySpending.maxOrNull()?.coerceAtLeast(1.0) ?: 1.0
+        val width = size.width
+        val height = size.height
+        val stepX = width / (dailySpending.size - 1).coerceAtLeast(1)
+        
+        val path = androidx.compose.ui.graphics.Path()
+        dailySpending.forEachIndexed { index, value ->
+            val x = if (isRtl) width - (index * stepX) else index * stepX
+            val y = height - (value.toFloat() / maxVal.toFloat() * height * 0.8f)
+            if (index == 0) path.moveTo(x, y) else {
+                val prevX = if (isRtl) width - ((index - 1) * stepX) else (index - 1) * stepX
+                val prevY = height - (dailySpending[index - 1].toFloat() / maxVal.toFloat() * height * 0.8f)
+                
+                // Use cubicTo for a smoother "wave" look instead of straight lineTo
+                path.cubicTo(
+                    (prevX + x) / 2f, prevY,
+                    (prevX + x) / 2f, y,
+                    x, y
+                )
+            }
+        }
+
+        drawPath(
+            path = path,
+            color = PinkPrimary,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                width = 3.dp.toPx(),
+                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                join = androidx.compose.ui.graphics.StrokeJoin.Round
+            )
+        )
+        
+        // Fill area under path
+        val fillPath = androidx.compose.ui.graphics.Path().apply {
+            addPath(path)
+            if (isRtl) {
+                lineTo(0f, height)
+                lineTo(width, height)
+            } else {
+                lineTo(width, height)
+                lineTo(0f, height)
+            }
+            close()
+        }
+        
+        drawPath(
+            path = fillPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(PinkPrimary.copy(alpha = 0.3f), Color.Transparent)
+            )
+        )
+    }
+}
+

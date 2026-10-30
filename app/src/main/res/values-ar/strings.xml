@@ -1,6 +1,12 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">بيجى</string>
+    <string name="spending_by_category">الإنفاق حسب الفئة</string>
+    <string name="no_limit">بدون حد</string>
+    <string name="set_spend_limit">تحديد حد إنفاق</string>
+    <string name="limit_amount">مبلغ الحد الأقصى</string>
+    <string name="holding_active">أصل نشط</string>
+    <string name="tap_to_view_details">اضغط لعرض التفاصيل</string>
     <string name="onboarding_step_1_title">سجل كل قرش</string>
     <string name="onboarding_step_1_desc">مفيش حيرة بعد كده فلوسك راحت فين. بيجى بيظبطلك كل حاجة.</string>
     <string name="onboarding_step_2_title">حط أهداف كبيرة</string>
@@ -480,6 +486,16 @@
     <string name="month_december">ديسمبر</string>
     <string name="total_spent">إجمالي المصاريف</string>
     <string name="percent_used">تم استخدام %1$d%%</string>
+    <string name="total_spent_in">إجمالي المنفق في </string>
+    <string name="spent_vs_last_period"> مقارنة بالفترة السابقة</string>
+    <string name="more_than_last_month">أكثر من الشهر الماضي</string>
+    <string name="less_than_last_month">أقل من الشهر الماضي</string>
+    <string name="left_in_budget">متبقي في الميزانية</string>
+    <string name="budget_warning_over">تخطيت الميزانية! راجع مصروفاتك.</string>
+    <string name="budget_warning_almost">على وشك الانتهاء والوصول للحد.</string>
+    <string name="budget_warning_high_burn">إنفاق مرتفع في بداية الشهر.</string>
+    <string name="budget_warning_monitoring">استمر في مراقبة مصروفاتك اليومية.</string>
+    <string name="recent_transactions">المعاملات الأخيرة</string>
     <string name="transactions">المعاملات</string>
     <string name="all_time">كل الوقت</string>
     <string name="this_month">الشهر ده</string>

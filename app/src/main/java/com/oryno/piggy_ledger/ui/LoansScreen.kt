@@ -630,8 +630,9 @@ fun LoansScreen(
     
     if (showAddDialog) {
         AddLoanBottomSheet(
+            viewModel = viewModel,
             appCurrency = appCurrency,
-            onConfirm = { isLent, amount, contactName, phone, email, photoUri, social, note, deadline ->
+            onConfirm = { isLent, amount, contactName, phone, email, photoUri, social, note, deadline, accountId ->
                 viewModel.addLoan(
                     Loan(
                         id = UUID.randomUUID().toString(),
@@ -643,7 +644,8 @@ fun LoansScreen(
                         photoUri = photoUri,
                         social = social,
                         note = note,
-                        deadline = deadline
+                        deadline = deadline,
+                        accountId = accountId
                     )
                 )
                 ToastUtil.show(screenContext, screenContext.getString(R.string.toast_loan_added), Toast.LENGTH_SHORT)

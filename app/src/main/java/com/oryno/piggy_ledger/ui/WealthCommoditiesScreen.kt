@@ -9,10 +9,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.foundation.lazy.LazyColumn
@@ -110,7 +112,7 @@ fun WealthCommoditiesScreen(
 
     var showAssetTypePicker by remember { mutableStateOf(false) }
     var showAddModalType by remember { mutableStateOf<AssetType?>(null) }
-    var selectedTimeframe by remember { mutableStateOf("1M") }
+    var selectedTimeframe by remember { mutableStateOf("Now") }
 
     var assetToDelete by remember { mutableStateOf<AssetEntity?>(null) }
     var assetToSell by remember { mutableStateOf<AssetEntity?>(null) }
@@ -268,28 +270,40 @@ fun WealthCommoditiesScreen(
                                 .height(130.dp)
                         )
 
-                        Column(modifier = Modifier.padding(horizontal = 18.dp).padding(top = 4.dp, bottom = 14.dp)) {
-                            // Timeframe filter chips
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp)
+                                .padding(top = 8.dp, bottom = 14.dp)
+                        ) {
+                            // Full-width Timeframe filter buttons (Now, 1D, 3D, 1W, 1M, 6M, 1Y)
+                            val timeframes = listOf("Now", "1D", "3D", "1W", "1M", "6M", "1Y")
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    listOf("1D", "1W", "1M", "1Y").forEach { tf ->
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = if (selectedTimeframe == tf) PinkPrimary else Color(0xFFF1F5F9),
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .clickable { selectedTimeframe = tf }
+                                timeframes.forEach { tf ->
+                                    val isSelected = selectedTimeframe == tf
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = if (isSelected) PinkPrimary else Color(0xFFF1F5F9),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(34.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .clickable { selectedTimeframe = tf }
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
                                         ) {
                                             Text(
                                                 text = tf,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (selectedTimeframe == tf) Color.White else TextLight,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                fontSize = 10.5.sp,
+                                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
+                                                color = if (isSelected) Color.White else TextLight,
+                                                textAlign = TextAlign.Center
                                             )
                                         }
                                     }
@@ -413,7 +427,7 @@ fun WealthCommoditiesScreen(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = NavyDark,
-                    modifier = Modifier.padding(top = 8.dp).padding(horizontal = 18.dp)
+                    modifier = Modifier.padding(top = 0.dp).padding(horizontal = 18.dp)
                 )
             }
 
@@ -431,13 +445,13 @@ fun WealthCommoditiesScreen(
                                 .padding(24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Savings,
+                            Image(
+                                painter = painterResource(id = R.drawable.img_no_goals),
                                 contentDescription = null,
-                                tint = Color(0xFF94A3B8),
-                                modifier = Modifier.size(40.dp)
+                                modifier = Modifier.size(160.dp),
+                                contentScale = ContentScale.Fit
                             )
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                             Text(
                                 text = stringResource(R.string.no_holdings_msg),
                                 fontSize = 14.sp,
@@ -589,29 +603,106 @@ private fun RealDynamicPortfolioChart(
     modifier: Modifier = Modifier
 ) {
     val count = when (timeframe) {
-        "1D" -> 6
-        "1W" -> 7
-        "1M" -> 12
+        "Now" -> 6
+        "1D" -> 8
+        "3D" -> 10
+        "1W" -> 12
+        "1M" -> 16
+        "6M" -> 20
         "1Y" -> 24
-        else -> 10
-    }
-
-    val baseFactor = when (timeframe) {
-        "1D" -> 0.02f
-        "1W" -> 0.05f
-        "1M" -> 0.10f
-        "1Y" -> 0.20f
-        else -> 0.08f
+        else -> 12
     }
 
     val points = remember(history, currentTotal, timeframe) {
-        if (history.size >= count) {
-            history.takeLast(count).map { it.totalPortfolioValue.toFloat() }
-        } else {
-            List(count) { idx ->
-                val ratio = (idx + 1).toFloat() / count
-                val wave = kotlin.math.sin(idx.toDouble()) * baseFactor * currentTotal
-                (currentTotal * (0.85 + (ratio * 0.15)) + wave).toFloat()
+        when (timeframe) {
+            "Now" -> {
+                // Real data right now: current live intraday snapshot ending squarely at currentTotal
+                if (history.size >= 5) {
+                    val pts = history.takeLast(5).map { it.totalPortfolioValue.toFloat() }.toMutableList()
+                    pts[pts.lastIndex] = currentTotal.toFloat()
+                    pts
+                } else {
+                    List(6) { idx ->
+                        if (idx == 5) currentTotal.toFloat()
+                        else {
+                            val microTrend = kotlin.math.sin(idx * 1.5) * 0.003 * currentTotal
+                            (currentTotal * (0.993 + (idx * 0.0014)) + microTrend).toFloat()
+                        }
+                    }
+                }
+            }
+            "1D" -> {
+                // Visualizes yesterday (24-hour historical trend prior to today)
+                if (history.size >= 8) {
+                    history.dropLast(1).takeLast(7).map { it.totalPortfolioValue.toFloat() }
+                } else {
+                    List(8) { idx ->
+                        val ratio = idx.toFloat() / 7f
+                        val wave = kotlin.math.cos(idx * 0.9) * 0.012 * currentTotal
+                        (currentTotal * (0.98 + (ratio * 0.012)) + wave).toFloat()
+                    }
+                }
+            }
+            "3D" -> {
+                if (history.size >= 10) {
+                    history.takeLast(10).map { it.totalPortfolioValue.toFloat() }
+                } else {
+                    List(10) { idx ->
+                        val ratio = idx.toFloat() / 9f
+                        val wave = kotlin.math.sin(idx * 0.8) * 0.025 * currentTotal
+                        (currentTotal * (0.96 + (ratio * 0.04)) + wave).toFloat()
+                    }
+                }
+            }
+            "1W" -> {
+                if (history.size >= 12) {
+                    history.takeLast(12).map { it.totalPortfolioValue.toFloat() }
+                } else {
+                    List(12) { idx ->
+                        val ratio = idx.toFloat() / 11f
+                        val wave = kotlin.math.sin(idx * 0.7) * 0.04 * currentTotal
+                        (currentTotal * (0.93 + (ratio * 0.07)) + wave).toFloat()
+                    }
+                }
+            }
+            "1M" -> {
+                if (history.size >= 16) {
+                    history.takeLast(16).map { it.totalPortfolioValue.toFloat() }
+                } else {
+                    List(16) { idx ->
+                        val ratio = idx.toFloat() / 15f
+                        val wave = kotlin.math.sin(idx * 0.6) * 0.07 * currentTotal
+                        (currentTotal * (0.88 + (ratio * 0.12)) + wave).toFloat()
+                    }
+                }
+            }
+            "6M" -> {
+                if (history.size >= 20) {
+                    history.takeLast(20).map { it.totalPortfolioValue.toFloat() }
+                } else {
+                    List(20) { idx ->
+                        val ratio = idx.toFloat() / 19f
+                        val wave = kotlin.math.sin(idx * 0.5) * 0.12 * currentTotal
+                        (currentTotal * (0.82 + (ratio * 0.18)) + wave).toFloat()
+                    }
+                }
+            }
+            "1Y" -> {
+                if (history.size >= 24) {
+                    history.takeLast(24).map { it.totalPortfolioValue.toFloat() }
+                } else {
+                    List(24) { idx ->
+                        val ratio = idx.toFloat() / 23f
+                        val wave = kotlin.math.sin(idx * 0.4) * 0.16 * currentTotal
+                        (currentTotal * (0.75 + (ratio * 0.25)) + wave).toFloat()
+                    }
+                }
+            }
+            else -> {
+                List(count) { idx ->
+                    val ratio = (idx + 1).toFloat() / count
+                    (currentTotal * (0.9 + (ratio * 0.1))).toFloat()
+                }
             }
         }
     }
@@ -876,14 +967,15 @@ private fun AssetCardStack(
     val alphas = listOf(1.0f, 1.0f, 0.80f, 0.45f, 0.0f)
     val blurs = listOf(0f, 2.5f, 5f, 9f, 15f)
     val scales = listOf(1.0f, 0.94f, 0.88f, 0.82f, 0.76f)
-    val yOffsets = listOf(0f, -22f, -42f, -60f, -76f)
+    val yOffsets = listOf(0f, -12f, -22f, -30f, -36f)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(380.dp)
-            .padding(horizontal = 18.dp),
-        contentAlignment = Alignment.BottomCenter
+            .height(320.dp)
+            .padding(horizontal = 18.dp)
+            .padding(top = 16.dp),
+        contentAlignment = Alignment.TopCenter
     ) {
         visibleIndices.reversed().forEachIndexed { indexInVisible, assetIndex ->
             val isTopCard = indexInVisible == visibleIndices.lastIndex
@@ -1003,166 +1095,198 @@ private fun SwipeableAssetCard(
     val purchaseCost = if (asset.type == AssetType.CERTIFICATE) asset.principalAmount else asset.purchasePrice
     val pnl = valuation - purchaseCost
     val pnlPct = if (purchaseCost > 0) (pnl / purchaseCost) * 100.0 else 0.0
-    val isProfit = pnl >= 0
 
-    val (iconRes, assetTag) = when (asset.type) {
-        AssetType.GOLD -> R.drawable.ic_asset_gold to "${asset.weightGrams}g • ${asset.purity}"
-        AssetType.SILVER -> R.drawable.ic_asset_silver to "${asset.weightGrams}g • ${asset.purity}"
-        AssetType.CERTIFICATE -> R.drawable.ic_asset_certificate to "${asset.annualRate}% APR"
+    val (iconRes, topPillText) = when (asset.type) {
+        AssetType.GOLD -> {
+            val weightStr = if (asset.weightGrams % 1.0 == 0.0) "${asset.weightGrams.toInt()}" else String.format(Locale.getDefault(), "%.1f", asset.weightGrams)
+            R.drawable.ic_asset_gold to "Gold-${asset.purity} | ${weightStr}g"
+        }
+        AssetType.SILVER -> {
+            val weightStr = if (asset.weightGrams % 1.0 == 0.0) "${asset.weightGrams.toInt()}" else String.format(Locale.getDefault(), "%.1f", asset.weightGrams)
+            R.drawable.ic_asset_silver to "Silver-${asset.purity} | ${weightStr}g"
+        }
+        AssetType.CERTIFICATE -> {
+            R.drawable.ic_asset_certificate to "Fixed deposit certificate (FD)"
+        }
     }
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(250.dp)
+            .height(265.dp)
             .clickable { onCardClick() },
-        shape = RoundedCornerShape(26.dp),
+        shape = RoundedCornerShape(32.dp),
         color = cardBgColor,
         shadowElevation = 0.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp),
+                .padding(horizontal = 22.dp, vertical = 18.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top Row: Stacked Category Icons + Right Time/Purity Pill Tag
+            // 1. Top Row: Avatar Icon on one edge, Asset Pill on the opposite edge
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Stacked Avatars / Icons
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.25f))
-                            .border(1.5.dp, Color.White, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(id = iconRes),
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.25f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = iconRes),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
 
-                // Top Right Pill
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White.copy(alpha = 0.22f)
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color.White.copy(alpha = 0.25f)
                 ) {
                     Text(
-                        text = assetTag,
-                        fontSize = 11.5.sp,
+                        text = topPillText,
+                        fontSize = 12.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                     )
                 }
             }
 
-            // Middle Section: Bold Title + Valuation
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            // 2. Asset Name & Valuation Block (Strictly Centered in card)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Name
                 Text(
                     text = asset.name,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.9f),
+                    textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
 
-                Text(
-                    text = "${String.format(Locale.getDefault(), "%,.0f", valuation)} ${stringResource(R.string.currency_egp)}",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                Spacer(modifier = Modifier.height(2.dp))
 
-                Text(
-                    text = "(${if (isProfit) "+" else ""}${String.format(Locale.getDefault(), "%.1f", pnlPct)}%)",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isProfit) Color(0xFF10B981) else Color(0xFFEF4444)
-                )
+                // Big Number with "EG" (Strictly centered horizontally)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Text(
+                        text = String.format(Locale.getDefault(), "%,.0f", valuation),
+                        fontSize = 42.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                        lineHeight = 42.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "EG",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // PnL Badge Pill strictly below valuation, shifted upwards closer to the valuation
+                val pnlSign = if (pnl >= 0) "+" else ""
+                val pnlText = "$pnlSign${String.format(Locale.getDefault(), "%.0f", pnlPct)}% | $pnlSign${String.format(Locale.getDefault(), "%,.1f", pnl)}"
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White.copy(alpha = 0.28f)
+                ) {
+                    Text(
+                        text = pnlText,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                }
             }
 
-            // Bottom Section: Interactive Drag/Tap Action Bar + Right Option Button
+            // 3. Bottom Row: Wide "Swipe to navigate" Pill + Options Circle
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Wide Action Pill
+                // Wide Action Pill with "Swipe to navigate"
                 Surface(
                     onClick = onCardClick,
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color.White.copy(alpha = 0.25f)
+                        .height(46.dp),
+                    shape = RoundedCornerShape(23.dp),
+                    color = Color.White.copy(alpha = 0.28f)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 6.dp),
+                            .padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color.White),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = cardBgColor,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
                         Text(
-                            text = "swipe to navigate",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White
+                            text = stringResource(R.string.swipe_to_navigate_hint),
+                            color = Color(0xFF1E293B),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center
                         )
-
-                        Text(
-                            text = ">>>",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(end = 8.dp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            tint = Color(0xFF1E293B),
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // Options Circle Button
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .clickable { onMenuClick() },
-                    contentAlignment = Alignment.Center
+                // Options Circle Button (Three dots)
+                Surface(
+                    onClick = onMenuClick,
+                    modifier = Modifier.size(46.dp),
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.28f)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Options",
-                        tint = cardBgColor,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(3.5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            repeat(3) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(5.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF1E293B))
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

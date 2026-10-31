@@ -850,6 +850,10 @@ class PiggyLedgerViewModel(
         viewModelScope, SharingStarted.Eagerly, emptyList()
     )
 
+    val allSubscriptions: StateFlow<List<com.oryno.piggy_ledger.data.SubscriptionEntity>> = repository.allSubscriptions.stateIn(
+        viewModelScope, SharingStarted.Eagerly, emptyList()
+    )
+
     private val _selectedAccountId = MutableStateFlow<String?>(null)
     val selectedAccountId: StateFlow<String?> = _selectedAccountId
 

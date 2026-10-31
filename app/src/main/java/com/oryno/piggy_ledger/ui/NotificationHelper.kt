@@ -237,6 +237,28 @@ class NotificationHelper(private val context: Context) {
         notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
     }
 
+    fun showSubscriptionDueNotification(serviceName: String, amountStr: String, dueRelativeText: String) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val title = "$serviceName is due $dueRelativeText"
+        val message = "Upcoming payment of $amountStr is due. Tap to view and pay."
+        val logoBitmap = getAppLogoBitmap()
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
+            .setSmallIcon(R.drawable.img_app_logo)
+            .apply { if (logoBitmap != null) setLargeIcon(logoBitmap) }
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setColor(androidx.core.content.ContextCompat.getColor(context, R.color.pink_primary))
+            .setContentIntent(getMainActivityPendingIntent())
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+
+        notificationManager.notify(NOTIF_ID_SUBSCRIPTION, builder.build())
+    }
+
     companion object {
         const val CHANNEL_DEADLINE_ID = "deadline_reminders"
         const val CHANNEL_REMINDERS_ID = "daily_reminders"
@@ -244,5 +266,6 @@ class NotificationHelper(private val context: Context) {
         const val NOTIF_ID_GOAL = 1002
         const val NOTIF_ID_MOTIVATION = 1003
         const val NOTIF_ID_AUTH = 1004
+        const val NOTIF_ID_SUBSCRIPTION = 1005
     }
 }

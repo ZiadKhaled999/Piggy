@@ -33,4 +33,5 @@ sealed class Screen {
     @Serializable data object WealthCommodities : Screen()
     @Serializable data class AssetDetail(val assetId: String) : Screen()
     @Serializable data class MarketCommodityDetail(val type: String, val variant: String) : Screen()
+    @Serializable data class AllTransactions(val accountId: String? = null) : Screen()
 }

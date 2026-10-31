@@ -8,12 +8,38 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Goal::class, Transaction::class, Loan::class, LoanPayment::class, Account::class, AccountTransaction::class, PendingTransaction::class, AiChatMessage::class, AiConversation::class, UserPreferencesEntity::class, StreakDateEntity::class, OnboardingAnswer::class, JournalEntryEntity::class, PostingEntity::class, SubscriptionEntity::class, AssetEntity::class, LiveMarketRatesEntity::class, PortfolioHistoryEntity::class], version = 23, exportSchema = false)
+@Database(entities = [Goal::class, Transaction::class, Loan::class, LoanPayment::class, Account::class, AccountTransaction::class, PendingTransaction::class, AiChatMessage::class, AiConversation::class, UserPreferencesEntity::class, StreakDateEntity::class, OnboardingAnswer::class, JournalEntryEntity::class, PostingEntity::class, SubscriptionEntity::class, AssetEntity::class, LiveMarketRatesEntity::class, PortfolioHistoryEntity::class], version = 26, exportSchema = false)
 abstract class PiggyLedgerDatabase : RoomDatabase() {
 
     companion object {
         @Volatile
         private var INSTANCE: PiggyLedgerDatabase? = null
+
+        val MIGRATION_25_26 = object : Migration(25, 26) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                try { db.execSQL("ALTER TABLE subscriptions ADD COLUMN reminderEnabled INTEGER NOT NULL DEFAULT 1") } catch(e: Exception) {}
+                try { db.execSQL("ALTER TABLE subscriptions ADD COLUMN reminderLeadDays INTEGER NOT NULL DEFAULT 2") } catch(e: Exception) {}
+                try { db.execSQL("ALTER TABLE subscriptions ADD COLUMN reminderDailyRepeat INTEGER NOT NULL DEFAULT 0") } catch(e: Exception) {}
+            }
+        }
+
+        val MIGRATION_24_25 = object : Migration(24, 25) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                try { db.execSQL("ALTER TABLE subscriptions ADD COLUMN category TEXT NOT NULL DEFAULT 'subscriptions'") } catch(e: Exception) {}
+                try { db.execSQL("ALTER TABLE subscriptions ADD COLUMN status TEXT NOT NULL DEFAULT 'ACTIVE'") } catch(e: Exception) {}
+                try { db.execSQL("ALTER TABLE subscriptions ADD COLUMN hasFreeTrial INTEGER NOT NULL DEFAULT 0") } catch(e: Exception) {}
+                try { db.execSQL("ALTER TABLE subscriptions ADD COLUMN trialDays INTEGER NOT NULL DEFAULT 0") } catch(e: Exception) {}
+                try { db.execSQL("ALTER TABLE subscriptions ADD COLUMN trialEndsAt INTEGER NOT NULL DEFAULT 0") } catch(e: Exception) {}
+                try { db.execSQL("ALTER TABLE subscriptions ADD COLUMN totalPaidCount INTEGER NOT NULL DEFAULT 0") } catch(e: Exception) {}
+                try { db.execSQL("ALTER TABLE subscriptions ADD COLUMN totalSpent REAL NOT NULL DEFAULT 0.0") } catch(e: Exception) {}
+            }
+        }
+
+        val MIGRATION_23_24 = object : Migration(23, 24) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                try { db.execSQL("ALTER TABLE loans ADD COLUMN accountId TEXT") } catch(e: Exception) {}
+            }
+        }
 
         val MIGRATION_22_23 = object : Migration(22, 23) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -339,7 +365,7 @@ abstract class PiggyLedgerDatabase : RoomDatabase() {
                 PiggyLedgerDatabase::class.java,
                 DB_NAME
             )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26)
             .fallbackToDestructiveMigration()
             .build()
         }

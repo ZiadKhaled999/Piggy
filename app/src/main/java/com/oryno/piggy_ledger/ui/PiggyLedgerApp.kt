@@ -374,6 +374,19 @@ fun PiggyLedgerApp(
                     )
                 }
 
+                composable<Screen.AllTransactions> { backStackEntry ->
+                    val screen = backStackEntry.toRoute<Screen.AllTransactions>()
+                    LaunchedEffect(Unit) {
+                        PostHog.capture(event = "screen_view", properties = mapOf("screen_name" to "All Transactions"))
+                    }
+                    AllTransactionsScreen(
+                        viewModel = viewModel,
+                        initialAccountId = screen.accountId,
+                        onBack = { navController.popBackStack() },
+                        onNavigateToTransfer = { navController.navigate(Screen.TransferMoney) }
+                    )
+                }
+
                 composable<Screen.Settings> { backStackEntry ->
                     val screen = backStackEntry.toRoute<Screen.Settings>()
                     val mode = remember(screen.modeName) {
@@ -587,7 +600,10 @@ fun MainContainer(
                             onNavigateToEditAccount = { id -> appNavController.navigate(Screen.EditAccount(id)) },
                             onBack = { bottomNavController.popBackStack() },
                             onNavigateToSettingsPro = { appNavController.navigate(Screen.Settings(SettingsMode.PRO.name)) },
-                            onNavigateToTransfer = { appNavController.navigate(Screen.TransferMoney) }
+                            onNavigateToTransfer = { appNavController.navigate(Screen.TransferMoney) },
+                            onNavigateToAllTransactions = { accountId ->
+                                appNavController.navigate(Screen.AllTransactions(accountId = accountId))
+                            }
                         )
                     }
 

@@ -408,6 +408,9 @@ interface PiggyLedgerDao {
     @Query("SELECT * FROM subscriptions WHERE is_deleted = 0 ORDER BY nextRenewalDate ASC")
     suspend fun getAllSubscriptionsSync(): List<SubscriptionEntity>
 
+    @Query("SELECT * FROM subscriptions WHERE id = :id AND is_deleted = 0 LIMIT 1")
+    fun getSubscriptionByIdSync(id: String): SubscriptionEntity?
+
     @Query("SELECT * FROM accounts WHERE id = :id")
     suspend fun getAccountByIdSync(id: String): Account?
 

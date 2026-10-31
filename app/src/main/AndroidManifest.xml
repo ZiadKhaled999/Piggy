@@ -162,6 +162,11 @@
             android:name=".service.NotificationAlarmReceiver"
             android:exported="false" />
 
+        <!-- Subscription Alarm Receiver for scheduled payment notifications -->
+        <receiver
+            android:name=".service.SubscriptionAlarmReceiver"
+            android:exported="false" />
+
         <!-- FileProvider for sharing generated streak images -->
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -38,6 +38,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.pager.HorizontalPager
@@ -67,11 +68,13 @@ fun AccountsScreen(
     onNavigateToEditAccount: (String) -> Unit,
     onBack: () -> Unit,
     onNavigateToSettingsPro: () -> Unit = {},
-    onNavigateToTransfer: () -> Unit = {}
+    onNavigateToTransfer: () -> Unit = {},
+    onNavigateToAllTransactions: (String?) -> Unit = {}
 ) {
     val accounts by viewModel.userAccounts.collectAsState()
     val selectedAccountId by viewModel.selectedAccountId.collectAsState()
     val allTransactions by viewModel.allAccountTransactions.collectAsState()
+    val allSubscriptions by viewModel.allSubscriptions.collectAsState()
     val monthlyBudget by viewModel.monthlyBudget.collectAsState()
 
     var showAccountSwitcher by remember { mutableStateOf(false) }
@@ -134,6 +137,11 @@ fun AccountsScreen(
         accounts.find { it.id == selectedAccountId }
     }
 
+    val linkedSubsForAccount = remember(allSubscriptions, selectedAccountId) {
+        if (selectedAccountId == null) emptyList()
+        else allSubscriptions.filter { !it.is_deleted && it.accountId == selectedAccountId && it.isActive }
+    }
+
     var selectedTxForDetails by remember { mutableStateOf<AccountTransaction?>(null) }
     var filterAllTime by remember { mutableStateOf(true) } // Default to true so all transactions are shown and scrollable!
 
@@ -194,10 +202,11 @@ fun AccountsScreen(
     }
 
     val spendingTrend = totalSpent - lastMonthSpent
-    val trendText = if (spendingTrend >= 0) {
-        "$currencySymbol ${String.format(Locale.getDefault(), "%,.0f", spendingTrend)} more than last month"
-    } else {
-        "$currencySymbol ${String.format(Locale.getDefault(), "%,.0f", -spendingTrend)} less than last month"
+    val formattedTrendAmount = "$currencySymbol ${String.format(Locale.getDefault(), "%,.0f", kotlin.math.abs(spendingTrend))}"
+    val trendSubtitle = when {
+        spendingTrend > 0 -> stringResource(R.string.more_than_last_time, formattedTrendAmount)
+        spendingTrend < 0 -> stringResource(R.string.less_than_last_time, formattedTrendAmount)
+        else -> stringResource(R.string.same_as_last_time)
     }
 
     // Days in current month and days passed
@@ -396,7 +405,7 @@ fun AccountsScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = trendText + stringResource(R.string.spent_vs_last_period),
+                                text = trendSubtitle,
                                 color = TextLight,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
@@ -476,6 +485,91 @@ fun AccountsScreen(
                         onNavigateToTransfer = onNavigateToTransfer,
                         onAddTransaction = { showAddTransactionDialog = true }
                     )
+                }
+
+                // Linked Subscriptions for selected account/wallet
+                if (selectedAccountId != null && linkedSubsForAccount.isNotEmpty()) {
+                    val totalSubMonthly = linkedSubsForAccount.sumOf { sub ->
+                        when (sub.billingCycle.uppercase()) {
+                            "YEARLY" -> sub.amount / 12.0
+                            "WEEKLY" -> sub.amount * 4.33
+                            else -> sub.amount
+                        }
+                    }
+                    val namesList = linkedSubsForAccount.joinToString(", ") { it.name }
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .padding(top = 16.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        shadowElevation = 1.dp
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(CircleShape)
+                                            .background(PinkPrimary.copy(alpha = 0.12f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.EventRepeat,
+                                            contentDescription = null,
+                                            tint = PinkPrimary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = stringResource(R.string.sub_linked_subscriptions_title),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = NavyDark
+                                    )
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = PinkPrimary.copy(alpha = 0.1f)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.active_count, linkedSubsForAccount.size),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PinkPrimary,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.sub_wallet_commits_format,
+                                    "${String.format(Locale.getDefault(), "%,.0f", totalSubMonthly)} ${selectedAccount?.currency ?: ""}",
+                                    linkedSubsForAccount.size
+                                ),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = NavyDark
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = namesList,
+                                fontSize = 12.sp,
+                                color = TextLight,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
 
                 // 3. SPENDING BY CATEGORY SECTION
@@ -697,16 +791,29 @@ fun AccountsScreen(
                         fontWeight = FontWeight.ExtraBold,
                         color = NavyDark
                     )
-                    Text(
-                        text = stringResource(R.string.view_all),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PinkPrimary,
-                        modifier = Modifier.clickable { 
-                            // Open All Transactions Screen (could be a state change or new route)
-                            filterAllTime = true
-                        }
-                    )
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { 
+                                onNavigateToAllTransactions(selectedAccountId)
+                            }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.see_all),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PinkPrimary
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = PinkPrimary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))

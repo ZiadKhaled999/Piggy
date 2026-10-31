@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -72,6 +73,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.oryno.piggy_ledger.R
+import com.oryno.piggy_ledger.data.Account
 import com.oryno.piggy_ledger.ui.theme.BlackAccent
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkAccent
@@ -88,6 +90,7 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddLoanBottomSheet(
+    viewModel: PiggyLedgerViewModel,
     appCurrency: String,
     onConfirm: (
         isLent: Boolean,
@@ -98,7 +101,8 @@ fun AddLoanBottomSheet(
         photoUri: String?,
         social: String?,
         note: String,
-        deadline: Long?
+        deadline: Long?,
+        accountId: String?
     ) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -116,8 +120,10 @@ fun AddLoanBottomSheet(
     var socialDetails by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var deadlineDate by remember { mutableStateOf<Long?>(null) }
+    var selectedAccountId by remember { mutableStateOf<String?>(null) }
+    val accounts by viewModel.userAccounts.collectAsState()
 
-    // Step Tracking (1: Amount/Type, 2: Contact, 3: Memo/Deadline, 4: Review/Confirm)
+    // Step Tracking (1: Amount/Type, 2: Contact, 3: Memo/Deadline/Account, 4: Review/Confirm)
     var currentStep by remember { mutableIntStateOf(1) }
     var isSuccess by remember { mutableStateOf(false) }
 
@@ -139,7 +145,8 @@ fun AddLoanBottomSheet(
                 contactPhotoUri,
                 socialDetails.ifBlank { null },
                 note,
-                deadlineDate
+                deadlineDate,
+                selectedAccountId
             )
             onDismiss()
         }
@@ -227,7 +234,8 @@ fun AddLoanBottomSheet(
                     contactPhotoUri,
                     socialDetails.ifBlank { null },
                     note,
-                    deadlineDate
+                    deadlineDate,
+                    selectedAccountId
                 )
             }
             onDismiss()
@@ -264,7 +272,8 @@ fun AddLoanBottomSheet(
                                 contactPhotoUri,
                                 socialDetails.ifBlank { null },
                                 note,
-                                deadlineDate
+                                deadlineDate,
+                                selectedAccountId
                             )
                             onDismiss()
                         }
@@ -388,7 +397,7 @@ fun AddLoanBottomSheet(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            (1..4).forEach { stepIndex ->
+                            (1..5).forEach { stepIndex ->
                                 val isSelected = currentStep == stepIndex
                                 Box(
                                     modifier = Modifier
@@ -401,7 +410,7 @@ fun AddLoanBottomSheet(
                         }
 
                         Text(
-                            text = stringResource(R.string.step_count_format, currentStep, 4),
+                            text = stringResource(R.string.step_count_format, currentStep, 5),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = TextLight
@@ -512,7 +521,19 @@ fun AddLoanBottomSheet(
                                 }
                             )
 
-                            4 -> StepFourReviewAndConfirm(
+                            4 -> StepFourLinkAccount(
+                                accounts = accounts,
+                                selectedAccountId = selectedAccountId,
+                                activeColor = activeColor,
+                                currencySymbol = currencySymbol,
+                                onAccountSelected = { selectedAccountId = it },
+                                onNext = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    currentStep = 5
+                                }
+                            )
+
+                            5 -> StepFiveReviewAndConfirm(
                                 isLent = isLent,
                                 amount = amount,
                                 currencySymbol = currencySymbol,
@@ -522,6 +543,8 @@ fun AddLoanBottomSheet(
                                 contactPhotoUri = contactPhotoUri,
                                 note = note,
                                 deadlineDate = deadlineDate,
+                                accounts = accounts,
+                                selectedAccountId = selectedAccountId,
                                 activeColor = activeColor,
                                 onConfirmed = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1140,10 +1163,10 @@ private fun PresetDateChip(
 }
 
 /**
- * STEP 4: Review Entry Summary + Swipe Right to Confirm Bar
+ * STEP 5: Review Entry Summary + Linked Account + Swipe Right to Confirm Bar
  */
 @Composable
-private fun StepFourReviewAndConfirm(
+private fun StepFiveReviewAndConfirm(
     isLent: Boolean,
     amount: Double,
     currencySymbol: String,
@@ -1153,9 +1176,15 @@ private fun StepFourReviewAndConfirm(
     contactPhotoUri: String?,
     note: String,
     deadlineDate: Long?,
+    accounts: List<Account>,
+    selectedAccountId: String?,
     activeColor: Color,
     onConfirmed: () -> Unit
 ) {
+    val linkedAccount = remember(accounts, selectedAccountId) {
+        accounts.find { it.id == selectedAccountId }
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1247,6 +1276,41 @@ private fun StepFourReviewAndConfirm(
                                 color = TextLight
                             )
                         }
+                    }
+                }
+
+                // Linked Account Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE2E8F0)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ReceiptLong,
+                            contentDescription = null,
+                            tint = NavyDark,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = linkedAccount?.name ?: stringResource(R.string.no_linked_account),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDark
+                        )
+                        Text(
+                            text = linkedAccount?.type?.name ?: stringResource(R.string.general_ledger),
+                            fontSize = 11.sp,
+                            color = TextLight
+                        )
                     }
                 }
 
@@ -1570,6 +1634,191 @@ private fun SmoothKeypadIconButton(
             contentAlignment = Alignment.Center
         ) {
             content()
+        }
+    }
+}
+
+/**
+ * STEP 4: Link to Account (Bank, E-Wallet, Cash)
+ */
+@Composable
+private fun StepFourLinkAccount(
+    accounts: List<Account>,
+    selectedAccountId: String?,
+    activeColor: Color,
+    currencySymbol: String,
+    onAccountSelected: (String?) -> Unit,
+    onNext: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Text(
+                text = stringResource(R.string.link_account_label),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = NavyDark
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = stringResource(R.string.link_account_subtitle),
+                fontSize = 12.sp,
+                color = TextLight
+            )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // "No Account / General Ledger" Option
+        Surface(
+            onClick = { onAccountSelected(null) },
+            color = if (selectedAccountId == null) activeColor.copy(alpha = 0.08f) else Color(0xFFF8FAFC),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.5.dp, if (selectedAccountId == null) activeColor else Color(0xFFE2E8F0)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFE2E8F0)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ReceiptLong,
+                        contentDescription = null,
+                        tint = NavyDark,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.no_linked_account),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark
+                    )
+                    Text(
+                        text = stringResource(R.string.general_ledger),
+                        fontSize = 11.sp,
+                        color = TextLight
+                    )
+                }
+
+                RadioButton(
+                    selected = selectedAccountId == null,
+                    onClick = { onAccountSelected(null) },
+                    colors = RadioButtonDefaults.colors(selectedColor = activeColor)
+                )
+            }
+        }
+
+        // List of Accounts (Bank, Wallet, Cash)
+        accounts.forEach { account ->
+            val isSelected = selectedAccountId == account.id
+            Surface(
+                onClick = { onAccountSelected(account.id) },
+                color = if (isSelected) activeColor.copy(alpha = 0.08f) else Color.White,
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.5.dp, if (isSelected) activeColor else Color(0xFFE2E8F0)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(activeColor.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        BrandLogo(
+                            provider = account.provider ?: account.name,
+                            accountType = account.type,
+                            iconColorHex = account.icon_color,
+                            logoUrl = account.logo_url,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = account.name,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDark,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "${account.type.name} • $currencySymbol ${String.format(Locale.getDefault(), "%,.2f", account.current_balance)}",
+                            fontSize = 11.sp,
+                            color = TextLight,
+                            maxLines = 1
+                        )
+                    }
+
+                    RadioButton(
+                        selected = isSelected,
+                        onClick = { onAccountSelected(account.id) },
+                        colors = RadioButtonDefaults.colors(selectedColor = activeColor)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Next Button
+        Button(
+            onClick = onNext,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = activeColor)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.btn_next_review),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 }

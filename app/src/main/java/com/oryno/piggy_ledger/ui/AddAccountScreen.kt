@@ -9,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -48,7 +49,9 @@ import java.util.Locale
 data class ProviderOption(
     val name: String,
     val domain: String,
-    val defaultColorHex: String
+    val defaultColorHex: String,
+    val region: String = "Middle East",
+    val category: String = "Bank"
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -484,63 +487,79 @@ fun Slide0AccountType(
 fun Slide1ProviderSelection(
     accountType: AccountType,
     selectedProvider: String,
-    onProviderSelected: (name: String, colorHex: String, logoUrl: String) -> Unit,
+    onProviderSelected: (name: String, colorHex: String, logoUrl: String?) -> Unit,
     onSkipOrCustom: (customName: String) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var customInput by remember { mutableStateOf("") }
+    var selectedRegion by remember { mutableStateOf("All") }
+    var selectedCategory by remember { mutableStateOf("All") }
 
     val walletProviders = remember {
         listOf(
-            ProviderOption("Vodafone Cash", "vodafone.com", "#E11D48"),
-            ProviderOption("Orange Cash", "orange.com", "#EA580C"),
-            ProviderOption("e& Cash", "eand.com", "#16A34A"),
-            ProviderOption("WE Pay", "te.eg", "#7C3AED"),
-            ProviderOption("InstaPay", "instapay.eg", "#701A75"),
-            ProviderOption("Telda", "telda.app", "#0F172A")
+            ProviderOption("Vodafone Cash", "vodafone.com", "#E11D48", "Middle East", "E-Wallet"),
+            ProviderOption("Orange Cash", "orange.com", "#EA580C", "Middle East", "E-Wallet"),
+            ProviderOption("e& Cash", "eand.com", "#16A34A", "Middle East", "E-Wallet"),
+            ProviderOption("WE Pay", "te.eg", "#7C3AED", "Middle East", "E-Wallet"),
+            ProviderOption("InstaPay", "instapay.eg", "#701A75", "Middle East", "E-Wallet"),
+            ProviderOption("Telda", "telda.app", "#0F172A", "Middle East", "E-Wallet")
         )
     }
 
     val bankProviders = remember {
         listOf(
-            ProviderOption("Commercial International Bank (CIB)", "cibeg.com", "#1E3A8A"),
-            ProviderOption("National Bank of Egypt (NBE)", "nbe.com.eg", "#005B41"),
-            ProviderOption("Banque Misr", "banquemisr.com", "#900C3F"),
-            ProviderOption("QNB Alahli", "qnbalahli.com", "#6F1E51"),
-            ProviderOption("Banque Du Caire", "bdc.com.eg", "#E05B00"),
-            ProviderOption("Arab African International Bank (AAIB)", "aaib.com", "#1E3A8A"),
-            ProviderOption("HSBC Egypt", "hsbc.com.eg", "#E50914"),
-            ProviderOption("Alex Bank", "alexbank.com", "#4D1A7F"),
-            ProviderOption("Faisal Islamic Bank", "faisalbank.com.eg", "#1B4D3E"),
-            ProviderOption("Abu Dhabi Islamic Bank (ADIB)", "adib.eg", "#0D9488"),
-            ProviderOption("Credit Agricole Egypt", "credit-agricole.com.eg", "#059669"),
-            ProviderOption("Emirates NBD Egypt", "emiratesnbd.com.eg", "#1E3A8A"),
-            ProviderOption("Housing and Development Bank (HDB)", "hdb-egypt.com", "#059669"),
-            ProviderOption("Egyptian Gulf Bank (EG Bank)", "eg-bank.com", "#0A2540"),
-            ProviderOption("SAIB Bank", "saib.com.eg", "#1E3A8A"),
-            ProviderOption("Al Baraka Bank", "albaraka.com.eg", "#8B5A2B"),
-            ProviderOption("Attijariwafa Bank Egypt", "attijariwafabank.com.eg", "#EAB308"),
-            ProviderOption("Arab Bank", "arabbank.com.eg", "#006400"),
-            ProviderOption("Abu Dhabi Commercial Bank (ADCB)", "adcb.com.eg", "#D32F2F"),
-            ProviderOption("Citibank Egypt", "citibank.com", "#0288D1"),
-            ProviderOption("Mashreq Bank", "mashreqbank.com", "#FF5722"),
-            ProviderOption("Suez Canal Bank", "scbank.com.eg", "#0D47A1"),
-            ProviderOption("The United Bank", "theubeg.com", "#1565C0"),
-            ProviderOption("EBank", "ebank.com.eg", "#008080"),
-            ProviderOption("First Abu Dhabi Bank (FAB)", "bankfab.com", "#C8102E"),
-            ProviderOption("Al Ahli Bank of Kuwait (ABK)", "abkegypt.com", "#003366"),
-            ProviderOption("National Bank of Kuwait (NBK)", "nbk.com", "#002A54"),
-            ProviderOption("Ahli United Bank (AUB)", "aub.com.eg", "#800020"),
-            ProviderOption("Bank ABC Egypt", "bank-abc.com", "#008080"),
-            ProviderOption("aiBank (Arab Investment Bank)", "aibank.com.eg", "#0F172A"),
-            ProviderOption("MIDBANK", "midbank.com.eg", "#4A154B"),
-            ProviderOption("Arab International Bank (AIB)", "aib.com.eg", "#102A43")
+            ProviderOption("Commercial International Bank (CIB)", "cibeg.com", "#1E3A8A", "Middle East", "Bank"),
+            ProviderOption("National Bank of Egypt (NBE)", "nbe.com.eg", "#005B41", "Middle East", "Bank"),
+            ProviderOption("Banque Misr", "banquemisr.com", "#900C3F", "Middle East", "Bank"),
+            ProviderOption("QNB Alahli", "qnbalahli.com", "#6F1E51", "Middle East", "Bank"),
+            ProviderOption("Banque Du Caire", "bdc.com.eg", "#E05B00", "Middle East", "Bank"),
+            ProviderOption("Arab African International Bank (AAIB)", "aaib.com", "#1E3A8A", "Middle East", "Bank"),
+            ProviderOption("HSBC Egypt", "hsbc.com.eg", "#E50914", "Middle East", "Bank"),
+            ProviderOption("Alex Bank", "alexbank.com", "#4D1A7F", "Middle East", "Bank"),
+            ProviderOption("Faisal Islamic Bank", "faisalbank.com.eg", "#1B4D3E", "Middle East", "Bank"),
+            ProviderOption("Abu Dhabi Islamic Bank (ADIB)", "adib.eg", "#0D9488", "Middle East", "Bank"),
+            ProviderOption("Credit Agricole Egypt", "credit-agricole.com.eg", "#059669", "Middle East", "Bank"),
+            ProviderOption("Emirates NBD Egypt", "emiratesnbd.com.eg", "#1E3A8A", "Middle East", "Bank"),
+            ProviderOption("Housing and Development Bank (HDB)", "hdb-egypt.com", "#059669", "Middle East", "Bank"),
+            ProviderOption("Egyptian Gulf Bank (EG Bank)", "eg-bank.com", "#0A2540", "Middle East", "Bank"),
+            ProviderOption("SAIB Bank", "saib.com.eg", "#1E3A8A", "Middle East", "Bank"),
+            ProviderOption("Al Baraka Bank", "albaraka.com.eg", "#8B5A2B", "Middle East", "Bank"),
+            ProviderOption("Attijariwafa Bank Egypt", "attijariwafabank.com.eg", "#EAB308", "Middle East", "Bank"),
+            ProviderOption("Arab Bank", "arabbank.com.eg", "#006400", "Middle East", "Bank"),
+            ProviderOption("Abu Dhabi Commercial Bank (ADCB)", "adcb.com.eg", "#D32F2F", "Middle East", "Bank"),
+            ProviderOption("Citibank Egypt", "citibank.com", "#0288D1", "Middle East", "Bank"),
+            ProviderOption("Mashreq Bank", "mashreqbank.com", "#FF5722", "Middle East", "Bank"),
+            ProviderOption("Suez Canal Bank", "scbank.com.eg", "#0D47A1", "Middle East", "Bank"),
+            ProviderOption("The United Bank", "theubeg.com", "#1565C0", "Middle East", "Bank"),
+            ProviderOption("EBank", "ebank.com.eg", "#008080", "Middle East", "Bank"),
+            ProviderOption("First Abu Dhabi Bank (FAB)", "bankfab.com", "#C8102E", "Middle East", "Bank"),
+            ProviderOption("Al Ahli Bank of Kuwait (ABK)", "abkegypt.com", "#003366", "Middle East", "Bank"),
+            ProviderOption("National Bank of Kuwait (NBK)", "nbk.com", "#002A54", "Middle East", "Bank"),
+            ProviderOption("Ahli United Bank (AUB)", "aub.com.eg", "#800020", "Middle East", "Bank"),
+            ProviderOption("Bank ABC Egypt", "bank-abc.com", "#008080", "Middle East", "Bank"),
+            ProviderOption("aiBank (Arab Investment Bank)", "aibank.com.eg", "#0F172A", "Middle East", "Bank"),
+            ProviderOption("MIDBANK", "midbank.com.eg", "#4A154B", "Middle East", "Bank"),
+            ProviderOption("Arab International Bank (AIB)", "aib.com.eg", "#102A43", "Middle East", "Bank")
         )
     }
 
-    val activeList = if (accountType == AccountType.WALLET) walletProviders else bankProviders
+    val newProviders = remember { newProviderOptions() }
+    val allProviders = remember { walletProviders + bankProviders + newProviders }
+
+    val regionOptions = remember { listOf("All") + allProviders.map { it.region }.distinct().sorted() }
+    val categoryOptions = remember { listOf("All") + allProviders.map { it.category }.distinct().sorted() }
+
+    val accountTypeCategories = if (accountType == AccountType.WALLET) {
+        setOf("E-Wallet", "Fintech")
+    } else {
+        setOf("Bank", "Fintech", "Infrastructure")
+    }
+
+    val activeList = allProviders.filter { it.category in accountTypeCategories }
     val filteredList = activeList.filter {
-        it.name.contains(searchQuery, ignoreCase = true) || it.domain.contains(searchQuery, ignoreCase = true)
+        (selectedRegion == "All" || it.region == selectedRegion) &&
+        (selectedCategory == "All" || it.category == selectedCategory) &&
+        (it.name.contains(searchQuery, ignoreCase = true) || it.domain.contains(searchQuery, ignoreCase = true) || it.region.contains(searchQuery, ignoreCase = true))
     }
 
     Column(
@@ -581,13 +600,40 @@ fun Slide1ProviderSelection(
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        // Region Filter
+        Text(text = "Region", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
+            items(regionOptions) { region ->
+                FilterChip(
+                    selected = selectedRegion == region,
+                    onClick = { selectedRegion = region },
+                    label = { Text(region, fontSize = 12.sp) }
+                )
+            }
+        }
+
+        // Category Filter
+        Text(text = "Type", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
+            items(categoryOptions) { cat ->
+                FilterChip(
+                    selected = selectedCategory == cat,
+                    onClick = { selectedCategory = cat },
+                    label = { Text(cat, fontSize = 12.sp) }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         // Providers List
         LazyColumn(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             items(filteredList) { prov ->
-                val logoUrl = buildLogoDevUrl(prov.domain)
+                val localRes = getProviderDrawableRes(prov.name)
+                val logoUrl = if (localRes != null) null else buildLogoDevUrl(prov.domain)
                 val isSelected = selectedProvider == prov.name
 
                 Surface(

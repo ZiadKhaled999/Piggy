@@ -1,0 +1,513 @@
+package com.oryno.piggy_ledger.data
+
+import android.content.Context
+import android.util.Log
+import androidx.datastore.core.CorruptionException
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import java.io.IOException
+
+// FIX(first-install-crash): a torn preferences_pb (killed write, cloud-backup
+// restore of a half-written file) used to throw on EVERY read -> crash loop
+// until the user wiped storage. The corruption handler atomically replaces a
+// corrupt file with defaults so the app always starts.
+val Context.dataStore by preferencesDataStore(
+    name = "user_prefs",
+    corruptionHandler = ReplaceFileCorruptionHandler(
+        produceNewData = { emptyPreferences() }
+    )
+)
+
+class UserPreferences(private val context: Context) {
+    // FIX(first-install-crash): every flow goes through this guarded stream so
+    // a corrupt/IO-broken DataStore emits defaults instead of crashing
+    // collectors (MainActivity launch gate, lock-status, auth observers).
+    private val safeData: Flow<Preferences>
+        get() = context.dataStore.data.catch { e ->
+            if (e is IOException || e is CorruptionException) {
+                Log.e("UserPreferences", "DataStore read failed, using defaults", e)
+                emit(emptyPreferences())
+            } else {
+                throw e
+            }
+        }
+    companion object {
+        val HAS_ONBOARDED = booleanPreferencesKey("has_onboarded")
+        val HAS_LANGUAGE_SELECTED = booleanPreferencesKey("has_language_selected")
+        val HAS_HEARD_ABOUT_US = booleanPreferencesKey("has_heard_about_us")
+        val IS_AUTHENTICATED = booleanPreferencesKey("is_authenticated")
+        val AUTH_USER_EMAIL = stringPreferencesKey("auth_user_email")
+        val AUTH_USER_NAME = stringPreferencesKey("auth_user_name")
+        val AUTH_USER_PHOTO_URL = stringPreferencesKey("auth_user_photo_url")
+        val IS_BIOMETRIC_LOCK_ENABLED = booleanPreferencesKey("is_biometric_lock_enabled")
+        val LOCK_TIMEOUT_SECONDS = longPreferencesKey("lock_timeout_seconds")
+        val LAST_EXIT_TIME = longPreferencesKey("last_exit_time")
+        val IS_SCREENSHOT_PROTECTION_ENABLED = booleanPreferencesKey("is_screenshot_protection_enabled")
+        val IS_PREMIUM = booleanPreferencesKey("is_premium")
+        val PREMIUM_EXPIRY_TIMESTAMP = longPreferencesKey("premium_expiry_timestamp")
+        val IS_LIFETIME_PREMIUM = booleanPreferencesKey("is_lifetime_premium")
+        val AI_MESSAGES_COUNT = intPreferencesKey("ai_messages_count")
+        val PERSONALIZED_INTENT = intPreferencesKey("personalized_intent")
+        val PERSONALIZED_INTENSITY = intPreferencesKey("personalized_intensity")
+        val SAVING_MODE = stringPreferencesKey("saving_mode")
+        val CUSTOM_IDENTIFIERS_JSON = stringPreferencesKey("custom_identifiers_json")
+        val IS_PRIVACY_MODE_ENABLED = booleanPreferencesKey("is_privacy_mode_enabled")
+        val PREFERRED_ACCOUNT_ID = stringPreferencesKey("preferred_account_id")
+        val APP_CURRENCY = stringPreferencesKey("app_currency")
+        val APP_LANGUAGE = stringPreferencesKey("app_language")
+
+        fun getSavedAppLanguageSync(context: Context): String? {
+            return try {
+                val sharedPrefs = context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                val lang = sharedPrefs.getString("app_language", null)
+                if (!lang.isNullOrBlank()) lang else null
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        fun saveAppLanguageSync(context: Context, lang: String) {
+            try {
+                val sharedPrefs = context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                sharedPrefs.edit().putString("app_language", lang).apply()
+            } catch (e: Exception) {
+                android.util.Log.e("UserPreferences", "Failed to save language synchronously", e)
+            }
+        }
+
+        fun saveLanguageSelectedSync(context: Context, selected: Boolean) {
+            try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .edit().putBoolean("has_language_selected", selected).apply()
+            } catch (e: Exception) {
+                android.util.Log.e("UserPreferences", "Failed to save language selected sync", e)
+            }
+        }
+
+        fun getLanguageSelectedSync(context: Context): Boolean {
+            return try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .getBoolean("has_language_selected", false)
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        fun saveHeardAboutUsSync(context: Context, heard: Boolean) {
+            try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .edit().putBoolean("has_heard_about_us", heard).apply()
+            } catch (e: Exception) {
+                android.util.Log.e("UserPreferences", "Failed to save heard about us sync", e)
+            }
+        }
+
+        fun getHeardAboutUsSync(context: Context): Boolean {
+            return try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .getBoolean("has_heard_about_us", false)
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        fun saveOnboardedSync(context: Context, onboarded: Boolean) {
+            try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .edit().putBoolean("has_onboarded", onboarded).apply()
+            } catch (e: Exception) {
+                android.util.Log.e("UserPreferences", "Failed to save onboarded sync", e)
+            }
+        }
+
+        fun getOnboardedSync(context: Context): Boolean {
+            return try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .getBoolean("has_onboarded", false)
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        fun saveAuthenticatedSync(context: Context, auth: Boolean) {
+            try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .edit().putBoolean("is_authenticated", auth).apply()
+            } catch (e: Exception) {
+                android.util.Log.e("UserPreferences", "Failed to save authenticated sync", e)
+            }
+        }
+
+        fun getAuthenticatedSync(context: Context): Boolean {
+            return try {
+                context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+                    .getBoolean("is_authenticated", false)
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+
+    val appLanguage: Flow<String?> = safeData.map { prefs ->
+        prefs[APP_LANGUAGE] ?: getSavedAppLanguageSync(context)
+    }
+
+    suspend fun saveAppLanguage(lang: String) {
+        context.dataStore.edit { prefs ->
+            prefs[APP_LANGUAGE] = lang
+        }
+        saveAppLanguageSync(lang)
+    }
+
+    fun saveAppLanguageSync(lang: String) {
+        try {
+            val sharedPrefs = context.getSharedPreferences("user_prefs_sync", Context.MODE_PRIVATE)
+            sharedPrefs.edit().putString("app_language", lang).apply()
+        } catch (e: Exception) {
+            android.util.Log.e("UserPreferences", "Failed to save language synchronously", e)
+        }
+    }
+
+    val appCurrency: Flow<String> = safeData.map { prefs ->
+        prefs[APP_CURRENCY] ?: "EGP"
+    }
+
+    val preferredAccountId: Flow<String?> = safeData.map { prefs ->
+        prefs[PREFERRED_ACCOUNT_ID]
+    }
+
+    val customIdentifiersJson: Flow<String> = safeData.map { prefs ->
+        prefs[CUSTOM_IDENTIFIERS_JSON] ?: "{}"
+    }
+
+    val personalizedIntent: Flow<Int> = safeData.map { prefs ->
+        prefs[PERSONALIZED_INTENT] ?: -1
+    }
+
+    val personalizedIntensity: Flow<Int> = safeData.map { prefs ->
+        prefs[PERSONALIZED_INTENSITY] ?: -1
+    }
+
+    val savingMode: Flow<String> = safeData.map { prefs ->
+        prefs[SAVING_MODE] ?: "piggy"
+    }
+
+    val hasOnboarded: Flow<Boolean> = safeData.map { prefs ->
+        prefs[HAS_ONBOARDED] ?: getOnboardedSync(context)
+    }
+    
+    val hasLanguageSelected: Flow<Boolean> = safeData.map { prefs ->
+        prefs[HAS_LANGUAGE_SELECTED] ?: getLanguageSelectedSync(context)
+    }
+
+    val hasHeardAboutUs: Flow<Boolean> = safeData.map { prefs ->
+        prefs[HAS_HEARD_ABOUT_US] ?: getHeardAboutUsSync(context)
+    }
+
+    val isAuthenticated: Flow<Boolean> = safeData.map { prefs ->
+        prefs[IS_AUTHENTICATED] ?: getAuthenticatedSync(context)
+    }
+
+    val authUserEmail: Flow<String> = safeData.map { prefs ->
+        prefs[AUTH_USER_EMAIL] ?: ""
+    }
+
+    val authUserName: Flow<String> = safeData.map { prefs ->
+        prefs[AUTH_USER_NAME] ?: ""
+    }
+
+    val authUserPhotoUrl: Flow<String> = safeData.map { prefs ->
+        prefs[AUTH_USER_PHOTO_URL] ?: ""
+    }
+
+    val isBiometricLockEnabled: Flow<Boolean> = safeData.map { prefs ->
+        prefs[IS_BIOMETRIC_LOCK_ENABLED] ?: false
+    }
+
+    val lockTimeoutSeconds: Flow<Long> = safeData.map { prefs ->
+        prefs[LOCK_TIMEOUT_SECONDS] ?: 0L // 0 means instant
+    }
+
+    val lastExitTime: Flow<Long> = safeData.map { prefs ->
+        prefs[LAST_EXIT_TIME] ?: 0L
+    }
+
+    val isScreenshotProtectionEnabled: Flow<Boolean> = safeData.map { prefs ->
+        prefs[IS_SCREENSHOT_PROTECTION_ENABLED] ?: false
+    }
+
+    val isPrivacyModeEnabled: Flow<Boolean> = safeData.map { prefs ->
+        prefs[IS_PRIVACY_MODE_ENABLED] ?: false
+    }
+
+    val isPremium: Flow<Boolean> = safeData.map { prefs ->
+        val isPremiumFlag = prefs[IS_PREMIUM] ?: false
+        val expiry = prefs[PREMIUM_EXPIRY_TIMESTAMP] ?: 0L
+        val isLifetime = prefs[IS_LIFETIME_PREMIUM] ?: false
+        
+        if (isLifetime) return@map true
+        if (isPremiumFlag && (expiry == 0L || expiry > System.currentTimeMillis())) return@map true
+        false
+    }
+
+    val aiMessagesCount: Flow<Int> = safeData.map { prefs ->
+        prefs[AI_MESSAGES_COUNT] ?: 0
+    }
+
+    suspend fun incrementAiMessagesCount() {
+        context.dataStore.edit { prefs ->
+            val current = prefs[AI_MESSAGES_COUNT] ?: 0
+            prefs[AI_MESSAGES_COUNT] = current + 1
+        }
+    }
+
+    suspend fun resetAiMessagesCount() {
+        context.dataStore.edit { prefs ->
+            prefs[AI_MESSAGES_COUNT] = 0
+        }
+    }
+
+    suspend fun saveOnboarding(completed: Boolean) {
+        saveOnboardedSync(context, completed)
+        context.dataStore.edit { prefs ->
+            prefs[HAS_ONBOARDED] = completed
+        }
+        syncPreferencesToDb()
+    }
+    
+    suspend fun saveLanguageSelected(selected: Boolean) {
+        saveLanguageSelectedSync(context, selected)
+        context.dataStore.edit { prefs ->
+            prefs[HAS_LANGUAGE_SELECTED] = selected
+        }
+        syncPreferencesToDb()
+    }
+
+    suspend fun saveHeardAboutUs(completed: Boolean) {
+        saveHeardAboutUsSync(context, completed)
+        context.dataStore.edit { prefs ->
+            prefs[HAS_HEARD_ABOUT_US] = completed
+        }
+        syncPreferencesToDb()
+    }
+
+    suspend fun saveAuthentication(authenticated: Boolean, email: String = "", name: String = "", photoUrl: String = "") {
+        saveAuthenticatedSync(context, authenticated)
+        context.dataStore.edit { prefs ->
+            prefs[IS_AUTHENTICATED] = authenticated
+            prefs[AUTH_USER_EMAIL] = email
+            prefs[AUTH_USER_NAME] = name
+            prefs[AUTH_USER_PHOTO_URL] = photoUrl
+        }
+        syncPreferencesToDb()
+    }
+
+    suspend fun saveBiometricLockEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[IS_BIOMETRIC_LOCK_ENABLED] = enabled
+        }
+        syncPreferencesToDb()
+    }
+
+    suspend fun saveLockTimeout(seconds: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[LOCK_TIMEOUT_SECONDS] = seconds
+        }
+    }
+
+    suspend fun saveLastExitTime(time: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[LAST_EXIT_TIME] = time
+        }
+    }
+
+    suspend fun saveScreenshotProtectionEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[IS_SCREENSHOT_PROTECTION_ENABLED] = enabled
+        }
+        syncPreferencesToDb()
+    }
+
+    suspend fun savePrivacyModeEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[IS_PRIVACY_MODE_ENABLED] = enabled
+        }
+    }
+
+    suspend fun savePremiumStatus(isPremium: Boolean, expiryTimestamp: Long = 0L, isLifetime: Boolean = false) {
+        context.dataStore.edit { prefs ->
+            prefs[IS_PREMIUM] = isPremium
+            prefs[PREMIUM_EXPIRY_TIMESTAMP] = expiryTimestamp
+            prefs[IS_LIFETIME_PREMIUM] = isLifetime
+        }
+        syncPreferencesToDb()
+    }
+
+    suspend fun savePersonalization(intent: Int, intensity: Int, savingMode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[PERSONALIZED_INTENT] = intent
+            prefs[PERSONALIZED_INTENSITY] = intensity
+            prefs[SAVING_MODE] = savingMode
+        }
+        syncPreferencesToDb()
+    }
+
+    suspend fun saveCustomIdentifiersJson(json: String) {
+        context.dataStore.edit { prefs ->
+            prefs[CUSTOM_IDENTIFIERS_JSON] = json
+        }
+        syncPreferencesToDb()
+    }
+
+    suspend fun savePreferredAccountId(accountId: String?) {
+        context.dataStore.edit { prefs ->
+            if (accountId != null) {
+                prefs[PREFERRED_ACCOUNT_ID] = accountId
+            } else {
+                prefs.remove(PREFERRED_ACCOUNT_ID)
+            }
+        }
+        syncPreferencesToDb()
+    }
+
+    suspend fun saveAppCurrency(currencyCode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[APP_CURRENCY] = currencyCode
+        }
+        syncPreferencesToDb()
+        com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+        com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+    }
+
+    suspend fun syncPreferencesToDb() {
+        try {
+            val user = com.clerk.api.Clerk.userFlow.value
+            val userId = user?.id ?: "local_user"
+            val prefs = safeData.first()
+            val dao = PiggyLedgerDatabase.getInstance(context.applicationContext).piggyLedgerDao()
+            val existing = dao.getUserPreferencesByUserId(userId)
+            val entity = UserPreferencesEntity(
+                userId = userId,
+                hasOnboarded = prefs[HAS_ONBOARDED] ?: false,
+                hasLanguageSelected = prefs[HAS_LANGUAGE_SELECTED] ?: false,
+                hasHeardAboutUs = prefs[HAS_HEARD_ABOUT_US] ?: false,
+                personalizedIntent = prefs[PERSONALIZED_INTENT] ?: -1,
+                personalizedIntensity = prefs[PERSONALIZED_INTENSITY] ?: -1,
+                savingMode = prefs[SAVING_MODE] ?: "piggy",
+                customIdentifiersJson = prefs[CUSTOM_IDENTIFIERS_JSON] ?: "{}",
+                isBiometricLockEnabled = prefs[IS_BIOMETRIC_LOCK_ENABLED] ?: false,
+                isScreenshotProtectionEnabled = prefs[IS_SCREENSHOT_PROTECTION_ENABLED] ?: false,
+                isPremium = prefs[IS_PREMIUM] ?: false,
+                premiumExpiryTimestamp = prefs[PREMIUM_EXPIRY_TIMESTAMP] ?: 0L,
+                isLifetimePremium = prefs[IS_LIFETIME_PREMIUM] ?: false,
+                preferredAccountId = prefs[PREFERRED_ACCOUNT_ID],
+                appCurrency = prefs[APP_CURRENCY] ?: "EGP",
+                createdAt = existing?.createdAt ?: System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis(),
+                isSynced = false
+            )
+            dao.insertUserPreferences(entity)
+            triggerSync(context)
+        } catch (e: Exception) {
+            android.util.Log.e("UserPreferences", "Failed to sync preferences to Room", e)
+        }
+    }
+
+    suspend fun applyFromEntity(entity: UserPreferencesEntity) {
+        context.dataStore.edit { prefs ->
+            if (entity.hasOnboarded) prefs[HAS_ONBOARDED] = true
+            if (entity.hasLanguageSelected) prefs[HAS_LANGUAGE_SELECTED] = true
+            if (entity.hasHeardAboutUs) prefs[HAS_HEARD_ABOUT_US] = true
+            prefs[PERSONALIZED_INTENT] = entity.personalizedIntent
+            prefs[PERSONALIZED_INTENSITY] = entity.personalizedIntensity
+            prefs[SAVING_MODE] = entity.savingMode
+            prefs[CUSTOM_IDENTIFIERS_JSON] = entity.customIdentifiersJson
+            prefs[IS_BIOMETRIC_LOCK_ENABLED] = entity.isBiometricLockEnabled
+            prefs[IS_SCREENSHOT_PROTECTION_ENABLED] = entity.isScreenshotProtectionEnabled
+            prefs[IS_PREMIUM] = entity.isPremium
+            prefs[PREMIUM_EXPIRY_TIMESTAMP] = entity.premiumExpiryTimestamp
+            prefs[IS_LIFETIME_PREMIUM] = entity.isLifetimePremium
+            if (entity.preferredAccountId != null) {
+                prefs[PREFERRED_ACCOUNT_ID] = entity.preferredAccountId
+            } else {
+                prefs.remove(PREFERRED_ACCOUNT_ID)
+            }
+            // FIX(sync): currency was never applied from cloud (line commented
+            // out) while push logged it — multi-device currency diverged forever.
+            prefs[APP_CURRENCY] = entity.appCurrency
+        }
+    }
+
+    suspend fun clearForLogout() {
+        context.dataStore.edit { prefs ->
+            val hasOnboarded = prefs[HAS_ONBOARDED] ?: true
+            val hasLanguageSelected = prefs[HAS_LANGUAGE_SELECTED] ?: true
+            val hasHeardAboutUs = prefs[HAS_HEARD_ABOUT_US] ?: true
+            val appCurrency = prefs[APP_CURRENCY] ?: "EGP"
+            val appLanguage = prefs[APP_LANGUAGE]
+
+            prefs.clear()
+
+            prefs[HAS_ONBOARDED] = hasOnboarded
+            prefs[HAS_LANGUAGE_SELECTED] = hasLanguageSelected
+            prefs[HAS_HEARD_ABOUT_US] = hasHeardAboutUs
+            prefs[APP_CURRENCY] = appCurrency
+            if (appLanguage != null) {
+                prefs[APP_LANGUAGE] = appLanguage
+            }
+        }
+        saveAuthenticatedSync(context, false)
+    }
+
+    suspend fun getInitialDestination(): com.oryno.piggy_ledger.ui.Screen {
+        // FIX(first-install-crash): never throw out of the launch gate. Any
+        // residual failure (disk I/O, restored file) falls back to the first
+        // onboarding screen instead of crash-looping on the splash screen.
+        return try {
+            val prefs = safeData.first()
+            val isAuth = prefs[IS_AUTHENTICATED] ?: getAuthenticatedSync(context)
+            if (isAuth) return com.oryno.piggy_ledger.ui.Screen.MainContainer
+
+            val hasLang = prefs[HAS_LANGUAGE_SELECTED] ?: getLanguageSelectedSync(context)
+            if (!hasLang) return com.oryno.piggy_ledger.ui.Screen.LanguageSelection
+            val hasHeard = prefs[HAS_HEARD_ABOUT_US] ?: getHeardAboutUsSync(context)
+            if (!hasHeard) return com.oryno.piggy_ledger.ui.Screen.HearAboutUs
+            val hasOnboarded = prefs[HAS_ONBOARDED] ?: getOnboardedSync(context)
+            if (!hasOnboarded) return com.oryno.piggy_ledger.ui.Screen.Onboarding
+
+            com.oryno.piggy_ledger.ui.Screen.Auth
+        } catch (e: Exception) {
+            Log.e("UserPreferences", "getInitialDestination failed, using LanguageSelection", e)
+            com.oryno.piggy_ledger.ui.Screen.LanguageSelection
+        }
+    }
+
+    suspend fun clearAll() {
+        clearForLogout()
+    }
+
+    private fun triggerSync(context: Context) {
+        // Single trigger only. Previously this also launched a direct
+        // SyncManager(context).syncAll() coroutine in parallel with the
+        // WorkManager job below, which raced against it (and against any
+        // sync run from logout) over the same Room rows. The syncAll()
+        // mutex now makes concurrent calls safe, but firing sync twice for
+        // one edit is still pointless duplicate network traffic, so it's
+        // removed rather than just tolerated.
+        // FIX(sync): delegate to SyncWorker.scheduleOneTime (KEEP + CONNECTED +
+        // backoff). See matching comment in PiggyLedgerRepository.kt.
+        com.oryno.piggy_ledger.service.SyncWorker.scheduleOneTime(context)
+    }
+}

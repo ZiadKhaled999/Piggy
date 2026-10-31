@@ -1,0 +1,2075 @@
+package com.oryno.piggy_ledger.ui
+import androidx.compose.ui.res.stringResource
+import com.oryno.piggy_ledger.R
+
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import android.content.pm.PackageManager
+import android.os.Build
+import android.Manifest
+import android.widget.Toast
+
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.RepeatMode
+import kotlinx.coroutines.delay
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+import com.oryno.piggy_ledger.ui.theme.NavyDark
+import com.oryno.piggy_ledger.ui.theme.PinkPrimary
+import com.oryno.piggy_ledger.ui.theme.TextLight
+import com.oryno.piggy_ledger.ui.theme.SlateDark
+import com.oryno.piggy_ledger.ui.theme.AccentBlue
+import com.clerk.api.Clerk
+
+val TealGreen = Color(0xFF43B7A7)
+
+data class OnboardingPageData(
+    val imageRes: Int,
+    val title: AnnotatedString,
+    val subtitle: String
+)
+
+@Composable
+fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?) -> Unit) {
+    val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp
+    val screenHeight = configuration.screenHeightDp
+    val scaleFactor = (screenWidth / 360f).coerceIn(0.75f, 1.2f)
+    val isSmallScreen = screenWidth < 380 || screenHeight < 720
+    
+    val titleFontSize = (24 * scaleFactor).coerceIn(18f, 26f).sp
+    val subtitleFontSize = (13.5f * scaleFactor).coerceIn(11.5f, 14.5f).sp
+    val cardTitleFontSize = (14.5f * scaleFactor).coerceIn(12f, 15f).sp
+    val cardDescFontSize = (11.5f * scaleFactor).coerceIn(10f, 12.5f).sp
+    val emojiBoxSize = (42 * scaleFactor).coerceIn(34f, 46f).dp
+    val emojiFontSize = (20 * scaleFactor).coerceIn(16f, 22f).sp
+    val buttonFontSize = (16 * scaleFactor).coerceIn(14f, 17f).sp
+    val backButtonFontSize = (14 * scaleFactor).coerceIn(12f, 15f).sp
+    val horizontalPadding = (16 * scaleFactor).coerceIn(12f, 20f).dp
+    val titleLineHeight = (30 * scaleFactor).coerceIn(22f, 32f).sp
+    val subtitleLineHeight = (18 * scaleFactor).coerceIn(15f, 20f).sp
+    val cardDescLineHeight = (14 * scaleFactor).coerceIn(12f, 16f).sp
+    val sectionSpacing = (14 * scaleFactor).coerceIn(8f, 16f).dp
+
+    var currentPage by remember { mutableIntStateOf(0) }
+    var selectedIntent by remember { mutableIntStateOf(-1) }
+    var selectedIntensity by remember { mutableIntStateOf(-1) }
+
+    var isPlanFinished by remember { mutableStateOf(false) }
+
+    var relatesToLoans by remember { mutableStateOf<Boolean?>(null) }
+    var relatesToAccounts by remember { mutableStateOf<Boolean?>(null) }
+    var relatesToEmergency by remember { mutableStateOf<Boolean?>(null) }
+
+    var selectedSavingMode by remember { mutableStateOf("piggy") }
+    
+    // Register SMS permission launcher
+    val smsPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val smsReceivedGranted = permissions[Manifest.permission.RECEIVE_SMS] ?: false
+        val smsReadGranted = permissions[Manifest.permission.READ_SMS] ?: false
+        
+        if (smsReceivedGranted || smsReadGranted) {
+            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_sms_granted), Toast.LENGTH_SHORT)
+        } else {
+            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_sms_denied), Toast.LENGTH_SHORT)
+        }
+        currentPage++
+    }
+
+    // Register Notification permission launcher
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_notif_granted), Toast.LENGTH_SHORT)
+        } else {
+            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_notif_denied), Toast.LENGTH_SHORT)
+        }
+        currentPage++
+    }
+
+    val welcomeTo = stringResource(R.string.onboarding_welcome_to)
+    val appName = stringResource(R.string.app_name)
+    val subtitle1 = stringResource(R.string.onboarding_subtitle_1)
+    
+    val poolYour = stringResource(R.string.onboarding_pool_your)
+    val savings = stringResource(R.string.onboarding_savings)
+    val subtitle2 = stringResource(R.string.onboarding_subtitle_2)
+    
+    val trackStr = stringResource(R.string.onboarding_track)
+    val progress = stringResource(R.string.onboarding_progress)
+    val together = stringResource(R.string.onboarding_together)
+    val subtitle3 = stringResource(R.string.onboarding_subtitle_3)
+    
+    val readyTo = stringResource(R.string.onboarding_ready_to)
+    val startStr = stringResource(R.string.onboarding_start)
+    val subtitle4 = stringResource(R.string.onboarding_subtitle_4)
+
+    fun requestSmsPermissions() {
+        val permissionsToRequest = mutableListOf<String>()
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.RECEIVE_SMS)
+        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.READ_SMS)
+        }
+        
+        if (permissionsToRequest.isNotEmpty()) {
+            smsPermissionLauncher.launch(permissionsToRequest.toTypedArray())
+        } else {
+            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_sms_granted), Toast.LENGTH_SHORT)
+            currentPage++
+        }
+    }
+
+    fun requestNotificationPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_notif_granted), Toast.LENGTH_SHORT)
+                currentPage++
+            }
+        } else {
+            com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_notif_granted), Toast.LENGTH_SHORT)
+            currentPage++
+        }
+    }
+    
+    val pages = listOf(
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString {
+                append(welcomeTo + "\n")
+                withStyle(style = SpanStyle(color = PinkPrimary)) {
+                    append(appName)
+                }
+            },
+            subtitle = subtitle1
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_pool,
+            title = buildAnnotatedString {
+                append(poolYour + " ")
+                withStyle(style = SpanStyle(color = PinkPrimary)) {
+                    append(savings)
+                }
+            },
+            subtitle = subtitle2
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_track,
+            title = buildAnnotatedString {
+                append(trackStr + " ")
+                withStyle(style = SpanStyle(color = PinkPrimary)) {
+                    append(progress)
+                }
+                append("\n" + together)
+            },
+            subtitle = subtitle3
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_track,
+            title = buildAnnotatedString {
+                append(stringResource(R.string.onboarding_sms_title))
+            },
+            subtitle = stringResource(R.string.onboarding_sms_subtitle)
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_settings_feedback,
+            title = buildAnnotatedString {
+                append(stringResource(R.string.onboarding_notif_title))
+            },
+            subtitle = stringResource(R.string.onboarding_notif_subtitle)
+        ),
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append(stringResource(R.string.onboarding_personalize_intent_title)) },
+            subtitle = stringResource(R.string.onboarding_personalize_intent_subtitle)
+        ),
+
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append(stringResource(R.string.onboarding_personalize_intensity_title)) },
+            subtitle = stringResource(R.string.onboarding_personalize_intensity_subtitle)
+        ),
+        // 7: Financial Stress Insight (CNBC)
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+        // 8: Relatable Statement 1
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+        // 9: Relatable Statement 2
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+        // 10: Relatable Statement 3
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+
+        // 11: PwC Global Workforce Financial Stress Insight
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+
+        // 12: Consistency / Habit Streak
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append(stringResource(R.string.onboarding_streak_title)) },
+            subtitle = stringResource(R.string.onboarding_streak_subtitle)
+        ),
+
+        // 13: Gallup Workplace Daily Stress Insight
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+
+        // 14: Personalized Roadmap
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append(stringResource(R.string.onboarding_personalize_roadmap_title)) },
+            subtitle = stringResource(R.string.onboarding_personalize_roadmap_subtitle)
+        ),
+
+        // 15: Supercharge Comparison (x1 vs x7)
+        OnboardingPageData(
+            imageRes = R.drawable.img_piggy_hello,
+            title = buildAnnotatedString { append(stringResource(R.string.onboarding_choose_pace_title)) },
+            subtitle = stringResource(R.string.onboarding_choose_pace_subtitle)
+        ),
+
+        // 16: Flash Sale
+        OnboardingPageData(
+            imageRes = R.drawable.img_app_logo,
+            title = buildAnnotatedString { append("") },
+            subtitle = ""
+        ),
+
+        // 17: Ready to Start
+        OnboardingPageData(
+            imageRes = R.drawable.img_app_logo,
+            title = buildAnnotatedString {
+                append(readyTo + " ")
+                withStyle(style = SpanStyle(color = PinkPrimary)) {
+                    append(startStr)
+                }
+                append("?")
+            },
+            subtitle = subtitle4
+        )
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(if (currentPage in listOf(7, 11, 13)) Color(0xFFFFFAEE) else Color.White)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(
+                horizontal = if (currentPage in 8..10 || currentPage == 14) 4.dp else if (currentPage in listOf(7, 11, 13)) 0.dp else horizontalPadding,
+                vertical = if (currentPage in 8..10 || currentPage in listOf(7, 11, 13)) 6.dp else (if (isSmallScreen) 12.dp else 16.dp)
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Upper Content with Crossfade Page Transition
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            Crossfade(
+                targetState = currentPage,
+                label = "onboarding_page_fade"
+            ) { pageIndex ->
+                if (pageIndex == 3) {
+                    // SMS / MESSAGES PERMISSION SLIDE - Phone Mockup matching reference design
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 4.dp else 12.dp))
+
+                        // Phone Frame with Messages Interface
+                        Box(
+                            modifier = Modifier
+                                .width(if (isSmallScreen) 230.dp else 280.dp)
+                                .height(if (isSmallScreen) 215.dp else 275.dp)
+                                .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp, bottomStart = 18.dp, bottomEnd = 18.dp))
+                                .background(Color.White)
+                                .border(
+                                    width = 1.5.dp,
+                                    color = Color(0xFFE2E8F0),
+                                    shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp, bottomStart = 18.dp, bottomEnd = 18.dp)
+                                ),
+                            contentAlignment = Alignment.TopCenter
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = if (isSmallScreen) 12.dp else 16.dp, vertical = if (isSmallScreen) 8.dp else 12.dp)
+                            ) {
+                                // Top Navigation Chevron
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                    contentDescription = null,
+                                    tint = Color(0xFFCBD5E1),
+                                    modifier = Modifier
+                                        .size(if (isSmallScreen) 20.dp else 24.dp)
+                                        .padding(top = 2.dp)
+                                )
+
+                                Spacer(modifier = Modifier.height(2.dp))
+
+                                // App Title ("Messages" / "الرسائل")
+                                Text(
+                                    text = stringResource(R.string.onboarding_messages_header),
+                                    fontSize = if (isSmallScreen) 17.sp else 22.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF94A3B8),
+                                    modifier = Modifier.padding(bottom = if (isSmallScreen) 4.dp else 6.dp)
+                                )
+
+                                HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 1.dp)
+
+                                // Row 1: Detailed Bank SMS item
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = if (isSmallScreen) 5.dp else 8.dp),
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(if (isSmallScreen) 30.dp else 36.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFF94A3B8)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Person,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(if (isSmallScreen) 18.dp else 22.dp)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.onboarding_sms_mock_sender),
+                                                fontSize = if (isSmallScreen) 11.sp else 12.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = NavyDark
+                                            )
+                                            Text(
+                                                text = "9:41 AM",
+                                                fontSize = if (isSmallScreen) 8.5.sp else 10.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = Color(0xFF64748B)
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(2.dp))
+
+                                        Text(
+                                            text = stringResource(R.string.onboarding_sms_mock_body),
+                                            fontSize = if (isSmallScreen) 9.5.sp else 11.sp,
+                                            color = TextLight,
+                                            lineHeight = if (isSmallScreen) 13.sp else 15.sp,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+
+                                HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+
+                                // Row 2: Skeleton Placeholder 1
+                                SmsSkeletonRow(isSmallScreen = isSmallScreen)
+
+                                HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+
+                                // Row 3: Skeleton Placeholder 2
+                                SmsSkeletonRow(isSmallScreen = isSmallScreen)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 10.dp else 20.dp))
+
+                        // Main Title
+                        Text(
+                            text = stringResource(R.string.onboarding_sms_title),
+                            fontSize = if (isSmallScreen) 18.sp else titleFontSize,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = NavyDark,
+                            textAlign = TextAlign.Center,
+                            lineHeight = if (isSmallScreen) 23.sp else titleLineHeight,
+                            modifier = Modifier.padding(horizontal = if (isSmallScreen) 8.dp else 12.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 6.dp else 10.dp))
+
+                        // Subtitle
+                        Text(
+                            text = stringResource(R.string.onboarding_sms_subtitle),
+                            fontSize = if (isSmallScreen) 11.5.sp else subtitleFontSize,
+                            color = TextLight,
+                            textAlign = TextAlign.Center,
+                            lineHeight = if (isSmallScreen) 16.sp else subtitleLineHeight,
+                            modifier = Modifier.padding(horizontal = if (isSmallScreen) 12.dp else 24.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 10.dp else 20.dp))
+
+                        // Enable SMS Button
+                        Button(
+                            onClick = { requestSmsPermissions() },
+                            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
+                            modifier = Modifier
+                                .fillMaxWidth(if (isSmallScreen) 0.92f else 0.85f)
+                                .height(if (isSmallScreen) 46.dp else 52.dp)
+                                .testTag("grant_sms_permission_button"),
+                            shape = RoundedCornerShape(26.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.onboarding_sms_btn),
+                                color = Color.White,
+                                fontSize = if (isSmallScreen) 13.5.sp else 15.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        TextButton(
+                            onClick = {
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_sms_denied), Toast.LENGTH_SHORT)
+                                currentPage++
+                            },
+                            modifier = Modifier.testTag("skip_sms_permission_button")
+                        ) {
+                            Text(
+                                text = stringResource(R.string.onboarding_sms_skip),
+                                color = TextLight,
+                                fontSize = if (isSmallScreen) 13.sp else 14.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                } else if (pageIndex == 4) {
+                    // NOTIFICATION PERMISSION SLIDE - Larger realistic phone mockup + overlapping card
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 4.dp else 12.dp))
+
+                        // Outer Container that holds Phone Shell + Overlapping Notification Card
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(if (isSmallScreen) 205.dp else 265.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            // 1. Phone Frame Shell (Sleek Phone Silhouette)
+                            Box(
+                                modifier = Modifier
+                                    .width(if (isSmallScreen) 190.dp else 240.dp)
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp, bottomStart = 18.dp, bottomEnd = 18.dp))
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(
+                                                Color(0xFFF8FAFC),
+                                                Color(0xFFF1F5F9).copy(alpha = 0.6f),
+                                                Color.Transparent
+                                            )
+                                        )
+                                    )
+                                    .border(
+                                        width = 1.5.dp,
+                                        color = Color(0xFFE2E8F0),
+                                        shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp, bottomStart = 18.dp, bottomEnd = 18.dp)
+                                    ),
+                                contentAlignment = Alignment.TopCenter
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = if (isSmallScreen) 6.dp else 10.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    // Phone speaker notch
+                                    Box(
+                                        modifier = Modifier
+                                            .width(if (isSmallScreen) 32.dp else 40.dp)
+                                            .height(3.5.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFCBD5E1).copy(alpha = 0.6f))
+                                    )
+
+                                    Spacer(modifier = Modifier.height(if (isSmallScreen) 8.dp else 16.dp))
+
+                                    // Giant Lockscreen Clock Display ("9:41")
+                                    Text(
+                                        text = "9:41",
+                                        fontSize = if (isSmallScreen) 46.sp else 62.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0F172A),
+                                        letterSpacing = (-1.5).sp
+                                    )
+                                }
+                            }
+
+                            // 2. Floating Notification Card (Overlaps phone shell and extends wider horizontally!)
+                            Card(
+                                modifier = Modifier
+                                    .width(if (isSmallScreen) 250.dp else 300.dp)
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = if (isSmallScreen) 10.dp else 18.dp),
+                                shape = RoundedCornerShape(if (isSmallScreen) 16.dp else 20.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF1F5F9))
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(if (isSmallScreen) 10.dp else 14.dp)
+                                ) {
+                                    // Header Row: App Logo (No Pink Background!), App Name, Time
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.img_app_logo),
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .size(if (isSmallScreen) 20.dp else 24.dp)
+                                                .clip(RoundedCornerShape(5.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+
+                                        Spacer(modifier = Modifier.width(6.dp))
+
+                                        Text(
+                                            text = stringResource(R.string.piggy_ledger_brand).uppercase(),
+                                            fontSize = if (isSmallScreen) 9.5.sp else 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF64748B),
+                                            letterSpacing = 0.5.sp
+                                        )
+
+                                        Spacer(modifier = Modifier.weight(1f))
+
+                                        Text(
+                                            text = "9:41 AM",
+                                            fontSize = if (isSmallScreen) 9.5.sp else 11.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(0xFF94A3B8)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    // Notification Title (No Emojis)
+                                    Text(
+                                        text = stringResource(R.string.onboarding_notif_card_title),
+                                        fontSize = if (isSmallScreen) 12.5.sp else 14.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = NavyDark
+                                    )
+
+                                    Spacer(modifier = Modifier.height(2.dp))
+
+                                    // Notification Body
+                                    Text(
+                                        text = stringResource(R.string.onboarding_notif_card_body),
+                                        fontSize = if (isSmallScreen) 10.sp else 11.5.sp,
+                                        color = TextLight,
+                                        lineHeight = if (isSmallScreen) 13.5.sp else 16.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 10.dp else 20.dp))
+
+                        // Main Title (No Emojis)
+                        Text(
+                            text = stringResource(R.string.onboarding_notif_title),
+                            fontSize = if (isSmallScreen) 18.sp else titleFontSize,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = NavyDark,
+                            textAlign = TextAlign.Center,
+                            lineHeight = if (isSmallScreen) 23.sp else titleLineHeight,
+                            modifier = Modifier.padding(horizontal = if (isSmallScreen) 8.dp else 12.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 6.dp else 10.dp))
+
+                        // Subtitle
+                        Text(
+                            text = stringResource(R.string.onboarding_notif_subtitle),
+                            fontSize = if (isSmallScreen) 11.5.sp else subtitleFontSize,
+                            color = TextLight,
+                            textAlign = TextAlign.Center,
+                            lineHeight = if (isSmallScreen) 16.sp else subtitleLineHeight,
+                            modifier = Modifier.padding(horizontal = if (isSmallScreen) 12.dp else 24.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 10.dp else 20.dp))
+
+                        // Enable Notifications Button
+                        Button(
+                            onClick = { requestNotificationPermissions() },
+                            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
+                            modifier = Modifier
+                                .fillMaxWidth(if (isSmallScreen) 0.92f else 0.85f)
+                                .height(if (isSmallScreen) 46.dp else 52.dp)
+                                .testTag("grant_notif_permission_button"),
+                            shape = RoundedCornerShape(26.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.onboarding_notif_btn),
+                                color = Color.White,
+                                fontSize = if (isSmallScreen) 13.5.sp else 15.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        TextButton(
+                            onClick = {
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.onboarding_notif_denied), Toast.LENGTH_SHORT)
+                                currentPage++
+                            },
+                            modifier = Modifier.testTag("skip_notif_permission_button")
+                        ) {
+                            Text(
+                                text = stringResource(R.string.onboarding_notif_skip),
+                                color = TextLight,
+                                fontSize = if (isSmallScreen) 13.sp else 14.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                } else if (pageIndex == 5) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.onboarding_personalize_intent_title),
+                            fontSize = titleFontSize,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = NavyDark,
+                            textAlign = TextAlign.Center,
+                            lineHeight = titleLineHeight
+                        )
+                        
+                        Spacer(modifier = Modifier.height(10.dp))
+                        
+                        Text(
+                            text = stringResource(R.string.onboarding_personalize_intent_subtitle),
+                            fontSize = subtitleFontSize,
+                            color = TextLight,
+                            textAlign = TextAlign.Center,
+                            lineHeight = subtitleLineHeight,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        
+                        Spacer(modifier = Modifier.height(sectionSpacing))
+                        
+                        val intents = listOf(
+                            Pair(stringResource(R.string.onboarding_personalize_intent_personal), stringResource(R.string.onboarding_personalize_intent_personal_desc)) to "💰",
+                            Pair(stringResource(R.string.onboarding_personalize_intent_loans), stringResource(R.string.onboarding_personalize_intent_loans_desc)) to "🤝",
+                            Pair(stringResource(R.string.onboarding_personalize_intent_auto), stringResource(R.string.onboarding_personalize_intent_auto_desc)) to "⚡"
+                        )
+                        
+                        intents.forEachIndexed { index, pair ->
+                            val (textPair, emoji) = pair
+                            val (title, desc) = textPair
+                            val isSelected = selectedIntent == index
+                            
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth(if (isSmallScreen) 1f else 0.96f)
+                                    .padding(vertical = if (isSmallScreen) 6.dp else 8.dp)
+                                    .clickable { selectedIntent = index }
+                                    .testTag("intent_card_$index"),
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (isSelected) Color(0xFFFFF1F2) else Color(0xFFF8FAFC),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    width = if (isSelected) 3.dp else 1.5.dp,
+                                    color = if (isSelected) PinkPrimary else Color(0xFFCBD5E1)
+                                ),
+                                shadowElevation = if (isSelected) 3.dp else 0.dp
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = if (isSmallScreen) 12.dp else 16.dp, vertical = if (isSmallScreen) 10.dp else 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(emojiBoxSize)
+                                            .clip(CircleShape)
+                                            .background(if (isSelected) PinkPrimary.copy(alpha = 0.15f) else Color(0xFFF1F5F9)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = emoji,
+                                            fontSize = emojiFontSize
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.width(if (isSmallScreen) 10.dp else 14.dp))
+                                    
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = title,
+                                            fontSize = cardTitleFontSize,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isSelected) PinkPrimary else NavyDark,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = desc,
+                                            fontSize = cardDescFontSize,
+                                            fontWeight = FontWeight.Medium,
+                                            color = if (isSelected) SlateDark else TextLight,
+                                            lineHeight = cardDescLineHeight,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = { selectedIntent = index },
+                                        colors = RadioButtonDefaults.colors(
+                                            selectedColor = PinkPrimary,
+                                            unselectedColor = Color(0xFFCBD5E1)
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else if (pageIndex == 6) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.onboarding_personalize_intensity_title),
+                            fontSize = titleFontSize,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = NavyDark,
+                            textAlign = TextAlign.Center,
+                            lineHeight = titleLineHeight
+                        )
+                        
+                        Spacer(modifier = Modifier.height(10.dp))
+                        
+                        Text(
+                            text = stringResource(R.string.onboarding_personalize_intensity_subtitle),
+                            fontSize = subtitleFontSize,
+                            color = TextLight,
+                            textAlign = TextAlign.Center,
+                            lineHeight = subtitleLineHeight,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        
+                        Spacer(modifier = Modifier.height(sectionSpacing))
+                        
+                        val intensities = listOf(
+                            Pair(stringResource(R.string.onboarding_personalize_intensity_casual), stringResource(R.string.onboarding_personalize_intensity_casual_desc)) to "🌱",
+                            Pair(stringResource(R.string.onboarding_personalize_intensity_balanced), stringResource(R.string.onboarding_personalize_intensity_balanced_desc)) to "⚡",
+                            Pair(stringResource(R.string.onboarding_personalize_intensity_aggressive), stringResource(R.string.onboarding_personalize_intensity_aggressive_desc)) to "🔥"
+                        )
+                        
+                        intensities.forEachIndexed { index, pair ->
+                            val (textPair, emoji) = pair
+                            val (title, desc) = textPair
+                            val isSelected = selectedIntensity == index
+                            
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth(if (isSmallScreen) 1f else 0.96f)
+                                    .padding(vertical = if (isSmallScreen) 6.dp else 8.dp)
+                                    .clickable { selectedIntensity = index }
+                                    .testTag("intensity_card_$index"),
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (isSelected) Color(0xFFFFF1F2) else Color(0xFFF8FAFC),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    width = if (isSelected) 3.dp else 1.5.dp,
+                                    color = if (isSelected) PinkPrimary else Color(0xFFCBD5E1)
+                                ),
+                                shadowElevation = if (isSelected) 3.dp else 0.dp
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(if (isSmallScreen) 12.dp else 16.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(emojiBoxSize)
+                                                .clip(CircleShape)
+                                                .background(if (isSelected) PinkPrimary.copy(alpha = 0.15f) else Color(0xFFF1F5F9)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = emoji,
+                                                fontSize = emojiFontSize
+                                            )
+                                        }
+                                        
+                                        Spacer(modifier = Modifier.width(if (isSmallScreen) 10.dp else 14.dp))
+                                        
+                                        Column(
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text(
+                                                text = title,
+                                                fontSize = cardTitleFontSize,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) PinkPrimary else NavyDark,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            val rateLabel = if (index == 0) "5% – 10%" else if (index == 1) "15% – 20%" else "30%+"
+                                            Text(
+                                                text = stringResource(R.string.onboarding_saving_rate_label, rateLabel),
+                                                fontSize = if (isSmallScreen) 10.sp else 11.sp,
+                                                color = if (isSelected) PinkPrimary else TextLight,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                        
+                                        RadioButton(
+                                            selected = isSelected,
+                                            onClick = { selectedIntensity = index },
+                                            colors = RadioButtonDefaults.colors(
+                                                selectedColor = PinkPrimary,
+                                                unselectedColor = Color(0xFFCBD5E1)
+                                            )
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = desc,
+                                        fontSize = cardDescFontSize,
+                                        fontWeight = FontWeight.Medium,
+                                        color = if (isSelected) SlateDark else TextLight,
+                                        lineHeight = cardDescLineHeight,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.padding(start = 2.dp)
+                                    )
+                                    
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    
+                                    // Custom visual speed progress bar inside the card
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(6.dp)
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(Color(0xFFE2E8F0))
+                                    ) {
+                                        val fillRatio = if (index == 0) 0.12f else if (index == 1) 0.25f else 0.50f
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth(fillRatio)
+                                                .fillMaxHeight()
+                                                .background(if (isSelected) PinkPrimary else Color(0xFF94A3B8))
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                
+                } else if (pageIndex == 7) {
+                    // FINANCIAL STRESS INSIGHT (CNBC)
+                    FinancialStressSlide(
+                        onContinue = { currentPage++ },
+                        onBack = { currentPage-- },
+                        isSmallScreen = isSmallScreen
+                    )
+                } else if (pageIndex in 8..10) {
+                    val cardBgColor = when (pageIndex) {
+                        8 -> Color(0xFFB38952) // Warm Amber / Burnt Ochre
+                        9 -> Color(0xFF5B78A7) // Slate Indigo / Periwinkle
+                        else -> Color(0xFF386851) // Deep Sage / Forest Green
+                    }
+                    val relatableText = when (pageIndex) {
+                        8 -> stringResource(R.string.onboarding_relatable_statement_1)
+                        9 -> stringResource(R.string.onboarding_relatable_statement_2)
+                        else -> stringResource(R.string.onboarding_relatable_statement_3)
+                    }
+                    val imageRes = when (pageIndex) {
+                        8 -> R.drawable.img_relatable_debt
+                        9 -> R.drawable.img_relatable_accounts
+                        else -> R.drawable.img_relatable_emergency
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalArrangement = Arrangement.SpaceBetween,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Top Bar: Navigation & Progress Step Dashes
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFF1F5F9))
+                                    .clickable { currentPage-- },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                    contentDescription = stringResource(R.string.back_btn),
+                                    tint = NavyDark,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(16.dp))
+
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                val currentStep = pageIndex - 7
+                                val totalSteps = 5
+                                for (step in 1..totalSteps) {
+                                    val isFilled = step <= currentStep + 1
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(if (isFilled) Color(0xFFE5A641) else Color(0xFFE2E8F0))
+                                    )
+                                }
+                            }
+                        }
+
+                        // Middle Content: Header Title + Card (Aligned to Top)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .verticalScroll(rememberScrollState()),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Top
+                        ) {
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Header Title
+                            Text(
+                                text = stringResource(R.string.onboarding_relatable_header),
+                                color = NavyDark,
+                                fontSize = if (isSmallScreen) 20.sp else 24.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                textAlign = TextAlign.Center,
+                                lineHeight = titleLineHeight,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Relatable Statement Sentence (Outside the Image Card)
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp),
+                                shape = RoundedCornerShape(20.dp),
+                                color = Color(0xFFF8FAFC),
+                                border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE2E8F0))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "“",
+                                        color = PinkPrimary,
+                                        fontSize = if (isSmallScreen) 28.sp else 34.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(end = 6.dp)
+                                    )
+                                    Text(
+                                        text = relatableText,
+                                        color = NavyDark,
+                                        fontSize = if (isSmallScreen) 14.sp else 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        lineHeight = subtitleLineHeight,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Card containing ONLY the Illustration Image
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .background(cardBgColor)
+                                    .padding(if (isSmallScreen) 12.dp else 16.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(if (isSmallScreen) 150.dp else 190.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(Color.White.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = imageRes),
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+
+                        // Absolute Bottom: Choice Buttons ("No" and "Yes") Full-Width
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 4.dp, top = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    when (pageIndex) {
+                                        8 -> relatesToLoans = false
+                                        9 -> relatesToAccounts = false
+                                        10 -> relatesToEmergency = false
+                                    }
+                                    if (currentPage < pages.size - 1) currentPage++
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(54.dp),
+                                shape = RoundedCornerShape(27.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = cardBgColor,
+                                    contentColor = Color.White
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.no_label),
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    when (pageIndex) {
+                                        8 -> {
+                                            relatesToLoans = true
+                                            selectedIntent = 1
+                                        }
+                                        9 -> relatesToAccounts = true
+                                        10 -> relatesToEmergency = true
+                                    }
+                                    if (currentPage < pages.size - 1) currentPage++
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(54.dp),
+                                shape = RoundedCornerShape(27.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = cardBgColor,
+                                    contentColor = Color.White
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.yes_label),
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+                } else if (pageIndex == 11) {
+                    // PWC RESEARCH INSIGHT SLIDE (After "Do you relate" slides)
+                    PwcInsightSlide(
+                        onContinue = {
+                            if (currentPage < pages.size - 1) currentPage++
+                        },
+                        onBack = {
+                            if (currentPage > 0) currentPage--
+                        },
+                        isSmallScreen = isSmallScreen
+                    )
+                } else if (pageIndex == 12) {
+                    // STREAK / HABIT SLIDE
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 10.dp else 20.dp))
+
+                        Text(
+                            text = stringResource(R.string.onboarding_streak_title),
+                            fontSize = titleFontSize,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = NavyDark,
+                            textAlign = TextAlign.Center,
+                            lineHeight = titleLineHeight,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = stringResource(R.string.onboarding_streak_subtitle),
+                            fontSize = subtitleFontSize,
+                            color = TextLight,
+                            textAlign = TextAlign.Center,
+                            lineHeight = subtitleLineHeight,
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 36.dp else 52.dp))
+
+                        // HABIT Streak Visual Container
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth(if (isSmallScreen) 0.95f else 0.90f)
+                                .padding(horizontal = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            val habitLetters = stringResource(R.string.onboarding_habit_letters).split(",")
+                            val days = stringResource(R.string.onboarding_streak_days).split(",")
+                            val completedSteps = if (habitLetters.size <= 4) 3 else 3
+
+                            val letterFontSize = if (isSmallScreen) {
+                                if (habitLetters.size <= 4) 42.sp else 36.sp
+                            } else {
+                                if (habitLetters.size <= 4) 50.sp else 44.sp
+                            }
+
+                            val circleSize = if (isSmallScreen) {
+                                if (habitLetters.size <= 4) 52.dp else 46.dp
+                            } else {
+                                if (habitLetters.size <= 4) 62.dp else 54.dp
+                            }
+
+                            val checkIconSize = if (isSmallScreen) {
+                                if (habitLetters.size <= 4) 28.dp else 24.dp
+                            } else {
+                                if (habitLetters.size <= 4) 34.dp else 28.dp
+                            }
+
+                            // Letters Row (H A B I T or ع ا د ة)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                habitLetters.forEachIndexed { index, letter ->
+                                    Box(
+                                        modifier = Modifier.weight(1f),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (index < completedSteps) {
+                                            Text(
+                                                text = letter,
+                                                fontSize = letterFontSize,
+                                                fontWeight = FontWeight.Black,
+                                                color = NavyDark
+                                            )
+                                        } else {
+                                            val density = LocalDensity.current
+                                            val fontSizePx = with(density) { letterFontSize.toPx() }
+                                            val darkGrayInt = android.graphics.Color.parseColor("#475569")
+                                            Canvas(
+                                                modifier = Modifier.size(circleSize)
+                                            ) {
+                                                val paint = android.graphics.Paint().apply {
+                                                    isAntiAlias = true
+                                                    textSize = fontSizePx
+                                                    typeface = android.graphics.Typeface.DEFAULT_BOLD
+                                                    style = android.graphics.Paint.Style.STROKE
+                                                    strokeWidth = 3.5f
+                                                    pathEffect = android.graphics.DashPathEffect(floatArrayOf(14f, 8f), 0f)
+                                                    color = darkGrayInt
+                                                }
+                                                val bounds = android.graphics.Rect()
+                                                paint.getTextBounds(letter, 0, letter.length, bounds)
+                                                val x = (size.width - bounds.width()) / 2f - bounds.left
+                                                val y = (size.height + bounds.height()) / 2f - bounds.bottom
+                                                drawIntoCanvas { canvas ->
+                                                    canvas.nativeCanvas.drawText(letter, x, y, paint)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(if (isSmallScreen) 16.dp else 24.dp))
+
+                            // Circles Row (Checkmark icons for active days, empty circles for upcoming days)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                days.forEachIndexed { index, day ->
+                                    val isCompleted = index < completedSteps
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        if (isCompleted) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(circleSize)
+                                                    .clip(CircleShape)
+                                                    .background(
+                                                        Brush.verticalGradient(
+                                                            colors = listOf(
+                                                                Color(0xFF34D399),
+                                                                Color(0xFF059669)
+                                                            )
+                                                        )
+                                                    ),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    tint = Color.White,
+                                                    modifier = Modifier.size(checkIconSize)
+                                                )
+                                            }
+                                        } else {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(circleSize)
+                                                    .clip(CircleShape)
+                                                    .background(Color(0xFFF8FAFC))
+                                                    .border(
+                                                        width = 3.dp,
+                                                        color = Color(0xFFCBD5E1),
+                                                        shape = CircleShape
+                                                    )
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(10.dp))
+
+                                        Text(
+                                            text = day,
+                                            fontSize = if (isSmallScreen) 11.sp else 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isCompleted) NavyDark else Color(0xFF94A3B8),
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 20.dp else 30.dp))
+                    }
+                } else if (pageIndex == 13) {
+                    // GALLUP RESEARCH INSIGHT SLIDE (After Habit slide)
+                    GallupInsightSlide(
+                        onContinue = {
+                            if (currentPage < pages.size - 1) currentPage++
+                        },
+                        onBack = {
+                            if (currentPage > 0) currentPage--
+                        },
+                        isSmallScreen = isSmallScreen
+                    )
+                } else if (pageIndex == 14) {
+                    val stepTitles = listOf(
+                        stringResource(R.string.onboarding_roadmap_step1),
+                        stringResource(R.string.onboarding_roadmap_step2),
+                        stringResource(R.string.onboarding_roadmap_step3),
+                        stringResource(R.string.onboarding_roadmap_step4)
+                    )
+
+                    var currentStep by remember { mutableStateOf(0) }
+                    var isCompleted by remember { mutableStateOf(false) }
+                    val progressAnim = remember { Animatable(0f) }
+
+                    val pinkGradient = Brush.horizontalGradient(
+                        colors = listOf(
+                            PinkPrimary,
+                            Color(0xFFBE185D)
+                        )
+                    )
+
+                    LaunchedEffect(Unit) {
+                        isPlanFinished = false
+                        for (step in 0..3) {
+                            currentStep = step
+                            progressAnim.snapTo(0f)
+                            val duration = 400 + step * 50
+                            progressAnim.animateTo(
+                                targetValue = 1f,
+                                animationSpec = tween(durationMillis = duration)
+                            )
+                            delay(80)
+                        }
+                        isCompleted = true
+                        isPlanFinished = true
+                    }
+
+                    val stepProgress = progressAnim.value
+                    val roadmapScrollState = rememberScrollState()
+                    
+                    LaunchedEffect(roadmapScrollState.maxValue) {
+                        if (roadmapScrollState.maxValue > 0) {
+                            roadmapScrollState.animateScrollTo(roadmapScrollState.maxValue)
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(roadmapScrollState)
+                            .padding(horizontal = if (isSmallScreen) 4.dp else 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 12.dp else 24.dp))
+
+                        Text(
+                            text = stringResource(R.string.onboarding_personalize_roadmap_title),
+                            fontSize = if (isSmallScreen) 20.sp else 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDark,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = stringResource(R.string.onboarding_personalize_roadmap_subtitle),
+                            fontSize = if (isSmallScreen) 11.sp else 14.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = TextLight,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 20.dp else 28.dp))
+
+                        // Responsive Full Width Steps Container
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(if (isSmallScreen) 12.dp else 16.dp)
+                        ) {
+                            stepTitles.forEachIndexed { index, title ->
+                                val isFinished = index < currentStep || (index == 3 && isCompleted)
+                                val isActive = index == currentStep && !isCompleted
+
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(18.dp),
+                                    color = if (isActive) Color(0xFFFFF5F8) else if (isFinished) Color(0xFFFAFAFC) else Color.White,
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        width = if (isActive) 1.5.dp else 1.dp,
+                                        color = if (isActive) PinkPrimary.copy(alpha = 0.4f) else if (isFinished) Color(0xFFE2E8F0) else Color(0xFFF1F5F9)
+                                    ),
+                                    shadowElevation = if (isActive) 2.dp else 0.dp
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(
+                                                horizontal = if (isSmallScreen) 14.dp else 18.dp,
+                                                vertical = if (isSmallScreen) 12.dp else 16.dp
+                                            )
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = title,
+                                                fontSize = if (isSmallScreen) 12.sp else 15.sp,
+                                                fontWeight = if (isActive || isFinished) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (isActive || isFinished) NavyDark else Color(0xFF64748B),
+                                                modifier = Modifier.weight(1f)
+                                            )
+
+                                            Spacer(modifier = Modifier.width(8.dp))
+
+                                            AnimatedVisibility(
+                                                visible = isFinished,
+                                                enter = scaleIn(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
+                                                exit = fadeOut()
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(24.dp)
+                                                        .clip(CircleShape)
+                                                        .background(PinkPrimary),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(14.dp)
+                                                    )
+                                                }
+                                            }
+
+                                            AnimatedVisibility(
+                                                visible = isActive,
+                                                enter = fadeIn() + scaleIn(),
+                                                exit = fadeOut() + scaleOut()
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(22.dp),
+                                                    color = PinkPrimary,
+                                                    strokeWidth = 2.5.dp
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(if (isActive) 12.dp else 8.dp))
+
+                                        // Animated Smooth Transition between Big Progress Card and Sleek Completed Line
+                                        AnimatedVisibility(
+                                            visible = isActive,
+                                            enter = expandVertically() + fadeIn(),
+                                            exit = shrinkVertically() + fadeOut()
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(if (isSmallScreen) 52.dp else 60.dp)
+                                                    .clip(RoundedCornerShape(14.dp))
+                                                    .background(Color(0xFFFCE4EC))
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth(stepProgress.coerceIn(0.08f, 1f))
+                                                        .fillMaxHeight()
+                                                        .clip(RoundedCornerShape(14.dp))
+                                                        .background(pinkGradient)
+                                                )
+                                                Text(
+                                                    text = "${(stepProgress * 100).toInt()}%",
+                                                    fontSize = if (isSmallScreen) 22.sp else 26.sp,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    color = Color.White,
+                                                    modifier = Modifier
+                                                        .align(Alignment.CenterStart)
+                                                        .padding(start = 18.dp)
+                                                )
+                                            }
+                                        }
+
+                                        AnimatedVisibility(
+                                            visible = !isActive,
+                                            enter = expandVertically() + fadeIn(),
+                                            exit = shrinkVertically() + fadeOut()
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(6.dp)
+                                                    .clip(RoundedCornerShape(3.dp))
+                                                    .background(if (isFinished) pinkGradient else androidx.compose.ui.graphics.SolidColor(Color(0xFFE2E8F0)))
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        AnimatedVisibility(
+                            visible = isCompleted,
+                            enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn()
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Spacer(modifier = Modifier.height(if (isSmallScreen) 16.dp else 24.dp))
+
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = Color(0xFFFFF1F5),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, PinkPrimary.copy(alpha = 0.35f)),
+                                    shadowElevation = 1.dp
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(if (isSmallScreen) 14.dp else 18.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(42.dp)
+                                                .clip(CircleShape)
+                                                .background(pinkGradient),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(14.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = stringResource(R.string.onboarding_roadmap_ready_title),
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = if (isSmallScreen) 14.sp else 15.sp,
+                                                color = NavyDark
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = stringResource(R.string.onboarding_roadmap_ready_desc),
+                                                fontSize = if (isSmallScreen) 11.5.sp else 12.5.sp,
+                                                color = TextLight,
+                                                lineHeight = 16.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 20.dp else 30.dp))
+                    }
+                } else if (pageIndex == 15) {
+                    val anim1 = remember { Animatable(0f) }
+                    val anim2 = remember { Animatable(0f) }
+                    LaunchedEffect(Unit) {
+                        anim1.animateTo(1f, animationSpec = tween(durationMillis = 800))
+                    }
+                    LaunchedEffect(Unit) {
+                        kotlinx.coroutines.delay(150)
+                        anim2.animateTo(1f, animationSpec = tween(durationMillis = 800))
+                    }
+
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                                .padding(top = 0.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Top
+                        ) {
+                            Text(
+                                text = stringResource(R.string.onboarding_supercharge_title),
+                                fontSize = titleFontSize,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = NavyDark,
+                                textAlign = TextAlign.Center,
+                                lineHeight = titleLineHeight
+                            )
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Text(
+                                text = stringResource(R.string.onboarding_supercharge_subtitle),
+                                fontSize = subtitleFontSize,
+                                color = TextLight,
+                                textAlign = TextAlign.Center,
+                                lineHeight = subtitleLineHeight,
+                                modifier = Modifier.padding(horizontal = 32.dp)
+                            )
+                        }
+                        
+                        // Comparison visualization
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(if (isSmallScreen) 260.dp else 380.dp)
+                                .padding(horizontal = horizontalPadding)
+                                .align(Alignment.Center),
+                            contentAlignment = Alignment.BottomCenter
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(if (isSmallScreen) 12.dp else 32.dp),
+                                verticalAlignment = Alignment.Bottom
+                            ) {
+                                // Solo Card (Smaller)
+                                val soloHeight = if (isSmallScreen) 28.dp else 38.dp
+                                Column(
+                                    modifier = Modifier
+                                        .weight(0.4f)
+                                        .graphicsLayer {
+                                            translationY = 40.dp.toPx() * (1f - anim1.value)
+                                            alpha = anim1.value
+                                        },
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(soloHeight * anim1.value),
+                                        shape = RoundedCornerShape(if (isSmallScreen) 8.dp else 12.dp),
+                                        color = Color(0xFF0F172A),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155)),
+                                        shadowElevation = 2.dp
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text("x1", fontWeight = FontWeight.Bold, color = Color.White, fontSize = if (isSmallScreen) 12.sp else 14.sp)
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = stringResource(R.string.onboarding_supercharge_solo),
+                                        fontSize = if (isSmallScreen) 12.sp else 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = TextLight
+                                    )
+                                }
+
+                                // With Piggy Card (7x taller)
+                                Column(
+                                    modifier = Modifier
+                                        .weight(0.6f)
+                                        .graphicsLayer {
+                                            translationY = 40.dp.toPx() * (1f - anim2.value)
+                                            alpha = anim2.value
+                                        },
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height((soloHeight * 7) * anim2.value),
+                                        shape = RoundedCornerShape(if (isSmallScreen) 12.dp else 16.dp),
+                                        color = Color.White,
+                                        border = androidx.compose.foundation.BorderStroke(2.dp, PinkPrimary),
+                                        shadowElevation = 8.dp
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(
+                                                    Brush.verticalGradient(
+                                                        colors = listOf(PinkPrimary, Color(0xFFF43F5E))
+                                                    )
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(
+                                                    text = "x7",
+                                                    fontSize = if (isSmallScreen) 34.sp else 54.sp,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = Color.White
+                                                )
+                                                Text(
+                                                    text = stringResource(R.string.onboarding_supercharge_faster),
+                                                    fontSize = if (isSmallScreen) 12.sp else 18.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White.copy(alpha = 0.9f),
+                                                    letterSpacing = if (isSmallScreen) 1.sp else 2.sp
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = stringResource(R.string.onboarding_supercharge_with_piggy, stringResource(R.string.piggy_ledger_brand)),
+                                        fontSize = if (isSmallScreen) 14.sp else 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PinkPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Visible
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else if (pageIndex == 16) {
+                    OnboardingFlashSaleScreen(
+                        titleFontSize = titleFontSize,
+                        subtitleFontSize = subtitleFontSize,
+                        titleLineHeight = titleLineHeight,
+                        subtitleLineHeight = subtitleLineHeight,
+                        isSmallScreen = isSmallScreen
+                    )
+                } else {
+                    val page = pages[pageIndex]
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = page.imageRes),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth(0.75f)
+                                .aspectRatio(1f),
+                            contentScale = ContentScale.Fit
+                        )
+                        
+                        Spacer(modifier = Modifier.height(30.dp))
+                        
+                        Text(
+                            text = page.title,
+                            fontSize = titleFontSize,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = NavyDark,
+                            textAlign = TextAlign.Center,
+                            lineHeight = titleLineHeight
+                        )
+                        
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 10.dp else 14.dp))
+                        
+                        Text(
+                            text = page.subtitle,
+                            fontSize = subtitleFontSize,
+                            color = TextLight,
+                            textAlign = TextAlign.Center,
+                            lineHeight = subtitleLineHeight,
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+
+
+
+
+                    }
+                }
+            }
+        }
+        
+        // Lower Content: Indicators & Buttons
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = if (isSmallScreen) 12.dp else 24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Back Button (Optional/Visible when not on first page)
+            if (currentPage > 0 && currentPage !in 8..10 && currentPage !in listOf(7, 11, 13) && (currentPage != 14 || isPlanFinished)) {
+                TextButton(
+                    onClick = { currentPage-- },
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .testTag("onboarding_back_button"),
+                    colors = ButtonDefaults.textButtonColors(contentColor = TextLight)
+                ) {
+                    Text(
+                        text = stringResource(R.string.back_btn),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = if (isSmallScreen) 13.5.sp else 15.sp
+                    )
+                }
+            }
+
+            if (currentPage !in 8..10 && currentPage !in listOf(7, 11, 13)) {
+                // Custom Progress Button - always responsive
+                ProgressNextButton(
+                    currentPage = currentPage,
+                    totalPages = pages.size,
+                    isSmallScreen = isSmallScreen,
+                    enabled = true,
+                    onNext = {
+                        if (currentPage == 14 && !isPlanFinished) {
+                            isPlanFinished = true
+                        }
+                        if (currentPage < pages.size - 1) {
+                            if (currentPage == 5 && selectedIntent == -1) {
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT)
+                            } else if (currentPage == 6 && selectedIntensity == -1) {
+                                com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT)
+                            } else {
+                                currentPage++
+                            }
+                        } else {
+                            onComplete(selectedIntent, selectedIntensity, selectedSavingMode, relatesToLoans, relatesToAccounts, relatesToEmergency)
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ProgressNextButton(
+    currentPage: Int,
+    totalPages: Int,
+    isSmallScreen: Boolean,
+    enabled: Boolean = true,
+    onNext: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val progress = (currentPage + 1).toFloat() / totalPages
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(durationMillis = 700),
+        label = "progress_anim"
+    )
+    
+    val buttonColor = if (!enabled) Color(0xFFCBD5E1) else if (currentPage == totalPages - 1) PinkPrimary else NavyDark
+    
+    Box(
+        modifier = modifier
+            .size(if (isSmallScreen) 68.dp else 84.dp)
+            .clip(CircleShape)
+            .clickable(enabled = enabled, onClick = onNext),
+        contentAlignment = Alignment.Center
+    ) {
+        // Progress Ring with segments
+        Canvas(modifier = Modifier.size(if (isSmallScreen) 56.dp else 72.dp)) {
+            val strokeWidth = (if (isSmallScreen) 3.dp else 4.dp).toPx()
+            val gap = 8f // Gap between segments in degrees
+            val segmentMaxSweep = (360f / totalPages) - gap
+            
+            for (i in 0 until totalPages) {
+                val startAngle = -90f + (i * (360f / totalPages)) + (gap / 2)
+                
+                // Background segment
+                drawArc(
+                    color = Color(0xFFE2E8F0),
+                    startAngle = startAngle,
+                    sweepAngle = segmentMaxSweep,
+                    useCenter = false,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
+ 
+                // Smoothly fill segments based on animated progress
+                val segmentProgress = ((animatedProgress * totalPages) - i).coerceIn(0f, 1f)
+                
+                if (segmentProgress > 0f) {
+                    drawArc(
+                        color = PinkPrimary,
+                        startAngle = startAngle,
+                        sweepAngle = segmentMaxSweep * segmentProgress,
+                        useCenter = false,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
+                }
+            }
+        }
+        
+        // Inner Button
+        Surface(
+            modifier = Modifier.size(if (isSmallScreen) 44.dp else 54.dp),
+            shape = RoundedCornerShape(if (isSmallScreen) 14.dp else 20.dp),
+            color = buttonColor,
+            shadowElevation = 4.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Next",
+                    tint = Color.White,
+                    modifier = Modifier.size(if (isSmallScreen) 22.dp else 28.dp)
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun SmsSkeletonRow(isSmallScreen: Boolean = false) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = if (isSmallScreen) 5.dp else 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(if (isSmallScreen) 28.dp else 34.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFE2E8F0))
+        )
+
+        Spacer(modifier = Modifier.width(if (isSmallScreen) 8.dp else 12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(if (isSmallScreen) 70.dp else 90.dp)
+                        .height(if (isSmallScreen) 8.dp else 10.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color(0xFFE2E8F0))
+                )
+                Box(
+                    modifier = Modifier
+                        .width(if (isSmallScreen) 28.dp else 36.dp)
+                        .height(if (isSmallScreen) 6.dp else 8.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(Color(0xFFE2E8F0))
+                )
+            }
+
+            Spacer(modifier = Modifier.height(if (isSmallScreen) 5.dp else 7.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.82f)
+                    .height(if (isSmallScreen) 6.dp else 8.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(Color(0xFFE2E8F0))
+            )
+        }
+    }
+}

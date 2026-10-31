@@ -1,0 +1,467 @@
+package com.oryno.piggy_ledger.data
+
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface PiggyLedgerDao {
+
+    @Query("SELECT * FROM goals WHERE isSynced = 0")
+    suspend fun getUnsyncedGoals(): List<Goal>
+
+    @Query("SELECT * FROM transactions WHERE isSynced = 0")
+    suspend fun getUnsyncedTransactions(): List<Transaction>
+
+    @Query("SELECT * FROM loans WHERE isSynced = 0")
+    suspend fun getUnsyncedLoans(): List<Loan>
+
+    @Query("SELECT * FROM loan_payments WHERE isSynced = 0")
+    suspend fun getUnsyncedLoanPayments(): List<LoanPayment>
+
+    @Query("SELECT * FROM accounts WHERE isSynced = 0")
+    suspend fun getUnsyncedAccounts(): List<Account>
+
+    @Query("SELECT * FROM account_transactions WHERE isSynced = 0")
+    suspend fun getUnsyncedAccountTransactions(): List<AccountTransaction>
+
+    @Query("SELECT * FROM pending_transactions WHERE isSynced = 0")
+    suspend fun getUnsyncedPendingTransactions(): List<PendingTransaction>
+
+    @Query("SELECT * FROM user_preferences WHERE isSynced = 0")
+    suspend fun getUnsyncedUserPreferences(): List<UserPreferencesEntity>
+
+    @Query("SELECT * FROM streak_dates WHERE isSynced = 0")
+    suspend fun getUnsyncedStreakDates(): List<StreakDateEntity>
+
+    @Query("SELECT * FROM ai_conversations WHERE isSynced = 0")
+    suspend fun getUnsyncedAiConversations(): List<AiConversation>
+
+    @Query("SELECT * FROM ai_chat_messages WHERE isSynced = 0")
+    suspend fun getUnsyncedAiChatMessages(): List<AiChatMessage>
+
+    @Query("SELECT * FROM onboarding_answers WHERE isSynced = 0")
+    suspend fun getUnsyncedOnboardingAnswers(): List<OnboardingAnswer>
+
+    suspend fun getTotalUnsyncedCount(): Int {
+        return getUnsyncedGoals().size +
+               getUnsyncedTransactions().size +
+               getUnsyncedLoans().size +
+               getUnsyncedLoanPayments().size +
+               getUnsyncedAccounts().size +
+               getUnsyncedAccountTransactions().size +
+               getUnsyncedPendingTransactions().size +
+               getUnsyncedUserPreferences().size +
+               getUnsyncedStreakDates().size +
+               getUnsyncedAiConversations().size +
+               getUnsyncedAiChatMessages().size +
+               getUnsyncedOnboardingAnswers().size
+    }
+
+    @Query("SELECT * FROM goals WHERE is_deleted = 0 ORDER BY createdAt DESC")
+    fun getAllGoals(): Flow<List<Goal>>
+
+    @Query("SELECT * FROM goals WHERE id = :id AND is_deleted = 0")
+    fun getGoalById(id: String): Flow<Goal?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertGoal(goal: Goal)
+
+    @Query("SELECT * FROM transactions WHERE goalId = :goalId AND is_deleted = 0 ORDER BY timestamp DESC")
+    fun getTransactionsForGoal(goalId: String): Flow<List<Transaction>>
+
+    @Query("SELECT * FROM transactions WHERE is_deleted = 0 ORDER BY timestamp DESC")
+    fun getAllTransactionsFlow(): Flow<List<Transaction>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTransaction(transaction: Transaction)
+
+    @Query("SELECT * FROM loans WHERE is_deleted = 0 ORDER BY isPaidOff ASC, timestamp DESC")
+    fun getAllLoans(): Flow<List<Loan>>
+
+    @Query("SELECT * FROM loans WHERE id = :id")
+    suspend fun getLoanById(id: String): Loan?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLoan(loan: Loan)
+    
+    @Update
+    suspend fun updateLoan(loan: Loan)
+
+    @Query("SELECT * FROM loan_payments WHERE loanId = :loanId AND is_deleted = 0 ORDER BY timestamp DESC")
+    fun getPaymentsForLoan(loanId: String): Flow<List<LoanPayment>>
+
+    @Query("SELECT * FROM loan_payments WHERE is_deleted = 0 ORDER BY timestamp DESC")
+    fun getAllLoanPaymentsFlow(): Flow<List<LoanPayment>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLoanPayment(payment: LoanPayment)
+
+    @Query("SELECT * FROM loan_payments WHERE id = :id")
+    suspend fun getLoanPaymentById(id: String): LoanPayment?
+
+    @Query("UPDATE loan_payments SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteLoanPaymentById(id: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("UPDATE loan_payments SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE loanId = :loanId")
+    suspend fun deleteLoanPaymentsForLoan(loanId: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM loan_payments")
+    suspend fun getAllLoanPaymentsSync(): List<LoanPayment>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLoanPayments(payments: List<LoanPayment>)
+
+    @Query("DELETE FROM loan_payments")
+    suspend fun clearLoanPayments()
+
+    @Query("UPDATE loans SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteLoanById(id: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM accounts WHERE is_deleted = 0 ORDER BY name ASC")
+    fun getAllAccounts(): Flow<List<Account>>
+
+    @Query("SELECT * FROM accounts WHERE exclude_from_all = 0 AND is_deleted = 0 ORDER BY name ASC")
+    fun getIncludedAccounts(): Flow<List<Account>>
+
+    @Query("SELECT * FROM accounts WHERE id = :id AND is_deleted = 0")
+    suspend fun getAccountById(id: String): Account?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccount(account: Account)
+
+    @Update
+    suspend fun updateAccount(account: Account)
+
+    @Query("UPDATE accounts SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteAccountById(id: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("UPDATE account_transactions SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE account_id = :accountId")
+    suspend fun deleteTransactionsForAccount(accountId: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM account_transactions WHERE account_id = :accountId AND is_deleted = 0 ORDER BY timestamp DESC")
+    fun getTransactionsForAccount(accountId: String): Flow<List<AccountTransaction>>
+
+    @Query("SELECT * FROM account_transactions WHERE is_deleted = 0 ORDER BY timestamp DESC")
+    fun getAllAccountTransactions(): Flow<List<AccountTransaction>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccountTransaction(transaction: AccountTransaction)
+
+    @androidx.room.Transaction
+    suspend fun processSmsTransaction(accountId: String, amount: Double, merchant: String, applyInstaPayFee: Boolean, isIncome: Boolean = false) {
+        val account = getAccountById(accountId) ?: return
+        
+        var finalAmount = amount
+        if (!isIncome && applyInstaPayFee) {
+            val fee = minOf(amount * 0.001, 20.0)
+            finalAmount += fee
+        }
+        val signedAmount = if (isIncome) finalAmount else -finalAmount
+        
+        val newTransaction = AccountTransaction(
+            account_id = accountId,
+            amount = signedAmount,
+            merchant = merchant
+        )
+        insertAccountTransaction(newTransaction)
+        
+        val newBalance = account.current_balance + signedAmount
+        var newAvailableCredit = account.available_credit
+        if (account.type == AccountType.CARD && newAvailableCredit != null) {
+            newAvailableCredit += signedAmount
+        }
+        updateAccount(account.copy(current_balance = newBalance, available_credit = newAvailableCredit, isSynced = false))
+    }
+
+
+    @Query("UPDATE goals SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteGoalById(id: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("UPDATE transactions SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE goalId = :goalId")
+    suspend fun deleteTransactionsForGoal(goalId: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM transactions")
+    suspend fun getAllTransactions(): List<Transaction>
+
+    @Query("SELECT * FROM transactions WHERE is_deleted = 0 ORDER BY timestamp DESC")
+    suspend fun getActiveTransactionsSync(): List<Transaction>
+
+    @Query("SELECT * FROM goals")
+    suspend fun getAllGoalsSync(): List<Goal>
+
+    @Query("SELECT * FROM goals WHERE is_deleted = 0 ORDER BY createdAt DESC")
+    suspend fun getActiveGoalsSync(): List<Goal>
+
+    @Query("SELECT * FROM accounts")
+    suspend fun getAllAccountsSync(): List<Account>
+
+    @Query("SELECT * FROM accounts WHERE is_deleted = 0")
+    suspend fun getActiveAccountsSync(): List<Account>
+
+    @Query("SELECT * FROM loans")
+    suspend fun getAllLoansSync(): List<Loan>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertGoals(goals: List<Goal>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTransactions(transactions: List<Transaction>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLoans(loans: List<Loan>)
+
+    @Query("DELETE FROM goals")
+    suspend fun clearGoals()
+
+    @Query("DELETE FROM transactions")
+    suspend fun clearTransactions()
+
+    @Query("DELETE FROM loans")
+    suspend fun clearLoans()
+
+    @Query("SELECT * FROM account_transactions")
+    suspend fun getAllAccountTransactionsSync(): List<AccountTransaction>
+
+    @Query("SELECT * FROM pending_transactions")
+    suspend fun getAllPendingTransactionsSync(): List<PendingTransaction>
+
+    @Query("DELETE FROM accounts")
+    suspend fun clearAccounts()
+
+    @Query("DELETE FROM account_transactions")
+    suspend fun clearAccountTransactions()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccounts(accounts: List<Account>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccountTransactions(transactions: List<AccountTransaction>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPendingTransactions(transactions: List<PendingTransaction>)
+
+    @Query("SELECT * FROM pending_transactions WHERE is_deleted = 0 ORDER BY timestamp DESC")
+    fun getAllPendingTransactionsFlow(): Flow<List<PendingTransaction>>
+
+    @Query("SELECT * FROM pending_transactions WHERE id = :id")
+    suspend fun getPendingTransactionById(id: String): PendingTransaction?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPendingTransaction(transaction: PendingTransaction)
+
+    @Query("UPDATE pending_transactions SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deletePendingTransactionById(id: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("DELETE FROM pending_transactions")
+    suspend fun clearPendingTransactions()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOnboardingAnswer(answer: OnboardingAnswer)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOnboardingAnswers(answers: List<OnboardingAnswer>)
+
+    @Query("SELECT * FROM onboarding_answers")
+    suspend fun getAllOnboardingAnswers(): List<OnboardingAnswer>
+
+    @Query("SELECT * FROM onboarding_answers")
+    suspend fun getAllOnboardingAnswersSync(): List<OnboardingAnswer>
+
+    @Query("SELECT * FROM onboarding_answers WHERE `key` = :key")
+    suspend fun getOnboardingAnswerByKey(key: String): OnboardingAnswer?
+
+    @Query("SELECT * FROM onboarding_answers WHERE `key` = :key ORDER BY updatedAt DESC")
+    suspend fun getOnboardingAnswersByKey(key: String): List<OnboardingAnswer>
+
+    @Query("UPDATE onboarding_answers SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteOnboardingAnswerById(id: String, updatedAt: Long = System.currentTimeMillis())
+
+    @androidx.room.Transaction
+    suspend fun resolvePendingTransaction(pendingId: String, accountId: String) {
+        val pending = getPendingTransactionById(pendingId) ?: return
+        val isIncome = pending.amount > 0
+        val absAmount = kotlin.math.abs(pending.amount)
+        processSmsTransaction(
+            accountId = accountId,
+            amount = absAmount,
+            merchant = pending.merchant,
+            applyInstaPayFee = getAccountById(accountId)?.insta_pay_fee == true,
+            isIncome = isIncome
+        )
+        deletePendingTransactionById(pendingId)
+    }
+
+    @Query("SELECT * FROM ai_conversations WHERE is_deleted = 0 ORDER BY isPinned DESC, updatedAt DESC")
+    fun getAllConversationsFlow(): Flow<List<AiConversation>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertConversation(conversation: AiConversation)
+
+    @Query("UPDATE ai_conversations SET title = :title, updatedAt = :updatedAt, isSynced = 0 WHERE id = :id")
+    suspend fun updateConversationTitle(id: String, title: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("UPDATE ai_conversations SET isPinned = :isPinned, isSynced = 0 WHERE id = :id")
+    suspend fun updateConversationPinned(id: String, isPinned: Boolean)
+
+    @Query("UPDATE ai_conversations SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteConversationById(id: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("UPDATE ai_chat_messages SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE conversationId = :conversationId")
+    suspend fun deleteChatMessagesForConversation(conversationId: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM ai_chat_messages WHERE conversationId = :conversationId AND is_deleted = 0 ORDER BY timestamp ASC")
+    fun getChatMessagesForConversationFlow(conversationId: String): Flow<List<AiChatMessage>>
+
+    @Query("SELECT * FROM ai_chat_messages WHERE is_deleted = 0 ORDER BY timestamp ASC")
+    fun getAllChatMessagesFlow(): Flow<List<AiChatMessage>>
+
+    @Query("SELECT COUNT(*) FROM ai_chat_messages WHERE role = 'user' AND is_deleted = 0")
+    fun getUserAiMessagesCountFlow(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM ai_chat_messages WHERE role = 'user' AND is_deleted = 0")
+    suspend fun getUserAiMessagesCount(): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertChatMessage(message: AiChatMessage)
+
+    @Query("DELETE FROM ai_chat_messages")
+    suspend fun clearChatMessages()
+
+    @Query("DELETE FROM ai_chat_messages WHERE id = :id")
+    suspend fun deleteChatMessageById(id: String)
+
+    @Query("SELECT * FROM user_preferences")
+    suspend fun getAllUserPreferencesSync(): List<UserPreferencesEntity>
+
+    @Query("SELECT * FROM user_preferences WHERE userId = :userId")
+    suspend fun getUserPreferencesByUserId(userId: String): UserPreferencesEntity?
+
+    @Query("DELETE FROM user_preferences WHERE userId = :userId")
+    suspend fun deleteUserPreferencesByUserId(userId: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertUserPreferences(userPreferences: UserPreferencesEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertUserPreferencesList(preferencesList: List<UserPreferencesEntity>)
+
+    @Query("SELECT * FROM streak_dates")
+    suspend fun getAllStreakDatesSync(): List<StreakDateEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertStreakDate(streakDate: StreakDateEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertStreakDates(streakDates: List<StreakDateEntity>)
+
+    @Query("UPDATE streak_dates SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteStreakDateById(id: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM ai_conversations")
+    suspend fun getAllAiConversationsSync(): List<AiConversation>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAiConversations(conversations: List<AiConversation>)
+
+    @Query("SELECT * FROM ai_chat_messages")
+    suspend fun getAllAiChatMessagesSync(): List<AiChatMessage>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAiChatMessages(messages: List<AiChatMessage>)
+
+    // Double-Entry Journal & Postings DAOs
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertJournalEntry(journalEntry: JournalEntryEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPosting(posting: PostingEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPostings(postings: List<PostingEntity>)
+
+    @Query("SELECT * FROM journal_entries WHERE is_deleted = 0 ORDER BY date DESC")
+    fun getAllJournalEntriesFlow(): Flow<List<JournalEntryEntity>>
+
+    @Query("SELECT * FROM postings WHERE journalEntryId = :journalEntryId AND is_deleted = 0")
+    fun getPostingsForJournalEntry(journalEntryId: String): Flow<List<PostingEntity>>
+
+    @Query("SELECT * FROM postings WHERE journalEntryId = :journalEntryId AND is_deleted = 0")
+    suspend fun getPostingsForJournalEntrySync(journalEntryId: String): List<PostingEntity>
+
+    // Subscriptions DAOs
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSubscription(subscription: SubscriptionEntity)
+
+    @Update
+    suspend fun updateSubscription(subscription: SubscriptionEntity)
+
+    @Query("UPDATE subscriptions SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteSubscriptionById(id: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM subscriptions WHERE is_deleted = 0 ORDER BY nextRenewalDate ASC")
+    fun getAllSubscriptionsFlow(): Flow<List<SubscriptionEntity>>
+
+    @Query("SELECT * FROM subscriptions WHERE is_deleted = 0 ORDER BY nextRenewalDate ASC")
+    suspend fun getAllSubscriptionsSync(): List<SubscriptionEntity>
+
+    @Query("SELECT * FROM subscriptions WHERE id = :id AND is_deleted = 0 LIMIT 1")
+    fun getSubscriptionByIdSync(id: String): SubscriptionEntity?
+
+    @Query("SELECT * FROM accounts WHERE id = :id")
+    suspend fun getAccountByIdSync(id: String): Account?
+
+    @Query("SELECT * FROM accounts WHERE type = :type AND isSystemAccount = 1 LIMIT 1")
+    suspend fun getSystemAccountByType(type: AccountType): Account?
+
+    @Query("SELECT * FROM journal_entries WHERE isSynced = 0")
+    suspend fun getUnsyncedJournalEntries(): List<JournalEntryEntity>
+
+    @Query("SELECT * FROM postings WHERE isSynced = 0")
+    suspend fun getUnsyncedPostings(): List<PostingEntity>
+
+    @Query("SELECT * FROM subscriptions WHERE isSynced = 0")
+    suspend fun getUnsyncedSubscriptions(): List<SubscriptionEntity>
+
+    // Wealth Asset DAOs
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAsset(asset: AssetEntity)
+
+    @Update
+    suspend fun updateAsset(asset: AssetEntity)
+
+    @Query("UPDATE assets SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deleteAssetById(id: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM assets WHERE is_deleted = 0 ORDER BY createdAt DESC")
+    fun getAllAssetsFlow(): Flow<List<AssetEntity>>
+
+    @Query("SELECT * FROM assets WHERE is_deleted = 0 ORDER BY createdAt DESC")
+    suspend fun getAllAssetsSync(): List<AssetEntity>
+
+    @Query("SELECT * FROM assets WHERE id = :id AND is_deleted = 0")
+    suspend fun getAssetByIdSync(id: String): AssetEntity?
+
+    // Live Market Rates DAOs
+    @Query("SELECT * FROM live_market_rates WHERE id = 'singleton_rates' LIMIT 1")
+    suspend fun getLiveMarketRatesSync(): LiveMarketRatesEntity?
+
+    @Query("SELECT * FROM live_market_rates WHERE id = 'singleton_rates' LIMIT 1")
+    fun getLiveMarketRatesFlow(): Flow<LiveMarketRatesEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrUpdateMarketRates(rates: LiveMarketRatesEntity)
+
+    // Portfolio History DAOs
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPortfolioSnapshot(snapshot: PortfolioHistoryEntity)
+
+    @Query("SELECT * FROM portfolio_history ORDER BY date ASC")
+    fun getPortfolioHistoryFlow(): Flow<List<PortfolioHistoryEntity>>
+
+    @Query("SELECT * FROM portfolio_history ORDER BY date ASC")
+    suspend fun getPortfolioHistorySync(): List<PortfolioHistoryEntity>
+}

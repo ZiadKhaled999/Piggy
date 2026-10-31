@@ -316,14 +316,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
             subtitle = stringResource(R.string.onboarding_choose_pace_subtitle)
         ),
 
-        // 16: Flash Sale
-        OnboardingPageData(
-            imageRes = R.drawable.img_app_logo,
-            title = buildAnnotatedString { append("") },
-            subtitle = ""
-        ),
-
-        // 17: Ready to Start
+        // 16: Ready to Start
         OnboardingPageData(
             imageRes = R.drawable.img_app_logo,
             title = buildAnnotatedString {
@@ -1453,15 +1446,16 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
 
                     LaunchedEffect(Unit) {
                         isPlanFinished = false
+                        delay(600)
                         for (step in 0..3) {
                             currentStep = step
                             progressAnim.snapTo(0f)
-                            val duration = 400 + step * 50
+                            val duration = 1100 + step * 180
                             progressAnim.animateTo(
                                 targetValue = 1f,
                                 animationSpec = tween(durationMillis = duration)
                             )
-                            delay(80)
+                            delay(320)
                         }
                         isCompleted = true
                         isPlanFinished = true
@@ -1837,14 +1831,6 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                             }
                         }
                     }
-                } else if (pageIndex == 16) {
-                    OnboardingFlashSaleScreen(
-                        titleFontSize = titleFontSize,
-                        subtitleFontSize = subtitleFontSize,
-                        titleLineHeight = titleLineHeight,
-                        subtitleLineHeight = subtitleLineHeight,
-                        isSmallScreen = isSmallScreen
-                    )
                 } else {
                     val page = pages[pageIndex]
                     Column(

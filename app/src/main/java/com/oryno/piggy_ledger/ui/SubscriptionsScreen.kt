@@ -148,7 +148,8 @@ fun SubscriptionsScreen(
             },
             onUpdateAccount = { newAccountId ->
                 viewModel.updateLinkedAccount(activeDetailSub, newAccountId)
-            }
+            },
+            onPayNow = { subToPayNow = activeDetailSub }
         )
         return
     }
@@ -510,7 +511,7 @@ private fun SubscriptionsSearchView(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close Search",
+                            contentDescription = stringResource(R.string.search_close),
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )
@@ -539,7 +540,7 @@ private fun SubscriptionsSearchView(
                         shadowElevation = if (isSelected) 2.dp else 0.dp
                     ) {
                         Text(
-                            text = category,
+                            text = if (category == "All") stringResource(R.string.search_all) else category,
                             fontSize = 13.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = if (isSelected) Color.White else Color(0xFF475569),
@@ -559,13 +560,13 @@ private fun SubscriptionsSearchView(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (searchQuery.isBlank() && selectedCategory == null) stringResource(R.string.sub_nav_subscriptions) else "Search Results",
+                text = if (searchQuery.isBlank() && selectedCategory == null) stringResource(R.string.sub_nav_subscriptions) else stringResource(R.string.search_results),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = NavyDark
             )
             Text(
-                text = "${filteredSubscriptions.size} found",
+                text = stringResource(R.string.search_found_count, filteredSubscriptions.size),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = TextLight
@@ -588,14 +589,14 @@ private fun SubscriptionsSearchView(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "No subscriptions found",
+                        text = stringResource(R.string.search_no_results_found),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = NavyDark
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Try searching for another name or category",
+                        text = stringResource(R.string.search_no_results),
                         fontSize = 13.sp,
                         color = TextLight
                     )
@@ -1665,19 +1666,6 @@ private fun SubscriptionCardItem(
                         }
                     }
                 }
-
-                // Options 3-Dots Button
-                IconButton(
-                    onClick = onOptionsClick,
-                    modifier = Modifier.size(32.dp).testTag("sub_options_btn_${subscription.id}")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MoreHoriz,
-                        contentDescription = stringResource(R.string.sub_options_title),
-                        tint = NavyDark,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -2047,7 +2035,110 @@ private fun OptionSheetRow(
     }
 }
 
-// 2-Slide Screen for Adding / Editing Subscription
+// Data structure for currencies with CDN flag support
+private data class SubCurrencyOption(
+    val code: String,
+    val nameEn: String,
+    val nameAr: String,
+    val symbol: String,
+    val flagUrl: String
+)
+
+private val subAvailableCurrencies = listOf(
+    SubCurrencyOption("EGP", "Egyptian Pound", "جنيه مصري", "EGP", "https://flagcdn.com/w80/eg.png"),
+    SubCurrencyOption("USD", "US Dollar", "دولار أمريكي", "$", "https://flagcdn.com/w80/us.png"),
+    SubCurrencyOption("EUR", "Euro", "يورو", "€", "https://flagcdn.com/w80/eu.png"),
+    SubCurrencyOption("SAR", "Saudi Riyal", "ريال سعودي", "SR", "https://flagcdn.com/w80/sa.png"),
+    SubCurrencyOption("AED", "UAE Dirham", "درهم إماراتي", "AED", "https://flagcdn.com/w80/ae.png"),
+    SubCurrencyOption("GBP", "British Pound", "جنيه إسترليني", "£", "https://flagcdn.com/w80/gb.png"),
+    SubCurrencyOption("KWD", "Kuwaiti Dinar", "دينار كويتي", "KD", "https://flagcdn.com/w80/kw.png"),
+    SubCurrencyOption("QAR", "Qatari Riyal", "ريال قطري", "QR", "https://flagcdn.com/w80/qa.png"),
+    SubCurrencyOption("CAD", "Canadian Dollar", "دولار كندي", "CA$", "https://flagcdn.com/w80/ca.png"),
+    SubCurrencyOption("AUD", "Australian Dollar", "دولار أسترالي", "AU$", "https://flagcdn.com/w80/au.png"),
+    SubCurrencyOption("JPY", "Japanese Yen", "ين ياباني", "¥", "https://flagcdn.com/w80/jp.png"),
+    SubCurrencyOption("TRY", "Turkish Lira", "ليرة تركية", "₺", "https://flagcdn.com/w80/tr.png"),
+    SubCurrencyOption("BHD", "Bahraini Dinar", "دينار بحريني", "BD", "https://flagcdn.com/w80/bh.png"),
+    SubCurrencyOption("OMR", "Omani Rial", "ريال عماني", "OMR", "https://flagcdn.com/w80/om.png"),
+    SubCurrencyOption("CHF", "Swiss Franc", "فرنك سويسري", "CHF", "https://flagcdn.com/w80/ch.png")
+)
+
+@Composable
+private fun BottomSheetOptionCard(
+    title: String,
+    subtitle: String? = null,
+    isSelected: Boolean,
+    leadingContent: @Composable (() -> Unit)? = null,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = if (isSelected) Color(0xFFF1F5F9) else Color.White,
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (isSelected) PinkPrimary else Color(0xFFE2E8F0)
+        ),
+        shadowElevation = if (isSelected) 2.dp else 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 13.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (leadingContent != null) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (isSelected) PinkPrimary.copy(alpha = 0.15f) else Color(0xFFF1F5F9)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    leadingContent()
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontSize = 15.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                    color = if (isSelected) NavyDark else NavyDark // Keep text dark for better contrast on gray
+                )
+                if (!subtitle.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        fontSize = 12.sp,
+                        color = if (isSelected) NavyDark.copy(alpha = 0.7f) else TextLight
+                    )
+                }
+            }
+            if (isSelected) {
+                Surface(
+                    shape = CircleShape,
+                    color = PinkPrimary,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .border(1.5.dp, Color(0xFFCBD5E1), CircleShape)
+                )
+            }
+        }
+    }
+}
+
+// 3-Step Screen for Adding / Editing Subscription
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddSubscriptionSlideScreen(
@@ -2068,92 +2159,194 @@ private fun AddSubscriptionSlideScreen(
         trialDays: Int
     ) -> Unit
 ) {
-    var currentSlideStep by remember { mutableIntStateOf(1) }
+    val context = LocalContext.current
+    var currentSlideStep by remember { mutableIntStateOf(if (existingSub != null) 3 else 1) }
 
     var name by remember { mutableStateOf(existingSub?.name ?: catalogItem?.name ?: "") }
-    var domain by remember { mutableStateOf(catalogItem?.domain ?: "") }
+    var domain by remember { mutableStateOf(existingSub?.logoUrl ?: catalogItem?.domain ?: "") }
     var amountText by remember {
         mutableStateOf(
-            existingSub?.amount?.toString()
+            existingSub?.amount?.let { if (it % 1 == 0.0) it.toInt().toString() else it.toString() }
                 ?: catalogItem?.defaultAmountEgp?.toInt()?.toString()
-                ?: ""
+                ?: "12"
         )
     }
-    var currency by remember { mutableStateOf(existingSub?.currency ?: "EGP") }
+    var currency by remember { mutableStateOf(existingSub?.currency ?: "USD") }
     var billingCycle by remember { mutableStateOf(existingSub?.billingCycle ?: "MONTHLY") }
     var selectedAccountId by remember {
         mutableStateOf(existingSub?.accountId ?: accounts.firstOrNull()?.id ?: "")
     }
     var selectedCategory by remember {
-        mutableStateOf(existingSub?.category ?: catalogItem?.defaultCategory ?: "subscriptions")
+        mutableStateOf(existingSub?.category ?: catalogItem?.defaultCategory ?: "entertainment")
     }
+    var noteText by remember { mutableStateOf("") }
+
+    // Custom Provider intermediate state
+    var customProviderName by remember { mutableStateOf(name) }
+    var customProviderDomain by remember { mutableStateOf(domain) }
+
+    // Start date & End date
+    var startDateMs by remember { mutableStateOf(System.currentTimeMillis()) }
+    var endDateMs by remember {
+        mutableStateOf<Long?>(
+            java.util.Calendar.getInstance().apply { add(java.util.Calendar.MONTH, 1) }.timeInMillis
+        )
+    }
+
+    // Trial state
     var hasFreeTrial by remember { mutableStateOf(existingSub?.hasFreeTrial ?: false) }
+    var trialType by remember { mutableStateOf("Free") }
+    var trialPeriod by remember { mutableStateOf("1 Week") }
     var trialDays by remember { mutableStateOf(if (existingSub?.trialDays ?: 0 > 0) existingSub!!.trialDays else 7) }
 
+    // Reminders state
+    var renewalReminderEnabled by remember { mutableStateOf(true) }
+    var firstReminder by remember { mutableStateOf("1 day before") }
+    var secondReminder by remember { mutableStateOf("None") }
+    var thirdReminder by remember { mutableStateOf("None") }
+
+    var trialReminderEnabled by remember { mutableStateOf(true) }
+    var trialFirstReminder by remember { mutableStateOf("1 week before") }
+    var trialSecondReminder by remember { mutableStateOf("3 days before") }
+    var trialThirdReminder by remember { mutableStateOf("1 day before") }
+
+    // Modal Sheet states
+    var searchQuery by remember { mutableStateOf("") }
+    var showCategoryPicker by remember { mutableStateOf(false) }
+    var showAccountPicker by remember { mutableStateOf(false) }
+    var showCurrencyPicker by remember { mutableStateOf(false) }
+    var showCyclePicker by remember { mutableStateOf(false) }
+    var showTrialPeriodPicker by remember { mutableStateOf(false) }
+    var activeReminderTarget by remember { mutableStateOf<String?>(null) }
+
+    @Composable
+    fun mapReminderToDisplay(key: String): String {
+        return when (key) {
+            "1 day before" -> stringResource(R.string.sub_remind_1_day)
+            "2 days before" -> stringResource(R.string.sub_remind_2_days)
+            "3 days before" -> stringResource(R.string.sub_remind_3_days)
+            "1 week before" -> stringResource(R.string.sub_remind_1_week)
+            "On renewal day" -> stringResource(R.string.sub_due_today)
+            "None" -> stringResource(R.string.sub_none)
+            else -> key
+        }
+    }
+
     BackHandler {
-        if (currentSlideStep == 2) {
-            currentSlideStep = 1
-        } else {
-            onBackToDashboard()
+        when (currentSlideStep) {
+            3 -> {
+                if (existingSub != null) onBackToDashboard()
+                else if (customProviderName.isNotBlank() && domain == customProviderDomain) currentSlideStep = 2
+                else currentSlideStep = 1
+            }
+            2 -> currentSlideStep = 1
+            else -> onBackToDashboard()
         }
     }
 
     val parsedAmount = amountText.toDoubleOrNull() ?: 0.0
 
-    val sortedAccounts = remember(accounts, currency) {
-        accounts.sortedWith(
-            compareByDescending<Account> { it.currency.equals(currency, ignoreCase = true) }
-                .thenByDescending { it.current_balance }
-        )
-    }
+    // Date Formatters
+    val dateFmt = remember { java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.US) }
+    val renewalFmt = remember { java.text.SimpleDateFormat("MMMM d, yyyy", java.util.Locale.US) }
+
+    val currentCurrencyOption = subAvailableCurrencies.find { it.code.equals(currency, ignoreCase = true) }
+        ?: SubCurrencyOption(currency, currency, currency, currency, "https://flagcdn.com/w80/us.png")
 
     Scaffold(
         containerColor = Color(0xFFF8FAFC),
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            text = if (existingSub != null) stringResource(R.string.sub_edit) else stringResource(R.string.add_new_subscription),
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = NavyDark
-                        )
-                        Text(
-                            text = if (currentSlideStep == 1) stringResource(R.string.sub_step_1_title) else stringResource(R.string.sub_step_2_title),
-                            fontSize = 12.sp,
-                            color = PinkPrimary,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                    Text(
+                        text = when (currentSlideStep) {
+                            1 -> "Select company"
+                            2 -> stringResource(R.string.custom_provider_title)
+                            else -> if (existingSub != null) "Edit" else "New"
+                        },
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark
+                    )
                 },
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            if (currentSlideStep == 2) currentSlideStep = 1 else onBackToDashboard()
+                            when (currentSlideStep) {
+                                3 -> {
+                                    if (existingSub != null) onBackToDashboard()
+                                    else if (customProviderName.isNotBlank() && domain == customProviderDomain) currentSlideStep = 2
+                                    else currentSlideStep = 1
+                                }
+                                2 -> currentSlideStep = 1
+                                else -> onBackToDashboard()
+                            }
                         }
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_btn), tint = NavyDark)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = NavyDark)
+                    }
+                },
+                actions = {
+                    when (currentSlideStep) {
+                        1 -> {
+                            IconButton(onClick = {
+                                customProviderName = ""
+                                customProviderDomain = ""
+                                currentSlideStep = 2
+                            }) {
+                                Icon(Icons.Default.Add, contentDescription = "Add custom", tint = PinkPrimary)
+                            }
+                        }
+                        2 -> {
+                            IconButton(
+                                onClick = {
+                                    if (customProviderName.isNotBlank()) {
+                                        name = customProviderName.trim()
+                                        domain = customProviderDomain.trim()
+                                        currentSlideStep = 3
+                                    } else {
+                                        Toast.makeText(context, context.getString(R.string.enter_custom_provider_name), Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                enabled = customProviderName.isNotBlank()
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next", tint = if (customProviderName.isNotBlank()) PinkPrimary else TextLight)
+                            }
+                        }
+                        3 -> {
+                            IconButton(
+                                onClick = {
+                                    if (name.isNotBlank() && parsedAmount > 0) {
+                                        onSaveSubscription(
+                                            name,
+                                            domain,
+                                            parsedAmount,
+                                            currency,
+                                            billingCycle,
+                                            selectedAccountId,
+                                            selectedCategory,
+                                            hasFreeTrial,
+                                            trialDays
+                                        )
+                                    } else {
+                                        Toast.makeText(context, "Please enter a valid service name and price", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Default.Check, contentDescription = "Save", tint = PinkPrimary, modifier = Modifier.size(26.dp))
+                            }
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            LinearProgressIndicator(
-                progress = { if (currentSlideStep == 1) 0.5f else 1.0f },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp),
-                color = PinkPrimary,
-                trackColor = Color(0xFFE2E8F0)
-            )
-
             AnimatedContent(
                 targetState = currentSlideStep,
                 transitionSpec = {
@@ -2165,284 +2358,1016 @@ private fun AddSubscriptionSlideScreen(
                                 slideOutHorizontally(animationSpec = tween(300), targetOffsetX = { it }) + fadeOut()
                     }
                 },
-                modifier = Modifier.weight(1f),
-                label = "SlideTransition"
+                modifier = Modifier.fillMaxSize(),
+                label = "AddSubSlideTransition"
             ) { step ->
-                if (step == 1) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        item {
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.popular_services_catalog),
-                                    fontSize = 13.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = NavyDark
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    items(catalogServices, key = { it.domain }) { service ->
-                                        Surface(
+                when (step) {
+                    1 -> {
+                        // SLIDE 1: SELECT COMPANY (Searchable Popular Catalog)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFFF8FAFC))
+                                .padding(horizontal = 18.dp)
+                        ) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            // Search Outlined Bar
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = { Text(stringResource(R.string.search_subscriptions_hint), color = TextLight, fontSize = 14.sp) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextLight) },
+                                trailingIcon = {
+                                    if (searchQuery.isNotEmpty()) {
+                                        IconButton(onClick = { searchQuery = "" }) {
+                                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.search_clear), tint = TextLight)
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = Color.White,
+                                    focusedBorderColor = PinkPrimary,
+                                    unfocusedBorderColor = Color(0xFFE2E8F0)
+                                ),
+                                singleLine = true
+                            )
+
+                            Spacer(modifier = Modifier.height(18.dp))
+                            Text(
+                                text = if (searchQuery.isEmpty()) stringResource(R.string.search_popular) else stringResource(R.string.search_results_short),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = NavyDark
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            val filteredServices = catalogServices.filter {
+                                it.name.contains(searchQuery, ignoreCase = true) ||
+                                        it.domain.contains(searchQuery, ignoreCase = true)
+                            }
+
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                contentPadding = PaddingValues(bottom = 24.dp)
+                            ) {
+                                items(filteredServices, key = { it.name + it.domain }) { service ->
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .clickable {
+                                                name = service.name
+                                                domain = service.domain
+                                                amountText = service.defaultAmountEgp.toInt().toString()
+                                                selectedCategory = service.defaultCategory
+                                                currentSlideStep = 3 // Skip custom provider if chosen from catalog
+                                            },
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = Color.White,
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        shadowElevation = 1.dp
+                                    ) {
+                                        Row(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(14.dp))
-                                                .clickable {
-                                                    name = service.name
-                                                    domain = service.domain
-                                                    amountText = service.defaultAmountEgp.toInt().toString()
-                                                    selectedCategory = service.defaultCategory
-                                                },
-                                            shape = RoundedCornerShape(14.dp),
-                                            color = Color.White,
-                                            border = BorderStroke(1.dp, if (name == service.name) PinkPrimary else Color(0xFFE2E8F0))
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                                                verticalAlignment = Alignment.CenterVertically
+                                            Surface(
+                                                modifier = Modifier.size(38.dp),
+                                                shape = RoundedCornerShape(10.dp),
+                                                color = Color(0xFFF1F5F9)
                                             ) {
-                                                AsyncImage(
-                                                    model = ImageRequest.Builder(LocalContext.current)
-                                                        .data(buildLogoDevUrl(service.domain))
-                                                        .crossfade(true)
-                                                        .build(),
-                                                    contentDescription = service.name,
-                                                    modifier = Modifier.size(22.dp).clip(RoundedCornerShape(6.dp))
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(service.name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = NavyDark)
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    AsyncImage(
+                                                        model = ImageRequest.Builder(LocalContext.current)
+                                                            .data(buildLogoDevUrl(service.domain))
+                                                            .crossfade(true)
+                                                            .build(),
+                                                        contentDescription = service.name,
+                                                        modifier = Modifier
+                                                            .size(28.dp)
+                                                            .clip(RoundedCornerShape(8.dp))
+                                                    )
+                                                }
                                             }
+                                            Spacer(modifier = Modifier.width(14.dp))
+                                            Text(
+                                                text = service.name,
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = NavyDark,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Icon(
+                                                Icons.Default.ChevronRight,
+                                                contentDescription = null,
+                                                tint = TextLight,
+                                                modifier = Modifier.size(20.dp)
+                                            )
                                         }
                                     }
                                 }
-                            }
-                        }
 
-                        item {
-                            OutlinedTextField(
-                                value = name,
-                                onValueChange = { name = it },
-                                label = { Text(stringResource(R.string.service_name)) },
-                                modifier = Modifier.fillMaxWidth().testTag("add_sub_name"),
-                                shape = RoundedCornerShape(14.dp),
-                                singleLine = true
-                            )
-                        }
-
-                        item {
-                            OutlinedTextField(
-                                value = domain,
-                                onValueChange = { domain = it },
-                                label = { Text(stringResource(R.string.website_domain_label)) },
-                                placeholder = { Text(stringResource(R.string.website_domain_placeholder)) },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp),
-                                singleLine = true
-                            )
-                        }
-
-                        item {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                OutlinedTextField(
-                                    value = amountText,
-                                    onValueChange = { amountText = it },
-                                    label = { Text(stringResource(R.string.subscription_cost_label)) },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                    modifier = Modifier.weight(1f).testTag("add_sub_amount"),
-                                    shape = RoundedCornerShape(14.dp),
-                                    singleLine = true
-                                )
-
-                                var showCurrencyMenu by remember { mutableStateOf(false) }
-                                Box(modifier = Modifier.align(Alignment.CenterVertically)) {
-                                    OutlinedButton(
-                                        onClick = { showCurrencyMenu = true },
-                                        shape = RoundedCornerShape(14.dp),
-                                        modifier = Modifier.height(56.dp)
+                                item {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .clickable {
+                                                customProviderName = ""
+                                                customProviderDomain = ""
+                                                currentSlideStep = 2
+                                            },
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = Color.White,
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                                     ) {
-                                        Text(currency, fontWeight = FontWeight.Bold, color = NavyDark)
-                                        Icon(Icons.Default.ArrowDropDown, null, tint = NavyDark)
-                                    }
-                                    DropdownMenu(
-                                        expanded = showCurrencyMenu,
-                                        onDismissRequest = { showCurrencyMenu = false }
-                                    ) {
-                                        listOf("EGP", "USD", "EUR", "GBP", "SAR", "AED").forEach { c ->
-                                            DropdownMenuItem(
-                                                text = { Text(c, fontWeight = FontWeight.Bold) },
-                                                onClick = {
-                                                    currency = c
-                                                    showCurrencyMenu = false
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Surface(
+                                                modifier = Modifier.size(38.dp),
+                                                shape = CircleShape,
+                                                color = PinkPrimary.copy(alpha = 0.12f)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(Icons.Default.Add, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(22.dp))
                                                 }
+                                            }
+                                            Spacer(modifier = Modifier.width(14.dp))
+                                            Text(
+                                                text = "Add custom subscription",
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = PinkPrimary,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Icon(
+                                                Icons.Default.ChevronRight,
+                                                contentDescription = null,
+                                                tint = PinkPrimary,
+                                                modifier = Modifier.size(20.dp)
                                             )
                                         }
                                     }
                                 }
                             }
                         }
+                    }
+                    2 -> {
+                        // SLIDE 2: CUSTOM PROVIDER DETAILS (Name & Domain with logo.dev fetch)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFFF8FAFC))
+                                .padding(horizontal = 20.dp)
+                        ) {
+                            Spacer(modifier = Modifier.height(24.dp))
 
-                        item {
-                            Column {
-                                Text(
-                                    stringResource(R.string.sub_select_category),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = NavyDark
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    items(listOf("subscriptions", "entertainment", "work", "utilities", "education", "shopping", "other")) { cat ->
-                                        FilterChip(
-                                            selected = selectedCategory == cat,
-                                            onClick = { selectedCategory = cat },
-                                            label = { Text(cat.replaceFirstChar { it.uppercase() }) }
+                            // Large Logo Preview Card
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(2f),
+                                shape = RoundedCornerShape(24.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                shadowElevation = 2.dp
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Surface(
+                                            modifier = Modifier.size(80.dp),
+                                            shape = RoundedCornerShape(20.dp),
+                                            color = Color(0xFFF1F5F9)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                if (customProviderDomain.isNotBlank()) {
+                                                    AsyncImage(
+                                                        model = ImageRequest.Builder(LocalContext.current)
+                                                            .data(buildLogoDevUrl(customProviderDomain))
+                                                            .crossfade(true)
+                                                            .build(),
+                                                        contentDescription = "Logo Preview",
+                                                        modifier = Modifier.size(60.dp).clip(RoundedCornerShape(12.dp))
+                                                    )
+                                                } else {
+                                                    Icon(Icons.Default.Image, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(40.dp))
+                                                }
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Text(
+                                            text = if (customProviderName.isNotBlank()) customProviderName else stringResource(R.string.custom_provider_logo_preview),
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = NavyDark
                                         )
+                                        if (customProviderDomain.isNotBlank()) {
+                                            Text(
+                                                text = stringResource(R.string.custom_provider_logo_ready),
+                                                fontSize = 12.sp,
+                                                color = Color(0xFF10B981),
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        item {
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            // Input Fields
+                            Text(stringResource(R.string.custom_provider_name_label), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextLight, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+                            OutlinedTextField(
+                                value = customProviderName,
+                                onValueChange = { customProviderName = it },
+                                placeholder = { Text(stringResource(R.string.custom_provider_name_placeholder), color = TextLight.copy(alpha = 0.6f)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = Color.White,
+                                    focusedBorderColor = PinkPrimary,
+                                    unfocusedBorderColor = Color(0xFFE2E8F0)
+                                )
+                            )
+
                             Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(stringResource(R.string.custom_provider_domain_label), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextLight, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+                            OutlinedTextField(
+                                value = customProviderDomain,
+                                onValueChange = { customProviderDomain = it },
+                                placeholder = { Text(stringResource(R.string.custom_provider_domain_placeholder), color = TextLight.copy(alpha = 0.6f)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = Color.White,
+                                    focusedBorderColor = PinkPrimary,
+                                    unfocusedBorderColor = Color(0xFFE2E8F0)
+                                )
+                            )
+
+                            Text(
+                                text = stringResource(R.string.custom_provider_domain_hint),
+                                fontSize = 11.sp,
+                                color = TextLight,
+                                modifier = Modifier.padding(top = 8.dp, start = 4.dp),
+                                lineHeight = 16.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(stringResource(R.string.custom_provider_quick_suggestions), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextLight, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                items(listOf(".com", ".ai", ".eg", ".net", ".org", ".co")) { ext ->
+                                    Surface(
+                                        onClick = {
+                                            if (customProviderDomain.isNotBlank() && !customProviderDomain.contains(".")) {
+                                                customProviderDomain += ext
+                                            } else if (!customProviderDomain.endsWith(ext)) {
+                                                val base = if (customProviderDomain.contains(".")) customProviderDomain.substringBeforeLast(".") else customProviderDomain
+                                                customProviderDomain = base + ext
+                                            }
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = Color.White,
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                                    ) {
+                                        Text(ext, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.weight(1f))
+
                             Button(
-                                onClick = { currentSlideStep = 2 },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(50.dp)
-                                    .testTag("add_sub_next_slide"),
-                                shape = RoundedCornerShape(14.dp),
+                                onClick = {
+                                    if (customProviderName.isNotBlank()) {
+                                        name = customProviderName.trim()
+                                        domain = customProviderDomain.trim()
+                                        currentSlideStep = 3
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().height(56.dp).padding(bottom = 16.dp),
+                                shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
-                                enabled = name.isNotBlank() && parsedAmount > 0
+                                enabled = customProviderName.isNotBlank()
                             ) {
-                                Text(stringResource(R.string.sub_continue_to_step2), fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(18.dp))
+                                Text(stringResource(R.string.custom_provider_continue_btn), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             }
                         }
                     }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(18.dp)
-                    ) {
-                        item {
-                            Column {
-                                Text(
-                                    stringResource(R.string.billing_frequency),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = NavyDark
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    listOf(
-                                        "MONTHLY" to stringResource(R.string.billing_cycle_monthly),
-                                        "YEARLY" to stringResource(R.string.billing_cycle_yearly),
-                                        "WEEKLY" to stringResource(R.string.billing_cycle_weekly)
-                                    ).forEach { (code, label) ->
-                                        FilterChip(
-                                            selected = billingCycle == code,
-                                            onClick = { billingCycle = code },
-                                            label = { Text(label, fontWeight = FontWeight.Bold) }
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                    3 -> {
+                        // SLIDE 3: NEW / EDIT SUBSCRIPTION FORM (5 CARDS LIGHT THEME)
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFFF8FAFC))
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            contentPadding = PaddingValues(top = 12.dp, bottom = 40.dp)
+                        ) {
+                            // CARD 1: BASIC INFO CARD
+                            item {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = Color.White,
+                                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                    shadowElevation = 1.dp
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        // Row 1: Service
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(stringResource(R.string.service_name), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .clickable { currentSlideStep = 1 }
+                                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                            ) {
+                                                Text(
+                                                    text = name.ifBlank { "Custom" },
+                                                    fontSize = 15.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = NavyDark
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Surface(
+                                                    modifier = Modifier.size(32.dp),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = Color(0xFFF1F5F9)
+                                                ) {
+                                                    Box(contentAlignment = Alignment.Center) {
+                                                        if (domain.isNotBlank()) {
+                                                            AsyncImage(
+                                                                model = ImageRequest.Builder(LocalContext.current)
+                                                                    .data(buildLogoDevUrl(domain))
+                                                                    .crossfade(true)
+                                                                    .build(),
+                                                                contentDescription = name,
+                                                                modifier = Modifier
+                                                                    .size(24.dp)
+                                                                    .clip(RoundedCornerShape(6.dp))
+                                                            )
+                                                        } else {
+                                                            Icon(
+                                                                Icons.Default.Subscriptions,
+                                                                contentDescription = null,
+                                                                tint = PinkPrimary,
+                                                                modifier = Modifier.size(18.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
 
-                        item {
-                            Column {
-                                Text(
-                                    stringResource(R.string.sub_linked_wallet),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = NavyDark
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
+                                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
 
-                                if (sortedAccounts.isEmpty()) {
-                                    Text(
-                                        stringResource(R.string.sub_no_wallet_linked),
-                                        color = Color(0xFFDC2626),
-                                        fontSize = 12.5.sp
-                                    )
-                                } else {
-                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        sortedAccounts.forEach { acc ->
-                                            val isSelected = acc.id == selectedAccountId
-                                            val isSameCurrency = acc.currency.equals(currency, ignoreCase = true)
-                                            val prospective = acc.current_balance - parsedAmount
+                                        // Row 2: Price
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(stringResource(R.string.amount), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
+
+                                            BasicTextField(
+                                                value = amountText,
+                                                onValueChange = { amountText = it },
+                                                textStyle = TextStyle(
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = NavyDark,
+                                                    textAlign = TextAlign.End
+                                                ),
+                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                                singleLine = true,
+                                                modifier = Modifier
+                                                    .width(100.dp)
+                                                    .padding(end = 12.dp)
+                                            )
+
+                                            // Currency Pill Badge
+                                            Surface(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(50))
+                                                    .clickable { showCurrencyPicker = true },
+                                                shape = RoundedCornerShape(50),
+                                                color = PinkPrimary
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    val symbol = subAvailableCurrencies.find { it.code == currency }?.symbol ?: currency
+                                                    Text(
+                                                        text = "$currency ($symbol)",
+                                                        color = Color.White,
+                                                        fontSize = 13.sp,
+                                                        fontWeight = FontWeight.SemiBold
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                        // Row 3: Billing Cycle
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(stringResource(R.string.sub_billing_cycle), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
+
+                                            val cycleLabel = when (billingCycle.uppercase()) {
+                                                "YEARLY" -> stringResource(R.string.sub_cycle_yearly_label)
+                                                "WEEKLY" -> stringResource(R.string.sub_cycle_weekly_label)
+                                                "QUARTERLY" -> stringResource(R.string.sub_cycle_quarterly_label)
+                                                else -> stringResource(R.string.sub_cycle_monthly_label)
+                                            }
+                                            Surface(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(50))
+                                                    .clickable { showCyclePicker = true },
+                                                shape = RoundedCornerShape(50),
+                                                color = PinkPrimary
+                                            ) {
+                                                Text(
+                                                    text = cycleLabel,
+                                                    color = Color.White,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                )
+                                            }
+                                        }
+
+                                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                        // Row 4: Start Date
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(stringResource(R.string.sub_start_date), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
 
                                             Surface(
                                                 modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clip(RoundedCornerShape(16.dp))
-                                                    .clickable { selectedAccountId = acc.id },
-                                                shape = RoundedCornerShape(16.dp),
-                                                color = if (isSelected) PinkPrimary.copy(alpha = 0.08f) else Color.White,
-                                                border = BorderStroke(
-                                                    if (isSelected) 1.5.dp else 1.dp,
-                                                    if (isSelected) PinkPrimary else Color(0xFFE2E8F0)
-                                                )
+                                                    .clip(RoundedCornerShape(50))
+                                                    .clickable {
+                                                        val cal = java.util.Calendar.getInstance().apply { timeInMillis = startDateMs }
+                                                        android.app.DatePickerDialog(
+                                                            context,
+                                                            { _, year, month, dayOfMonth ->
+                                                                cal.set(year, month, dayOfMonth)
+                                                                startDateMs = cal.timeInMillis
+                                                            },
+                                                            cal.get(java.util.Calendar.YEAR),
+                                                            cal.get(java.util.Calendar.MONTH),
+                                                            cal.get(java.util.Calendar.DAY_OF_MONTH)
+                                                        ).show()
+                                                    },
+                                                shape = RoundedCornerShape(50),
+                                                color = PinkPrimary
                                             ) {
+                                                Text(
+                                                    text = dateFmt.format(java.util.Date(startDateMs)),
+                                                    color = Color.White,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                )
+                                            }
+                                        }
+
+                                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                        // Row 5: End Date
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(stringResource(R.string.sub_end_date), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark)
+
+                                            Spacer(modifier = Modifier.weight(1f))
+
+                                            if (endDateMs != null) {
+                                                Text(
+                                                    text = "Reset",
+                                                    color = PinkPrimary,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier
+                                                        .clickable { endDateMs = null }
+                                                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                                                )
+                                            }
+
+                                            Surface(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(50))
+                                                    .clickable {
+                                                        val cal = java.util.Calendar.getInstance().apply {
+                                                            timeInMillis = endDateMs ?: (startDateMs + 30L * 24 * 3600 * 1000)
+                                                        }
+                                                        android.app.DatePickerDialog(
+                                                            context,
+                                                            { _, year, month, dayOfMonth ->
+                                                                cal.set(year, month, dayOfMonth)
+                                                                endDateMs = cal.timeInMillis
+                                                            },
+                                                            cal.get(java.util.Calendar.YEAR),
+                                                            cal.get(java.util.Calendar.MONTH),
+                                                            cal.get(java.util.Calendar.DAY_OF_MONTH)
+                                                        ).show()
+                                                    },
+                                                shape = RoundedCornerShape(50),
+                                                color = if (endDateMs != null) PinkPrimary else Color(0xFFE2E8F0)
+                                            ) {
+                                                Text(
+                                                    text = if (endDateMs != null) dateFmt.format(java.util.Date(endDateMs!!)) else "None",
+                                                    color = if (endDateMs != null) Color.White else TextLight,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // CARD 2: TRIAL CARD
+                            item {
+                                Column {
+                                    Text(
+                                        text = stringResource(R.string.sub_free_trial),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = NavyDark,
+                                        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                                    )
+
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = Color.White,
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        shadowElevation = 1.dp
+                                    ) {
+                                        @Suppress("UNUSED_VARIABLE")
+                                        Column(modifier = Modifier.padding(16.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(stringResource(R.string.sub_has_trial), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark)
+                                                Switch(
+                                                    checked = hasFreeTrial,
+                                                    onCheckedChange = { hasFreeTrial = it },
+                                                    colors = SwitchDefaults.colors(
+                                                        checkedThumbColor = Color.White,
+                                                        checkedTrackColor = PinkPrimary
+                                                    )
+                                                )
+                                            }
+
+                                            if (hasFreeTrial) {
+                                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .padding(14.dp),
+                                                        .padding(vertical = 4.dp),
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    RadioButton(
-                                                        selected = isSelected,
-                                                        onClick = { selectedAccountId = acc.id },
-                                                        colors = RadioButtonDefaults.colors(selectedColor = PinkPrimary)
-                                                    )
-                                                    Spacer(modifier = Modifier.width(10.dp))
-                                                    Column(modifier = Modifier.weight(1f)) {
-                                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                                            Text(
-                                                                text = acc.name,
-                                                                fontWeight = FontWeight.Bold,
-                                                                fontSize = 14.sp,
-                                                                color = NavyDark
-                                                            )
-                                                            if (isSameCurrency) {
-                                                                Spacer(modifier = Modifier.width(8.dp))
-                                                                Surface(
-                                                                    shape = RoundedCornerShape(6.dp),
-                                                                    color = Color(0xFFD1FAE5)
-                                                                ) {
-                                                                    Text(
-                                                                        text = stringResource(R.string.sub_no_conversion_fee),
-                                                                        fontSize = 9.5.sp,
-                                                                        fontWeight = FontWeight.Bold,
-                                                                        color = Color(0xFF065F46),
-                                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                                    )
-                                                                }
-                                                            }
-                                                        }
-                                                        Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(stringResource(R.string.sub_trial_type), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
+                                                    Surface(
+                                                        modifier = Modifier
+                                                            .clip(RoundedCornerShape(50))
+                                                            .clickable { trialType = if (trialType == "Free") "Paid" else "Free" },
+                                                        shape = RoundedCornerShape(50),
+                                                        color = PinkPrimary
+                                                    ) {
                                                         Text(
-                                                            text = "Current: ${String.format(Locale.getDefault(), "%,.2f", acc.current_balance)} ${acc.currency}",
-                                                            fontSize = 12.sp,
-                                                            color = TextLight
+                                                            text = if (trialType == "Free") stringResource(R.string.sub_trial_free) else trialType,
+                                                            color = Color.White,
+                                                            fontSize = 13.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp)
                                                         )
-                                                        if (isSelected && parsedAmount > 0) {
-                                                            Spacer(modifier = Modifier.height(2.dp))
-                                                            Text(
-                                                                text = "After pay: ${String.format(Locale.getDefault(), "%,.2f", prospective)} ${acc.currency}",
-                                                                fontSize = 11.5.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = if (prospective >= 0) Color(0xFF059669) else Color(0xFFDC2626)
-                                                            )
+                                                    }
+                                                }
+
+                                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(stringResource(R.string.sub_trial_period), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
+                                                    Surface(
+                                                        modifier = Modifier
+                                                            .clip(RoundedCornerShape(50))
+                                                            .clickable { showTrialPeriodPicker = true },
+                                                        shape = RoundedCornerShape(50),
+                                                        color = PinkPrimary
+                                                    ) {
+                                                        val periodDisplay = when(trialPeriod) {
+                                                            "1 Week" -> stringResource(R.string.sub_period_1_week)
+                                                            "1 Month" -> stringResource(R.string.sub_period_1_month)
+                                                            "3 Months" -> stringResource(R.string.sub_period_3_months)
+                                                            else -> trialPeriod
                                                         }
+                                                        Text(
+                                                            text = periodDisplay,
+                                                            color = Color.White,
+                                                            fontSize = 13.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                        )
+                                                    }
+                                                }
+
+                                                Spacer(modifier = Modifier.height(14.dp))
+
+                                                val renewalCal = java.util.Calendar.getInstance().apply {
+                                                    timeInMillis = startDateMs + (trialDays.toLong() * 24 * 3600 * 1000)
+                                                }
+                                                Text(
+                                                    text = stringResource(R.string.sub_first_charge_on, renewalFmt.format(renewalCal.time)),
+                                                    fontSize = 13.5.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = Color(0xFF64748B),
+                                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // CARD 3: MORE DETAILS CARD (EXCLUDING SPACE)
+                            item {
+                                Column {
+                                    Text(
+                                        text = stringResource(R.string.general_info),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = NavyDark,
+                                        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                                    )
+
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = Color.White,
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        shadowElevation = 1.dp
+                                    ) {
+                                        Column(modifier = Modifier.padding(16.dp)) {
+                                            // Category Row
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(stringResource(R.string.sub_category), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
+                                                Surface(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(50))
+                                                        .clickable { showCategoryPicker = true },
+                                                    shape = RoundedCornerShape(50),
+                                                    color = PinkPrimary
+                                                ) {
+                                                    val catLabel = when (selectedCategory.lowercase().replace("cat_", "")) {
+                                                        "entertainment" -> stringResource(R.string.cat_entertainment)
+                                                        "shopping" -> stringResource(R.string.cat_shopping)
+                                                        "work", "business" -> stringResource(R.string.cat_business)
+                                                        "education" -> stringResource(R.string.cat_education)
+                                                        "health" -> stringResource(R.string.cat_health)
+                                                        "music" -> stringResource(R.string.cat_music)
+                                                        else -> stringResource(R.string.cat_subscriptions)
+                                                    }
+                                                    Text(
+                                                        text = catLabel,
+                                                        color = Color.White,
+                                                        fontSize = 13.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                    )
+                                                }
+                                            }
+
+                                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                            // Payment Method Row
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(stringResource(R.string.sub_payment_methods), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
+                                                val selectedAccount = accounts.find { it.id == selectedAccountId }
+                                                Surface(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(50))
+                                                        .clickable { showAccountPicker = true },
+                                                    shape = RoundedCornerShape(50),
+                                                    color = PinkPrimary
+                                                ) {
+                                                    Text(
+                                                        text = selectedAccount?.name ?: stringResource(R.string.sub_none),
+                                                        color = Color.White,
+                                                        fontSize = 13.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                    )
+                                                }
+                                            }
+
+                                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                            // Note Field
+                                            Text(stringResource(R.string.payment_note), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark)
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            BasicTextField(
+                                                value = noteText,
+                                                onValueChange = { noteText = it },
+                                                textStyle = TextStyle(fontSize = 14.sp, color = NavyDark),
+                                                decorationBox = { innerTextField ->
+                                                    Box {
+                                                        if (noteText.isEmpty()) {
+                                                            Text(stringResource(R.string.add_note_placeholder), color = TextLight, fontSize = 14.sp)
+                                                        }
+                                                        innerTextField()
+                                                    }
+                                                },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 4.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // CARD 4: NOTIFICATIONS CARD
+                            item {
+                                Column {
+                                    Text(
+                                        text = stringResource(R.string.sub_reminders_section),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = NavyDark,
+                                        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                                    )
+
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = Color.White,
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        shadowElevation = 1.dp
+                                    ) {
+                                        Column(modifier = Modifier.padding(16.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(stringResource(R.string.sub_renewal_reminder), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark)
+                                                Switch(
+                                                    checked = renewalReminderEnabled,
+                                                    onCheckedChange = { renewalReminderEnabled = it },
+                                                    colors = SwitchDefaults.colors(
+                                                        checkedThumbColor = Color.White,
+                                                        checkedTrackColor = PinkPrimary
+                                                    )
+                                                )
+                                            }
+
+                                            if (renewalReminderEnabled) {
+                                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(stringResource(R.string.sub_first_reminder), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
+                                                    Surface(
+                                                        modifier = Modifier
+                                                            .clip(RoundedCornerShape(50))
+                                                            .clickable { activeReminderTarget = "first" },
+                                                        shape = RoundedCornerShape(50),
+                                                        color = PinkPrimary
+                                                    ) {
+                                                        Text(
+                                                            text = mapReminderToDisplay(firstReminder),
+                                                            color = Color.White,
+                                                            fontSize = 13.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                        )
+                                                    }
+                                                }
+
+                                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(stringResource(R.string.sub_second_reminder), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
+                                                    Surface(
+                                                        modifier = Modifier
+                                                            .clip(RoundedCornerShape(50))
+                                                            .clickable { activeReminderTarget = "second" },
+                                                        shape = RoundedCornerShape(50),
+                                                        color = PinkPrimary
+                                                    ) {
+                                                        Text(
+                                                            text = mapReminderToDisplay(secondReminder),
+                                                            color = Color.White,
+                                                            fontSize = 13.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                        )
+                                                    }
+                                                }
+
+                                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(stringResource(R.string.sub_third_reminder), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
+                                                    Surface(
+                                                        modifier = Modifier
+                                                            .clip(RoundedCornerShape(50))
+                                                            .clickable { activeReminderTarget = "third" },
+                                                        shape = RoundedCornerShape(50),
+                                                        color = PinkPrimary
+                                                    ) {
+                                                        Text(
+                                                            text = mapReminderToDisplay(thirdReminder),
+                                                            color = Color.White,
+                                                            fontSize = 13.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // CARD 5: TRIAL ENDING REMINDER CARD (Only if Trial Enabled)
+                            if (hasFreeTrial) {
+                                item {
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = Color.White,
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        shadowElevation = 1.dp
+                                    ) {
+                                        Column(modifier = Modifier.padding(16.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(stringResource(R.string.sub_trial_ending_reminder), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark)
+                                                Switch(
+                                                    checked = trialReminderEnabled,
+                                                    onCheckedChange = { trialReminderEnabled = it },
+                                                    colors = SwitchDefaults.colors(
+                                                        checkedThumbColor = Color.White,
+                                                        checkedTrackColor = PinkPrimary
+                                                    )
+                                                )
+                                            }
+
+                                            if (trialReminderEnabled) {
+                                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(stringResource(R.string.sub_first_reminder), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
+                                                    Surface(
+                                                        modifier = Modifier
+                                                            .clip(RoundedCornerShape(50))
+                                                            .clickable { activeReminderTarget = "trialFirst" },
+                                                        shape = RoundedCornerShape(50),
+                                                        color = PinkPrimary
+                                                    ) {
+                                                        Text(
+                                                            text = mapReminderToDisplay(trialFirstReminder),
+                                                            color = Color.White,
+                                                            fontSize = 13.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                        )
+                                                    }
+                                                }
+
+                                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(stringResource(R.string.sub_second_reminder), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
+                                                    Surface(
+                                                        modifier = Modifier
+                                                            .clip(RoundedCornerShape(50))
+                                                            .clickable { activeReminderTarget = "trialSecond" },
+                                                        shape = RoundedCornerShape(50),
+                                                        color = PinkPrimary
+                                                    ) {
+                                                        Text(
+                                                            text = mapReminderToDisplay(trialSecondReminder),
+                                                            color = Color.White,
+                                                            fontSize = 13.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                        )
+                                                    }
+                                                }
+
+                                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(stringResource(R.string.sub_third_reminder), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = NavyDark, modifier = Modifier.weight(1f))
+                                                    Surface(
+                                                        modifier = Modifier
+                                                            .clip(RoundedCornerShape(50))
+                                                            .clickable { activeReminderTarget = "trialThird" },
+                                                        shape = RoundedCornerShape(50),
+                                                        color = PinkPrimary
+                                                    ) {
+                                                        Text(
+                                                            text = mapReminderToDisplay(trialThirdReminder),
+                                                            color = Color.White,
+                                                            fontSize = 13.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                                        )
                                                     }
                                                 }
                                             }
@@ -2451,95 +3376,240 @@ private fun AddSubscriptionSlideScreen(
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
 
-                        item {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color.White,
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column {
-                                            Text(stringResource(R.string.sub_free_trial), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                                            Text(stringResource(R.string.sub_trial_active), fontSize = 12.sp, color = TextLight)
-                                        }
-                                        Switch(
-                                            checked = hasFreeTrial,
-                                            onCheckedChange = { hasFreeTrial = it },
-                                            colors = SwitchDefaults.colors(checkedThumbColor = PinkPrimary)
-                                        )
-                                    }
-
-                                    if (hasFreeTrial) {
-                                        Spacer(modifier = Modifier.height(12.dp))
-                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            listOf(7, 14, 30).forEach { days ->
-                                                FilterChip(
-                                                    selected = trialDays == days,
-                                                    onClick = { trialDays = days },
-                                                    label = { Text(stringResource(R.string.sub_days_format, days)) }
-                                                )
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, trialDays) }
-                                        val fmt = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-                                        Text(
-                                            text = stringResource(R.string.sub_first_charge_on, fmt.format(cal.time)),
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF6D28D9)
-                                        )
-                                    }
-                                }
-                            }
+    // MODAL BOTTOM SHEETS FOR PICKERS
+    if (showCategoryPicker) {
+        ModalBottomSheet(
+            onDismissRequest = { showCategoryPicker = false },
+            containerColor = Color.White
+        ) {
+            Column(modifier = Modifier.padding(20.dp).padding(bottom = 24.dp)) {
+                Text(stringResource(R.string.select_category), fontSize = 18.sp, fontWeight = FontWeight.Black, color = NavyDark)
+                Spacer(modifier = Modifier.height(18.dp))
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    items(listOf("entertainment", "music", "work", "utilities", "education", "shopping", "games", "health", "other")) { cat ->
+                        val categoryResId = when(cat) {
+                            "entertainment" -> R.string.cat_entertainment
+                            "music" -> R.string.cat_music
+                            "work" -> R.string.cat_business
+                            "education" -> R.string.cat_education
+                            "shopping" -> R.string.cat_shopping
+                            "health" -> R.string.cat_health
+                            else -> R.string.cat_subscriptions
                         }
-
-                        item {
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                OutlinedButton(
-                                    onClick = { currentSlideStep = 1 },
-                                    modifier = Modifier.weight(1f).height(50.dp),
-                                    shape = RoundedCornerShape(14.dp)
-                                ) {
-                                    Text(stringResource(R.string.sub_previous_step), fontWeight = FontWeight.Bold)
-                                }
-
-                                Button(
-                                    onClick = {
-                                        if (name.isNotBlank() && parsedAmount > 0) {
-                                            onSaveSubscription(
-                                                name,
-                                                domain,
-                                                parsedAmount,
-                                                currency,
-                                                billingCycle,
-                                                selectedAccountId,
-                                                selectedCategory,
-                                                hasFreeTrial,
-                                                trialDays
-                                            )
-                                        }
+                        BottomSheetOptionCard(
+                            title = stringResource(categoryResId),
+                            isSelected = selectedCategory.equals(cat, ignoreCase = true),
+                            leadingContent = {
+                                Icon(
+                                    imageVector = when(cat) {
+                                        "entertainment" -> Icons.Default.Movie
+                                        "music" -> Icons.Default.MusicNote
+                                        "work" -> Icons.Default.Work
+                                        "utilities" -> Icons.Default.Bolt
+                                        "education" -> Icons.Default.School
+                                        "shopping" -> Icons.Default.ShoppingBag
+                                        "games" -> Icons.Default.SportsEsports
+                                        "health" -> Icons.Default.Favorite
+                                        else -> Icons.Default.Category
                                     },
-                                    modifier = Modifier.weight(1.4f).height(50.dp).testTag("add_sub_save_final"),
-                                    shape = RoundedCornerShape(14.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
-                                    enabled = name.isNotBlank() && parsedAmount > 0
-                                ) {
-                                    Text(stringResource(R.string.save_subscription), fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                }
+                                    contentDescription = null,
+                                    tint = if (selectedCategory.equals(cat, ignoreCase = true)) PinkPrimary else NavyDark,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            },
+                            onClick = {
+                                selectedCategory = cat
+                                showCategoryPicker = false
                             }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showAccountPicker) {
+        ModalBottomSheet(
+            onDismissRequest = { showAccountPicker = false },
+            containerColor = Color.White
+        ) {
+            Column(modifier = Modifier.padding(20.dp).padding(bottom = 24.dp)) {
+                Text(stringResource(R.string.select_payment_account), fontSize = 18.sp, fontWeight = FontWeight.Black, color = NavyDark)
+                Spacer(modifier = Modifier.height(18.dp))
+                if (accounts.isEmpty()) {
+                    Text(stringResource(R.string.no_accounts_added), color = TextLight, fontSize = 14.sp)
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(accounts) { acc ->
+                            BottomSheetOptionCard(
+                                title = acc.name,
+                                subtitle = "${String.format(java.util.Locale.getDefault(), "%,.2f", acc.current_balance)} ${acc.currency}",
+                                isSelected = selectedAccountId == acc.id,
+                                leadingContent = {
+                                    Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(20.dp))
+                                },
+                                onClick = {
+                                    selectedAccountId = acc.id
+                                    showAccountPicker = false
+                                }
+                            )
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showCurrencyPicker) {
+        ModalBottomSheet(
+            onDismissRequest = { showCurrencyPicker = false },
+            containerColor = Color.White
+        ) {
+            Column(modifier = Modifier.padding(20.dp).padding(bottom = 24.dp)) {
+                Text(stringResource(R.string.select_currency), fontSize = 18.sp, fontWeight = FontWeight.Black, color = NavyDark)
+                Spacer(modifier = Modifier.height(18.dp))
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    items(subAvailableCurrencies) { opt ->
+                        BottomSheetOptionCard(
+                            title = "${opt.code} (${opt.symbol})",
+                            subtitle = if (Locale.getDefault().language == "ar") opt.nameAr else opt.nameEn,
+                            isSelected = currency == opt.code,
+                            leadingContent = {
+                                AsyncImage(
+                                    model = opt.flagUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(26.dp).clip(RoundedCornerShape(4.dp))
+                                )
+                            },
+                            onClick = {
+                                currency = opt.code
+                                showCurrencyPicker = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showCyclePicker) {
+        ModalBottomSheet(
+            onDismissRequest = { showCyclePicker = false },
+            containerColor = Color.White
+        ) {
+            Column(modifier = Modifier.padding(20.dp).padding(bottom = 24.dp)) {
+                Text(stringResource(R.string.select_billing_cycle), fontSize = 18.sp, fontWeight = FontWeight.Black, color = NavyDark)
+                Spacer(modifier = Modifier.height(18.dp))
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    val cycles = listOf(
+                        Triple("MONTHLY", R.string.sub_cycle_monthly_label, Icons.Default.CalendarMonth),
+                        Triple("YEARLY", R.string.sub_cycle_yearly_label, Icons.Default.Event),
+                        Triple("WEEKLY", R.string.sub_cycle_weekly_label, Icons.Default.ViewWeek),
+                        Triple("QUARTERLY", R.string.sub_cycle_quarterly_label, Icons.Default.Layers)
+                    )
+                    items(cycles) { (code, resId, icon) ->
+                        BottomSheetOptionCard(
+                            title = stringResource(resId),
+                            isSelected = billingCycle == code,
+                            leadingContent = {
+                                Icon(icon, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(20.dp))
+                            },
+                            onClick = {
+                                billingCycle = code
+                                showCyclePicker = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showTrialPeriodPicker) {
+        ModalBottomSheet(
+            onDismissRequest = { showTrialPeriodPicker = false },
+            containerColor = Color.White
+        ) {
+            Column(modifier = Modifier.padding(20.dp).padding(bottom = 24.dp)) {
+                Text(stringResource(R.string.select_trial_period), fontSize = 18.sp, fontWeight = FontWeight.Black, color = NavyDark)
+                Spacer(modifier = Modifier.height(18.dp))
+                val trialOptions = listOf(
+                    Triple("1 Week", 7, Icons.Default.Timer),
+                    Triple("2 Weeks", 14, Icons.Default.Timer),
+                    Triple("1 Month", 30, Icons.Default.Update),
+                    Triple("Custom", 14, Icons.Default.Edit)
+                )
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    items(trialOptions) { (label, days, icon) ->
+                        val displayLabel = when(label) {
+                            "1 Week" -> stringResource(R.string.sub_period_1_week)
+                            "1 Month" -> stringResource(R.string.sub_period_1_month)
+                            "3 Months" -> stringResource(R.string.sub_period_3_months)
+                            "Custom" -> stringResource(R.string.custom_category)
+                            else -> label
+                        }
+                        BottomSheetOptionCard(
+                            title = displayLabel,
+                            isSelected = trialPeriod == label,
+                            leadingContent = {
+                                Icon(icon, contentDescription = null, tint = PinkPrimary, modifier = Modifier.size(20.dp))
+                            },
+                            onClick = {
+                                trialPeriod = label
+                                trialDays = days
+                                showTrialPeriodPicker = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (activeReminderTarget != null) {
+        ModalBottomSheet(
+            onDismissRequest = { activeReminderTarget = null },
+            containerColor = Color.White
+        ) {
+            Column(modifier = Modifier.padding(20.dp).padding(bottom = 24.dp)) {
+                Text(stringResource(R.string.select_reminder_time), fontSize = 18.sp, fontWeight = FontWeight.Black, color = NavyDark)
+                Spacer(modifier = Modifier.height(18.dp))
+                val reminderOpts = listOf("1 day before", "2 days before", "3 days before", "1 week before", "On renewal day", "None")
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    items(reminderOpts) { opt ->
+                        val isSelected = when (activeReminderTarget) {
+                            "first" -> firstReminder == opt
+                            "second" -> secondReminder == opt
+                            "third" -> thirdReminder == opt
+                            "trialFirst" -> trialFirstReminder == opt
+                            "trialSecond" -> trialSecondReminder == opt
+                            "trialThird" -> trialThirdReminder == opt
+                            else -> false
+                        }
+                        BottomSheetOptionCard(
+                            title = opt,
+                            isSelected = isSelected,
+                            leadingContent = {
+                                Icon(Icons.Default.Notifications, contentDescription = null, tint = if (isSelected) PinkPrimary else TextLight, modifier = Modifier.size(20.dp))
+                            },
+                            onClick = {
+                                when (activeReminderTarget) {
+                                    "first" -> firstReminder = opt
+                                    "second" -> secondReminder = opt
+                                    "third" -> thirdReminder = opt
+                                    "trialFirst" -> trialFirstReminder = opt
+                                    "trialSecond" -> trialSecondReminder = opt
+                                    "trialThird" -> trialThirdReminder = opt
+                                }
+                                activeReminderTarget = null
+                            }
+                        )
                     }
                 }
             }
@@ -2736,12 +3806,15 @@ private fun PayNowConfirmationBottomSheet(
 private class BubbleBody(
     val subscription: SubscriptionEntity,
     val radiusPx: Float,
-    var x: Float,
-    var y: Float,
+    initX: Float,
+    initY: Float,
     var vx: Float,
     var vy: Float,
     val isUrgent: Boolean
-)
+) {
+    var x by mutableFloatStateOf(initX)
+    var y by mutableFloatStateOf(initY)
+}
 
 @Composable
 private fun PhysicsBubbleDashboard(
@@ -2792,7 +3865,7 @@ private fun PhysicsBubbleDashboard(
                 val initY = (centerY + Math.sin(angle.toDouble()).toFloat() * dist).coerceIn(radius, containerHeightPx - radius)
 
                 val randomAngle = (Random.nextFloat() * 2f * Math.PI).toFloat()
-                val initialSpeed = 50f + Random.nextFloat() * 50f
+                val initialSpeed = 50f + Random.nextFloat() * 45f
                 val initVx = Math.cos(randomAngle.toDouble()).toFloat() * initialSpeed
                 val initVy = Math.sin(randomAngle.toDouble()).toFloat() * initialSpeed
 
@@ -2802,8 +3875,8 @@ private fun PhysicsBubbleDashboard(
                     BubbleBody(
                         subscription = sub,
                         radiusPx = radius,
-                        x = initX,
-                        y = initY,
+                        initX = initX,
+                        initY = initY,
                         vx = initVx,
                         vy = initVy,
                         isUrgent = isUrgent
@@ -2823,55 +3896,51 @@ private fun PhysicsBubbleDashboard(
                 val dt = ((currentNanos - lastNanos) / 1_000_000_000f).coerceIn(0.008f, 0.033f)
                 lastNanos = currentNanos
 
-                val restitution = 0.88f
+                val restitution = 0.90f
                 val width = containerWidthPx
                 val height = containerHeightPx
-                val targetMinSpeed = 40f
-                val targetMaxSpeed = 120f
+                val minSpeed = 50f
+                val maxSpeed = 160f
 
+                // 1. Continuous Position Update & Wall Collision
                 for (b in bubbles) {
                     if (b.subscription.id == draggedBubbleId) continue
 
-                    // Continuous floating motion
                     b.x += b.vx * dt
                     b.y += b.vy * dt
 
-                    // Wall Collision (Left & Right)
-                    if (b.x - b.radiusPx <= 0f) {
-                        b.x = b.radiusPx + 0.5f
-                        b.vx = Math.abs(b.vx) * restitution
-                    } else if (b.x + b.radiusPx >= width) {
-                        b.x = width - b.radiusPx - 0.5f
-                        b.vx = -Math.abs(b.vx) * restitution
+                    // Strict Wall Collision with clamping (Zero-sticking)
+                    if (b.x - b.radiusPx < 0f) {
+                        b.x = b.radiusPx
+                        b.vx = Math.abs(b.vx)
+                    } else if (b.x + b.radiusPx > width) {
+                        b.x = width - b.radiusPx
+                        b.vx = -Math.abs(b.vx)
                     }
 
-                    // Wall Collision (Top & Bottom)
-                    if (b.y - b.radiusPx <= 0f) {
-                        b.y = b.radiusPx + 0.5f
-                        b.vy = Math.abs(b.vy) * restitution
-                    } else if (b.y + b.radiusPx >= height) {
-                        b.y = height - b.radiusPx - 0.5f
-                        b.vy = -Math.abs(b.vy) * restitution
+                    if (b.y - b.radiusPx < 0f) {
+                        b.y = b.radiusPx
+                        b.vy = Math.abs(b.vy)
+                    } else if (b.y + b.radiusPx > height) {
+                        b.y = height - b.radiusPx
+                        b.vy = -Math.abs(b.vy)
                     }
 
-                    // Continuous drift speed floor & damping for high throws
-                    val currentSpeed = sqrt(b.vx * b.vx + b.vy * b.vy)
-                    if (currentSpeed > targetMaxSpeed) {
-                        b.vx *= 0.985f
-                        b.vy *= 0.985f
-                    } else if (currentSpeed < targetMinSpeed) {
-                        if (currentSpeed < 1f) {
-                            val newAngle = (Random.nextFloat() * 2f * Math.PI).toFloat()
-                            b.vx = Math.cos(newAngle.toDouble()).toFloat() * targetMinSpeed
-                            b.vy = Math.sin(newAngle.toDouble()).toFloat() * targetMinSpeed
-                        } else {
-                            val scale = targetMinSpeed / currentSpeed
-                            b.vx *= scale
-                            b.vy *= scale
-                        }
+                    // Autonomous Drift Speed Floor (Windows Screensaver style - constant speed)
+                    val speed = sqrt(b.vx * b.vx + b.vy * b.vy)
+                    val targetSpeed = (minSpeed + maxSpeed) / 2f
+                    if (speed > 0.001f) {
+                        val scale = targetSpeed / speed
+                        b.vx *= scale
+                        b.vy *= scale
+                    } else {
+                        val angle = (Random.nextFloat() * 2f * Math.PI).toFloat()
+                        b.vx = Math.cos(angle.toDouble()).toFloat() * targetSpeed
+                        b.vy = Math.sin(angle.toDouble()).toFloat() * targetSpeed
                     }
                 }
 
+                // 2. Rigid-Body Bubble-to-Bubble Collision (Step A: Positional Correction + Step B: Velocity Bounce)
                 val size = bubbles.size
                 for (i in 0 until size) {
                     val b1 = bubbles[i]
@@ -2883,7 +3952,7 @@ private fun PhysicsBubbleDashboard(
                         val distSq = dx * dx + dy * dy
                         val minDist = b1.radiusPx + b2.radiusPx
 
-                        if (distSq < minDist * minDist && distSq > 0.001f) {
+                        if (distSq < minDist * minDist && distSq > 0.0001f) {
                             val dist = sqrt(distSq)
                             val overlap = minDist - dist
                             val nx = dx / dist
@@ -2892,6 +3961,7 @@ private fun PhysicsBubbleDashboard(
                             val is1Dragged = b1.subscription.id == draggedBubbleId
                             val is2Dragged = b2.subscription.id == draggedBubbleId
 
+                            // Step A: Positional Correction (Guarantees no visual overlapping)
                             val w1 = if (is1Dragged) 0f else if (is2Dragged) 1f else 0.5f
                             val w2 = if (is2Dragged) 0f else if (is1Dragged) 1f else 0.5f
 
@@ -2904,22 +3974,22 @@ private fun PhysicsBubbleDashboard(
                                 b2.y += ny * overlap * w2
                             }
 
+                            // Step B: Elastic Velocity Bounce (Strict reflection)
                             val rvx = b2.vx - b1.vx
                             val rvy = b2.vy - b1.vy
                             val velAlongNormal = rvx * nx + rvy * ny
 
-                            if (velAlongNormal < 0) {
-                                val m1 = b1.radiusPx
-                                val m2 = b2.radiusPx
-                                val impulse = -(1f + restitution) * velAlongNormal / (m1 + m2)
-
+                            if (velAlongNormal < 0f) {
+                                // Perfectly elastic collision normal reflection
+                                val impulse = -(2f) * velAlongNormal / (1f/b1.radiusPx + 1f/b2.radiusPx)
+                                
                                 if (!is1Dragged) {
-                                    b1.vx -= impulse * m2 * nx
-                                    b1.vy -= impulse * m2 * ny
+                                    b1.vx -= nx * (impulse / b1.radiusPx)
+                                    b1.vy -= ny * (impulse / b1.radiusPx)
                                 }
                                 if (!is2Dragged) {
-                                    b2.vx += impulse * m1 * nx
-                                    b2.vy += impulse * m1 * ny
+                                    b2.vx += nx * (impulse / b2.radiusPx)
+                                    b2.vy += ny * (impulse / b2.radiusPx)
                                 }
                             }
                         }

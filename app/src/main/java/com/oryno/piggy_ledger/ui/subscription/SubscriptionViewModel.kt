@@ -65,17 +65,52 @@ class SubscriptionViewModel(
     private val dao: PiggyLedgerDao
 ) : ViewModel() {
 
+    init {
+        viewModelScope.launch {
+            // Check for overdue auto-debit subscriptions
+            val now = System.currentTimeMillis()
+            val all = dao.getAllSubscriptionsSync()
+            all.filter { it.autoDebit && it.isActive && it.status == "ACTIVE" && it.nextRenewalDate < now }
+                .forEach { sub ->
+                    payNow(sub)
+                }
+        }
+    }
+
     val catalogServices = listOf(
         CatalogItem("Netflix", "netflix.com", 250.0, 15.49, "entertainment"),
-        CatalogItem("Spotify", "spotify.com", 75.0, 10.99, "entertainment"),
         CatalogItem("YouTube Premium", "youtube.com", 65.0, 13.99, "entertainment"),
-        CatalogItem("Figma", "figma.com", 600.0, 12.00, "work"),
-        CatalogItem("ChatGPT Plus", "openai.com", 1000.0, 20.00, "work"),
-        CatalogItem("iCloud+", "apple.com", 45.0, 2.99, "subscriptions"),
-        CatalogItem("Amazon Prime", "amazon.com", 30.0, 14.99, "shopping"),
-        CatalogItem("Shahid VIP", "shahid.mbc.net", 90.0, 8.99, "entertainment"),
+        CatalogItem("YouTube Music", "music.youtube.com", 50.0, 10.99, "entertainment"),
+        CatalogItem("Spotify", "spotify.com", 75.0, 10.99, "entertainment"),
         CatalogItem("Disney+", "disneyplus.com", 120.0, 9.99, "entertainment"),
-        CatalogItem("Apple Music", "apple.com", 90.0, 10.99, "entertainment")
+        CatalogItem("Hulu", "hulu.com", 90.0, 7.99, "entertainment"),
+        CatalogItem("Max", "max.com", 200.0, 15.99, "entertainment"),
+        CatalogItem("Amazon Prime", "amazon.com", 30.0, 14.99, "shopping"),
+        CatalogItem("Apple TV+", "tv.apple.com", 100.0, 9.99, "entertainment"),
+        CatalogItem("Paramount+", "paramountplus.com", 80.0, 5.99, "entertainment"),
+        CatalogItem("Peacock", "peacocktv.com", 70.0, 5.99, "entertainment"),
+        CatalogItem("Apple Music", "apple.com", 90.0, 10.99, "entertainment"),
+        CatalogItem("ChatGPT Plus", "openai.com", 1000.0, 20.00, "work"),
+        CatalogItem("Claude", "anthropic.com", 1000.0, 20.00, "work"),
+        CatalogItem("Figma", "figma.com", 600.0, 12.00, "work"),
+        CatalogItem("Duolingo", "duolingo.com", 150.0, 6.99, "education"),
+        CatalogItem("Canva", "canva.com", 300.0, 12.99, "work"),
+        CatalogItem("HBO Max", "hbomax.com", 200.0, 14.99, "entertainment"),
+        CatalogItem("Dropbox", "dropbox.com", 250.0, 9.99, "work"),
+        CatalogItem("Google One", "google.com", 50.0, 1.99, "utilities"),
+        CatalogItem("iCloud+", "apple.com", 45.0, 2.99, "utilities"),
+        CatalogItem("Microsoft 365", "microsoft.com", 200.0, 6.99, "work"),
+        CatalogItem("PlayStation Plus", "playstation.com", 200.0, 9.99, "entertainment"),
+        CatalogItem("Xbox Game Pass", "xbox.com", 250.0, 10.99, "entertainment"),
+        CatalogItem("Notion", "notion.so", 200.0, 8.00, "work"),
+        CatalogItem("Slack", "slack.com", 250.0, 8.75, "work"),
+        CatalogItem("GitHub", "github.com", 150.0, 4.00, "work"),
+        CatalogItem("Midjourney", "midjourney.com", 300.0, 10.00, "work"),
+        CatalogItem("Adobe Creative Cloud", "adobe.com", 1200.0, 54.99, "work"),
+        CatalogItem("Zoom", "zoom.us", 450.0, 14.99, "work"),
+        CatalogItem("Peloton", "onepeloton.com", 600.0, 24.00, "health"),
+        CatalogItem("ExpressVPN", "expressvpn.com", 300.0, 12.95, "utilities"),
+        CatalogItem("Shahid VIP", "shahid.mbc.net", 90.0, 8.99, "entertainment")
     )
 
     private val _flags = MutableStateFlow(LocalUiFlags())
@@ -147,7 +182,10 @@ class SubscriptionViewModel(
         accountId: String = "",
         category: String = "subscriptions",
         hasFreeTrial: Boolean = false,
-        trialDays: Int = 0
+        trialDays: Int = 0,
+        reminderEnabled: Boolean = true,
+        reminderLeadDays: Int = 1,
+        startDateMs: Long? = null
     ) {
         if (name.isBlank() || amount <= 0) return
 
@@ -155,11 +193,11 @@ class SubscriptionViewModel(
             _flags.update { it.copy(isSubmitting = true) }
             val logoUrl = if (domain.isNotBlank()) buildLogoDevUrl(domain) else null
 
-            val now = System.currentTimeMillis()
+            val baseTime = startDateMs ?: System.currentTimeMillis()
             val nextRenewal = if (hasFreeTrial && trialDays > 0) {
-                now + (trialDays.toLong() * 24L * 60L * 60L * 1000L)
+                baseTime + (trialDays.toLong() * 24L * 60L * 60L * 1000L)
             } else {
-                calculateNextCycleTimestamp(now, billingCycle)
+                calculateNextCycleTimestamp(baseTime, billingCycle)
             }
 
             val sub = SubscriptionEntity(
@@ -179,8 +217,10 @@ class SubscriptionViewModel(
                 trialEndsAt = if (hasFreeTrial && trialDays > 0) nextRenewal else 0L,
                 totalPaidCount = if (hasFreeTrial) 0 else 1,
                 totalSpent = if (hasFreeTrial) 0.0 else amount,
-                createdAt = now,
-                updatedAt = now
+                reminderEnabled = reminderEnabled,
+                reminderLeadDays = reminderLeadDays,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
             )
 
             repository.insertSubscription(sub)

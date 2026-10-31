@@ -762,6 +762,15 @@
     <string name="sub_cycle_yearly_label">سنوي</string>
     <string name="sub_cycle_weekly_label">أسبوعي</string>
     <string name="search_subscriptions_hint">البحث في الاشتراكات…</string>
+    <string name="search_results">نتائج البحث</string>
+    <string name="search_no_results">حاول البحث عن اسم أو فئة أخرى</string>
+    <string name="search_close">إغلاق البحث</string>
+    <string name="search_popular">الأكثر شيوعاً</string>
+    <string name="search_results_short">النتائج</string>
+    <string name="search_all">الكل</string>
+    <string name="search_found_count">تم العثور على %1$d</string>
+    <string name="search_no_results_found">لم يتم العثور على اشتراكات</string>
+    <string name="search_clear">مسح</string>
     <string name="sub_view_bubbles">فقاعات</string>
     <string name="sub_view_cards">بطاقات</string>
     <string name="bank_name_label">اسم البنك</string>
@@ -1662,4 +1671,20 @@
     <string name="time_last_3_months">آخر 3 أشهر</string>
     <string name="time_this_year">هذا العام</string>
     <string name="swipe_to_navigate_hint">اسحب للتنقل</string>
+    <string name="custom_provider_title">إضافة مزود مخصص</string>
+    <string name="custom_provider_name_label">اسم مزود الخدمة</string>
+    <string name="custom_provider_name_placeholder">مثال: OpenAI, Cursor, Canva</string>
+    <string name="custom_provider_domain_label">الدومين أو رابط الموقع</string>
+    <string name="custom_provider_domain_placeholder">مثال: openai.com, cursor.com</string>
+    <string name="custom_provider_domain_hint">يتم جلب الشعار الرسمي بدقة عالية من logo.dev وحفظه محلياً.</string>
+    <string name="custom_provider_logo_preview">معاينة الشعار</string>
+    <string name="custom_provider_logo_ready">تم جلب الشعار وحفظه بنجاح</string>
+    <string name="custom_provider_continue_btn">استمرار لضبط التفاصيل</string>
+    <string name="custom_provider_quick_suggestions">اقتراحات سريعة للدومين</string>
+    <string name="select_billing_cycle">اختر دورة الفاتورة</string>
+
+    <string name="select_category">اختر الفئة</string>
+    <string name="select_payment_account">اختر حساب الدفع</string>
+    <string name="select_trial_period">اختر مدة التجربة</string>
+    <string name="select_reminder_time">اختر وقت التذكير</string>
 </resources>

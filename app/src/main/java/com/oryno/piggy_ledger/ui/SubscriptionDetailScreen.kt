@@ -1,20 +1,16 @@
 package com.oryno.piggy_ledger.ui
 
 import android.Manifest
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.*
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -27,15 +23,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Canvas
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -63,7 +65,8 @@ fun SubscriptionDetailScreen(
     onDelete: () -> Unit,
     onToggleAutoRenew: () -> Unit,
     onUpdateReminder: (enabled: Boolean, leadDays: Int, dailyRepeat: Boolean) -> Unit,
-    onUpdateAccount: (String) -> Unit
+    onUpdateAccount: (String) -> Unit,
+    onPayNow: () -> Unit
 ) {
     BackHandler { onBack() }
 
@@ -79,6 +82,9 @@ fun SubscriptionDetailScreen(
     var selectedLeadDays by remember(subscription) { mutableIntStateOf(subscription.reminderLeadDays) }
     var isDailyRepeat by remember(subscription) { mutableStateOf(subscription.reminderDailyRepeat) }
 
+    var showDeleteSheet by remember { mutableStateOf(false) }
+    val clipboardManager = LocalClipboardManager.current
+
     val notifPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -88,10 +94,6 @@ fun SubscriptionDetailScreen(
     }
 
     val formatter = remember { SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()) }
-    val shortFmt = remember { SimpleDateFormat("MMM, yyyy", Locale.getDefault()) }
-    val renewalStr = formatter.format(Date(subscription.nextRenewalDate))
-    val createdStr = shortFmt.format(Date(subscription.createdAt))
-
     val now = System.currentTimeMillis()
     val diffDays = TimeUnit.MILLISECONDS.toDays(subscription.nextRenewalDate - now).toInt()
 
@@ -101,13 +103,8 @@ fun SubscriptionDetailScreen(
     val cycleLabel = when (subscription.billingCycle.uppercase()) {
         "YEARLY" -> stringResource(R.string.sub_cycle_yearly_label)
         "WEEKLY" -> stringResource(R.string.sub_cycle_weekly_label)
+        "QUARTERLY" -> stringResource(R.string.sub_cycle_quarterly_label)
         else -> stringResource(R.string.sub_cycle_monthly_label)
-    }
-
-    val cyclePriceSuffix = when (subscription.billingCycle.uppercase()) {
-        "YEARLY" -> stringResource(R.string.sub_cycle_per_year)
-        "WEEKLY" -> stringResource(R.string.sub_cycle_per_week)
-        else -> stringResource(R.string.sub_cycle_per_month)
     }
 
     val categoryLabel = when (subscription.category.lowercase().replace("cat_", "")) {
@@ -116,6 +113,7 @@ fun SubscriptionDetailScreen(
         "work", "business" -> stringResource(R.string.cat_business)
         "education" -> stringResource(R.string.cat_education)
         "health" -> stringResource(R.string.cat_health)
+        "music" -> stringResource(R.string.cat_music)
         else -> stringResource(R.string.cat_subscriptions)
     }
 
@@ -141,92 +139,35 @@ fun SubscriptionDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onEdit) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = stringResource(R.string.sub_edit),
-                            tint = NavyDark
-                        )
-                    }
+                    // Three dots and Delete button removed as per request
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         }
     ) { padding ->
-        Box(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
-            contentAlignment = Alignment.TopCenter
+                .padding(padding)
+                .background(Color(0xFFF8FAFC)),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .widthIn(max = 640.dp)
-                    .padding(horizontal = 20.dp),
-                contentPadding = PaddingValues(top = 16.dp, bottom = 48.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-            // 1. HERO CARD (Clean and focused without redundant action buttons)
+            // Summary Card
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(26.dp),
+                    shape = RoundedCornerShape(24.dp),
                     color = Color.White,
                     border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                     shadowElevation = 2.dp
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        // Top row inside card: Status / Relative Due Tag
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val (tagText, tagColor, tagBg) = when {
-                                isArchived -> Triple(stringResource(R.string.sub_tab_archived), TextLight, Color(0xFFF1F5F9))
-                                isPaused -> Triple(stringResource(R.string.sub_tab_paused), Color(0xFFB45309), Color(0xFFFEF3C7))
-                                diffDays <= 0 -> Triple(stringResource(R.string.sub_due_today), Color(0xFFDC2626), Color(0xFFFEF2F2))
-                                diffDays == 1 -> Triple(stringResource(R.string.sub_due_tomorrow), Color(0xFFD97706), Color(0xFFFFFBEB))
-                                diffDays in 2..7 -> Triple(stringResource(R.string.sub_due_in_days, diffDays), Color(0xFFD97706), Color(0xFFFEF3C7))
-                                else -> Triple(renewalStr, TextLight, Color(0xFFF1F5F9))
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = tagBg
-                            ) {
-                                Text(
-                                    text = tagText,
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = tagColor,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                )
-                            }
-
-                            if (!isArchived && !isPaused) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = Color(0xFFD1FAE5)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.sub_tab_active),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF047857),
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Logo + Name + Description
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // Logo
                             Box(
                                 modifier = Modifier
                                     .size(56.dp)
@@ -256,489 +197,262 @@ fun SubscriptionDetailScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.width(14.dp))
+                            Spacer(modifier = Modifier.width(16.dp))
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = subscription.name,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Black,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
                                     color = NavyDark
                                 )
-                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = stringResource(R.string.sub_plan_format, cycleLabel, categoryLabel),
-                                    fontSize = 12.5.sp,
+                                    text = "$categoryLabel • ${linkedAccount?.name ?: stringResource(R.string.sub_no_wallet_linked)}",
+                                    fontSize = 13.sp,
                                     color = TextLight
                                 )
                             }
+
+                            // Circular Countdown
+                            Box(
+                                modifier = Modifier.size(50.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    progress = { 
+                                        val totalDays = when(subscription.billingCycle.uppercase()) {
+                                            "YEARLY" -> 365
+                                            "WEEKLY" -> 7
+                                            "QUARTERLY" -> 90
+                                            else -> 30
+                                        }
+                                        (diffDays.coerceAtLeast(0).toFloat() / totalDays).coerceIn(0f, 1f)
+                                    },
+                                    modifier = Modifier.fillMaxSize(),
+                                    color = if (diffDays <= 3) Color.Red else PinkPrimary,
+                                    strokeWidth = 4.dp,
+                                    trackColor = Color(0xFFF1F5F9)
+                                )
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = diffDays.coerceAtLeast(0).toString(),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = NavyDark
+                                    )
+                                    Text(
+                                        text = "days",
+                                        fontSize = 8.sp,
+                                        color = TextLight
+                                    )
+                                }
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                        // Price Row
+                        // Three columns metrics
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.Bottom
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(
-                                text = "${String.format(Locale.getDefault(), "%,.2f", subscription.amount)} ${subscription.currency}",
-                                fontSize = 26.sp,
-                                fontWeight = FontWeight.Black,
-                                color = NavyDark
+                            SummaryMetric(
+                                icon = Icons.Default.Wallet,
+                                label = stringResource(R.string.sub_total_spent),
+                                value = "${String.format(Locale.getDefault(), "%,.2f", subscription.totalSpent)} ${subscription.currency}",
+                                subValue = stringResource(R.string.sub_over_n_payments, subscription.totalPaidCount),
+                                modifier = Modifier.weight(1f)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = cyclePriceSuffix,
-                                fontSize = 12.5.sp,
-                                color = TextLight,
-                                modifier = Modifier.padding(bottom = 3.dp)
+                            SummaryMetric(
+                                icon = Icons.Default.CalendarMonth,
+                                label = cycleLabel,
+                                value = "${String.format(Locale.getDefault(), "%,.2f", subscription.amount)} ${subscription.currency}",
+                                modifier = Modifier.weight(1f)
+                            )
+                            SummaryMetric(
+                                icon = Icons.Default.CheckCircle,
+                                label = stringResource(R.string.sub_status),
+                                value = if (isPaused) stringResource(R.string.sub_tab_paused) else if (isArchived) stringResource(R.string.sub_tab_archived) else stringResource(R.string.sub_tab_active),
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
                 }
             }
 
-            // 2. 2x2 METRIC CARDS GRID (Next Payment, Billing Cycle, Total Spent, Category)
+            // Timeline
+            item {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.sub_timeline),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyDark
+                        )
+                        Icon(
+                            Icons.Default.ArrowDownward,
+                            null,
+                            modifier = Modifier.size(16.dp).padding(start = 4.dp),
+                            tint = TextLight
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            // Timeline Items - Capped at one future renewal
+                            val trialStarted = subscription.createdAt
+                            val subStarted = if (subscription.hasFreeTrial) subscription.trialEndsAt else subscription.createdAt
+                            
+                            // 4. One Future Renewal only
+                            val calendar = Calendar.getInstance()
+                            calendar.timeInMillis = subStarted
+                            
+                            val cycleField = when(subscription.billingCycle.uppercase()) {
+                                "YEARLY" -> Calendar.YEAR
+                                "WEEKLY" -> Calendar.WEEK_OF_YEAR
+                                "QUARTERLY" -> Calendar.MONTH
+                                else -> Calendar.MONTH
+                            }
+                            val cycleAmount = if (subscription.billingCycle.uppercase() == "QUARTERLY") 3 else 1
+
+                            // Add only ONE renewal
+                            if (subscription.billingCycle.uppercase() == "QUARTERLY") {
+                                calendar.add(Calendar.MONTH, 3)
+                            } else {
+                                calendar.add(cycleField, cycleAmount)
+                            }
+                            val renewalDate = calendar.timeInMillis
+                            val isPast = now >= renewalDate
+                            
+                            val isApproachingRenewal = now >= (renewalDate - TimeUnit.DAYS.toMillis(30)) && now < renewalDate && !isPast
+                            val isDuringTrial = subscription.hasFreeTrial && now >= trialStarted && now < subStarted
+                            val isDuringSub = if (subscription.hasFreeTrial) (now >= subStarted && now < renewalDate && !isApproachingRenewal) else (now >= trialStarted && now < renewalDate && !isApproachingRenewal)
+
+                            // 1. Trial Started / Created
+                            TimelineItem(
+                                date = formatter.format(Date(trialStarted)),
+                                title = if (subscription.hasFreeTrial) stringResource(R.string.sub_timeline_trial_started) else stringResource(R.string.sub_timeline_sub_started),
+                                amount = if (subscription.hasFreeTrial) "$0.00 ${subscription.currency}" else "${String.format(Locale.getDefault(), "%,.2f", subscription.amount)} ${subscription.currency}",
+                                isCompleted = true,
+                                isFirst = true,
+                                showTodayMarker = if (subscription.hasFreeTrial) isDuringTrial else isDuringSub
+                            )
+                            
+                            // 2. Trial Ended (if applicable)
+                            if (subscription.hasFreeTrial) {
+                                TimelineItem(
+                                    date = formatter.format(Date(subStarted)),
+                                    title = stringResource(R.string.sub_timeline_trial_ended),
+                                    amount = "$0.00 ${subscription.currency}",
+                                    isCompleted = now >= subStarted,
+                                    showTodayMarker = false
+                                )
+                                // 3. Actual Subscription Started
+                                TimelineItem(
+                                    date = formatter.format(Date(subStarted)),
+                                    title = stringResource(R.string.sub_timeline_sub_started),
+                                    amount = "${String.format(Locale.getDefault(), "%,.2f", subscription.amount)} ${subscription.currency}",
+                                    isCompleted = now >= subStarted,
+                                    showTodayMarker = isDuringSub
+                                )
+                            }
+                            
+                            TimelineItem(
+                                date = formatter.format(Date(renewalDate)),
+                                title = stringResource(R.string.sub_timeline_renewal),
+                                amount = "${String.format(Locale.getDefault(), "%,.2f", subscription.amount)} ${subscription.currency}",
+                                isCompleted = isPast,
+                                isLast = true,
+                                showTodayMarker = isApproachingRenewal
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Actions
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Pay Now button removed as per request
+                    
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Card 1: Next Payment
-                        val relativeDue = if (diffDays >= 0) {
-                            stringResource(R.string.sub_in_days, diffDays)
+                        if (isPaused) {
+                            Button(
+                                onClick = onResume,
+                                modifier = Modifier.weight(1f).height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+                            ) {
+                                Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.sub_resume), fontWeight = FontWeight.Bold)
+                            }
+                        } else if (!isArchived) {
+                            Button(
+                                onClick = onPause,
+                                modifier = Modifier.weight(1f).height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+                            ) {
+                                Icon(Icons.Default.Pause, null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.sub_pause), fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        if (!isArchived) {
+                            Button(
+                                onClick = onArchive,
+                                modifier = Modifier.weight(1f).height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
+                            ) {
+                                Icon(Icons.Default.Archive, null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.sub_archive), fontWeight = FontWeight.Bold)
+                            }
                         } else {
-                            stringResource(R.string.sub_overdue)
-                        }
-                        DetailMetricTile(
-                            icon = Icons.Default.Event,
-                            label = stringResource(R.string.sub_next_payment),
-                            value = renewalStr,
-                            subValue = relativeDue,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        // Card 2: Billing Cycle
-                        DetailMetricTile(
-                            icon = Icons.Default.Autorenew,
-                            label = stringResource(R.string.sub_billing_cycle),
-                            value = cycleLabel,
-                            subValue = stringResource(R.string.sub_since_date, createdStr),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Card 3: Total Spent
-                        val effectivePaidCount = if (subscription.totalPaidCount > 0) {
-                            subscription.totalPaidCount
-                        } else if (subscription.hasFreeTrial) {
-                            0
-                        } else {
-                            1
-                        }
-                        val effectiveTotalSpent = if (subscription.totalSpent > 0.0) {
-                            subscription.totalSpent
-                        } else {
-                            effectivePaidCount * subscription.amount
-                        }
-
-                        DetailMetricTile(
-                            icon = Icons.Default.Schedule,
-                            label = stringResource(R.string.sub_total_spent),
-                            value = "${String.format(Locale.getDefault(), "%,.1f", effectiveTotalSpent)} ${subscription.currency}",
-                            subValue = stringResource(R.string.sub_over_n_payments, effectivePaidCount),
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        // Card 4: Category
-                        DetailMetricTile(
-                            icon = Icons.Default.Category,
-                            label = stringResource(R.string.sub_category),
-                            value = categoryLabel,
-                            subValue = subscription.name,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
-
-            // 3. SETTINGS TOGGLES (Payment Reminder & Auto-Renew with customizable notification options)
-            item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    color = Color.White,
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    shadowElevation = 1.dp
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        // Reminder switch
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                modifier = Modifier.weight(1f),
-                                verticalAlignment = Alignment.CenterVertically
+                            Button(
+                                onClick = onReactivate,
+                                modifier = Modifier.weight(1f).height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0xFFEFF6FF)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.NotificationsNone,
-                                        contentDescription = null,
-                                        tint = Color(0xFF2563EB),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = stringResource(R.string.sub_payment_reminder),
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = NavyDark
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.sub_reminder_desc),
-                                        fontSize = 11.5.sp,
-                                        color = TextLight
-                                    )
-                                }
+                                Icon(Icons.Default.Unarchive, null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.sub_reactivate), fontWeight = FontWeight.Bold)
                             }
-                            Switch(
-                                checked = isReminderEnabled,
-                                onCheckedChange = { checked ->
-                                    isReminderEnabled = checked
-                                    if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                                            notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                        }
-                                    }
-                                    onUpdateReminder(checked, selectedLeadDays, isDailyRepeat)
-                                    Toast.makeText(context, context.getString(R.string.sub_reminder_saved), Toast.LENGTH_SHORT).show()
-                                },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color(0xFF4F46E5),
-                                    checkedTrackColor = Color(0xFFC7D2FE)
-                                )
-                            )
-                        }
-
-                        // CUSTOMIZABLE REMINDER OPTIONS PICKER (When toggle is ON)
-                        AnimatedVisibility(
-                            visible = isReminderEnabled,
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically()
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(Color(0xFFF8FAFC))
-                                    .padding(14.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.sub_remind_lead_title),
-                                    fontSize = 12.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = NavyDark
-                                )
-
-                                // Timing choice chips (1 day, 2 days, 3 days, 1 week)
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    val options = listOf(
-                                        1 to stringResource(R.string.sub_remind_1_day),
-                                        2 to stringResource(R.string.sub_remind_2_days),
-                                        3 to stringResource(R.string.sub_remind_3_days),
-                                        7 to stringResource(R.string.sub_remind_1_week)
-                                    )
-
-                                    options.forEach { (days, label) ->
-                                        val isSelected = selectedLeadDays == days
-                                        Surface(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .clip(RoundedCornerShape(10.dp))
-                                                .clickable {
-                                                    selectedLeadDays = days
-                                                    onUpdateReminder(true, days, isDailyRepeat)
-                                                    Toast.makeText(context, context.getString(R.string.sub_reminder_saved), Toast.LENGTH_SHORT).show()
-                                                },
-                                            shape = RoundedCornerShape(10.dp),
-                                            color = if (isSelected) Color(0xFF4F46E5) else Color.White,
-                                            border = BorderStroke(1.dp, if (isSelected) Color(0xFF4F46E5) else Color(0xFFE2E8F0))
-                                        ) {
-                                            Text(
-                                                text = label,
-                                                fontSize = 11.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                color = if (isSelected) Color.White else NavyDark,
-                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                                modifier = Modifier.padding(vertical = 8.dp, horizontal = 2.dp)
-                                            )
-                                        }
-                                    }
-                                }
-
-                                HorizontalDivider(color = Color(0xFFE2E8F0))
-
-                                // Daily alerts toggle until renewal date
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = stringResource(R.string.sub_daily_alerts),
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = NavyDark
-                                        )
-                                        Text(
-                                            text = stringResource(R.string.sub_daily_alerts_desc),
-                                            fontSize = 11.sp,
-                                            color = TextLight
-                                        )
-                                    }
-                                    Switch(
-                                        checked = isDailyRepeat,
-                                        onCheckedChange = { repeatChecked ->
-                                            isDailyRepeat = repeatChecked
-                                            onUpdateReminder(true, selectedLeadDays, repeatChecked)
-                                            Toast.makeText(context, context.getString(R.string.sub_reminder_saved), Toast.LENGTH_SHORT).show()
-                                        },
-                                        colors = SwitchDefaults.colors(
-                                            checkedThumbColor = Color(0xFF4F46E5),
-                                            checkedTrackColor = Color(0xFFC7D2FE)
-                                        )
-                                    )
-                                }
-                            }
-                        }
-
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
-
-                        // Auto-Renew switch
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                modifier = Modifier.weight(1f),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0xFFF3E8FF)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Sync,
-                                        contentDescription = null,
-                                        tint = Color(0xFF7E22CE),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = stringResource(R.string.sub_auto_renew),
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = NavyDark
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.sub_auto_renew_desc),
-                                        fontSize = 11.5.sp,
-                                        color = TextLight
-                                    )
-                                }
-                            }
-                            Switch(
-                                checked = subscription.autoDebit,
-                                onCheckedChange = { onToggleAutoRenew() },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color(0xFF4F46E5),
-                                    checkedTrackColor = Color(0xFFC7D2FE)
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 4. LINKED PAYMENT METHOD (WALLET)
-            item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    color = Color.White,
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    shadowElevation = 1.dp
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.sub_payment_methods),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = NavyDark
-                            )
-                            TextButton(onClick = { showAccountPickerSheet = true }) {
-                                Text(
-                                    text = "${stringResource(R.string.sub_change)} >",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF4F46E5)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = Color(0xFFF8FAFC),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0xFFE2E8F0)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.AccountBalanceWallet,
-                                        contentDescription = null,
-                                        tint = NavyDark,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = linkedAccount?.name ?: stringResource(R.string.sub_no_wallet_linked),
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (linkedAccount != null) NavyDark else Color(0xFFDC2626)
-                                    )
-                                    if (linkedAccount != null) {
-                                        Text(
-                                            text = stringResource(
-                                                R.string.sub_wallet_balance,
-                                                "${String.format(Locale.getDefault(), "%,.2f", linkedAccount.current_balance)} ${linkedAccount.currency}"
-                                            ),
-                                            fontSize = 12.sp,
-                                            color = TextLight
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 5. BOTTOM ACTIONS (Pause & Cancel Buttons)
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    if (isPaused) {
-                        Button(
-                            onClick = onResume,
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669))
-                        ) {
-                            Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.sub_resume), fontWeight = FontWeight.Bold)
-                        }
-                    } else if (!isArchived) {
-                        Button(
-                            onClick = onPause,
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEA580C))
-                        ) {
-                            Icon(Icons.Default.Pause, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.sub_pause), fontWeight = FontWeight.Bold)
-                        }
-                    }
-
-                    if (!isArchived) {
-                        Button(
-                            onClick = onArchive,
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
-                        ) {
-                            Icon(Icons.Default.Close, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.sub_archive), fontWeight = FontWeight.Bold)
-                        }
-                    } else {
-                        Button(
-                            onClick = onReactivate,
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669))
-                        ) {
-                            Icon(Icons.Default.Restore, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.sub_reactivate), fontWeight = FontWeight.Bold)
-                        }
-
-                        Button(
-                            onClick = onDelete,
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
-                        ) {
-                            Icon(Icons.Default.DeleteOutline, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.delete), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
         }
+    }
+
+    if (showDeleteSheet) {
+        DeleteConfirmationBottomSheet(
+            subName = subscription.name,
+            onDismiss = { showDeleteSheet = false },
+            onConfirm = {
+                onDelete()
+                showDeleteSheet = false
+            },
+            onCopyName = {
+                clipboardManager?.setText(AnnotatedString(subscription.name))
+                Toast.makeText(context, context.getString(R.string.copied), Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
     // Modal Bottom Sheet to change linked wallet
@@ -817,55 +531,278 @@ fun SubscriptionDetailScreen(
         }
     }
 }
-}
 
 @Composable
-private fun DetailMetricTile(
+private fun SummaryMetric(
     icon: ImageVector,
     label: String,
     value: String,
-    subValue: String,
+    subValue: String? = null,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    Column(
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-        shadowElevation = 1.dp
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = NavyDark,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = label.uppercase(),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextLight,
-                    letterSpacing = 0.5.sp
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = value,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Black,
-                color = NavyDark,
-                maxLines = 1
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFF1F5F9)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = NavyDark,
+                modifier = Modifier.size(20.dp)
             )
-            Spacer(modifier = Modifier.height(2.dp))
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = TextLight,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        Text(
+            text = value,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = NavyDark,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        if (subValue != null) {
             Text(
                 text = subValue,
-                fontSize = 11.5.sp,
+                fontSize = 11.sp,
                 color = TextLight,
-                maxLines = 1
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
+        }
+    }
+}
+
+@Composable
+private fun TimelineItem(
+    date: String,
+    title: String,
+    amount: String,
+    isCompleted: Boolean,
+    isFirst: Boolean = false,
+    isLast: Boolean = false,
+    showTodayMarker: Boolean = false
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+        verticalAlignment = Alignment.Top
+    ) {
+        // Date
+        Text(
+            text = date.split(",").first(),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (isCompleted) NavyDark else TextLight,
+            modifier = Modifier.width(60.dp).padding(top = 2.dp)
+        )
+
+        // Vertical Line and Node
+        Column(
+            modifier = Modifier.fillMaxHeight().width(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (!isFirst) {
+                VerticalDivider(
+                    modifier = Modifier.weight(1f),
+                    color = if (isCompleted) PinkPrimary else Color(0xFFE2E8F0),
+                    thickness = 2.dp
+                )
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .clip(CircleShape)
+                    .background(if (isCompleted) PinkPrimary else Color.White)
+                    .border(2.dp, if (isCompleted) PinkPrimary else Color(0xFFE2E8F0), CircleShape)
+            )
+
+            if (showTodayMarker) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Today",
+                    fontSize = 10.sp,
+                    color = PinkPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+                VerticalDivider(
+                    modifier = Modifier.height(16.dp),
+                    color = PinkPrimary,
+                    thickness = 2.dp
+                )
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(PinkPrimary)
+                )
+                Canvas(modifier = Modifier.weight(1f).width(2.dp)) {
+                    drawLine(
+                        color = Color(0xFFE2E8F0),
+                        start = Offset(size.width / 2, 0f),
+                        end = Offset(size.width / 2, size.height),
+                        strokeWidth = 2.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                    )
+                }
+            } else if (!isLast) {
+                VerticalDivider(
+                    modifier = Modifier.weight(1f),
+                    color = if (isCompleted) PinkPrimary else Color(0xFFE2E8F0),
+                    thickness = 2.dp
+                )
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+
+        // Content
+        Row(
+            modifier = Modifier.weight(1f).padding(bottom = 24.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isCompleted) NavyDark else TextLight
+            )
+            Text(
+                text = amount,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isCompleted) NavyDark else TextLight
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DeleteConfirmationBottomSheet(
+    subName: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    onCopyName: () -> Unit
+) {
+    var confirmText by remember { mutableStateOf("") }
+    val isConfirmed = confirmText.trim().equals(subName.trim(), ignoreCase = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+                .padding(bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Surface(
+                modifier = Modifier.size(64.dp),
+                shape = CircleShape,
+                color = Color(0xFFFEF2F2)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteForever,
+                        contentDescription = null,
+                        tint = Color.Red,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = stringResource(R.string.sub_confirm_delete_title),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = NavyDark
+            )
+
+            Text(
+                text = stringResource(R.string.sub_confirm_delete_msg),
+                fontSize = 14.sp,
+                color = TextLight,
+                textAlign = TextAlign.Center,
+                lineHeight = 20.sp
+            )
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFFF1F5F9),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = subName,
+                        modifier = Modifier.weight(1f),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark
+                    )
+                    TextButton(onClick = onCopyName) {
+                        Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(stringResource(R.string.sub_copy_name), fontSize = 12.sp)
+                    }
+                }
+            }
+
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = stringResource(R.string.sub_confirm_delete_hint),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextLight,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                )
+                OutlinedTextField(
+                    value = confirmText,
+                    onValueChange = { confirmText = it },
+                    placeholder = { Text(subName, color = TextLight.copy(alpha = 0.5f)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = if (isConfirmed) Color(0xFF10B981) else Color.Red,
+                        unfocusedBorderColor = Color(0xFFE2E8F0)
+                    )
+                )
+            }
+
+            Button(
+                onClick = onConfirm,
+                enabled = isConfirmed,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Red,
+                    disabledContainerColor = Color.Red.copy(alpha = 0.3f)
+                )
+            ) {
+                Text(stringResource(R.string.delete), fontWeight = FontWeight.Bold, color = Color.White)
+            }
         }
     }
 }

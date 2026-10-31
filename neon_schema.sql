@@ -231,7 +231,137 @@ DROP POLICY IF EXISTS "Users can manage their own accounts" ON accounts;
 DROP POLICY IF EXISTS "Users can manage their own account_transactions" ON account_transactions;
 DROP POLICY IF EXISTS "Users can manage their own pending_transactions" ON pending_transactions;
 
--- CREATE PERMISSIVE POLICIES FOR ALL OPERATORS (INSERT/SELECT/UPDATE/DELETE)
+-- 13. Assets table (new)
+CREATE TABLE IF NOT EXISTS assets (
+    id TEXT PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    "weightGrams" DOUBLE PRECISION DEFAULT 0,
+    purity TEXT DEFAULT '21k',
+    "principalAmount" DOUBLE PRECISION DEFAULT 0,
+    "annualRate" DOUBLE PRECISION DEFAULT 0,
+    "purchasePrice" DOUBLE PRECISION DEFAULT 0,
+    "startDate" BIGINT NOT NULL,
+    "maturityDate" BIGINT,
+    "createdAt" BIGINT NOT NULL,
+    "updatedAt" BIGINT NOT NULL,
+    "isSynced" BOOLEAN DEFAULT false,
+    "is_deleted" BOOLEAN DEFAULT false
+);
+
+-- 14. Live market rates table (new, singleton)
+CREATE TABLE IF NOT EXISTS live_market_rates (
+    id TEXT PRIMARY KEY,
+    "gold24k" DOUBLE PRECISION DEFAULT 4120.0,
+    "gold21k" DOUBLE PRECISION DEFAULT 3605.0,
+    "gold18k" DOUBLE PRECISION DEFAULT 3090.0,
+    "silver999" DOUBLE PRECISION DEFAULT 52.0,
+    "silver925" DOUBLE PRECISION DEFAULT 48.0,
+    "silver900" DOUBLE PRECISION DEFAULT 46.8,
+    "lastUpdated" BIGINT NOT NULL
+);
+
+-- 15. Portfolio history table (new)
+CREATE TABLE IF NOT EXISTS portfolio_history (
+    id TEXT PRIMARY KEY,
+    date BIGINT NOT NULL,
+    "totalPortfolioValue" DOUBLE PRECISION DEFAULT 0
+);
+
+-- 16. Journal entries table (new)
+CREATE TABLE IF NOT EXISTS journal_entries (
+    id TEXT PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    date BIGINT NOT NULL,
+    description TEXT NOT NULL,
+    type TEXT NOT NULL,
+    "createdAt" BIGINT NOT NULL,
+    "updatedAt" BIGINT NOT NULL,
+    "isSynced" BOOLEAN DEFAULT false,
+    "is_deleted" BOOLEAN DEFAULT false
+);
+
+-- 17. Postings table (new)
+CREATE TABLE IF NOT EXISTS postings (
+    id TEXT PRIMARY KEY,
+    "journalEntryId" TEXT NOT NULL,
+    "accountId" TEXT NOT NULL,
+    amount DOUBLE PRECISION NOT NULL,
+    "isDebit" BOOLEAN DEFAULT false,
+    "createdAt" BIGINT NOT NULL,
+    "updatedAt" BIGINT NOT NULL,
+    "isSynced" BOOLEAN DEFAULT false,
+    "is_deleted" BOOLEAN DEFAULT false
+);
+CREATE INDEX IF NOT EXISTS idx_postings_journal ON postings("journalEntryId");
+CREATE INDEX IF NOT EXISTS idx_postings_account ON postings("accountId");
+
+-- 18. Subscriptions table (new)
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id TEXT PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    name TEXT NOT NULL,
+    "logoUrl" TEXT,
+    amount DOUBLE PRECISION NOT NULL,
+    currency TEXT DEFAULT 'EGP',
+    "billingCycle" TEXT DEFAULT 'MONTHLY',
+    "nextRenewalDate" BIGINT NOT NULL,
+    "accountId" TEXT DEFAULT '',
+    "autoDebit" BOOLEAN DEFAULT false,
+    "isActive" BOOLEAN DEFAULT true,
+    category TEXT DEFAULT 'subscriptions',
+    status TEXT DEFAULT 'ACTIVE',
+    "hasFreeTrial" BOOLEAN DEFAULT false,
+    "trialDays" INTEGER DEFAULT 0,
+    "trialEndsAt" BIGINT DEFAULT 0,
+    "totalPaidCount" INTEGER DEFAULT 0,
+    "totalSpent" DOUBLE PRECISION DEFAULT 0,
+    "reminderEnabled" BOOLEAN DEFAULT true,
+    "reminderLeadDays" INTEGER DEFAULT 2,
+    "reminderDailyRepeat" BOOLEAN DEFAULT false,
+    "createdAt" BIGINT NOT NULL,
+    "updatedAt" BIGINT NOT NULL,
+    "isSynced" BOOLEAN DEFAULT false,
+    "is_deleted" BOOLEAN DEFAULT false
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_account ON subscriptions("accountId");
+
+-- Add missing columns to existing tables (newly added data fields)
+ALTER TABLE goals ADD COLUMN IF NOT EXISTS "backedByAssetId" TEXT;
+ALTER TABLE loans ADD COLUMN IF NOT EXISTS "accountId" TEXT;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS "goldWeightGrams" DOUBLE PRECISION;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS "goldKarat" INTEGER;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS "isAutoUpdateGoldPrice" BOOLEAN DEFAULT false;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS "certificatePrincipal" DOUBLE PRECISION;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS "certificateInterestRate" DOUBLE PRECISION;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS "certificatePayoutFrequency" TEXT;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS "isSystemAccount" BOOLEAN DEFAULT false;
+
+-- ENABLE RLS FOR NEW TABLES
+ALTER TABLE assets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE live_market_rates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE portfolio_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE journal_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE postings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- DROP OLD POLICIES IF PRESENT (new tables)
+DROP POLICY IF EXISTS "Enable all access for assets" ON assets;
+DROP POLICY IF EXISTS "Enable all access for live_market_rates" ON live_market_rates;
+DROP POLICY IF EXISTS "Enable all access for portfolio_history" ON portfolio_history;
+DROP POLICY IF EXISTS "Enable all access for journal_entries" ON journal_entries;
+DROP POLICY IF EXISTS "Enable all access for postings" ON postings;
+DROP POLICY IF EXISTS "Enable all access for subscriptions" ON subscriptions;
+
+-- CREATE PERMISSIVE POLICIES FOR NEW TABLES
+CREATE POLICY "Enable all access for assets" ON assets FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all access for live_market_rates" ON live_market_rates FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all access for portfolio_history" ON portfolio_history FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all access for journal_entries" ON journal_entries FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all access for postings" ON postings FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all access for subscriptions" ON subscriptions FOR ALL USING (true) WITH CHECK (true);
+
 CREATE POLICY "Enable all access for goals" ON goals FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all access for transactions" ON transactions FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all access for loans" ON loans FOR ALL USING (true) WITH CHECK (true);

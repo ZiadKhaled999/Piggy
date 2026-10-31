@@ -1193,7 +1193,7 @@ class PiggyLedgerViewModel(
     fun canAddAccount(currentCount: Int): Boolean = isPremium.value || currentCount < 2
     fun canAddBudget(): Boolean = isPremium.value
     fun canAddGoal(currentCount: Int): Boolean = isPremium.value || currentCount < 2
-    fun canAddLoan(currentCount: Int): Boolean = isPremium.value || currentCount < 2
+    fun canAddLoan(currentCount: Int): Boolean = isPremium.value || currentCount < 15
     fun canAccessFullAnalytics(): Boolean = isPremium.value
     fun canExportData(): Boolean = isPremium.value
     fun canUseCustomCategories(): Boolean = isPremium.value

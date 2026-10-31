@@ -345,9 +345,12 @@ class PiggyLedgerViewModel(
     fun setAppLanguage(lang: String) {
         viewModelScope.launch {
             userPreferences.saveAppLanguage(lang)
-            androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
-                androidx.core.os.LocaleListCompat.forLanguageTags(lang)
-            )
+            val currentLocales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags()
+            if (!currentLocales.contains(lang)) {
+                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                    androidx.core.os.LocaleListCompat.forLanguageTags(lang)
+                )
+            }
             java.util.Locale.setDefault(java.util.Locale.forLanguageTag(lang))
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
@@ -1194,7 +1197,7 @@ class PiggyLedgerViewModel(
     fun canAddAccount(currentCount: Int): Boolean = isPremium.value || currentCount < 2
     fun canAddBudget(): Boolean = isPremium.value
     fun canAddGoal(currentCount: Int): Boolean = isPremium.value || currentCount < 2
-    fun canAddLoan(currentCount: Int): Boolean = isPremium.value || currentCount < 2
+    fun canAddLoan(currentCount: Int): Boolean = isPremium.value || currentCount < 15
     fun canAccessFullAnalytics(): Boolean = isPremium.value
     fun canExportData(): Boolean = isPremium.value
     fun canUseCustomCategories(): Boolean = isPremium.value

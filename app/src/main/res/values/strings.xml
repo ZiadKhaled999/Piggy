@@ -1062,6 +1062,7 @@
     <string name="comp_cloud_sync">Cloud Backup &amp; Sync</string>
     <string name="comp_priority_support">Priority Support</string>
     <string name="two_max">2 Max</string>
+    <string name="fifteen_max">15 Max</string>
     <string name="plan_lifetime_desc_2">Unlock lifetime unlimited access &amp; all future features</string>
     <string name="plan_lifetime_renew_2">One-time payment of %s. No renewal or hidden fees.</string>
     <string name="upgrade_lifetime_2">Upgrade Lifetime</string>

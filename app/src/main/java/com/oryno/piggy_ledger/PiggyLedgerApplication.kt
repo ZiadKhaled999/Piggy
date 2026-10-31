@@ -31,7 +31,10 @@ class PiggyLedgerApplication : Application() {
         try {
             val savedLanguage = UserPreferences.getSavedAppLanguageSync(this)
             if (!savedLanguage.isNullOrBlank()) {
-                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(savedLanguage))
+                val currentLocales = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                if (!currentLocales.contains(savedLanguage)) {
+                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(savedLanguage))
+                }
                 java.util.Locale.setDefault(java.util.Locale.forLanguageTag(savedLanguage))
             }
         } catch (e: Exception) {

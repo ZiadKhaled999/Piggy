@@ -1260,7 +1260,7 @@ fun PiggyLedgerPaywall(
     val comparisonFeatures = listOf(
         FeatureComparisonRow(stringResource(R.string.comp_piggy_ai), FeatureStatus.TextValue(stringResource(R.string.comp_piggy_ai_free)), FeatureStatus.TextValue(stringResource(R.string.comp_piggy_ai_pro))),
         FeatureComparisonRow(stringResource(R.string.comp_acc_goals), FeatureStatus.TextValue(stringResource(R.string.two_max)), FeatureStatus.Check),
-        FeatureComparisonRow(stringResource(R.string.comp_budgets_loans), FeatureStatus.TextValue(stringResource(R.string.two_max)), FeatureStatus.Check),
+        FeatureComparisonRow(stringResource(R.string.comp_budgets_loans), FeatureStatus.TextValue(stringResource(R.string.fifteen_max)), FeatureStatus.Check),
         FeatureComparisonRow(stringResource(R.string.comp_adv_analytics), FeatureStatus.Dash, FeatureStatus.Check),
         FeatureComparisonRow(stringResource(R.string.comp_export), FeatureStatus.Dash, FeatureStatus.Check),
         FeatureComparisonRow(stringResource(R.string.comp_custom_categories), FeatureStatus.Dash, FeatureStatus.Check),

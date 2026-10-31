@@ -1029,6 +1029,7 @@
     <string name="comp_cloud_sync">نسخ احتياطي ومزامنة سحابية</string>
     <string name="comp_priority_support">أولوية الدعم</string>
     <string name="two_max">2 كحد أقصى</string>
+    <string name="fifteen_max">15 كحد أقصى</string>
     <string name="plan_lifetime_desc_2">وصول دائم لجميع الميزات الحالية والمستقبلية</string>
     <string name="plan_lifetime_renew_2">دفعة واحدة بقيمة %s. بدون تجديد أو رسوم خفية.</string>
     <string name="upgrade_lifetime_2">ترقية مدى الحياة</string>

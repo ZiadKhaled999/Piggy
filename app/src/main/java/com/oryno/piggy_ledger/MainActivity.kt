@@ -152,10 +152,8 @@ class MainActivity : AppCompatActivity() {
     try {
         val savedLanguage = UserPreferences.getSavedAppLanguageSync(this)
         if (!savedLanguage.isNullOrBlank()) {
-            val currentLocales = AppCompatDelegate.getApplicationLocales().toLanguageTags()
-            if (!currentLocales.contains(savedLanguage)) {
-                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(savedLanguage))
-            }
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(savedLanguage))
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag(savedLanguage))
         }
     } catch (e: Exception) {
         android.util.Log.e("MainActivity", "Failed to apply saved language", e)

@@ -348,6 +348,7 @@ class PiggyLedgerViewModel(
             androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
                 androidx.core.os.LocaleListCompat.forLanguageTags(lang)
             )
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag(lang))
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
         }

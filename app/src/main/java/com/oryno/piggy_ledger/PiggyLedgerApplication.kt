@@ -32,6 +32,7 @@ class PiggyLedgerApplication : Application() {
             val savedLanguage = UserPreferences.getSavedAppLanguageSync(this)
             if (!savedLanguage.isNullOrBlank()) {
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(savedLanguage))
+                java.util.Locale.setDefault(java.util.Locale.forLanguageTag(savedLanguage))
             }
         } catch (e: Exception) {
             Log.e("PiggyLedgerApp", "Failed to restore saved app locale", e)

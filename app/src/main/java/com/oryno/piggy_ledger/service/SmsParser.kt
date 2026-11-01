@@ -5,7 +5,8 @@ data class ParsedSms(
     val merchant: String,
     val date: String?,
     val isIncome: Boolean = false,
-    val actionType: SmsActionType = SmsActionType.UNKNOWN
+    val actionType: SmsActionType = SmsActionType.UNKNOWN,
+    val reference: String? = null
 )
 
 object SmsParser {
@@ -160,6 +161,11 @@ object SmsParser {
         val dateMatch = dateRegex.find(body)
         val date = dateMatch?.value
 
-        return ParsedSms(amount, merchant, date, isIncome, actionType)
+        val reference = Regex("""(?i)(?:ref(?:erence)?|rrn|txn|transaction|رقم العملية|المرجع)\s*[:#]?\s*([A-Z0-9]{6,20})""")
+            .find(body)
+            ?.groupValues
+            ?.getOrNull(1)
+
+        return ParsedSms(amount, merchant, date, isIncome, actionType, reference)
     }
 }

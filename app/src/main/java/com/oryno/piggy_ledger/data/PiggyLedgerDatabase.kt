@@ -8,7 +8,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Goal::class, Transaction::class, Loan::class, LoanPayment::class, Account::class, AccountTransaction::class, PendingTransaction::class, AiChatMessage::class, AiConversation::class, UserPreferencesEntity::class, StreakDateEntity::class, OnboardingAnswer::class, JournalEntryEntity::class, PostingEntity::class, SubscriptionEntity::class, AssetEntity::class, LiveMarketRatesEntity::class, PortfolioHistoryEntity::class], version = 27, exportSchema = false)
+@Database(entities = [Goal::class, Transaction::class, Loan::class, LoanPayment::class, Account::class, AccountTransaction::class, PendingTransaction::class, AiChatMessage::class, AiConversation::class, UserPreferencesEntity::class, StreakDateEntity::class, OnboardingAnswer::class, JournalEntryEntity::class, PostingEntity::class, SubscriptionEntity::class, AssetEntity::class, LiveMarketRatesEntity::class, PortfolioHistoryEntity::class], version = 28, exportSchema = true)
 abstract class PiggyLedgerDatabase : RoomDatabase() {
 
     companion object {
@@ -32,6 +32,21 @@ abstract class PiggyLedgerDatabase : RoomDatabase() {
                         WHERE journal_entries.id = postings.journalEntryId
                     )
                 """)
+            }
+        }
+
+        val MIGRATION_27_28 = object : Migration(27, 28) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pending_transactions ADD COLUMN source TEXT NOT NULL DEFAULT 'AUTOMATIC_SMS'")
+                db.execSQL("ALTER TABLE pending_transactions ADD COLUMN notificationPackage TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE pending_transactions ADD COLUMN sourceKey TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE pending_transactions ADD COLUMN reference TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE pending_transactions ADD COLUMN duplicateGroupId TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE pending_transactions ADD COLUMN needsReview INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE account_transactions ADD COLUMN sourceKey TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE account_transactions ADD COLUMN reference TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE account_transactions ADD COLUMN duplicateGroupId TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE account_transactions ADD COLUMN needsReview INTEGER NOT NULL DEFAULT 0")
             }
         }
 
@@ -377,8 +392,8 @@ abstract class PiggyLedgerDatabase : RoomDatabase() {
                 PiggyLedgerDatabase::class.java,
                 DB_NAME
             )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27)
-            .fallbackToDestructiveMigration()
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28)
+            // Do NOT re-add fallbackToDestructiveMigration — local writes are unrecoverable. A migration crash is better than silent data loss.
             .build()
         }
 

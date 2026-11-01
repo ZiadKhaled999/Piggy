@@ -320,6 +320,12 @@ fun SettingsMainContent(
         )
 
         SettingsItem(
+            title = stringResource(R.string.notification_parser_title),
+            iconRes = R.drawable.img_settings_security,
+            onClick = { onModeChange(SettingsMode.NOTIFICATION_PARSING) }
+        )
+
+        SettingsItem(
             title = stringResource(R.string.language),
             iconRes = R.drawable.img_settings_language,
             onClick = { onModeChange(SettingsMode.LANGUAGE) }
@@ -625,6 +631,9 @@ fun DetailSettingsView(
                     viewModel = viewModel,
                     onOpenManageKeywords = { showManageCustomKeywordsSheet = true }
                 )
+            }
+            SettingsMode.NOTIFICATION_PARSING -> {
+                NotificationParserSettingsView(onBack = onBack)
             }
             else -> {}
         }

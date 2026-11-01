@@ -1,6 +1,7 @@
 package com.oryno.piggy_ledger.data
 
 import androidx.room.Entity
+import androidx.room.ColumnInfo
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
 import java.util.UUID
@@ -261,11 +262,15 @@ data class AccountTransaction(
     val amount: Double,
     val merchant: String,
     val timestamp: Long = System.currentTimeMillis(),
-    val source: String = "AUTOMATIC_SMS",
+@ColumnInfo(defaultValue = "AUTOMATIC_SMS") val source: String = "AUTOMATIC_SMS",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false,
-    val is_deleted: Boolean = false
+    val is_deleted: Boolean = false,
+    val sourceKey: String? = null,
+    val reference: String? = null,
+    val duplicateGroupId: String? = null,
+@ColumnInfo(defaultValue = "0") val needsReview: Boolean = false
 )
 
 @Serializable
@@ -357,7 +362,13 @@ data class PendingTransaction(
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false,
-    val is_deleted: Boolean = false
+    val is_deleted: Boolean = false,
+@ColumnInfo(defaultValue = "AUTOMATIC_SMS") val source: String = "AUTOMATIC_SMS",
+    val notificationPackage: String? = null,
+    val sourceKey: String? = null,
+    val reference: String? = null,
+    val duplicateGroupId: String? = null,
+@ColumnInfo(defaultValue = "0") val needsReview: Boolean = false
 )
 
 @Serializable

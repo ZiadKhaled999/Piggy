@@ -26,6 +26,10 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
+  ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+  }
+
   signingConfigs {
     create("release") {
       val keystoreFile = file("release.keystore")

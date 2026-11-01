@@ -190,7 +190,7 @@ fun PwcInsightSlide(
                         )
 
                         Text(
-                            text = "56,000+ Workers • 50 Countries",
+                            text = stringResource(R.string.onboarding_pwc_stat_label),
                             fontSize = if (isSmallScreen) 11.sp else 12.5.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = SlateDark
@@ -403,7 +403,7 @@ fun GallupInsightSlide(
                         )
 
                         Text(
-                            text = "128,000 Employees • 160 Countries",
+                            text = stringResource(R.string.onboarding_gallup_stat_label),
                             fontSize = if (isSmallScreen) 11.sp else 12.5.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = SlateDark

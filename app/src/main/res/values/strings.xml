@@ -916,10 +916,12 @@
     <string name="onboarding_pwc_title_rest">&#160;are still\nfinancially\nstressed</string>
     <string name="onboarding_pwc_body">PwC\'s 2024 Global Workforce survey of more than 56,000 workers in 50 countries found 52% are still financially stressed.</string>
     <string name="onboarding_pwc_source">Source: PwC Global Workforce 2024</string>
+    <string name="onboarding_pwc_stat_label">56,000+ Workers • 50 Countries</string>
     <string name="onboarding_gallup_title_highlight">4 in 10 workers</string>
     <string name="onboarding_gallup_title_rest">&#160;feel stressed\nevery single\nday</string>
     <string name="onboarding_gallup_body">Gallup\'s State of the Global Workplace 2024, based on 128,000 employees in 160 countries, found 41% experienced a lot of stress the previous day.</string>
     <string name="onboarding_gallup_source">Source: Gallup Global Workplace 2024</string>
+    <string name="onboarding_gallup_stat_label">128,000 Employees • 160 Countries</string>
     <string name="onboarding_relatable_header">Do you relate to the statement below?</string>
     <string name="onboarding_relatable_statement_1">"Whenever I get paid, I feel like none of the money is actually mine because of what I owe."</string>
     <string name="onboarding_relatable_statement_2">"My money is split across so many accounts that I never actually know how much I'm safe to spend."</string>

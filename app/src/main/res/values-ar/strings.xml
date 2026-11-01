@@ -875,10 +875,12 @@
     <string name="onboarding_pwc_title_rest">&#160;ما زالوا يعانون\nمن الضغط المالي</string>
     <string name="onboarding_pwc_body">وجد استطلاع القوى العاملة العالمية لعام 2024 الصادر عن PwC، والذي شمل أكثر من 56,000 عامل في 50 دولة، أن 52% منهم ما زالوا يعانون من ضغوط مالية.</string>
     <string name="onboarding_pwc_source">المصدر: استطلاع PwC العالمي للقوى العاملة 2024</string>
+    <string name="onboarding_pwc_stat_label">أكثر من 56,000 موظف • 50 دولة</string>
     <string name="onboarding_gallup_title_highlight">4 من كل 10 موظفين</string>
     <string name="onboarding_gallup_title_rest">&#160;يشعرون بالتوتر\nفي كل يوم</string>
     <string name="onboarding_gallup_body">أظهر تقرير حالة بيئة العمل العالمية لعام 2024 من Gallup، استناداً إلى 128,000 موظف في 160 دولة، أن 41% شعروا بالكثير من التوتر في اليوم السابق.</string>
     <string name="onboarding_gallup_source">المصدر: تقرير Gallup العالمي لبيئة العمل 2024</string>
+    <string name="onboarding_gallup_stat_label">128,000 موظف • 160 دولة</string>
     <string name="onboarding_relatable_header">هل تتفق مع العبارة التالية؟</string>
     <string name="onboarding_flash_sale_title">عرض خاص!</string>
     <string name="onboarding_flash_sale_subtitle">رؤى أكثر. تتبع أفضل. توفير أكثر. احصل على متتبع الشؤون المالية الذي يساعدك على تحقيق أهدافك بشكل أسرع!</string>

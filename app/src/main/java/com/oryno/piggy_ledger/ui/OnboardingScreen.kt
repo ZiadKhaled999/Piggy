@@ -118,6 +118,12 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
 
     var isPlanFinished by remember { mutableStateOf(false) }
 
+    LaunchedEffect(currentPage) {
+        if (currentPage == 14) {
+            isPlanFinished = false
+        }
+    }
+
     var relatesToLoans by remember { mutableStateOf<Boolean?>(null) }
     var relatesToAccounts by remember { mutableStateOf<Boolean?>(null) }
     var relatesToEmergency by remember { mutableStateOf<Boolean?>(null) }
@@ -1881,6 +1887,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = if (isSmallScreen) 68.dp else 84.dp)
                 .padding(bottom = if (isSmallScreen) 12.dp else 24.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -1901,7 +1908,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                 }
             }
 
-            if (currentPage !in 8..10 && currentPage !in listOf(7, 11, 13)) {
+            if (currentPage !in 8..10 && currentPage !in listOf(7, 11, 13) && (currentPage != 14 || isPlanFinished)) {
                 // Custom Progress Button - always responsive
                 ProgressNextButton(
                     currentPage = currentPage,
@@ -1909,9 +1916,6 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                     isSmallScreen = isSmallScreen,
                     enabled = true,
                     onNext = {
-                        if (currentPage == 14 && !isPlanFinished) {
-                            isPlanFinished = true
-                        }
                         if (currentPage < pages.size - 1) {
                             if (currentPage == 5 && selectedIntent == -1) {
                                 com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.please_select_option), Toast.LENGTH_SHORT)

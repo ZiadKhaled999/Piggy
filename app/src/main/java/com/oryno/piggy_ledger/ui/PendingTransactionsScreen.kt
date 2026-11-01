@@ -223,12 +223,12 @@ fun DuplicateGroupCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(Modifier.padding(12.dp)) {
-            Text("Possible duplicate", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = NavyDark)
-            Text("Two alerts for the same amount. Choose which is real, or keep both.", fontSize = 12.sp, color = TextLight)
+            Text(stringResource(R.string.possible_duplicate_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = NavyDark)
+            Text(stringResource(R.string.possible_duplicate_desc), fontSize = 12.sp, color = TextLight)
             Spacer(Modifier.height(8.dp))
             group.forEach { tx ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(when (tx.source) { "AUTOMATIC_NOTIFICATION" -> "Notification" else -> "SMS" }, fontSize = 11.sp, color = NavyDark)
+                    Text(when (tx.source) { "AUTOMATIC_NOTIFICATION" -> stringResource(R.string.source_notification) else -> stringResource(R.string.source_sms) }, fontSize = 11.sp, color = NavyDark)
                     Spacer(Modifier.width(6.dp))
                     Text(tx.merchant, fontSize = 13.sp, color = NavyDark, modifier = Modifier.weight(1f))
                     Text(String.format(Locale.US, "%s%.2f", if (tx.amount > 0) "+" else "-", Math.abs(tx.amount)), fontSize = 13.sp, fontWeight = FontWeight.Bold)
@@ -240,14 +240,14 @@ fun DuplicateGroupCard(
                     TextButton(onClick = {
                         group.firstOrNull { it.source == "AUTOMATIC_SMS" }?.let { viewModel.keepSms(it.id) }
                         group.firstOrNull { it.source == "AUTOMATIC_NOTIFICATION" }?.let { viewModel.discardBoth(listOf(it.id)) }
-                    }) { Text("Keep SMS") }
+                    }) { Text(stringResource(R.string.keep_sms)) }
                     TextButton(onClick = {
                         group.firstOrNull { it.source == "AUTOMATIC_NOTIFICATION" }?.let { viewModel.keepNotification(it.id) }
                         group.firstOrNull { it.source == "AUTOMATIC_SMS" }?.let { viewModel.discardBoth(listOf(it.id)) }
-                    }) { Text("Keep Notification") }
+                    }) { Text(stringResource(R.string.keep_notification)) }
                 }
-                TextButton(onClick = { viewModel.keepBoth(group.map { it.id }) }) { Text("Keep both") }
-                TextButton(onClick = { viewModel.discardBoth(group.map { it.id }) }) { Text("Discard both") }
+                TextButton(onClick = { viewModel.keepBoth(group.map { it.id }) }) { Text(stringResource(R.string.keep_both)) }
+                TextButton(onClick = { viewModel.discardBoth(group.map { it.id }) }) { Text(stringResource(R.string.discard_both)) }
             }
         }
     }
@@ -311,7 +311,7 @@ fun PendingTransactionItem(
                     Spacer(Modifier.width(6.dp))
                     Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
                         Text(
-                            text = when (tx.source) { "AUTOMATIC_NOTIFICATION" -> "Notification" else -> "SMS" },
+                            text = when (tx.source) { "AUTOMATIC_NOTIFICATION" -> stringResource(R.string.source_notification) else -> stringResource(R.string.source_sms) },
                             fontSize = 10.sp,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )

@@ -161,10 +161,10 @@ object SmsParser {
         val dateMatch = dateRegex.find(body)
         val date = dateMatch?.value
 
-        val reference = Regex("""(?i)(?:ref(?:erence)?|rrn|txn|transaction|رقم العملية|المرجع)\s*[:#]?\s*([A-Z0-9]{6,20})""")
-            .find(body)
-            ?.groupValues
-            ?.getOrNull(1)
+val reference = Regex("""(?i)(?:\b(?:ref(?:erence)?|rrn|txn|transaction)|رقم العملية|المرجع)\s*[:#]?\s*((?=.*\d)[A-Z0-9]{6,20})""")
+    .find(body)
+    ?.groupValues
+    ?.getOrNull(1)
 
         return ParsedSms(amount, merchant, date, isIncome, actionType, reference)
     }

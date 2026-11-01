@@ -8,9 +8,13 @@ import com.oryno.piggy_ledger.data.PendingTransaction
 import com.oryno.piggy_ledger.data.PiggyLedgerDatabase
 import com.oryno.piggy_ledger.ui.NotificationHelper
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 object TransactionIngestor {
+
+    private val ingestMutex = Mutex()
 
     const val SOURCE_SMS = "AUTOMATIC_SMS"
     const val SOURCE_NOTIFICATION = "AUTOMATIC_NOTIFICATION"
@@ -23,6 +27,7 @@ object TransactionIngestor {
         sourceKey: String? = null,
         notificationPackage: String? = null
     ) = withContext(Dispatchers.IO) {
+        ingestMutex.withLock {
         if (isPromotional(rawBody, senderLabel)) {
             Log.d("TransactionIngestor", "Ignoring promotional content from $senderLabel")
             return@withContext
@@ -100,17 +105,15 @@ object TransactionIngestor {
                         source = source,
                         notificationPackage = notificationPackage,
                         sourceKey = sourceKey,
-                        reference = parsed.reference,
+                        reference = if (dedup.matchedTable == "account_transactions") dedup.matchedRowId else parsed.reference,
                         needsReview = true,
                         duplicateGroupId = dedup.groupId
                     )
                 )
-                dedup.matchedRowId?.let { existingId ->
-                    dao.flagDuplicate(
-                        table = dedup.matchedTable ?: "",
-                        id = existingId,
-                        groupId = dedup.groupId
-                    )
+                if (dedup.matchedTable == "pending_transactions") {
+                    dedup.matchedRowId?.let { existingId ->
+                        dao.flagPendingDuplicate(existingId, dedup.groupId)
+                    }
                 }
                 Log.d("TransactionIngestor", "Flagged duplicate group ${dedup.groupId}")
                 return@withContext
@@ -130,9 +133,8 @@ object TransactionIngestor {
                         source = source,
                         sourceKey = sourceKey,
                         reference = parsed.reference
-                    )
-                    matchedId?.let { dao.flagPendingDuplicate(it, dedup.groupId) }
-                    dao.flagAccountDuplicate(newAccountTxnId, dedup.groupId)
+                    ) ?: return@withContext
+                    matchedId?.let { dao.deletePendingTransactionById(it) }
                     return@withContext
                 }
 
@@ -187,6 +189,8 @@ object TransactionIngestor {
                     reference = parsed.reference
                 )
             )
+        }
+
         }
 
     }

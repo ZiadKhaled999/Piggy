@@ -490,6 +490,11 @@ fun DetailSettingsView(
         return
     }
 
+    if (mode == SettingsMode.NOTIFICATION_PARSING) {
+        NotificationParserSettingsView(onBack = onBack)
+        return
+    }
+
     if (mode == SettingsMode.PRO) {
         PiggyLedgerProView(
             viewModel = viewModel,
@@ -631,9 +636,6 @@ fun DetailSettingsView(
                     viewModel = viewModel,
                     onOpenManageKeywords = { showManageCustomKeywordsSheet = true }
                 )
-            }
-            SettingsMode.NOTIFICATION_PARSING -> {
-                NotificationParserSettingsView(onBack = onBack)
             }
             else -> {}
         }

@@ -156,9 +156,8 @@ interface PiggyLedgerDao {
     suspend fun insertAccountTransaction(transaction: AccountTransaction)
 
     @androidx.room.Transaction
-    suspend fun processSmsTransaction(accountId: String, amount: Double, merchant: String, applyInstaPayFee: Boolean, isIncome: Boolean = false, source: String = "AUTOMATIC_SMS", sourceKey: String? = null, reference: String? = null): String {
-        val account = getAccountById(accountId)
-            ?: throw IllegalStateException("Account $accountId not found")
+    suspend fun processSmsTransaction(accountId: String, amount: Double, merchant: String, applyInstaPayFee: Boolean, isIncome: Boolean = false, source: String = "AUTOMATIC_SMS", sourceKey: String? = null, reference: String? = null): String? {
+        val account = getAccountById(accountId) ?: return null
 
         var finalAmount = amount
         if (!isIncome && applyInstaPayFee) {

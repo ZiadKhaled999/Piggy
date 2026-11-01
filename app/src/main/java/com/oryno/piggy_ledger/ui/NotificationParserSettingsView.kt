@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +46,9 @@ fun NotificationParserSettingsView(onBack: () -> Unit) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                 hasAccess = isListenerAccessGranted(context)
-                apps = loadInstalledApps(context)
+                scope.launch {
+                    apps = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { loadInstalledApps(context) }
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -53,7 +56,9 @@ fun NotificationParserSettingsView(onBack: () -> Unit) {
     }
 
     LaunchedEffect(Unit) {
-        apps = loadInstalledApps(context)
+        scope.launch {
+            apps = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { loadInstalledApps(context) }
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
@@ -163,11 +168,8 @@ fun NotificationParserSettingsView(onBack: () -> Unit) {
 }
 
 private fun isListenerAccessGranted(context: Context): Boolean {
-    val manager = context.getSystemService(Context.NOTIFICATION_SERVICE)
-        as android.app.NotificationManager
-    return manager.isNotificationListenerAccessGranted(
-        ComponentName(context, BankNotificationListenerService::class.java)
-    )
+    val enabled = NotificationManagerCompat.getEnabledListenerPackages(context)
+    return enabled.contains(context.packageName)
 }
 
 private fun openNotificationAccessSettings(context: Context) {

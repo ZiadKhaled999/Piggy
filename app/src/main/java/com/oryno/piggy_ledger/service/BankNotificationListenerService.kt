@@ -18,6 +18,8 @@ class BankNotificationListenerService : NotificationListenerService() {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>?) = size > 200
     }
 
+    private val bareNumberRegex = Regex("""(?<![EGP$€£]\s{0,2})\b\d{4,8}\b""")
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         if (sbn == null) return
 
@@ -52,10 +54,11 @@ class BankNotificationListenerService : NotificationListenerService() {
             if (isOneTimeCode(fullText)) return@launch
 
             val contentHash = (title + "|" + text + "|" + bigText).hashCode().toString()
+            val derivedId = "${sbn.key}|${contentHash}|${sbn.postTime}"
 
             synchronized(seenKeys) {
-                if (seenKeys[sbn.key] == contentHash) return@launch
-                seenKeys[sbn.key] = contentHash
+                if (seenKeys.containsKey(derivedId)) return@launch
+                seenKeys[derivedId] = contentHash
             }
 
             TransactionIngestor.ingest(
@@ -63,7 +66,7 @@ class BankNotificationListenerService : NotificationListenerService() {
                 senderLabel = sbn.packageName,
                 rawBody = fullText,
                 source = TransactionIngestor.SOURCE_NOTIFICATION,
-                sourceKey = sbn.key,
+                sourceKey = derivedId,
                 notificationPackage = sbn.packageName
             )
         }
@@ -80,7 +83,7 @@ class BankNotificationListenerService : NotificationListenerService() {
         )
         if (codeWords.none { lower.contains(it) }) return false
 
-        val bareNumber = Regex("""(?<![EGP$€£]\s*)\b\d{4,8}\b""").find(text)
+        val bareNumber = bareNumberRegex.find(text)
         return bareNumber != null
     }
 }

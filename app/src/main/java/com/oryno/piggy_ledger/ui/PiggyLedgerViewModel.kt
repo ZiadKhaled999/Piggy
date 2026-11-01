@@ -1194,6 +1194,22 @@ class PiggyLedgerViewModel(
         }
     }
 
+    fun keepSms(id: String) {
+        viewModelScope.launch { repository.clearPendingReviewFlag(id) }
+    }
+
+    fun keepNotification(id: String) {
+        viewModelScope.launch { repository.clearPendingReviewFlag(id) }
+    }
+
+    fun keepBoth(ids: List<String>) {
+        viewModelScope.launch { ids.forEach { repository.clearPendingReviewFlag(it) } }
+    }
+
+    fun discardBoth(ids: List<String>) {
+        viewModelScope.launch { ids.forEach { repository.deletePendingTransaction(it) } }
+    }
+
     fun canAddAccount(currentCount: Int): Boolean = isPremium.value || currentCount < 2
     fun canAddBudget(): Boolean = isPremium.value
     fun canAddGoal(currentCount: Int): Boolean = isPremium.value || currentCount < 2

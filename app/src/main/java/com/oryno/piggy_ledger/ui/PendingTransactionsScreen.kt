@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.data.PendingTransaction
+import com.oryno.piggy_ledger.data.PiggyLedgerDatabase
 import com.oryno.piggy_ledger.data.Account
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
@@ -43,6 +44,7 @@ import com.oryno.piggy_ledger.ui.theme.TextLight
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,11 +54,16 @@ fun PendingTransactionsScreen(
 ) {
     val pendingTransactions by viewModel.allPendingTransactions.collectAsState()
     val accounts by viewModel.allAccounts.collectAsState()
+    val duplicateGroups = pendingTransactions.filter { it.needsReview && it.duplicateGroupId != null }.groupBy { it.duplicateGroupId!! }
+    val singletons = pendingTransactions.filter { !(it.needsReview && it.duplicateGroupId != null) }
     
     var selectedTransaction by remember { mutableStateOf<PendingTransaction?>(null) }
     var showResolveBottomSheet by remember { mutableStateOf(false) }
 
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()) }
+    val context = LocalContext.current
+    val dao = remember { PiggyLedgerDatabase.getInstance(context).piggyLedgerDao() }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -149,7 +156,7 @@ fun PendingTransactionsScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp)
                 ) {
-                    items(pendingTransactions, key = { it.id }) { tx ->
+                    items(singletons, key = { it.id }) { tx ->
                         PendingTransactionItem(
                             tx = tx,
                             dateFormat = dateFormat,
@@ -158,6 +165,11 @@ fun PendingTransactionsScreen(
                                 showResolveBottomSheet = true
                             }
                         )
+                    }
+                    duplicateGroups.forEach { (_, group) ->
+                        item(key = group.first().duplicateGroupId) {
+                            DuplicateGroupCard(group = group, dateFormat = dateFormat, viewModel = viewModel)
+                        }
                     }
                 }
             }
@@ -192,6 +204,50 @@ fun PendingTransactionsScreen(
                         }
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun DuplicateGroupCard(
+    group: List<PendingTransaction>,
+    dateFormat: SimpleDateFormat,
+    viewModel: PiggyLedgerViewModel
+) {
+    val sameSource = group.map { it.source }.distinct().size < 2
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Text(stringResource(R.string.possible_duplicate_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = NavyDark)
+            Text(stringResource(R.string.possible_duplicate_desc), fontSize = 12.sp, color = TextLight)
+            Spacer(Modifier.height(8.dp))
+            group.forEach { tx ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(when (tx.source) { "AUTOMATIC_NOTIFICATION" -> stringResource(R.string.source_notification) else -> stringResource(R.string.source_sms) }, fontSize = 11.sp, color = NavyDark)
+                    Spacer(Modifier.width(6.dp))
+                    Text(tx.merchant, fontSize = 13.sp, color = NavyDark, modifier = Modifier.weight(1f))
+                    Text(String.format(Locale.US, "%s%.2f", if (tx.amount > 0) "+" else "-", Math.abs(tx.amount)), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (!sameSource) {
+                    TextButton(onClick = {
+                        group.firstOrNull { it.source == "AUTOMATIC_SMS" }?.let { viewModel.keepSms(it.id) }
+                        group.firstOrNull { it.source == "AUTOMATIC_NOTIFICATION" }?.let { viewModel.discardBoth(listOf(it.id)) }
+                    }) { Text(stringResource(R.string.keep_sms)) }
+                    TextButton(onClick = {
+                        group.firstOrNull { it.source == "AUTOMATIC_NOTIFICATION" }?.let { viewModel.keepNotification(it.id) }
+                        group.firstOrNull { it.source == "AUTOMATIC_SMS" }?.let { viewModel.discardBoth(listOf(it.id)) }
+                    }) { Text(stringResource(R.string.keep_notification)) }
+                }
+                TextButton(onClick = { viewModel.keepBoth(group.map { it.id }) }) { Text(stringResource(R.string.keep_both)) }
+                TextButton(onClick = { viewModel.discardBoth(group.map { it.id }) }) { Text(stringResource(R.string.discard_both)) }
             }
         }
     }
@@ -243,14 +299,24 @@ fun PendingTransactionItem(
                 verticalArrangement = Arrangement.Center
             ) {
                 val displayName = tx.sender.ifBlank { tx.merchant }.ifBlank { stringResource(R.string.pending_sms_detected) }
-                Text(
-                    text = displayName,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = NavyDark,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = displayName,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = NavyDark,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                        Text(
+                            text = when (tx.source) { "AUTOMATIC_NOTIFICATION" -> stringResource(R.string.source_notification) else -> stringResource(R.string.source_sms) },
+                            fontSize = 10.sp,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = dateFormat.format(Date(tx.timestamp)),

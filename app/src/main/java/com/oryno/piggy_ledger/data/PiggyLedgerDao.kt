@@ -156,29 +156,33 @@ interface PiggyLedgerDao {
     suspend fun insertAccountTransaction(transaction: AccountTransaction)
 
     @androidx.room.Transaction
-    suspend fun processSmsTransaction(accountId: String, amount: Double, merchant: String, applyInstaPayFee: Boolean, isIncome: Boolean = false) {
-        val account = getAccountById(accountId) ?: return
-        
+    suspend fun processSmsTransaction(accountId: String, amount: Double, merchant: String, applyInstaPayFee: Boolean, isIncome: Boolean = false, source: String = "AUTOMATIC_SMS", sourceKey: String? = null, reference: String? = null): String? {
+        val account = getAccountById(accountId) ?: return null
+
         var finalAmount = amount
         if (!isIncome && applyInstaPayFee) {
             val fee = minOf(amount * 0.001, 20.0)
             finalAmount += fee
         }
         val signedAmount = if (isIncome) finalAmount else -finalAmount
-        
+
         val newTransaction = AccountTransaction(
             account_id = accountId,
             amount = signedAmount,
-            merchant = merchant
+            merchant = merchant,
+            source = source,
+            sourceKey = sourceKey,
+            reference = reference
         )
         insertAccountTransaction(newTransaction)
-        
+
         val newBalance = account.current_balance + signedAmount
         var newAvailableCredit = account.available_credit
         if (account.type == AccountType.CARD && newAvailableCredit != null) {
             newAvailableCredit += signedAmount
         }
         updateAccount(account.copy(current_balance = newBalance, available_credit = newAvailableCredit, isSynced = false))
+        return newTransaction.id
     }
 
 
@@ -256,6 +260,80 @@ interface PiggyLedgerDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPendingTransaction(transaction: PendingTransaction)
+
+    @Query("""
+        SELECT id, 'account_transactions' AS table_name, amount,
+               CASE WHEN amount > 0 THEN 1 ELSE 0 END AS is_income,
+               merchant, timestamp, source, sourceKey, reference,
+               merchant AS rawText
+        FROM account_transactions
+        WHERE timestamp >= :since AND is_deleted = 0
+        UNION ALL
+        SELECT id, 'pending_transactions' AS table_name, amount,
+               CASE WHEN amount > 0 THEN 1 ELSE 0 END AS is_income,
+               merchant, timestamp, source, sourceKey, reference,
+               raw_sms_body AS rawText
+        FROM pending_transactions
+        WHERE timestamp >= :since AND is_deleted = 0
+    """)
+    suspend fun getRecentRowsForDedup(since: Long): List<RecentRow>
+
+    @Query("""
+        UPDATE pending_transactions
+        SET needsReview = 1, duplicateGroupId = :groupId, isSynced = 0, updatedAt = :updatedAt
+        WHERE id = :id
+    """)
+    suspend fun flagPendingDuplicate(id: String, groupId: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("""
+        UPDATE account_transactions
+        SET needsReview = 1, duplicateGroupId = :groupId, isSynced = 0, updatedAt = :updatedAt
+        WHERE id = :id
+    """)
+    suspend fun flagAccountDuplicate(id: String, groupId: String, updatedAt: Long = System.currentTimeMillis())
+
+    @androidx.room.Transaction
+    suspend fun flagDuplicate(table: String, id: String, groupId: String) {
+        when (table) {
+            "pending_transactions" -> flagPendingDuplicate(id, groupId)
+            "account_transactions" -> flagAccountDuplicate(id, groupId)
+        }
+    }
+
+    @Query("""
+        UPDATE pending_transactions
+        SET reference = COALESCE(:reference, reference),
+            raw_sms_body = raw_sms_body || '\n---\n' || :rawText,
+            isSynced = 0, updatedAt = :updatedAt
+        WHERE id = :id
+    """)
+    suspend fun enrichPending(id: String, reference: String?, rawText: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("""
+        UPDATE account_transactions
+        SET reference = COALESCE(:reference, reference),
+            isSynced = 0, updatedAt = :updatedAt
+        WHERE id = :id
+    """)
+    suspend fun enrichAccount(id: String, reference: String?, updatedAt: Long = System.currentTimeMillis())
+
+    @androidx.room.Transaction
+    suspend fun enrichFromDuplicate(table: String, id: String, reference: String?, rawText: String) {
+        when (table) {
+            "pending_transactions" -> enrichPending(id, reference, rawText)
+            "account_transactions" -> enrichAccount(id, reference)
+        }
+    }
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPendingTransactionReturningId(transaction: PendingTransaction): Long
+
+    @Query("""
+        UPDATE pending_transactions
+        SET needsReview = 0, duplicateGroupId = NULL, isSynced = 0, updatedAt = :updatedAt
+        WHERE id = :id
+    """)
+    suspend fun clearPendingReviewFlag(id: String, updatedAt: Long = System.currentTimeMillis())
 
     @Query("UPDATE pending_transactions SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
     suspend fun deletePendingTransactionById(id: String, updatedAt: Long = System.currentTimeMillis())

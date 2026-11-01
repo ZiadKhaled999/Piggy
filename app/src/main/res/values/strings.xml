@@ -1717,4 +1717,21 @@
     <string name="sub_second_reminder">Second Reminder</string>
     <string name="sub_third_reminder">Third Reminder</string>
     <string name="sub_total_paid">Total Paid</string>
+    <string name="notification_listener_label">Piggy Notification Parser</string>
+    <string name="notification_parser_title">Bank Notification Parsing</string>
+    <string name="notification_parser_enable">Enable notification parsing</string>
+    <string name="notification_parser_enable_desc">Read transaction alerts from selected banking apps instead of SMS.</string>
+    <string name="notification_parser_select_apps">Select apps to watch</string>
+    <string name="notification_parser_select_apps_desc">Piggy will only read notifications from the apps you select. OTPs are ignored. Raw text stays on your device.</string>
+    <string name="notification_access_granted">Notification access granted</string>
+    <string name="notification_access_required">Notification access is required for this feature.</string>
+    <string name="grant_notification_access">Grant access</string>
+    <string name="possible_duplicate_title">Possible duplicate</string>
+    <string name="possible_duplicate_desc">Two alerts for the same amount arrived. Choose which one is real, or keep both.</string>
+    <string name="keep_sms">Keep SMS</string>
+    <string name="keep_notification">Keep Notification</string>
+    <string name="keep_both">Keep both</string>
+    <string name="discard_both">Discard both</string>
+    <string name="source_sms">SMS</string>
+    <string name="source_notification">Notification</string>
 </resources>

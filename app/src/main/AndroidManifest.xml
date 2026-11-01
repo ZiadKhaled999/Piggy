@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
     <uses-permission android:name="com.android.vending.BILLING" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
@@ -128,15 +129,6 @@
                 android:value="true" />
         </service>
 
-        <service
-            android:name=".service.SmsNotificationListenerService"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-        </service>
-
         <receiver
             android:name=".service.SmsReceiver"
             android:exported="true"
@@ -182,6 +174,15 @@
             android:name="com.canhub.cropper.CropImageActivity"
             android:theme="@style/Theme.MyApplication.Cropper"
             android:exported="true" />
+        <service
+            android:name=".service.BankNotificationListenerService"
+            android:exported="true"
+            android:label="@string/notification_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

@@ -187,6 +187,7 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
     }
     suspend fun deletePendingTransaction(id: String) { dao.deletePendingTransactionById(id); try { com.oryno.piggy_ledger.service.SyncManager(context).deleteFromCloud("pending_transactions", id) } catch(e: Exception){}; triggerSync() }
     suspend fun resolvePendingTransaction(pendingId: String, accountId: String) { dao.resolvePendingTransaction(pendingId, accountId); triggerSync() }
+    suspend fun clearPendingReviewFlag(id: String) { dao.clearPendingReviewFlag(id); triggerSync() }
 
     suspend fun saveOnboardingAnswer(key: String, value: String) {
         val now = System.currentTimeMillis()

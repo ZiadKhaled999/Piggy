@@ -80,6 +80,7 @@ data class JournalEntryEntity(
 )
 data class PostingEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val userId: String = "",
     val journalEntryId: String,
     val accountId: String,
     val amount: Double,

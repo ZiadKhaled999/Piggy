@@ -58,7 +58,11 @@ interface PiggyLedgerDao {
                getUnsyncedStreakDates().size +
                getUnsyncedAiConversations().size +
                getUnsyncedAiChatMessages().size +
-               getUnsyncedOnboardingAnswers().size
+               getUnsyncedOnboardingAnswers().size +
+               getUnsyncedAssets().size +
+               getUnsyncedSubscriptions().size +
+               getUnsyncedJournalEntries().size +
+               getUnsyncedPostings().size
     }
 
     @Query("SELECT * FROM goals WHERE is_deleted = 0 ORDER BY createdAt DESC")
@@ -464,4 +468,80 @@ interface PiggyLedgerDao {
 
     @Query("SELECT * FROM portfolio_history ORDER BY date ASC")
     suspend fun getPortfolioHistorySync(): List<PortfolioHistoryEntity>
+
+    @Query("SELECT * FROM assets WHERE isSynced = 0")
+    suspend fun getUnsyncedAssets(): List<AssetEntity>
+
+    @Query("SELECT * FROM assets")
+    suspend fun getAllAssetsSyncFull(): List<AssetEntity>
+
+    @Query("SELECT * FROM subscriptions")
+    suspend fun getAllSubscriptionsSyncFull(): List<SubscriptionEntity>
+
+    @Query("SELECT * FROM journal_entries")
+    suspend fun getAllJournalEntriesSync(): List<JournalEntryEntity>
+
+    @Query("SELECT * FROM postings")
+    suspend fun getAllPostingsSync(): List<PostingEntity>
+
+    @Query("SELECT * FROM transactions")
+    suspend fun getAllTransactionsSync(): List<Transaction>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAssets(assets: List<AssetEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSubscriptions(subscriptions: List<SubscriptionEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertJournalEntries(entries: List<JournalEntryEntity>)
+
+    @Query("UPDATE assets SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markAssetsSynced(ids: Set<String>)
+
+    @Query("UPDATE subscriptions SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markSubscriptionsSynced(ids: Set<String>)
+
+    @Query("UPDATE journal_entries SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markJournalEntriesSynced(ids: Set<String>)
+
+    @Query("UPDATE postings SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markPostingsSynced(ids: Set<String>)
+
+    @Query("UPDATE goals SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markGoalsSynced(ids: Set<String>)
+
+    @Query("UPDATE transactions SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markTransactionsSynced(ids: Set<String>)
+
+    @Query("UPDATE loans SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markLoansSynced(ids: Set<String>)
+
+    @Query("UPDATE loan_payments SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markLoanPaymentsSynced(ids: Set<String>)
+
+    @Query("UPDATE accounts SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markAccountsSynced(ids: Set<String>)
+
+    @Query("UPDATE account_transactions SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markAccountTransactionsSynced(ids: Set<String>)
+
+    @Query("UPDATE pending_transactions SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markPendingTransactionsSynced(ids: Set<String>)
+
+    @Query("UPDATE user_preferences SET isSynced = 1 WHERE userId IN (:ids)")
+    suspend fun markUserPreferencesSynced(ids: Set<String>)
+
+    @Query("UPDATE streak_dates SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markStreakDatesSynced(ids: Set<String>)
+
+    @Query("UPDATE ai_conversations SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markAiConversationsSynced(ids: Set<String>)
+
+    @Query("UPDATE ai_chat_messages SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markAiChatMessagesSynced(ids: Set<String>)
+
+    @Query("UPDATE onboarding_answers SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markOnboardingAnswersSynced(ids: Set<String>)
+
 }

@@ -219,13 +219,26 @@ class SyncManager(private val context: Context) {
                     }
                 }
                 "streak_dates" -> {
+                    val remote = list.map {
+                        json.decodeFromJsonElement(StreakDateEntity.serializer(), it.data)
+                    }
+                    val local = dao.getAllStreakDatesSync()
                     val toInsert = mergeList(
-                        remote = list.map { json.decodeFromJsonElement(StreakDateEntity.serializer(), it.data) },
-                        local = dao.getAllStreakDatesSync(),
+                        remote = remote,
+                        local = local,
                         id = { it.id }, updatedAt = { it.updatedAt }, isSynced = { it.isSynced },
                         withSynced = { it.copy(isSynced = true) }
                     )
                     if (toInsert.isNotEmpty()) dao.insertStreakDates(toInsert)
+
+                    // ALWAYS rebuild prefs from Room's current state. Never union.
+                    // This handles tombstones (deleted dates) correctly — they're filtered out here.
+                    val activeDates = dao.getAllStreakDatesSync()
+                        .filter { !it.is_deleted }
+                        .map { it.dateStr }
+                        .toSet()
+                    com.oryno.piggy_ledger.data.StreakManager.rebuildFromRoom(context, activeDates)
+                    android.util.Log.d("SyncManager", "streak_dates: rebuilt prefs with ${activeDates.size} dates")
                 }
                 "goals" -> {
                     val toInsert = mergeList(

@@ -202,12 +202,36 @@ object StreakManager {
         com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
     }
 
+    fun rebuildFromRoom(context: Context, activeDates: Set<String>) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putStringSet(KEY_ACTION_DATES, activeDates).apply()
+        com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
+        com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+        android.util.Log.d("StreakManager", "rebuildFromRoom: ${activeDates.size} dates written to prefs")
+    }
+
     fun syncStreakToDb(context: Context) {
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             try {
                 val user = com.clerk.api.Clerk.userFlow.value
                 val userId = user?.id ?: "local_user"
                 val dates = getActionDates(context)
+                val dao = PiggyLedgerDatabase.getInstance(context.applicationContext).piggyLedgerDao()
+
+                // GUARD: prefs empty + Room has active rows = pull hasn't populated prefs yet.
+                // Wiping here would tombstone everything and push to the server. Bail out.
+                if (dates.isEmpty()) {
+                    val activeInRoom = dao.getAllStreakDatesSync()
+                        .filter { !it.is_deleted && it.userId == userId }
+                    if (activeInRoom.isNotEmpty()) {
+                        android.util.Log.w(
+                            "StreakManager",
+                            "syncStreakToDb: prefs empty but Room has ${activeInRoom.size} active rows — skipping"
+                        )
+                        return@launch
+                    }
+                }
+
                 val entities = dates.map { dateStr ->
                     StreakDateEntity(
                         id = "${userId}_$dateStr",
@@ -217,11 +241,9 @@ object StreakManager {
                         isSynced = false
                     )
                 }
-                val dao = PiggyLedgerDatabase.getInstance(context.applicationContext).piggyLedgerDao()
                 dao.insertStreakDates(entities)
-                // FIX(sync): removals (removeTodayAction) previously left the old
-                // Room row alive+synced, so the prefs-union pull resurrected it.
-                // Tombstone rows for this user whose date left the prefs set.
+
+                // Tombstone Room rows whose dateStr left the prefs set.
                 try {
                     val now = System.currentTimeMillis()
                     for (row in dao.getAllStreakDatesSync()) {
@@ -230,7 +252,7 @@ object StreakManager {
                         }
                     }
                 } catch (_e: Exception) {}
-                
+
                 com.oryno.piggy_ledger.service.SyncManager(context).syncAll()
             } catch (e: Exception) {
                 android.util.Log.e("StreakManager", "Failed to sync streak dates to Room", e)

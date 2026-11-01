@@ -262,7 +262,7 @@ data class AccountTransaction(
     val amount: Double,
     val merchant: String,
     val timestamp: Long = System.currentTimeMillis(),
-@ColumnInfo(defaultValue = "AUTOMATIC_SMS") val source: String = "AUTOMATIC_SMS",
+    val source: String = "AUTOMATIC_SMS",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false,

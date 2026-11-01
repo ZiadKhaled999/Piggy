@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 28,
-    "identityHash": "1bb557fe0b17d5713c1fffef2c28ec41",
+    "identityHash": "7fd42aaf59a37bce5b8e2c43b70680b0",
     "entities": [
       {
         "tableName": "goals",
@@ -528,7 +528,7 @@
       },
       {
         "tableName": "account_transactions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `account_id` TEXT NOT NULL, `amount` REAL NOT NULL, `merchant` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `source` TEXT NOT NULL DEFAULT 'AUTOMATIC_SMS', `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isSynced` INTEGER NOT NULL, `is_deleted` INTEGER NOT NULL, `sourceKey` TEXT, `reference` TEXT, `duplicateGroupId` TEXT, `needsReview` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`), FOREIGN KEY(`account_id`) REFERENCES `accounts`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `userId` TEXT NOT NULL, `account_id` TEXT NOT NULL, `amount` REAL NOT NULL, `merchant` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `source` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isSynced` INTEGER NOT NULL, `is_deleted` INTEGER NOT NULL, `sourceKey` TEXT, `reference` TEXT, `duplicateGroupId` TEXT, `needsReview` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`), FOREIGN KEY(`account_id`) REFERENCES `accounts`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
         "fields": [
           {
             "fieldPath": "id",
@@ -570,8 +570,7 @@
             "fieldPath": "source",
             "columnName": "source",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "'AUTOMATIC_SMS'"
+            "notNull": true
           },
           {
             "fieldPath": "createdAt",
@@ -1657,7 +1656,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1bb557fe0b17d5713c1fffef2c28ec41')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7fd42aaf59a37bce5b8e2c43b70680b0')"
     ]
   }
 }

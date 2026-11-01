@@ -14,7 +14,9 @@ import kotlinx.coroutines.launch
 class BankNotificationListenerService : NotificationListenerService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val seenKeys = mutableSetOf<String>()
+    private val seenKeys = object : LinkedHashMap<String, String>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>?) = size > 200
+    }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         if (sbn == null) return
@@ -49,9 +51,11 @@ class BankNotificationListenerService : NotificationListenerService() {
 
             if (isOneTimeCode(fullText)) return@launch
 
+            val contentHash = (title + "|" + text + "|" + bigText).hashCode().toString()
+
             synchronized(seenKeys) {
-                if (!seenKeys.add(sbn.key)) return@launch
-                if (seenKeys.size > 500) seenKeys.clear()
+                if (seenKeys[sbn.key] == contentHash) return@launch
+                seenKeys[sbn.key] = contentHash
             }
 
             TransactionIngestor.ingest(

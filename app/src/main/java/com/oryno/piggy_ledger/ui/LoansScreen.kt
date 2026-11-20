@@ -521,25 +521,13 @@ fun LoansScreen(
                                 modifier = Modifier.weight(1f),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                if (!loan.photoUri.isNullOrBlank()) {
-                                    AsyncImage(
-                                        model = Uri.parse(loan.photoUri),
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(44.dp)
-                                            .clip(CircleShape)
-                                            .border(1.5.dp, iconTint.copy(alpha = 0.3f), CircleShape),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                } else {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(44.dp)
-                                            .background(bgTint, CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
-                                    }
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(bgTint, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {

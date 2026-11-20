@@ -56,6 +56,14 @@ class NotificationWorker(
                     notificationHelper.showGoalReminderNotification(goalMsg, "")
                 }
             }
+            TYPE_DEADLINE -> {
+                val db = PiggyLedgerDatabase.getInstance(context)
+                val now = System.currentTimeMillis()
+                val overdue = db.piggyLedgerDao().getAllLoansSync().filter { !it.is_deleted && !it.isPaidOff && it.deadline != null && it.deadline < now }
+                overdue.forEach { loan ->
+                    try { notificationHelper.showDeadlineNotification(loan.contactName, loan.amount) } catch (e: Exception) { }
+                }
+            }
             TYPE_MOTIVATION -> {
                 val quotes = context.resources.getStringArray(R.array.streak_statements_happy)
                 val randomQuote = if (quotes.isNotEmpty()) quotes.random() else "Stay on track with Piggy Ledger! 🐷"
@@ -71,5 +79,6 @@ class NotificationWorker(
         const val TYPE_STREAK = "streak_warning"
         const val TYPE_GOAL = "goal_reminder"
         const val TYPE_MOTIVATION = "motivation"
+        const val TYPE_DEADLINE = "deadline_reminder"
     }
 }

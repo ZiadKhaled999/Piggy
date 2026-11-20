@@ -407,11 +407,11 @@ object BankProviderRegistry {
             Log.d("BankProviderRegistry", "Card/account number uniquely matched ${exactCardMatches.first().name}")
             return exactCardMatches.first()
         } else if (exactCardMatches.size > 1) {
-            // If multiple accounts share digits, prioritize preferred or provider
+            // If multiple accounts share digits, only use preferred if it is among them; otherwise pending
             preferredAccountId?.let { prefId ->
                 exactCardMatches.firstOrNull { it.id == prefId }?.let { return it }
             }
-            return exactCardMatches.first()
+            return null
         }
 
         // RULE 3: Provider & Keyword Matching
@@ -505,14 +505,7 @@ object BankProviderRegistry {
             return null
         }
 
-        // RULE 5: Fallback to Preferred Account if sender is a verified financial message
-        if (preferredAccountId != null) {
-            allAccounts.firstOrNull { it.id == preferredAccountId }?.let {
-                Log.d("BankProviderRegistry", "Fallback to user's preferred account: ${it.name}")
-                return it
-            }
-        }
-
+        // Do not fall back to a (possibly unrelated) preferred account; route to pending for review
         return null
     }
 }

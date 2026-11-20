@@ -17,11 +17,13 @@ object NotificationScheduler {
         scheduleWorkManager(context, NotificationWorker.TYPE_STREAK, 18)   // 6:00 PM for streak warning
         scheduleWorkManager(context, NotificationWorker.TYPE_GOAL, 19)     // 7:00 PM for goal reminder
         scheduleWorkManager(context, NotificationWorker.TYPE_MOTIVATION, 20) // 8:00 PM for motivation
+        scheduleWorkManager(context, NotificationWorker.TYPE_DEADLINE, 9)   // 9:00 AM for deadline reminders
 
         // 2. Schedule via AlarmManager (Guaranteed execution even when app is closed/killed)
         scheduleAlarm(context, NotificationWorker.TYPE_STREAK, 18)
         scheduleAlarm(context, NotificationWorker.TYPE_GOAL, 19)
         scheduleAlarm(context, NotificationWorker.TYPE_MOTIVATION, 20)
+        scheduleAlarm(context, NotificationWorker.TYPE_DEADLINE, 9)
     }
 
     private fun scheduleWorkManager(context: Context, type: String, targetHour: Int) {
@@ -54,7 +56,7 @@ object NotificationScheduler {
 
         WorkManager.getInstance(context.applicationContext).enqueueUniquePeriodicWork(
             type,
-            ExistingPeriodicWorkPolicy.KEEP, // Use KEEP so app relaunch doesn't reset delay
+            ExistingPeriodicWorkPolicy.REPLACE, // Use KEEP so app relaunch doesn't reset delay
             dailyWorkRequest
         )
         } catch (e: Exception) {
@@ -75,6 +77,7 @@ object NotificationScheduler {
                 NotificationWorker.TYPE_STREAK -> 2001
                 NotificationWorker.TYPE_GOAL -> 2002
                 NotificationWorker.TYPE_MOTIVATION -> 2003
+                NotificationWorker.TYPE_DEADLINE -> 2004
                 else -> 2000
             }
 

@@ -12,6 +12,7 @@ import com.oryno.piggy_ledger.data.Loan
 import com.oryno.piggy_ledger.data.LoanPayment
 import com.oryno.piggy_ledger.data.PendingTransaction
 import com.oryno.piggy_ledger.data.PiggyLedgerDatabase
+import com.oryno.piggy_ledger.R
 import com.oryno.piggy_ledger.data.PiggyLedgerRepository
 import com.oryno.piggy_ledger.data.StreakManager
 import com.oryno.piggy_ledger.data.Transaction
@@ -962,15 +963,35 @@ class PiggyLedgerViewModel(
             userPreferences.saveOnboarding(true)
             userPreferences.savePersonalization(intent, intensity, savingMode)
 
+            val intentLabels = listOf(
+                R.string.onboarding_personalize_intent_personal,
+                R.string.onboarding_personalize_intent_loans,
+                R.string.onboarding_personalize_intent_auto
+            )
+            val intensityLabels = listOf(
+                R.string.onboarding_personalize_intensity_casual,
+                R.string.onboarding_personalize_intensity_balanced,
+                R.string.onboarding_personalize_intensity_aggressive
+            )
+
             val answersMap = mutableMapOf(
-                "personalized_intent" to intent.toString(),
-                "personalized_intensity" to intensity.toString(),
-                "saving_mode" to savingMode,
+                "q1: ${context.getString(R.string.onboarding_personalize_intent_title)}" to context.getString(intentLabels.getOrElse(intent) { intentLabels[0] }),
+                "q2: ${context.getString(R.string.onboarding_personalize_intensity_title)}" to context.getString(intensityLabels.getOrElse(intensity) { intensityLabels[0] }),
+                "q3: Saving mode" to savingMode,
                 "completed_at" to System.currentTimeMillis().toString()
             )
-            relatesToLoans?.let { answersMap["relates_to_loans"] = it.toString() }
-            relatesToAccounts?.let { answersMap["relates_to_accounts"] = it.toString() }
-            relatesToEmergency?.let { answersMap["relates_to_emergency"] = it.toString() }
+            relatesToLoans?.let {
+                answersMap["q4: ${context.getString(R.string.onboarding_relatable_statement_1)}"] =
+                    if (it) context.getString(R.string.yes_label) else context.getString(R.string.no_label)
+            }
+            relatesToAccounts?.let {
+                answersMap["q5: ${context.getString(R.string.onboarding_relatable_statement_2)}"] =
+                    if (it) context.getString(R.string.yes_label) else context.getString(R.string.no_label)
+            }
+            relatesToEmergency?.let {
+                answersMap["q6: ${context.getString(R.string.onboarding_relatable_statement_3)}"] =
+                    if (it) context.getString(R.string.yes_label) else context.getString(R.string.no_label)
+            }
 
             try {
                 repository.saveOnboardingAnswers(answersMap)

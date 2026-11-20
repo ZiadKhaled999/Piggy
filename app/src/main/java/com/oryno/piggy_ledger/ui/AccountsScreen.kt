@@ -12,6 +12,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -273,6 +275,7 @@ fun AccountsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
                     .padding(bottom = 70.dp) // Leave room for bottom bar
             ) {
                 val mainColumnScope = this
@@ -823,7 +826,6 @@ fun AccountsScreen(
                     modifier = mainColumnScope.run {
                         Modifier
                             .fillMaxWidth()
-                            .weight(1f)
                     }
                 ) {
                     if (displayedTransactions.isEmpty()) {
@@ -862,14 +864,13 @@ fun AccountsScreen(
                         }
                     }
                 } else {
-                    LazyColumn(
+                    Column(
                         modifier = Modifier
-                            .fillMaxSize()
+                            .fillMaxWidth()
                             .padding(horizontal = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(bottom = 100.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(displayedTransactions, key = { it.id }) { tx ->
+                        displayedTransactions.forEach { tx ->
                             val formattedDate = remember(tx.timestamp) {
                                 SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(tx.timestamp))
                             }

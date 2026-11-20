@@ -477,7 +477,8 @@ fun DetailSettingsView(
             viewModel = viewModel,
             isPremium = isPremium,
             createJsonLauncher = createDocumentLauncher,
-            onBack = onBack
+            onBack = onBack,
+            onUpgradeClick = { onNavigate(SettingsMode.PRO) }
         )
         return
     }

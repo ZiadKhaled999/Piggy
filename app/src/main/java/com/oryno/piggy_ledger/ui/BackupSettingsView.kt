@@ -51,7 +51,8 @@ fun BackupSettingsView(
     viewModel: PiggyLedgerViewModel,
     isPremium: Boolean,
     createJsonLauncher: androidx.activity.result.ActivityResultLauncher<String>,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onUpgradeClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -368,7 +369,7 @@ fun BackupSettingsView(
                             exportType = exportType,
                             onSelectFile = {
                                 if (!isPremium) {
-                                    ToastUtil.show(context, context.getString(R.string.export_upgrade_pro), android.widget.Toast.LENGTH_SHORT)
+                                    onUpgradeClick()
                                 } else {
                                     importFileLauncher.launch("*/*")
                                 }
@@ -430,7 +431,7 @@ fun BackupSettingsView(
                 Button(
                     onClick = {
                         if (!isPremium) {
-                            ToastUtil.show(context, context.getString(R.string.export_upgrade_pro), android.widget.Toast.LENGTH_SHORT)
+                            onUpgradeClick()
                             return@Button
                         }
 

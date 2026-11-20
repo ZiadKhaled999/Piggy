@@ -6,7 +6,7 @@
 
     <!-- Notification Content -->
     <string name="notif_streak_warning_title">Streak at risk! 🥶</string>
-    <string name="notif_streak_warning_msg">You\'ve missed two days in a row! Don\'t let your streak freeze solid. Record a transaction now to save it!</string>
+    <string name="notif_streak_warning_msg">You\'ve missed %1$d days in a row! Don\'t let your streak freeze solid. Record a transaction now to save it!</string>
     
     <string name="notif_goal_title">Goal Reminder</string>
     <string name="notif_goal_msg">It\'s only %1$s to achieve your goal 🎯.</string>

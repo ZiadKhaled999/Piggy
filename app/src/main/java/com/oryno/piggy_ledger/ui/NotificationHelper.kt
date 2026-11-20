@@ -103,10 +103,10 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    fun showStreakWarningNotification() {
+    fun showStreakWarningNotification(daysMissed: Int = com.oryno.piggy_ledger.data.StreakManager.getConsecutiveMissedDays(context)) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val title = context.getString(R.string.notif_streak_warning_title)
-        val message = context.getString(R.string.notif_streak_warning_msg)
+        val message = context.getString(R.string.notif_streak_warning_msg, daysMissed.coerceAtLeast(1))
         val logoBitmap = getAppLogoBitmap()
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)

@@ -20,9 +20,9 @@ class NotificationWorker(
 
         when (type) {
             TYPE_STREAK -> {
-                // If user hasn't recorded an entry today, warn them to maintain streak
-                if (!StreakManager.hasActionToday(context)) {
-                    notificationHelper.showStreakWarningNotification()
+                val missed = StreakManager.getConsecutiveMissedDays(context)
+                if (missed >= 2) {
+                    notificationHelper.showStreakWarningNotification(missed)
                 }
             }
             TYPE_GOAL -> {

@@ -27,9 +27,9 @@ class NotificationAlarmReceiver : BroadcastReceiver() {
                 val notificationHelper = NotificationHelper(context)
                 when (type) {
                     NotificationWorker.TYPE_STREAK -> {
-                        // Warn if they haven't recorded an expense/income today
-                        if (!StreakManager.hasActionToday(context)) {
-                            notificationHelper.showStreakWarningNotification()
+                        val missed = StreakManager.getConsecutiveMissedDays(context)
+                        if (missed >= 2) {
+                            notificationHelper.showStreakWarningNotification(missed)
                         }
                     }
                     NotificationWorker.TYPE_GOAL -> {

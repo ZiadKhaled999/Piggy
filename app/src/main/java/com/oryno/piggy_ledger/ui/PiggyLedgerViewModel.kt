@@ -384,6 +384,14 @@ class PiggyLedgerViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5000), ""
     )
 
+    val authUserPhone = userPreferences.authUserPhone.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), ""
+    )
+
+    val authUserBirthDate = userPreferences.authUserBirthDate.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), ""
+    )
+
     val isBiometricLockEnabled = userPreferences.isBiometricLockEnabled.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), false
     )
@@ -444,9 +452,9 @@ class PiggyLedgerViewModel(
         }
     }
 
-    fun setAuthUser(email: String, name: String, photoUrl: String, clerkUserId: String = "") {
+    fun setAuthUser(email: String, name: String, photoUrl: String, clerkUserId: String = "", phone: String = "", birthDate: String = "") {
         viewModelScope.launch {
-            userPreferences.saveAuthentication(true, email, name, photoUrl)
+            userPreferences.saveAuthentication(true, email, name, photoUrl, phone, birthDate)
             PostHog.identify(email, mapOf("name" to name))
             PostHog.capture(
                 event = "user_sign_in",

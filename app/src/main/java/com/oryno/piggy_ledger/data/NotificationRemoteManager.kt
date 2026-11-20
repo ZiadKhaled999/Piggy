@@ -31,6 +31,8 @@ data class NotificationItem(
     val title: String = "",
     val body: String = "",
     @SerialName("target_audience") val targetAudience: String = "all", // "free", "pro", "all"
+    @SerialName("target_region") val targetRegion: String = "", // region code or "all"
+    @SerialName("target_user") val targetUser: String = "", // specific user email/id
     val status: String = "active", // "active", "inactive"
     @SerialName("expires_at") val expiresAt: String? = null // ISO string or simple date
 )
@@ -95,7 +97,7 @@ object NotificationRemoteManager {
     private const val CHANNEL_ID = "piggy_custom_notifications"
     private const val CHANNEL_NAME = "Piggy Announcements"
 
-    suspend fun fetchAndShowNotifications(context: Context, isPremium: Boolean): Boolean = withContext(Dispatchers.IO) {
+    suspend fun fetchAndShowNotifications(context: Context, isPremium: Boolean, region: String = "", userEmail: String = ""): Boolean = withContext(Dispatchers.IO) {
         val urlsToTry = listOf(
             DEFAULT_REMOTE_URL,
             FALLBACK_GITHUB_RAW_URL
@@ -113,7 +115,7 @@ object NotificationRemoteManager {
                         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         prefs.edit().putString(KEY_NOTIFICATIONS_JSON, jsonBody).apply()
                         val config = jsonFormatter.decodeFromString<NotificationConfigResponse>(jsonBody)
-                        processNotifications(context, config.notifications, isPremium)
+                        processNotifications(context, config.notifications, isPremium, region, userEmail)
                         return@withContext true
                     }
                 } else {
@@ -126,7 +128,7 @@ object NotificationRemoteManager {
         return@withContext false
     }
 
-    fun getSavedNotifications(context: Context, isPremium: Boolean): List<NotificationItem> {
+    fun getSavedNotifications(context: Context, isPremium: Boolean, region: String = "", userEmail: String = ""): List<NotificationItem> {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val jsonString = prefs.getString(KEY_NOTIFICATIONS_JSON, null) ?: return emptyList()
         try {
@@ -151,7 +153,15 @@ object NotificationRemoteManager {
                 val target = item.targetAudience.lowercase()
                 if (target == "pro" && !isPremium) return@filter false
                 if (target == "free" && isPremium) return@filter false
-                
+
+                // Region check
+                val tr = item.targetRegion.trim()
+                if (tr.isNotBlank() && tr.lowercase() != "all" && !tr.equals(region, ignoreCase = true)) return@filter false
+
+                // Specific user check
+                val tu = item.targetUser.trim()
+                if (tu.isNotBlank() && !tu.equals(userEmail, ignoreCase = true)) return@filter false
+
                 true
             }.reversed() // Show newest first (assuming array order is chronological, or reverse it)
         } catch (e: Exception) {
@@ -160,7 +170,7 @@ object NotificationRemoteManager {
         return emptyList()
     }
 
-    private fun processNotifications(context: Context, notifications: List<NotificationItem>, isPremium: Boolean) {
+    private fun processNotifications(context: Context, notifications: List<NotificationItem>, isPremium: Boolean, region: String = "", userEmail: String = "") {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val seenIds = prefs.getStringSet(KEY_SEEN_IDS, emptySet())?.toMutableSet() ?: mutableSetOf()
         
@@ -187,7 +197,13 @@ object NotificationRemoteManager {
             val target = item.targetAudience.lowercase()
             if (target == "pro" && !isPremium) continue
             if (target == "free" && isPremium) continue
-            
+
+            val tr = item.targetRegion.trim()
+            if (tr.isNotBlank() && tr.lowercase() != "all" && !tr.equals(region, ignoreCase = true)) continue
+
+            val tu = item.targetUser.trim()
+            if (tu.isNotBlank() && !tu.equals(userEmail, ignoreCase = true)) continue
+
             // Show it
             showNotification(context, item)
             seenIds.add(item.id)

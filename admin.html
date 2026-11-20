@@ -879,6 +879,16 @@
                     </div>
                 </div>
 
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Target Region (Optional)</label>
+                        <input type="text" id="nRegion" class="form-control" placeholder="e.g. EG, US or all" />
+                    </div>
+                    <div class="form-group">
+                        <label>Specific User (Optional)</label>
+                        <input type="text" id="nUser" class="form-control" placeholder="user email" />
+                    </div>
+                </div>
                 <div class="form-group">
                     <label>Expires At (Optional)</label>
                     <input type="date" id="nExpires" class="form-control" />
@@ -1704,6 +1714,8 @@
                 document.getElementById('nTitle').value = '';
                 document.getElementById('nBody').value = '';
                 document.getElementById('nTarget').value = 'all';
+                document.getElementById('nRegion').value = '';
+                document.getElementById('nUser').value = '';
                 document.getElementById('nStatus').value = 'active';
                 document.getElementById('nExpires').value = '';
                 document.getElementById('notifModal').classList.add('is-open');
@@ -1718,6 +1730,8 @@
                 document.getElementById('nTitle').value = notif.title;
                 document.getElementById('nBody').value = notif.body;
                 document.getElementById('nTarget').value = notif.target_audience || 'all';
+                document.getElementById('nRegion').value = notif.target_region || '';
+                document.getElementById('nUser').value = notif.target_user || '';
                 document.getElementById('nStatus').value = notif.status || 'active';
                 document.getElementById('nExpires').value = notif.expires_at || '';
                 
@@ -1739,6 +1753,8 @@
                     title: title,
                     body: body,
                     target_audience: document.getElementById('nTarget').value,
+                    target_region: document.getElementById('nRegion').value.trim(),
+                    target_user: document.getElementById('nUser').value.trim(),
                     status: document.getElementById('nStatus').value,
                     expires_at: document.getElementById('nExpires').value || null,
                     created_at: Date.now()

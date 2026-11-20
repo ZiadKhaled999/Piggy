@@ -51,6 +51,8 @@ class UserPreferences(private val context: Context) {
         val AUTH_USER_EMAIL = stringPreferencesKey("auth_user_email")
         val AUTH_USER_NAME = stringPreferencesKey("auth_user_name")
         val AUTH_USER_PHOTO_URL = stringPreferencesKey("auth_user_photo_url")
+        val AUTH_USER_PHONE = stringPreferencesKey("auth_user_phone")
+        val AUTH_USER_BIRTH_DATE = stringPreferencesKey("auth_user_birth_date")
         val IS_BIOMETRIC_LOCK_ENABLED = booleanPreferencesKey("is_biometric_lock_enabled")
         val LOCK_TIMEOUT_SECONDS = longPreferencesKey("lock_timeout_seconds")
         val LAST_EXIT_TIME = longPreferencesKey("last_exit_time")
@@ -232,6 +234,14 @@ class UserPreferences(private val context: Context) {
         prefs[AUTH_USER_PHOTO_URL] ?: ""
     }
 
+    val authUserPhone: Flow<String> = safeData.map { prefs ->
+        prefs[AUTH_USER_PHONE] ?: ""
+    }
+
+    val authUserBirthDate: Flow<String> = safeData.map { prefs ->
+        prefs[AUTH_USER_BIRTH_DATE] ?: ""
+    }
+
     val isBiometricLockEnabled: Flow<Boolean> = safeData.map { prefs ->
         prefs[IS_BIOMETRIC_LOCK_ENABLED] ?: false
     }
@@ -303,13 +313,25 @@ class UserPreferences(private val context: Context) {
         syncPreferencesToDb()
     }
 
-    suspend fun saveAuthentication(authenticated: Boolean, email: String = "", name: String = "", photoUrl: String = "") {
+    suspend fun saveAuthentication(authenticated: Boolean, email: String = "", name: String = "", photoUrl: String = "", phone: String = "", birthDate: String = "") {
         saveAuthenticatedSync(context, authenticated)
         context.dataStore.edit { prefs ->
             prefs[IS_AUTHENTICATED] = authenticated
             prefs[AUTH_USER_EMAIL] = email
             prefs[AUTH_USER_NAME] = name
             prefs[AUTH_USER_PHOTO_URL] = photoUrl
+            prefs[AUTH_USER_PHONE] = phone
+            prefs[AUTH_USER_BIRTH_DATE] = birthDate
+        }
+        syncPreferencesToDb()
+    }
+
+    suspend fun saveAuthProfile(name: String = "", photoUrl: String = "", phone: String = "", birthDate: String = "") {
+        context.dataStore.edit { prefs ->
+            if (name.isNotBlank()) prefs[AUTH_USER_NAME] = name
+            if (photoUrl.isNotBlank()) prefs[AUTH_USER_PHOTO_URL] = photoUrl
+            prefs[AUTH_USER_PHONE] = phone
+            prefs[AUTH_USER_BIRTH_DATE] = birthDate
         }
         syncPreferencesToDb()
     }

@@ -42,9 +42,13 @@ import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.clerk.api.Clerk
 import com.clerk.api.user.setProfileImage
 import com.clerk.api.user.reload
+import com.clerk.api.user.update
+import com.clerk.api.user.User
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
@@ -58,6 +62,20 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
     val userName by viewModel.authUserName.collectAsStateWithLifecycle()
     val userEmail by viewModel.authUserEmail.collectAsStateWithLifecycle()
     val userPhoto by viewModel.authUserPhotoUrl.collectAsStateWithLifecycle()
+    val userPhone by viewModel.authUserPhone.collectAsStateWithLifecycle()
+    val userBirth by viewModel.authUserBirthDate.collectAsStateWithLifecycle()
+
+    var nameInput by remember { mutableStateOf(userName) }
+    var phoneInput by remember { mutableStateOf(userPhone) }
+    var birthInput by remember { mutableStateOf(userBirth) }
+    var isSaving by remember { mutableStateOf(false) }
+    var saveMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(userName, userPhone, userBirth) {
+        nameInput = userName
+        phoneInput = userPhone
+        birthInput = userBirth
+    }
 
     var showPhotoSourceSheet by remember { mutableStateOf(false) }
     var selectedImageUriForCrop by remember { mutableStateOf<Uri?>(null) }
@@ -334,12 +352,17 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
                     center = androidx.compose.ui.geometry.Offset(vaporX, vaporY),
                     radius = 2500f
                 )
-            ),
-        contentAlignment = Alignment.Center
+            )
     ) {
-        Box(
-            modifier = Modifier.size(240.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 80.dp, start = 24.dp, end = 24.dp, bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Box(
+                modifier = Modifier.size(180.dp)
+            ) {
             // Profile Image Circle (Base Layer)
             Box(
                 modifier = Modifier
@@ -377,7 +400,7 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
                     .offset(x = (-8).dp, y = (-8).dp)
                     .size(54.dp)
                     .shadow(8.dp, CircleShape)
-                    .background(Color(0xFF0F172A), CircleShape) // Match the uploaded image's dark button style but with Piggy's dark navy
+                    .background(Color(0xFF0F172A), CircleShape)
                     .clickable { openCropper() },
                 contentAlignment = Alignment.Center
             ) {
@@ -388,6 +411,76 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
                     modifier = Modifier.size(24.dp)
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        OutlinedTextField(
+            value = nameInput,
+            onValueChange = { nameInput = it },
+            label = { Text("Name") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedTextField(
+            value = phoneInput,
+            onValueChange = { phoneInput = it },
+            label = { Text("Phone number") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedTextField(
+            value = birthInput,
+            onValueChange = { birthInput = it },
+            label = { Text("Birth date") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                isSaving = true
+                saveMessage = null
+                scope.launch {
+                    try {
+                        val user = Clerk.userFlow.value ?: Clerk.user
+                        if (user != null) {
+                            val params = User.UpdateParams(
+                                firstName = nameInput.trim().ifBlank { null },
+                                unsafeMetadata = kotlinx.serialization.json.buildJsonObject {
+                                    put("phone", kotlinx.serialization.json.JsonPrimitive(phoneInput.trim()))
+                                    put("birthDate", kotlinx.serialization.json.JsonPrimitive(birthInput.trim()))
+                                }.toString()
+                            )
+                            user.update(params)
+                            user.reload()
+                        }
+                        viewModel.setAuthUser(
+                            email = userEmail,
+                            name = nameInput.trim().ifBlank { userName },
+                            photoUrl = userPhoto,
+                            clerkUserId = "",
+                            phone = phoneInput.trim(),
+                            birthDate = birthInput.trim()
+                        )
+                        saveMessage = "Saved"
+                    } catch (e: Exception) {
+                        Log.e("ProfileSettingsView", "Failed to update profile", e)
+                        saveMessage = "Failed"
+                    } finally {
+                        isSaving = false
+                    }
+                }
+            },
+            enabled = !isSaving,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (isSaving) "Saving..." else "Save")
+        }
+        if (saveMessage != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(saveMessage!!)
+        }
         }
     }
 }

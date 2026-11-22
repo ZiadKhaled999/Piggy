@@ -1308,6 +1308,7 @@ object StreakShareHelper {
     }
 
     private fun getShareStatement(context: Context, streakCount: Int): String {
+        val localizedContext = NotificationHelper.getLocalizedContext(context)
         return try {
             val assetName = StreakManager.getStreakMessagesAsset(context)
             val inputStream: InputStream = context.assets.open(assetName)
@@ -1316,10 +1317,11 @@ object StreakShareHelper {
             val categoriesArray = jsonObject.getJSONArray("categories")
 
             val userPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-            val userName = userPrefs.getString("auth_user_name", "")?.takeIf { it.isNotBlank() } ?: "Saver"
+            val defaultName = if (assetName.contains("ar")) "بطل" else "Saver"
+            val userName = userPrefs.getString("auth_user_name", "")?.takeIf { it.isNotBlank() } ?: defaultName
 
             val targetCategoryId = if (streakCount > 0) 8 else 10 // Category 8: Streak Extended / Logged Today, 10: Ghosted/Inactive
-            var candidates = mutableListOf<String>()
+            val candidates = mutableListOf<String>()
 
             for (i in 0 until categoriesArray.length()) {
                 val catObj = categoriesArray.getJSONObject(i)
@@ -1333,9 +1335,9 @@ object StreakShareHelper {
             }
 
             if (candidates.isEmpty()) {
-                if (streakCount > 0) context.getString(R.string.streak_sub_keep_consistency) else context.getString(R.string.streak_sub_start_today)
+                if (streakCount > 0) localizedContext.getString(R.string.streak_sub_keep_consistency) else localizedContext.getString(R.string.streak_sub_start_today)
             } else {
-                val selected = candidates[streakCount % candidates.size]
+                val selected = candidates.random()
                 selected
                     .replace("[Username]", userName)
                     .replace("[USER_NAME]", userName)
@@ -1343,7 +1345,7 @@ object StreakShareHelper {
                     .replace("[Course]", "Budget")
             }
         } catch (e: Exception) {
-            if (streakCount > 0) context.getString(R.string.streak_sub_keep_consistency) else context.getString(R.string.streak_sub_start_today)
+            if (streakCount > 0) localizedContext.getString(R.string.streak_sub_keep_consistency) else localizedContext.getString(R.string.streak_sub_start_today)
         }
     }
 

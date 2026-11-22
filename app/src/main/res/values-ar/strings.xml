@@ -1690,4 +1690,18 @@
     <string name="select_payment_account">اختر حساب الدفع</string>
     <string name="select_trial_period">اختر مدة التجربة</string>
     <string name="select_reminder_time">اختر وقت التذكير</string>
+    <string name="profile_birthday_label">تاريخ الميلاد</string>
+    <string name="profile_birthday_placeholder">YYYY-MM-DD</string>
+    <string name="profile_select_birthday">اختر تاريخ الميلاد</string>
+    <string name="profile_name_placeholder">أدخل اسمك بالكامل</string>
+    <string name="profile_phone_placeholder">أدخل رقم الهاتف</string>
+    <string name="profile_email_placeholder">أدخل البريد الإلكتروني</string>
+    <string name="profile_saving">جاري الحفظ…</string>
+    <string name="profile_saved_success">تم تحديث الملف الشخصي بنجاح</string>
+    <string name="profile_save_failed">فشل تحديث الملف الشخصي</string>
+    <string name="profile_invalid_email">يرجى إدخال بريد إلكتروني صحيح</string>
+    <string name="profile_verify_email_title">تأكيد البريد الإلكتروني الجديد</string>
+    <string name="profile_verify_email_desc">أدخل رمز التحقق المكون من 6 أرقام المرسل إلى %1$s</string>
+    <string name="profile_verify_code_label">رمز التحقق</string>
+    <string name="profile_verify_btn">تأكيد وتحديث</string>
 </resources>

@@ -489,6 +489,31 @@ class PiggyLedgerViewModel(
         }
     }
 
+    fun updateAuthProfile(
+        email: String = "",
+        name: String = "",
+        photoUrl: String = "",
+        phone: String = "",
+        birthDate: String = ""
+    ) {
+        viewModelScope.launch {
+            userPreferences.saveAuthProfile(
+                email = email,
+                name = name,
+                photoUrl = photoUrl,
+                phone = phone,
+                birthDate = birthDate
+            )
+            val resolvedEmail = email.ifBlank { authUserEmail.value }
+            val resolvedName = name.ifBlank { authUserName.value }
+            if (resolvedEmail.isNotBlank()) {
+                try {
+                    PostHog.identify(resolvedEmail, mapOf("name" to resolvedName))
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
     private val _logoutState = MutableStateFlow<LogoutState>(LogoutState.Idle)
     val logoutState: StateFlow<LogoutState> = _logoutState.asStateFlow()
 

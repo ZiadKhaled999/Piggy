@@ -8,6 +8,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 
 import android.content.Intent
 
@@ -451,9 +452,13 @@ fun DetailSettingsView(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, top = 24.dp)
+                    .statusBarsPadding()
+                    .padding(start = 16.dp, end = 24.dp, top = 12.dp)
             ) {
-                IconButton(onClick = onBack) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.testTag("profile_back_button")
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.back_icon),

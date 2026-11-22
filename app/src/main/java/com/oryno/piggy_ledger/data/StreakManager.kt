@@ -380,8 +380,8 @@ object StreakManager {
             }
         }
 
-        val lang = context.resources.configuration.locales.get(0).language
-        val isArabic = lang == "ar"
+        val assetName = getStreakMessagesAsset(context)
+        val isArabic = assetName.contains("ar")
 
         val remoteResult = PiggyRemoteConfigManager.resolveMascot(
             context = context,
@@ -423,6 +423,28 @@ object StreakManager {
     }
 
     fun getStreakMessagesAsset(context: Context): String {
+        val savedLang = try {
+            UserPreferences.getSavedAppLanguageSync(context)
+        } catch (e: Exception) {
+            null
+        }?.takeIf { it.isNotBlank() }
+            ?: try {
+                androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                    .split(",")
+                    .firstOrNull { it.isNotBlank() }
+            } catch (e: Exception) {
+                null
+            }
+
+        if (!savedLang.isNullOrBlank()) {
+            val lower = savedLang.lowercase()
+            return when {
+                lower.contains("eg") -> "piggy_streak_messages_ar_eg.json"
+                lower.startsWith("ar") -> "piggy_streak_messages_ar.json"
+                else -> "piggy_streak_messages.json"
+            }
+        }
+
         val locale = try {
             val locales = context.resources.configuration.locales
             if (!locales.isEmpty) locales.get(0) else Locale.getDefault()

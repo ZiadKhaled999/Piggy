@@ -54,6 +54,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.ui.platform.testTag
 
 @Composable
 fun PiggyLedgerApp(
@@ -944,10 +945,18 @@ fun DrawerSettingsContent(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Profile Info Row
+            val navigateToProfile = {
+                onClose()
+                appNavController.navigate(Screen.Settings(SettingsMode.PROFILE.name))
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 20.dp),
+                    .clip(RoundedCornerShape(14.dp))
+                    .clickable(onClick = navigateToProfile)
+                    .padding(vertical = 4.dp)
+                    .padding(bottom = 16.dp)
+                    .testTag("drawer_profile_header"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -957,10 +966,8 @@ fun DrawerSettingsContent(
                         .clip(CircleShape)
                         .background(Color.White.copy(alpha = 0.15f))
                         .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
-                        .clickable {
-                            onClose()
-                            appNavController.navigate(Screen.Settings(SettingsMode.PROFILE.name))
-                        },
+                        .clickable(onClick = navigateToProfile)
+                        .testTag("drawer_profile_image"),
                     contentAlignment = Alignment.Center
                 ) {
                     if (authUserPhotoUrl.isNotBlank()) {

@@ -118,7 +118,9 @@ fun AuthScreen(
                 .ifBlank { user?.firstName ?: "" }
             val photoUrl = user?.imageUrl ?: suAvatarUri?.toString() ?: ""
             val clerkUserId = user?.id ?: ""
-            viewModel.setAuthUser(email, name, photoUrl, clerkUserId)
+            val phone = extractClerkPhone(user)
+            val birthDate = extractClerkBirthDate(user)
+            viewModel.setAuthUser(email, name, photoUrl, clerkUserId, phone = phone, birthDate = birthDate)
             viewModel.triggerCloudSync()
             PostHog.capture(event = "user_sign_in", properties = mapOf("method" to "clerk", "user_id" to email))
             onAuthSuccess()
@@ -1174,7 +1176,15 @@ fun AuthScreen(
                                     .joinToString(" ")
                                     .ifBlank { suName.trim().ifBlank { "User" } }
                                 val photoUrl = suAvatarUri?.toString() ?: user?.imageUrl ?: ""
-                                viewModel.setAuthUser(email, name, photoUrl)
+                                val clerkUserId = user?.id ?: ""
+                                viewModel.setAuthUser(
+                                    email = email,
+                                    name = name,
+                                    photoUrl = photoUrl,
+                                    clerkUserId = clerkUserId,
+                                    phone = extractClerkPhone(user),
+                                    birthDate = extractClerkBirthDate(user)
+                                )
                                 viewModel.triggerCloudSync()
                                 if (suAvatarUri != null) {
                                     val uri = suAvatarUri!!
@@ -1229,7 +1239,15 @@ fun AuthScreen(
                                     .joinToString(" ")
                                     .ifBlank { suName.trim().ifBlank { "User" } }
                                 val photoUrl = user?.imageUrl ?: ""
-                                viewModel.setAuthUser(email, name, photoUrl)
+                                val clerkUserId = user?.id ?: ""
+                                viewModel.setAuthUser(
+                                    email = email,
+                                    name = name,
+                                    photoUrl = photoUrl,
+                                    clerkUserId = clerkUserId,
+                                    phone = extractClerkPhone(user),
+                                    birthDate = extractClerkBirthDate(user)
+                                )
                                 viewModel.triggerCloudSync()
                                 PostHog.capture(event = "user_sign_in", properties = mapOf("method" to "clerk", "user_id" to email))
                                 onAuthSuccess()

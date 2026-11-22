@@ -1734,4 +1734,18 @@
     <string name="discard_both">Discard both</string>
     <string name="source_sms">SMS</string>
     <string name="source_notification">Notification</string>
+    <string name="profile_birthday_label">Birthday</string>
+    <string name="profile_birthday_placeholder">YYYY-MM-DD</string>
+    <string name="profile_select_birthday">Select birthday</string>
+    <string name="profile_name_placeholder">Enter your full name</string>
+    <string name="profile_phone_placeholder">Enter your phone number</string>
+    <string name="profile_email_placeholder">Enter your email address</string>
+    <string name="profile_saving">Saving…</string>
+    <string name="profile_saved_success">Profile updated successfully</string>
+    <string name="profile_save_failed">Failed to update profile</string>
+    <string name="profile_invalid_email">Please enter a valid email address</string>
+    <string name="profile_verify_email_title">Verify new email</string>
+    <string name="profile_verify_email_desc">Enter the 6-digit verification code sent to %1$s</string>
+    <string name="profile_verify_code_label">Verification code</string>
+    <string name="profile_verify_btn">Verify &amp; Update</string>
 </resources>

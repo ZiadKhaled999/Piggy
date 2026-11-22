@@ -24,6 +24,15 @@ class NotificationAlarmReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                if (com.oryno.piggy_ledger.data.UserPreferences.getSavedAppLanguageSync(context).isNullOrBlank()) {
+                    try {
+                        val dsLang = com.oryno.piggy_ledger.data.UserPreferences(context).appLanguage.first()
+                        if (!dsLang.isNullOrBlank()) {
+                            com.oryno.piggy_ledger.data.UserPreferences.saveAppLanguageSync(context, dsLang)
+                        }
+                    } catch (_: Exception) { }
+                }
+
                 val notificationHelper = NotificationHelper(context)
                 when (type) {
                     NotificationWorker.TYPE_STREAK -> {
@@ -60,8 +69,7 @@ class NotificationAlarmReceiver : BroadcastReceiver() {
                             }
                         } else {
                             // Friendly reminder if no goals created yet
-                            val goalTitle = context.getString(R.string.notif_goal_title)
-                            val goalMsg = context.getString(R.string.my_goals)
+                            val goalMsg = NotificationHelper.getLocalizedContext(context).getString(R.string.my_goals)
                             notificationHelper.showGoalReminderNotification(goalMsg, "")
                         }
                     }
@@ -74,8 +82,7 @@ class NotificationAlarmReceiver : BroadcastReceiver() {
                         }
                     }
                     NotificationWorker.TYPE_MOTIVATION -> {
-                        val quotes = context.resources.getStringArray(R.array.streak_statements_happy)
-                        val randomQuote = if (quotes.isNotEmpty()) quotes.random() else "Stay on track with Piggy Ledger! 🐷"
+                        val randomQuote = NotificationHelper.getRandomMotivationQuote(context)
                         notificationHelper.showMotivationNotification(randomQuote)
                     }
                 }

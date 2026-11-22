@@ -326,8 +326,9 @@ class UserPreferences(private val context: Context) {
         syncPreferencesToDb()
     }
 
-    suspend fun saveAuthProfile(name: String = "", photoUrl: String = "", phone: String = "", birthDate: String = "") {
+    suspend fun saveAuthProfile(email: String = "", name: String = "", photoUrl: String = "", phone: String = "", birthDate: String = "") {
         context.dataStore.edit { prefs ->
+            if (email.isNotBlank()) prefs[AUTH_USER_EMAIL] = email
             if (name.isNotBlank()) prefs[AUTH_USER_NAME] = name
             if (photoUrl.isNotBlank()) prefs[AUTH_USER_PHOTO_URL] = photoUrl
             prefs[AUTH_USER_PHONE] = phone

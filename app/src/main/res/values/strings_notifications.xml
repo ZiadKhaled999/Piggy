@@ -17,4 +17,228 @@
     <string name="notif_auth_signin_msg">You have successfully signed in to Piggy Ledger.</string>
     <string name="notif_auth_signout_title">Signed Out</string>
     <string name="notif_auth_signout_msg">You have been signed out of Piggy Ledger safely.</string>
+
+    <!-- Daily Motivation Notification Phrases (220+ unique phrases) -->
+    <string-array name="motivation_notification_phrases">
+        <item>A 20-second check-in right now keeps your entire budget crystal clear. 🐷</item>
+        <item>Small amounts you save today quietly turn into big freedom tomorrow.</item>
+        <item>Did you grab coffee or lunch today? Drop it in Piggy Ledger before you forget! ☕</item>
+        <item>Every receipt you log is one less mystery at the end of the month.</item>
+        <item>Your goals don\'t need perfection—they just need you to keep showing up. ✨</item>
+        <item>Pause before buying today: ask yourself if it brings you closer to your dream.</item>
+        <item>Even a tiny deposit into savings is a win worth celebrating! 💰</item>
+        <item>Take a quick breath and check your balance—awareness brings instant calm.</item>
+        <item>You work hard for your money; spend 30 seconds making sure it works for you.</item>
+        <item>Skipped an impulse buy today? Put that exact amount toward your favorite goal! 🎯</item>
+        <item>Evening check-in! Log today\'s spending so you can sleep with a clear mind.</item>
+        <item>Consistency beats big one-off gestures every single time in personal finance.</item>
+        <item>Your future self is cheering for every smart choice you make tonight.</item>
+        <item>Little leaks sink big budgets—spot yours early by logging daily.</item>
+        <item>How did your wallet treat you today? Tell Piggy all about it!</item>
+        <item>A balanced budget isn\'t about saying no to fun—it\'s about saying yes to what matters.</item>
+        <item>Five minutes of planning this week saves hours of stress next week.</item>
+        <item>Remember why you started saving. That goal is closer than you think! 🚀</item>
+        <item>Don\'t let a busy day break your financial rhythm—one quick entry keeps it alive.</item>
+        <item>Smart savers aren\'t born lucky; they build habits one day at a time.</item>
+        <item>Checking in with Piggy today? Let\'s keep your money story moving forward!</item>
+        <item>Watch the small expenses—they\'re usually the easiest wins to reclaim.</item>
+        <item>Zero-spend day or normal day, checking your ledger keeps your momentum strong.</item>
+        <item>Financial peace isn\'t about having millions; it\'s about knowing where every coin goes.</item>
+        <item>Got spare change or a surprise discount today? Tuck it straight into your goal! 🪙</item>
+        <item>Tonight\'s quick log sets up tomorrow\'s confidence.</item>
+        <item>Treat your savings goal like an important appointment you never cancel.</item>
+        <item>Every transaction tracked sharpens your instinct for smarter spending.</item>
+        <item>Your streak and your wallet grow stronger together—ready for today\'s entry? 🔥</item>
+        <item>Ask before you tap to pay: will I still value this next month?</item>
+        <item>Progress happens quietly in the daily habits nobody else sees.</item>
+        <item>Piggy\'s waiting with good vibes—take half a minute to wrap up today\'s numbers.</item>
+        <item>Don\'t wait for payday to feel organized; clarity starts right now.</item>
+        <item>One mindful choice today can fund a whole memory later this year.</item>
+        <item>Feeling tempted by a flash sale? Remember: 50% off something you don\'t need is 100% spent.</item>
+        <item>Celebrate every step forward, no matter how small the deposit feels.</item>
+        <item>Reviewing your spending takes seconds and protects weeks of hard work.</item>
+        <item>Build the emergency cushion that lets you breathe easier every morning. 🌤️</item>
+        <item>Your budget is a map to your freedom, not a cage—keep updating it!</item>
+        <item>Any subscriptions renewing soon? A quick glance keeps surprises away.</item>
+        <item>End the day on a high note by logging your final receipts.</item>
+        <item>True luxury is never panicking when an unexpected bill arrives.</item>
+        <item>Make today count! Even logging a single small expense keeps the habit sharp.</item>
+        <item>When you track your money, you start noticing opportunities you used to miss.</item>
+        <item>A calm financial life begins with one honest entry before bedtime.</item>
+        <item>Think of every dollar saved as a tiny worker building your future.</item>
+        <item>You\'ve got goals worth fighting for—stay steady tonight! 💪</item>
+        <item>Don\'t let receipts pile up in your pocket; capture them in seconds right now.</item>
+        <item>How close are you to your next milestone? Open Piggy and take a peek!</item>
+        <item>Discipline today buys options and freedom tomorrow.</item>
+        <item>Good habits feel effortless once you protect the routine—keep going!</item>
+        <item>Notice what brought you real joy today vs. what was just impulse.</item>
+        <item>A little organization tonight means a smoother morning tomorrow. 🌙</item>
+        <item>Keep your financial compass steady: log, review, and relax.</item>
+        <item>Even on tough days, showing up for your ledger is an act of self-care.</item>
+        <item>Small daily savings add up faster than most people ever realize.</item>
+        <item>Give your wallet a quick evening hug—log today\'s expenses! 🐷</item>
+        <item>Your dreams deserve a funded plan. Add a brick to that plan tonight.</item>
+        <item>Remember: wealth is what you keep and grow, not what you rush to spend.</item>
+        <item>Quick check-in! Have all of today\'s transfers and snacks been logged?</item>
+        <item>Stay curious about your spending patterns—insights unlock big savings.</item>
+        <item>One day at a time, you\'re rewriting your entire relationship with money.</item>
+        <item>Choose peace of mind over an extra delivery order tonight—your goal will thank you!</item>
+        <item>Every coin has a purpose when you\'re intentional with your ledger.</item>
+        <item>Don\'t underestimate what 60 seconds of daily focus can change in 6 months.</item>
+        <item>Ready to give your future self a little gift tonight? Log and save! 🎁</item>
+        <item>Keep your eyes on the big picture while tending to the tiny daily numbers.</item>
+        <item>An updated budget is the best antidote to money anxiety.</item>
+        <item>You\'re building something lasting—don\'t stop when you\'re making real headway!</item>
+        <item>Think twice before tapping that checkout button; wait 24 hours and see if you still want it.</item>
+        <item>Your daily check-in keeps your financial goals front and center.</item>
+        <item>Every debt paid down and every coin saved is a step toward total peace.</item>
+        <item>Let\'s close out today cleanly—log your transactions and celebrate! 🎉</item>
+        <item>Financial confidence grows every single time you face your numbers honestly.</item>
+        <item>Got cash in your pocket? Don\'t forget to record cash buys before they slip your mind.</item>
+        <item>Protect your streak tonight and feel proud waking up tomorrow! 🔥</item>
+        <item>Slow and steady savings win every single long race.</item>
+        <item>Look how far you\'ve come—keep feeding that positive momentum!</item>
+        <item>Mindful spending means buying what truly matters and skipping the noise.</item>
+        <item>A quick look at your analytics tonight might reveal an easy way to save more.</item>
+        <item>You don\'t need a huge raise to feel richer—clarity alone transforms your budget.</item>
+        <item>Step away from stress by taking charge of today\'s numbers right now.</item>
+        <item>Keep promises to yourself, especially the financial ones.</item>
+        <item>Every saved pound, dollar, or coin is freedom in reserve.</item>
+        <item>Hey saver! Piggy saved a spot for today\'s update—ready when you are! ✨</item>
+        <item>Tomorrow feels lighter when today\'s expenses are already sorted.</item>
+        <item>Build a lifestyle you love without sacrificing your future security.</item>
+        <item>Caught yourself resisting an unnecessary treat? Celebrate that willpower!</item>
+        <item>Your ledger loves honesty—log the highs, the lows, and everything in between.</item>
+        <item>Turning financial awareness into a daily habit is the smartest upgrade you can make.</item>
+        <item>One quick entry now prevents a weekend budget headache later.</item>
+        <item>Keep nurturing your goals—they grow fastest with consistent attention. 🌱</item>
+        <item>Stay loyal to your budget tonight; your dreams are counting on you.</item>
+        <item>What\'s one small expense you could skip tomorrow to boost your goal?</item>
+        <item>You\'re stronger than impulse spending. Prove it one more day!</item>
+        <item>Check your progress bar tonight—seeing how close you are feels amazing!</item>
+        <item>Money management gets easier every single week you stick with it.</item>
+        <item>Don\'t break the chain tonight—one tap keeps your saving habit glowing.</item>
+        <item>Remember to appreciate what you already have while building what\'s next.</item>
+        <item>A tidy ledger before bed brings the sweetest peace of mind. 😌</item>
+        <item>Spend intentionally on what lights you up, and trim ruthlessly what doesn\'t.</item>
+        <item>Great savers stay consistent on ordinary days, not just after payday.</item>
+        <item>Piggy\'s cheering you on—drop today\'s numbers in and keep rolling!</item>
+        <item>Your financial story is yours to write. Make today a smart chapter.</item>
+        <item>Check if any friend owes you or if you settled a bill today—keep loans tidy!</item>
+        <item>Tiny daily wins build unshakable financial confidence over time.</item>
+        <item>Take 15 seconds right now to honor your budget goals.</item>
+        <item>Freedom isn\'t bought with random purchases—it\'s built with patient savings.</item>
+        <item>Spot one habit that\'s draining your wallet and gently replace it this week.</item>
+        <item>You\'re doing better than you think—keep logging and trusting the process! 🌟</item>
+        <item>Stay ahead of your bills by keeping today\'s balance fresh.</item>
+        <item>Cooked at home today? Log what you saved and celebrate that win! 🍳</item>
+        <item>A clear budget turns big, scary dreams into simple step-by-step plans.</item>
+        <item>Even if today was spendy, logging it honestly keeps you in control.</item>
+        <item>Never feel guilty for checking your accounts—awareness is pure power.</item>
+        <item>Keep your streak alive tonight and watch how proud you feel at day 30, 60, and 100!</item>
+        <item>Make sure your hard-earned money goes where your heart actually wants it.</item>
+        <item>One quiet decision to save today echoes for months to come.</item>
+        <item>Ready for your nightly Piggy check-in? Your ledger is waiting! 🐷</item>
+        <item>Don\'t compare your timeline to anyone else\'s—compete only with yesterday.</item>
+        <item>Every recurring fee canceled is an instant raise you just gave yourself.</item>
+        <item>Keep showing up for your goals, even when progress feels slow.</item>
+        <item>Let today\'s discipline become tomorrow\'s effortless peace.</item>
+        <item>Quick reminder: check your wallet and log any cash you spent today.</item>
+        <item>Your savings goal doesn\'t care how fast you run—just that you keep moving.</item>
+        <item>A moment of reflection tonight prevents a month of wondering where the money went.</item>
+        <item>Stay mindful, stay steady, and keep guarding your peace of mind.</item>
+        <item>Celebrate the purchases you didn\'t make today—that\'s pure net worth kept! 💎</item>
+        <item>Keep your financial foundation solid one entry at a time.</item>
+        <item>You deserve to feel calm and confident every time you check your bank app.</item>
+        <item>Drop in for a quick log—Piggy loves seeing you stay on track!</item>
+        <item>Plan tomorrow\'s spending tonight so your money always has clear instructions.</item>
+        <item>Small compromises now create big choices later in life.</item>
+        <item>Consistency turns ordinary earners into extraordinary savers.</item>
+        <item>Let\'s keep the momentum rolling—have you logged today\'s transactions yet? 🔥</item>
+        <item>Respect every coin, and larger sums will naturally start respecting you.</item>
+        <item>Your goal progress is waiting for its next boost—even a small amount helps!</item>
+        <item>Stay sharp with your daily tracking; it\'s the easiest win of the day.</item>
+        <item>Every logged day proves you\'re serious about building a secure future.</item>
+        <item>Take a moment to admire your discipline this week—you\'re showing up!</item>
+        <item>Don\'t let little errands slip out of your budget—record them in seconds.</item>
+        <item>A peaceful evening starts with knowing your finances are under control. 🌃</item>
+        <item>Think long-term tonight: what will make you proudest six months from now?</item>
+        <item>Keep your saving flame glowing even when life gets hectic.</item>
+        <item>Financial wisdom is simply practicing patience over impulse.</item>
+        <item>Got a few seconds before dinner or bed? Update Piggy Ledger right now!</item>
+        <item>Every smart choice reinforces the identity of someone who masters their money.</item>
+        <item>Never underestimate the peace that comes from an organized ledger.</item>
+        <item>Your emergency fund grows stronger every time you prioritize needs over wants.</item>
+        <item>Stay curious, stay disciplined, and watch your net worth climb! 📈</item>
+        <item>Log today\'s numbers with zero judgment—clarity always beats avoidance.</item>
+        <item>One mindful pause before buying can save a week\'s worth of coffee budget.</item>
+        <item>Piggy\'s gentle nudge: take 20 seconds to keep your money habits fresh today.</item>
+        <item>You\'re crafting a calmer, freer tomorrow with every single check-in.</item>
+        <item>Keep your priorities straight and your budget simple—less stress, more living.</item>
+        <item>Remember to check your upcoming goals and give yourself credit for every step.</item>
+        <item>Today is a fresh chance to align your spending with your true values.</item>
+        <item>Don\'t wait for next month to start fresh—tonight is all you need!</item>
+        <item>Every little log keeps your financial radar finely tuned.</item>
+        <item>Stay patient with big goals; big trees grow from daily watering. 🌳</item>
+        <item>Wrap up today\'s receipts now so tomorrow starts completely clean.</item>
+        <item>You\'re building habits that will protect you for decades to come.</item>
+        <item>Check your accounts for a quick second—knowing beats guessing every time.</item>
+        <item>Reward yourself with peace of mind tonight by balancing your ledger.</item>
+        <item>Smart money moves don\'t have to be complicated; just be consistent.</item>
+        <item>A quick tap today keeps your streak shining bright! ✨</item>
+        <item>Notice how good it feels to be completely aware of your spending.</item>
+        <item>Keep putting your future self first—nobody regrets having savings waiting for them.</item>
+        <item>Got a freelance payout or gift today? Allocate a slice to your goals first!</item>
+        <item>Stay grounded in your plan even when everyone else is impulse shopping.</item>
+        <item>Your daily effort is quietly transforming your financial reality.</item>
+        <item>Take a quick peek at your spending breakdown and spot one easy win.</item>
+        <item>Piggy believes in your goals—let\'s add today\'s update together! 🐷</item>
+        <item>Calm minds make wise money decisions. Check in before the day ends.</item>
+        <item>Every cent tracked is a vote for clarity, peace, and independence.</item>
+        <item>Don\'t let a hectic afternoon erase a whole week of great consistency.</item>
+        <item>Build wealth softly: spend less than you earn, track honestly, and stay patient.</item>
+        <item>One small entry tonight keeps your streak and your confidence alive!</item>
+        <item>Think of budgeting as giving every coin permission to bring you real value.</item>
+        <item>Your future vacation, home, or freedom fund is built right here, day by day. 🏡</item>
+        <item>Check in now and celebrate another day of staying true to your plan.</item>
+        <item>Keep your eyes forward—yesterday\'s mistakes don\'t define tomorrow\'s balance.</item>
+        <item>A 30-second money check-in tonight is worth hours of worry later.</item>
+        <item>Stay steady with your saving routine; greatness is hidden in daily repetition.</item>
+        <item>Take pride in knowing exactly where your money went today.</item>
+        <item>Let\'s keep your financial peace protected—log today\'s activity before sleep!</item>
+        <item>Remember: even small progress compounds into life-changing results.</item>
+        <item>Avoid late-night impulse scrolling—check your savings goals instead! 💡</item>
+        <item>Your streak is waiting for today\'s spark—tap in and keep it glowing! 🔥</item>
+        <item>Smart choices feel quiet today, then feel heroic next year.</item>
+        <item>Keep your wallet honest and your dreams funded—time for today\'s check-in!</item>
+        <item>Every time you open Piggy Ledger, you invest in your own financial peace.</item>
+        <item>Don\'t leave today\'s receipts unlogged—finish the day strong!</item>
+        <item>Steady tracking turns financial stress into total clarity and control.</item>
+        <item>You\'ve got everything it takes to reach your biggest savings target.</item>
+        <item>Take one mindful minute right now to review today and plan tomorrow.</item>
+        <item>Piggy\'s cheering for you! Log today\'s transactions and rest easy tonight. 🌙</item>
+        <item>Hold the line on unnecessary extras this week—your goal is worth it!</item>
+        <item>Every day you stay consistent makes tomorrow\'s discipline twice as easy.</item>
+        <item>Give your savings a little love tonight—even small steps move mountains.</item>
+        <item>Financial freedom is built in quiet moments just like this one.</item>
+        <item>Did you avoid a pricey habit today? Log that win in your savings! 🏆</item>
+        <item>Keep your budget balanced so you can enjoy life without money guilt.</item>
+        <item>Ready to wrap up the day? One quick entry keeps your ledger spotless.</item>
+        <item>Trust your daily routine—consistent tracking always pays off in the end.</item>
+        <item>Your goals are cheering for you—show up for them for 20 seconds tonight!</item>
+        <item>A quick balance check now means zero surprises when bills arrive.</item>
+        <item>Stay focused on progress, celebrate small wins, and keep saving smart! 💰</item>
+        <item>Every transaction logged brings more calm into your week.</item>
+        <item>Keep your financial habits sharp and your dreams well-funded!</item>
+        <item>Take a moment to check off today\'s money check-in—you\'ve earned that peace.</item>
+        <item>Don\'t skip today—consistency is the bridge between goals and reality. 🌉</item>
+        <item>Piggy\'s daily reminder: your future self is grateful for today\'s discipline!</item>
+        <item>One last check before the day wraps up—keep that winning streak alive! ✨</item>
+        <item>Track with purpose, save with joy, and watch your goals come to life.</item>
+        <item>Smart habits today build the safety net you\'ll always thank yourself for.</item>
+        <item>Time for your daily Piggy moment—log today and sleep stress-free! 🐷</item>
+        <item>Keep going strong! Every single day of awareness moves you closer to freedom.</item>
+        <item>Close out your evening cleanly by dropping today\'s expenses into Piggy Ledger.</item>
+        <item>You\'re mastering your money one calm, consistent day at a time. 🌟</item>
+    </string-array>
 </resources>

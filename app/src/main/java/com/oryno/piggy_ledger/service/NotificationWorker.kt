@@ -15,6 +15,16 @@ class NotificationWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        // Ensure synchronous language preference is populated from DataStore if needed
+        if (com.oryno.piggy_ledger.data.UserPreferences.getSavedAppLanguageSync(context).isNullOrBlank()) {
+            try {
+                val dsLang = com.oryno.piggy_ledger.data.UserPreferences(context).appLanguage.first()
+                if (!dsLang.isNullOrBlank()) {
+                    com.oryno.piggy_ledger.data.UserPreferences.saveAppLanguageSync(context, dsLang)
+                }
+            } catch (_: Exception) { }
+        }
+
         val notificationHelper = NotificationHelper(context)
         val type = inputData.getString(KEY_NOTIF_TYPE) ?: return Result.success()
 
@@ -52,7 +62,7 @@ class NotificationWorker(
                         notificationHelper.showGoalReminderNotification(firstGoal.name, "${currencySymbol}0.00")
                     }
                 } else {
-                    val goalMsg = context.getString(R.string.my_goals)
+                    val goalMsg = NotificationHelper.getLocalizedContext(context).getString(R.string.my_goals)
                     notificationHelper.showGoalReminderNotification(goalMsg, "")
                 }
             }
@@ -65,8 +75,7 @@ class NotificationWorker(
                 }
             }
             TYPE_MOTIVATION -> {
-                val quotes = context.resources.getStringArray(R.array.streak_statements_happy)
-                val randomQuote = if (quotes.isNotEmpty()) quotes.random() else "Stay on track with Piggy Ledger! 🐷"
+                val randomQuote = NotificationHelper.getRandomMotivationQuote(context)
                 notificationHelper.showMotivationNotification(randomQuote)
             }
         }

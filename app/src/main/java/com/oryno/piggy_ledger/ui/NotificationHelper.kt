@@ -13,6 +13,9 @@ import com.oryno.piggy_ledger.MainActivity
 
 class NotificationHelper(private val context: Context) {
 
+    private val localizedContext: Context
+        get() = getLocalizedContext(context)
+
     init {
         createNotificationChannels()
     }
@@ -23,8 +26,8 @@ class NotificationHelper(private val context: Context) {
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
             // Deadline Channel
-            val deadlineName = context.getString(R.string.deadline_channel_name)
-            val deadlineDesc = context.getString(R.string.deadline_channel_desc)
+            val deadlineName = localizedContext.getString(R.string.deadline_channel_name)
+            val deadlineDesc = localizedContext.getString(R.string.deadline_channel_desc)
             val deadlineChannel = NotificationChannel(CHANNEL_DEADLINE_ID, deadlineName, NotificationManager.IMPORTANCE_HIGH).apply {
                 description = deadlineDesc
                 enableLights(true)
@@ -34,8 +37,8 @@ class NotificationHelper(private val context: Context) {
             notificationManager.createNotificationChannel(deadlineChannel)
 
             // General Reminders Channel
-            val remindersName = context.getString(R.string.channel_reminders_name)
-            val remindersDesc = context.getString(R.string.channel_reminders_desc)
+            val remindersName = localizedContext.getString(R.string.channel_reminders_name)
+            val remindersDesc = localizedContext.getString(R.string.channel_reminders_desc)
             val remindersChannel = NotificationChannel(CHANNEL_REMINDERS_ID, remindersName, NotificationManager.IMPORTANCE_HIGH).apply {
                 description = remindersDesc
                 enableLights(true)
@@ -68,7 +71,7 @@ class NotificationHelper(private val context: Context) {
         try {
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
             val title = try {
-                context.getString(R.string.deadline_title)
+                localizedContext.getString(R.string.deadline_title)
             } catch (e: Exception) {
                 "Deadline Over!"
             }
@@ -78,7 +81,7 @@ class NotificationHelper(private val context: Context) {
                 amount.toString()
             }
             val message = try {
-                context.getString(R.string.repayment_deadline_over, contactName, "$currencySymbol$formattedAmount")
+                localizedContext.getString(R.string.repayment_deadline_over, contactName, "$currencySymbol$formattedAmount")
             } catch (e: Exception) {
                 "The repayment deadline for $contactName is over. Outstanding amount: $currencySymbol$formattedAmount"
             }
@@ -105,8 +108,8 @@ class NotificationHelper(private val context: Context) {
 
     fun showStreakWarningNotification(daysMissed: Int = com.oryno.piggy_ledger.data.StreakManager.getConsecutiveMissedDays(context)) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val title = context.getString(R.string.notif_streak_warning_title)
-        val message = context.getString(R.string.notif_streak_warning_msg, daysMissed.coerceAtLeast(1))
+        val title = localizedContext.getString(R.string.notif_streak_warning_title)
+        val message = localizedContext.getString(R.string.notif_streak_warning_msg, daysMissed.coerceAtLeast(1))
         val logoBitmap = getAppLogoBitmap()
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
@@ -127,8 +130,8 @@ class NotificationHelper(private val context: Context) {
 
     fun showGoalReminderNotification(goalName: String, amountLeft: String) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val title = context.getString(R.string.notif_goal_title)
-        val message = context.getString(R.string.notif_goal_msg, amountLeft)
+        val title = localizedContext.getString(R.string.notif_goal_title)
+        val message = localizedContext.getString(R.string.notif_goal_msg, amountLeft)
         val logoBitmap = getAppLogoBitmap()
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
@@ -149,7 +152,7 @@ class NotificationHelper(private val context: Context) {
 
     fun showMotivationNotification(quote: String) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val title = context.getString(R.string.notif_motivation_title)
+        val title = localizedContext.getString(R.string.notif_motivation_title)
         val logoBitmap = getAppLogoBitmap()
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
@@ -170,8 +173,8 @@ class NotificationHelper(private val context: Context) {
 
     fun showAuthNotification(isSignedIn: Boolean) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val title = context.getString(if (isSignedIn) R.string.notif_auth_signin_title else R.string.notif_auth_signout_title)
-        val message = context.getString(if (isSignedIn) R.string.notif_auth_signin_msg else R.string.notif_auth_signout_msg)
+        val title = localizedContext.getString(if (isSignedIn) R.string.notif_auth_signin_title else R.string.notif_auth_signout_title)
+        val message = localizedContext.getString(if (isSignedIn) R.string.notif_auth_signin_msg else R.string.notif_auth_signout_msg)
         val logoBitmap = getAppLogoBitmap()
 
         val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
@@ -215,8 +218,8 @@ class NotificationHelper(private val context: Context) {
             com.oryno.piggy_ledger.service.SmsActionType.UNKNOWN -> R.string.notif_tx_msg_unknown
         }
 
-        val title = context.getString(titleRes)
-        val message = context.getString(msgRes, amount, currency, accountName)
+        val title = localizedContext.getString(titleRes)
+        val message = localizedContext.getString(msgRes, amount, currency, accountName)
         
         val defaultSoundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
 
@@ -267,5 +270,46 @@ class NotificationHelper(private val context: Context) {
         const val NOTIF_ID_MOTIVATION = 1003
         const val NOTIF_ID_AUTH = 1004
         const val NOTIF_ID_SUBSCRIPTION = 1005
+
+        fun getLocalizedContext(context: Context): Context {
+            val savedLang = try {
+                com.oryno.piggy_ledger.data.UserPreferences.getSavedAppLanguageSync(context)
+            } catch (e: Exception) {
+                null
+            }?.takeIf { it.isNotBlank() }
+                ?: try {
+                    androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                        .split(",")
+                        .firstOrNull { it.isNotBlank() }
+                } catch (e: Exception) {
+                    null
+                }
+
+            if (savedLang.isNullOrBlank()) return context
+
+            val locale = when {
+                savedLang.equals("ar-EG", ignoreCase = true) || savedLang.lowercase().contains("eg") ->
+                    java.util.Locale.forLanguageTag("ar-EG")
+                savedLang.lowercase().startsWith("ar") ->
+                    java.util.Locale.forLanguageTag("ar")
+                else ->
+                    java.util.Locale.forLanguageTag(savedLang)
+            }
+
+            val config = android.content.res.Configuration(context.resources.configuration)
+            config.setLocale(locale)
+            config.setLocales(android.os.LocaleList(locale))
+            return context.createConfigurationContext(config)
+        }
+
+        fun getRandomMotivationQuote(context: Context): String {
+            val localizedCtx = getLocalizedContext(context)
+            val quotes = localizedCtx.resources.getStringArray(R.array.motivation_notification_phrases)
+            if (quotes.isNotEmpty()) {
+                return quotes.random()
+            }
+            val fallback = localizedCtx.resources.getStringArray(R.array.streak_statements_happy)
+            return if (fallback.isNotEmpty()) fallback.random() else "Stay on track with Piggy Ledger! 🐷"
+        }
     }
 }

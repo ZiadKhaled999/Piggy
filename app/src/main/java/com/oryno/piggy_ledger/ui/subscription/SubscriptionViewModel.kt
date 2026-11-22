@@ -10,6 +10,7 @@ import com.oryno.piggy_ledger.data.PiggyLedgerDao
 import com.oryno.piggy_ledger.data.PiggyLedgerRepository
 import com.oryno.piggy_ledger.data.SubscriptionEntity
 import com.oryno.piggy_ledger.ui.buildLogoDevUrl
+import com.oryno.piggy_ledger.widget.HeatmapWidgetProvider
 import com.oryno.piggy_ledger.widget.StreakWidgetProvider
 import com.oryno.piggy_ledger.widget.SummaryWidgetProvider
 import com.posthog.PostHog
@@ -355,6 +356,7 @@ class SubscriptionViewModel(
             context?.let { ctx ->
                 SummaryWidgetProvider.triggerUpdate(ctx)
                 StreakWidgetProvider.triggerUpdate(ctx)
+                HeatmapWidgetProvider.triggerUpdate(ctx)
             }
             PostHog.capture(
                 event = "subscription_paid",

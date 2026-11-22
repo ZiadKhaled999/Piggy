@@ -140,7 +140,7 @@ fun DashboardScreen(
         val clerkName = listOfNotNull(user?.firstName, user?.lastName)
             .filter { it.isNotBlank() }
             .joinToString(" ")
-        if (clerkName.isNotBlank()) clerkName else authUserName.ifBlank { "User" }
+        authUserName.ifBlank { clerkName }.ifBlank { "User" }
     }
 
     val userEmail = remember(user, authUserEmail) {

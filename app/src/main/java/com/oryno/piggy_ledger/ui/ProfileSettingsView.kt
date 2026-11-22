@@ -3,7 +3,6 @@ package com.oryno.piggy_ledger.ui
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import android.util.Patterns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,12 +35,14 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cake
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
@@ -51,26 +52,16 @@ import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -83,12 +74,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -96,6 +91,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -104,14 +100,9 @@ import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.clerk.api.Clerk
-import com.clerk.api.emailaddress.EmailAddress
-import com.clerk.api.emailaddress.sendCode
-import com.clerk.api.emailaddress.verifyCode
 import com.clerk.api.network.model.error.ClerkErrorResponse
-import com.clerk.api.network.model.verification.Verification
 import com.clerk.api.network.serialization.ClerkResult
 import com.clerk.api.user.User
-import com.clerk.api.user.createEmailAddress
 import com.clerk.api.user.reload
 import com.clerk.api.user.setProfileImage
 import com.clerk.api.user.update
@@ -128,10 +119,10 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
+
+private enum class ProfileEditableField {
+    NAME, PHONE
+}
 
 internal fun extractClerkFullName(user: User?): String {
     if (user == null) return ""
@@ -185,6 +176,7 @@ private fun extractClerkFailureMessage(context: Context, result: ClerkResult.Fai
 @Composable
 fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
 
     val userName by viewModel.authUserName.collectAsStateWithLifecycle()
@@ -200,18 +192,15 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
     var emailInput by remember { mutableStateOf(userEmail) }
     var isInitializedFromClerk by remember { mutableStateOf(false) }
 
+    var editingField by remember { mutableStateOf<ProfileEditableField?>(null) }
     var isSaving by remember { mutableStateOf(false) }
     var saveMessage by remember { mutableStateOf<String?>(null) }
     var isSaveError by remember { mutableStateOf(false) }
 
     var showBirthdayPicker by remember { mutableStateOf(false) }
-    var pendingEmailVerification by remember { mutableStateOf<EmailAddress?>(null) }
-    var emailVerificationCode by remember { mutableStateOf("") }
-    var emailVerificationError by remember { mutableStateOf<String?>(null) }
-    var isVerifyingEmail by remember { mutableStateOf(false) }
 
     LaunchedEffect(userName, userPhone, userBirth, userEmail) {
-        if (!isSaving) {
+        if (!isSaving && editingField == null) {
             if (nameInput.isBlank() && userName.isNotBlank()) nameInput = userName
             if (birthInput.isBlank() && userBirth.isNotBlank()) birthInput = userBirth
             if (phoneInput.isBlank() && userPhone.isNotBlank()) phoneInput = userPhone
@@ -219,16 +208,19 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
         }
     }
 
-    // Sync the latest profile fields directly from Clerk on screen open
+    // Sync latest profile fields from Clerk when reloaded cleanly
     LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
+        val clerkReloaded = withContext(Dispatchers.IO) {
             try {
                 val activeUser = Clerk.userFlow.value ?: Clerk.user
                 if (activeUser != null) {
-                    activeUser.reload()
+                    activeUser.reload() is ClerkResult.Success
+                } else {
+                    false
                 }
             } catch (e: Exception) {
                 Log.w("ProfileSettingsView", "Clerk reload skipped/failed: ${e.message}")
+                false
             }
         }
         val refreshedUser = Clerk.userFlow.value ?: Clerk.user ?: clerkUser
@@ -239,24 +231,39 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
         val latestLocalPhoto = viewModel.authUserPhotoUrl.value
 
         if (refreshedUser != null && !isInitializedFromClerk) {
-            val clerkName = extractClerkFullName(refreshedUser).ifBlank { latestLocalName }
-            val clerkEmail = extractClerkEmail(refreshedUser).ifBlank { latestLocalEmail }
-            val clerkPhone = extractClerkPhone(refreshedUser).ifBlank { latestLocalPhone }
-            val clerkBirth = extractClerkBirthDate(refreshedUser).ifBlank { latestLocalBirth }
-            val clerkPhoto = refreshedUser.imageUrl.ifBlank { latestLocalPhoto }
+            val clerkName = extractClerkFullName(refreshedUser)
+            val resolvedName = if (clerkReloaded && clerkName.isNotBlank()) {
+                clerkName
+            } else {
+                latestLocalName.ifBlank { clerkName }
+            }
+            val resolvedEmail = extractClerkEmail(refreshedUser).ifBlank { latestLocalEmail }
+            val clerkPhone = extractClerkPhone(refreshedUser)
+            val resolvedPhone = if (clerkReloaded && clerkPhone.isNotBlank()) {
+                clerkPhone
+            } else {
+                latestLocalPhone.ifBlank { clerkPhone }
+            }
+            val clerkBirth = extractClerkBirthDate(refreshedUser)
+            val resolvedBirth = if (clerkReloaded && clerkBirth.isNotBlank()) {
+                clerkBirth
+            } else {
+                latestLocalBirth.ifBlank { clerkBirth }
+            }
+            val resolvedPhoto = refreshedUser.imageUrl.ifBlank { latestLocalPhoto }
 
-            nameInput = clerkName
-            emailInput = clerkEmail
-            phoneInput = clerkPhone
-            birthInput = clerkBirth
+            nameInput = resolvedName
+            emailInput = resolvedEmail
+            phoneInput = resolvedPhone
+            birthInput = resolvedBirth
             isInitializedFromClerk = true
 
             viewModel.updateAuthProfile(
-                email = clerkEmail,
-                name = clerkName,
-                photoUrl = clerkPhoto,
-                phone = clerkPhone,
-                birthDate = clerkBirth
+                email = resolvedEmail,
+                name = resolvedName,
+                photoUrl = resolvedPhoto,
+                phone = resolvedPhone,
+                birthDate = resolvedBirth
             )
         } else if (!isInitializedFromClerk) {
             if (nameInput.isBlank()) nameInput = latestLocalName
@@ -303,8 +310,9 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .navigationBarsPadding()
                     .padding(horizontal = 24.dp)
-                    .padding(top = 8.dp, bottom = 36.dp)
+                    .padding(top = 8.dp, bottom = 28.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -510,177 +518,13 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
     }
 
     if (showBirthdayPicker) {
-        val initialMillis = remember(birthInput) {
-            try {
-                if (birthInput.isNotBlank()) {
-                    SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
-                        timeZone = TimeZone.getTimeZone("UTC")
-                    }.parse(birthInput.trim())?.time
-                } else null
-            } catch (_: Exception) {
-                null
-            }
-        }
-        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
-        DatePickerDialog(
-            onDismissRequest = { showBirthdayPicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            val formatted = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
-                                timeZone = TimeZone.getTimeZone("UTC")
-                            }.format(Date(millis))
-                            birthInput = formatted
-                        }
-                        showBirthdayPicker = false
-                    }
-                ) {
-                    Text(stringResource(R.string.save_btn), color = PinkPrimary, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showBirthdayPicker = false }) {
-                    Text(stringResource(R.string.cancel_btn), color = TextLight)
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
-    }
-
-    val pendingEmail = pendingEmailVerification
-    if (pendingEmail != null) {
-        AlertDialog(
-            onDismissRequest = {
-                if (!isVerifyingEmail) {
-                    pendingEmailVerification = null
-                    emailVerificationCode = ""
-                    emailVerificationError = null
-                }
-            },
-            containerColor = Color.White,
-            title = {
-                Text(
-                    text = stringResource(R.string.profile_verify_email_title),
-                    fontWeight = FontWeight.Bold,
-                    color = NavyDark
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = stringResource(R.string.profile_verify_email_desc, pendingEmail.emailAddress),
-                        fontSize = 14.sp,
-                        color = Color(0xFF475569)
-                    )
-                    OutlinedTextField(
-                        value = emailVerificationCode,
-                        onValueChange = { value ->
-                            if (value.length <= 6 && value.all { it.isDigit() }) {
-                                emailVerificationCode = value
-                                emailVerificationError = null
-                            }
-                        },
-                        label = { Text(stringResource(R.string.profile_verify_code_label)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("profile_email_otp_input")
-                    )
-                    if (emailVerificationError != null) {
-                        Text(
-                            text = emailVerificationError!!,
-                            color = Color(0xFFDC2626),
-                            fontSize = 13.sp
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (emailVerificationCode.length < 6) {
-                            emailVerificationError = context.getString(R.string.auth_otp_error_length)
-                            return@Button
-                        }
-                        isVerifyingEmail = true
-                        emailVerificationError = null
-                        scope.launch {
-                            try {
-                                val verifyResult = withContext(Dispatchers.IO) {
-                                    pendingEmail.verifyCode(emailVerificationCode)
-                                }
-                                when (verifyResult) {
-                                    is ClerkResult.Success -> {
-                                        val activeUser = Clerk.userFlow.value ?: Clerk.user
-                                        val updatePrimaryResult = if (activeUser != null) {
-                                            withContext(Dispatchers.IO) {
-                                                activeUser.update(
-                                                    User.UpdateParams(primaryEmailAddressId = pendingEmail.id)
-                                                )
-                                            }
-                                        } else null
-
-                                        if (updatePrimaryResult is ClerkResult.Failure<*>) {
-                                            emailVerificationError = extractClerkFailureMessage(context, updatePrimaryResult)
-                                        } else {
-                                            withContext(Dispatchers.IO) { activeUser?.reload() }
-                                            val updatedUser = Clerk.userFlow.value ?: Clerk.user
-                                            val resolvedEmail = extractClerkEmail(updatedUser).ifBlank { pendingEmail.emailAddress }
-                                            emailInput = resolvedEmail
-                                            viewModel.updateAuthProfile(
-                                                email = resolvedEmail,
-                                                name = nameInput.trim().ifBlank { userName },
-                                                photoUrl = updatedUser?.imageUrl ?: userPhoto,
-                                                phone = phoneInput.trim(),
-                                                birthDate = birthInput.trim()
-                                            )
-                                            pendingEmailVerification = null
-                                            emailVerificationCode = ""
-                                            isSaveError = false
-                                            saveMessage = context.getString(R.string.profile_saved_success)
-                                        }
-                                    }
-                                    is ClerkResult.Failure<*> -> {
-                                        emailVerificationError = extractClerkFailureMessage(context, verifyResult)
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                emailVerificationError = e.message ?: context.getString(R.string.profile_save_failed)
-                            } finally {
-                                isVerifyingEmail = false
-                            }
-                        }
-                    },
-                    enabled = !isVerifyingEmail,
-                    colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
-                    modifier = Modifier.testTag("profile_email_verify_confirm")
-                ) {
-                    if (isVerifyingEmail) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text(stringResource(R.string.profile_verify_btn))
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        if (!isVerifyingEmail) {
-                            pendingEmailVerification = null
-                            emailVerificationCode = ""
-                            emailVerificationError = null
-                        }
-                    }
-                ) {
-                    Text(stringResource(R.string.cancel_btn), color = TextLight)
-                }
+        BirthdayWheelPickerSheet(
+            initialDate = birthInput,
+            onDismiss = { showBirthdayPicker = false },
+            onConfirm = { selectedDate ->
+                birthInput = selectedDate
+                saveMessage = null
+                showBirthdayPicker = false
             }
         )
     }
@@ -716,7 +560,7 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
                         Color(0xFFF1F5F9),
                         Color(0xFFE2E8F0)
                     ),
-                    center = androidx.compose.ui.geometry.Offset(vaporX, vaporY),
+                    center = Offset(vaporX, vaporY),
                     radius = 2500f
                 )
             )
@@ -728,7 +572,7 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
                 .navigationBarsPadding()
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(top = 68.dp, start = 20.dp, end = 20.dp, bottom = 28.dp),
+                .padding(top = 64.dp, start = 20.dp, end = 20.dp, bottom = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Column(
@@ -738,7 +582,7 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
-                    modifier = Modifier.size(144.dp)
+                    modifier = Modifier.size(136.dp)
                 ) {
                     Box(
                         modifier = Modifier
@@ -769,7 +613,7 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
                                     imageVector = Icons.Default.Person,
                                     contentDescription = stringResource(R.string.profile_change_photo),
                                     tint = Color(0xFFCBD5E1),
-                                    modifier = Modifier.size(84.dp)
+                                    modifier = Modifier.size(76.dp)
                                 )
                             }
                         }
@@ -778,7 +622,7 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
-                            .offset(x = (-4).dp, y = (-4).dp)
+                            .offset(x = (-2).dp, y = (-2).dp)
                             .size(48.dp)
                             .shadow(8.dp, CircleShape)
                             .background(NavyDark, CircleShape)
@@ -799,8 +643,9 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
 
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    // 1. Name (Editable ONLY via the circular NavyDark pen icon)
                     ProfileFieldCard(
                         label = stringResource(R.string.auth_fullname_label),
                         value = nameInput,
@@ -812,47 +657,56 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
                         icon = Icons.Default.Person,
                         iconTint = PinkPrimary,
                         iconBg = PinkPrimary.copy(alpha = 0.12f),
+                        isEditable = true,
+                        isInlineEditing = editingField == ProfileEditableField.NAME,
+                        onEditButtonClick = {
+                            editingField = if (editingField == ProfileEditableField.NAME) {
+                                focusManager.clearFocus()
+                                null
+                            } else {
+                                ProfileEditableField.NAME
+                            }
+                        },
+                        onInlineDone = {
+                            focusManager.clearFocus()
+                            editingField = null
+                        },
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Words,
-                            imeAction = ImeAction.Next
+                            imeAction = ImeAction.Done
                         ),
                         cardTestTag = "profile_name_card",
-                        inputTestTag = "profile_name_input"
+                        inputTestTag = "profile_name_input",
+                        editButtonTestTag = "profile_name_edit_button"
                     )
 
+                    // 2. Birthday (Opens Year/Month/Day Wheel Picker BottomSheet)
                     ProfileFieldCard(
                         label = stringResource(R.string.profile_birthday_label),
                         value = birthInput,
-                        onValueChange = {
-                            birthInput = it
-                            saveMessage = null
-                        },
+                        onValueChange = {},
                         placeholder = stringResource(R.string.profile_birthday_placeholder),
                         icon = Icons.Default.Cake,
                         iconTint = Color(0xFF8B5CF6),
                         iconBg = Color(0xFF8B5CF6).copy(alpha = 0.12f),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number,
-                            imeAction = ImeAction.Next
-                        ),
+                        isEditable = true,
+                        isInlineEditing = false,
+                        onCardClick = {
+                            focusManager.clearFocus()
+                            editingField = null
+                            showBirthdayPicker = true
+                        },
+                        onEditButtonClick = {
+                            focusManager.clearFocus()
+                            editingField = null
+                            showBirthdayPicker = true
+                        },
                         cardTestTag = "profile_birthday_card",
                         inputTestTag = "profile_birthday_input",
-                        trailingContent = {
-                            IconButton(
-                                onClick = { showBirthdayPicker = true },
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .testTag("profile_birthday_picker_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CalendarMonth,
-                                    contentDescription = stringResource(R.string.profile_select_birthday),
-                                    tint = Color(0xFF8B5CF6)
-                                )
-                            }
-                        }
+                        editButtonTestTag = "profile_birthday_picker_button"
                     )
 
+                    // 3. Phone Number (Editable ONLY via the circular NavyDark pen icon)
                     ProfileFieldCard(
                         label = stringResource(R.string.phone_label),
                         value = phoneInput,
@@ -864,29 +718,40 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
                         icon = Icons.Default.Phone,
                         iconTint = Color(0xFF10B981),
                         iconBg = Color(0xFF10B981).copy(alpha = 0.12f),
+                        isEditable = true,
+                        isInlineEditing = editingField == ProfileEditableField.PHONE,
+                        onEditButtonClick = {
+                            editingField = if (editingField == ProfileEditableField.PHONE) {
+                                focusManager.clearFocus()
+                                null
+                            } else {
+                                ProfileEditableField.PHONE
+                            }
+                        },
+                        onInlineDone = {
+                            focusManager.clearFocus()
+                            editingField = null
+                        },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Phone,
-                            imeAction = ImeAction.Next
+                            imeAction = ImeAction.Done
                         ),
                         cardTestTag = "profile_phone_card",
-                        inputTestTag = "profile_phone_input"
+                        inputTestTag = "profile_phone_input",
+                        editButtonTestTag = "profile_phone_edit_button"
                     )
 
+                    // 4. Email (Strictly non-editable, NO pen icon)
                     ProfileFieldCard(
                         label = stringResource(R.string.email_label),
                         value = emailInput,
-                        onValueChange = {
-                            emailInput = it
-                            saveMessage = null
-                        },
+                        onValueChange = {},
                         placeholder = stringResource(R.string.profile_email_placeholder),
                         icon = Icons.Default.Email,
                         iconTint = Color(0xFF3B82F6),
                         iconBg = Color(0xFF3B82F6).copy(alpha = 0.12f),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Done
-                        ),
+                        isEditable = false,
+                        isInlineEditing = false,
                         cardTestTag = "profile_email_card",
                         inputTestTag = "profile_email_input"
                     )
@@ -931,16 +796,13 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
 
                 Button(
                     onClick = {
+                        editingField = null
+                        focusManager.clearFocus()
+
                         val trimmedName = nameInput.trim()
                         val trimmedBirth = birthInput.trim()
                         val trimmedPhone = phoneInput.trim()
-                        val trimmedEmail = emailInput.trim()
-
-                        if (trimmedEmail.isNotBlank() && !Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches()) {
-                            isSaveError = true
-                            saveMessage = context.getString(R.string.profile_invalid_email)
-                            return@Button
-                        }
+                        val preservedEmail = emailInput.trim().ifBlank { userEmail }
 
                         isSaving = true
                         saveMessage = null
@@ -984,86 +846,13 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
                                         return@launch
                                     }
 
-                                    val currentPrimaryEmail = extractClerkEmail(user)
-                                    var emailRequiresVerification = false
-                                    if (trimmedEmail.isNotBlank() && !trimmedEmail.equals(currentPrimaryEmail, ignoreCase = true)) {
-                                        val existingEmail = user.emailAddresses?.firstOrNull {
-                                            it.emailAddress.equals(trimmedEmail, ignoreCase = true)
-                                        }
-                                        if (existingEmail != null) {
-                                            if (existingEmail.verification?.status == Verification.Status.VERIFIED) {
-                                                val primaryRes = withContext(Dispatchers.IO) {
-                                                    user.update(User.UpdateParams(primaryEmailAddressId = existingEmail.id))
-                                                }
-                                                if (primaryRes is ClerkResult.Failure<*>) {
-                                                    isSaveError = true
-                                                    saveMessage = extractClerkFailureMessage(context, primaryRes)
-                                                    return@launch
-                                                }
-                                            } else {
-                                                val sendRes = withContext(Dispatchers.IO) { existingEmail.sendCode() }
-                                                when (sendRes) {
-                                                    is ClerkResult.Success -> {
-                                                        pendingEmailVerification = sendRes.value
-                                                        emailRequiresVerification = true
-                                                    }
-                                                    is ClerkResult.Failure<*> -> {
-                                                        isSaveError = true
-                                                        saveMessage = extractClerkFailureMessage(context, sendRes)
-                                                        return@launch
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            val createEmailRes = withContext(Dispatchers.IO) {
-                                                user.createEmailAddress(trimmedEmail)
-                                            }
-                                            when (createEmailRes) {
-                                                is ClerkResult.Success -> {
-                                                    val created = createEmailRes.value
-                                                    if (created.verification?.status == Verification.Status.VERIFIED) {
-                                                        val primaryRes = withContext(Dispatchers.IO) {
-                                                            user.update(User.UpdateParams(primaryEmailAddressId = created.id))
-                                                        }
-                                                        if (primaryRes is ClerkResult.Failure<*>) {
-                                                            isSaveError = true
-                                                            saveMessage = extractClerkFailureMessage(context, primaryRes)
-                                                            return@launch
-                                                        }
-                                                    } else {
-                                                        val sendRes = withContext(Dispatchers.IO) { created.sendCode() }
-                                                        when (sendRes) {
-                                                            is ClerkResult.Success -> {
-                                                                pendingEmailVerification = sendRes.value
-                                                                emailRequiresVerification = true
-                                                            }
-                                                            is ClerkResult.Failure<*> -> {
-                                                                isSaveError = true
-                                                                saveMessage = extractClerkFailureMessage(context, sendRes)
-                                                                return@launch
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                is ClerkResult.Failure<*> -> {
-                                                    isSaveError = true
-                                                    saveMessage = extractClerkFailureMessage(context, createEmailRes)
-                                                    return@launch
-                                                }
-                                            }
-                                        }
-                                    }
-
                                     withContext(Dispatchers.IO) {
                                         user.reload()
                                     }
                                     val refreshed = Clerk.userFlow.value ?: Clerk.user
-                                    val finalEmail = if (emailRequiresVerification) {
-                                        extractClerkEmail(refreshed).ifBlank { userEmail }
-                                    } else {
-                                        trimmedEmail.ifBlank { extractClerkEmail(refreshed).ifBlank { userEmail } }
-                                    }
                                     val finalName = trimmedName.ifBlank { extractClerkFullName(refreshed).ifBlank { userName } }
+                                    val finalEmail = extractClerkEmail(refreshed).ifBlank { preservedEmail }
+
                                     viewModel.updateAuthProfile(
                                         email = finalEmail,
                                         name = finalName,
@@ -1071,18 +860,20 @@ fun ProfileSettingsView(viewModel: PiggyLedgerViewModel) {
                                         phone = trimmedPhone,
                                         birthDate = trimmedBirth
                                     )
-                                    if (!emailRequiresVerification) {
-                                        isSaveError = false
-                                        saveMessage = context.getString(R.string.profile_saved_success)
-                                    }
+                                    nameInput = finalName
+                                    emailInput = finalEmail
+                                    isSaveError = false
+                                    saveMessage = context.getString(R.string.profile_saved_success)
                                 } else {
+                                    val finalName = trimmedName.ifBlank { userName }
                                     viewModel.updateAuthProfile(
-                                        email = trimmedEmail.ifBlank { userEmail },
-                                        name = trimmedName.ifBlank { userName },
+                                        email = preservedEmail,
+                                        name = finalName,
                                         photoUrl = userPhoto,
                                         phone = trimmedPhone,
                                         birthDate = trimmedBirth
                                     )
+                                    nameInput = finalName
                                     isSaveError = false
                                     saveMessage = context.getString(R.string.profile_saved_success)
                                 }
@@ -1140,40 +931,59 @@ private fun ProfileFieldCard(
     icon: ImageVector,
     iconTint: Color,
     iconBg: Color,
+    isEditable: Boolean,
+    isInlineEditing: Boolean,
+    onCardClick: (() -> Unit)? = null,
+    onEditButtonClick: (() -> Unit)? = null,
+    onInlineDone: (() -> Unit)? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     cardTestTag: String,
     inputTestTag: String,
-    trailingContent: (@Composable () -> Unit)? = null
+    editButtonTestTag: String? = null
 ) {
-    var isFocused by remember { mutableStateOf(false) }
-    val borderColor = if (isFocused) PinkPrimary else Color(0xFFE2E8F0)
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(isInlineEditing) {
+        if (isInlineEditing) {
+            focusRequester.requestFocus()
+        }
+    }
 
-    Card(
+    val borderColor = if (isInlineEditing) PinkPrimary else Color(0xFFE2E8F0)
+    val borderWidth = if (isInlineEditing) 1.5.dp else 1.dp
+
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (onCardClick != null) {
+                    Modifier.clickable { onCardClick() }
+                } else {
+                    Modifier
+                }
+            )
             .testTag(cardTestTag),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.94f)),
-        border = BorderStroke(if (isFocused) 1.5.dp else 1.dp, borderColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isFocused) 4.dp else 1.dp)
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White.copy(alpha = 0.96f),
+        border = BorderStroke(borderWidth, borderColor),
+        shadowElevation = if (isInlineEditing) 3.dp else 1.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 14.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+                .padding(start = 14.dp, end = if (isEditable) 8.dp else 16.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .background(iconBg, RoundedCornerShape(14.dp)),
+                    .size(40.dp)
+                    .background(iconBg, RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = label,
                     tint = iconTint,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
@@ -1183,54 +993,81 @@ private fun ProfileFieldCard(
                 Text(
                     text = label,
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextLight,
-                    modifier = Modifier.padding(start = 4.dp)
+                    fontWeight = FontWeight.Medium,
+                    color = TextLight
                 )
-                TextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    placeholder = {
-                        Text(
-                            text = placeholder,
+                Spacer(modifier = Modifier.height(2.dp))
+                if (isInlineEditing) {
+                    BasicTextField(
+                        value = value,
+                        onValueChange = onValueChange,
+                        singleLine = true,
+                        textStyle = TextStyle(
                             fontSize = 15.sp,
-                            color = Color(0xFF94A3B8)
-                        )
-                    },
-                    singleLine = true,
-                    textStyle = TextStyle(
+                            fontWeight = FontWeight.SemiBold,
+                            color = NavyDark
+                        ),
+                        cursorBrush = SolidColor(PinkPrimary),
+                        keyboardOptions = keyboardOptions,
+                        keyboardActions = KeyboardActions(
+                            onDone = { onInlineDone?.invoke() }
+                        ),
+                        decorationBox = { innerTextField ->
+                            Box {
+                                if (value.isEmpty()) {
+                                    Text(
+                                        text = placeholder,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF94A3B8)
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester)
+                            .testTag(inputTestTag)
+                    )
+                } else {
+                    Text(
+                        text = value.ifBlank { placeholder },
                         fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = NavyDark
-                    ),
-                    keyboardOptions = keyboardOptions,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent,
-                        cursorColor = PinkPrimary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { isFocused = it.isFocused }
-                        .testTag(inputTestTag)
-                )
+                        fontWeight = if (value.isNotBlank()) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (value.isNotBlank()) NavyDark else Color(0xFF94A3B8),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.testTag(inputTestTag)
+                    )
+                }
             }
 
-            if (trailingContent != null) {
-                trailingContent()
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = null,
-                    tint = Color(0xFF94A3B8),
+            if (isEditable && onEditButtonClick != null) {
+                IconButton(
+                    onClick = onEditButtonClick,
                     modifier = Modifier
-                        .padding(end = 10.dp)
-                        .size(16.dp)
-                )
+                        .size(48.dp)
+                        .then(if (editButtonTestTag != null) Modifier.testTag(editButtonTestTag) else Modifier)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .shadow(4.dp, CircleShape)
+                            .background(
+                                if (isInlineEditing) PinkPrimary else NavyDark,
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isInlineEditing) Icons.Default.Check else Icons.Default.Edit,
+                            contentDescription = label,
+                            tint = Color.White,
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                }
             }
         }
     }

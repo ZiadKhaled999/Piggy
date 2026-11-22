@@ -355,6 +355,7 @@ class PiggyLedgerViewModel(
             java.util.Locale.setDefault(java.util.Locale.forLanguageTag(lang))
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         }
     }
 
@@ -799,6 +800,7 @@ class PiggyLedgerViewModel(
                 recordStreakAction()
                 com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
                 com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+                com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
                 
                 // Fetch and save logo once online in background
                 viewModelScope.launch {
@@ -815,6 +817,7 @@ class PiggyLedgerViewModel(
                 recordStreakAction()
                 com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
                 com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+                com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
             }
         }
     }
@@ -947,6 +950,7 @@ class PiggyLedgerViewModel(
             recordStreakAction()
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
             val account = repository.getAccountById(accountId)
             if (account != null) {
                 val newBalance = account.current_balance + amount
@@ -1098,6 +1102,7 @@ class PiggyLedgerViewModel(
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         }
     }
 
@@ -1121,6 +1126,7 @@ class PiggyLedgerViewModel(
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         }
     }
 
@@ -1139,6 +1145,7 @@ class PiggyLedgerViewModel(
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         }
     }
 
@@ -1164,6 +1171,7 @@ class PiggyLedgerViewModel(
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         }
     }
 
@@ -1177,6 +1185,7 @@ class PiggyLedgerViewModel(
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         }
     }
 
@@ -1191,6 +1200,7 @@ class PiggyLedgerViewModel(
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         }
     }
     
@@ -1204,6 +1214,7 @@ class PiggyLedgerViewModel(
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         }
     }
 
@@ -1217,6 +1228,7 @@ class PiggyLedgerViewModel(
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         }
     }
 
@@ -1235,6 +1247,7 @@ class PiggyLedgerViewModel(
             com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         }
     }
 

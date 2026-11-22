@@ -240,18 +240,31 @@ object StreakShareHelper {
         drawConfetti(canvas, cardRect)
 
         // Mascot Dimensions (proportional to 433 x 576 aspect ratio)
-        val mascotWidth = 400f
-        val mascotHeight = mascotWidth * (576f / 433f) // ~532f
-        val mascotLeft = (width - mascotWidth) / 2f // 340f
-        val mascotTop = cardRect.top + 470f // 520f
+        val mascotWidth = 390f
+        val mascotHeight = mascotWidth * (576f / 433f) // ~519f
+        val mascotLeft = (width - mascotWidth) / 2f - 45f // Shift slightly left so raised hoof balances center-right
+        val mascotTop = cardRect.top + 465f // 515f
 
-        // Exact anchor coordinate of Piggy's raised hoof/hand
-        val handX = mascotLeft + mascotWidth * 0.476f // ~530f (centered)
-        val handY = mascotTop + mascotHeight * 0.096f // ~571f
+        // Exact anchor coordinate of Piggy's raised right hoof/hand in img_piggy_balloons_pose.jpg
+        val handX = mascotLeft + mascotWidth * 0.855f
+        val handY = mascotTop + mascotHeight * 0.405f
+
+        // Draw Mascot BEFORE strings & balloons because img_piggy_balloons_pose is an opaque JPEG
+        val mascotDrawable: Drawable? = ContextCompat.getDrawable(context, R.drawable.img_piggy_balloons_pose)
+            ?: ContextCompat.getDrawable(context, R.drawable.img_app_logo)
+        if (mascotDrawable != null) {
+            mascotDrawable.setBounds(
+                mascotLeft.toInt(),
+                mascotTop.toInt(),
+                (mascotLeft + mascotWidth).toInt(),
+                (mascotTop + mascotHeight).toInt()
+            )
+            mascotDrawable.draw(canvas)
+        }
 
         // Draw 3D Inflatable Rose-Gold Balloons for streakCount
         val digits = streakCount.toString()
-        val balloonCenterY = cardRect.top + 260f
+        val balloonCenterY = cardRect.top + 265f
 
         if (digits.length == 1) {
             // Single Digit Balloon (e.g. 7, 8, 9)
@@ -261,8 +274,8 @@ object StreakShareHelper {
             val knotX = balloonCenterX
             val knotY = balloonCenterY + balloonHeight / 2f - 8f // Bottom knot
 
-            // Draw Ribbon String connecting knot directly to Piggy's raised hoof
-            drawBalloonString(canvas, knotX, knotY, handX, handY, curveFactor = -15f)
+            // Draw Ribbon String curving gently around Piggy's ear into raised hoof
+            drawBalloonString(canvas, knotX, knotY, handX, handY, curveFactor = 45f)
 
             // Draw 3D Rose-Gold Balloon Digit
             draw3dRoseGoldBalloonDigit(canvas, digits[0], balloonCenterX, balloonCenterY, balloonWidth, balloonHeight, 0f)
@@ -279,8 +292,8 @@ object StreakShareHelper {
             val rightKnotX = rightBalloonX
             val rightKnotY = balloonCenterY + balloonHeight / 2f - 8f
 
-            // Draw two elegant curved ribbon strings converging directly into Piggy's raised hoof
-            drawBalloonString(canvas, leftKnotX, leftKnotY, handX, handY, curveFactor = -35f)
+            // Draw two curved ribbon strings clearing Piggy's face and converging into raised hoof
+            drawBalloonString(canvas, leftKnotX, leftKnotY, handX, handY, curveFactor = 85f)
             drawBalloonString(canvas, rightKnotX, rightKnotY, handX, handY, curveFactor = 35f)
 
             // Draw 3D Inflatable Rose-Gold Balloon Digits with slight festive tilt
@@ -305,7 +318,11 @@ object StreakShareHelper {
             // Draw elegant curved ribbon strings converging into Piggy's raised hoof
             for (i in digits.indices) {
                 val bx = startX + i * spacing
-                val curve = if (n == 1) 0f else -40f + 80f * i / (n - 1)
+                val curve = if (bx < handX) {
+                    ((handX - bx) * 0.42f).coerceIn(35f, 110f)
+                } else {
+                    ((bx - handX) * 0.25f + 22f).coerceIn(22f, 65f)
+                }
                 drawBalloonString(canvas, bx, knotY, handX, handY, curveFactor = curve)
             }
 
@@ -315,19 +332,6 @@ object StreakShareHelper {
                 val tilt = if (n == 1) 0f else -8f + 16f * i / (n - 1)
                 draw3dRoseGoldBalloonDigit(canvas, digits[i], bx, balloonCenterY, balloonWidth, balloonHeight, tilt)
             }
-        }
-
-        // Draw Mascot
-        val mascotDrawable: Drawable? = ContextCompat.getDrawable(context, R.drawable.img_piggy_balloons_pose)
-            ?: ContextCompat.getDrawable(context, R.drawable.img_app_logo)
-        if (mascotDrawable != null) {
-            mascotDrawable.setBounds(
-                mascotLeft.toInt(),
-                mascotTop.toInt(),
-                (mascotLeft + mascotWidth).toInt(),
-                (mascotTop + mascotHeight).toInt()
-            )
-            mascotDrawable.draw(canvas)
         }
 
         // Ribbon Tie Grip Accent right on the hoof (shows the ribbons physically grasped in hand)

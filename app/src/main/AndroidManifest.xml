@@ -119,6 +119,19 @@
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="false" />
 
+        <!-- Piggy Ledger Activity Heatmap Widget -->
+        <receiver
+            android:name=".widget.HeatmapWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_heatmap_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_heatmap" />
+        </receiver>
+
         <!-- AppCompat Per-App Language Storage Service for Android 12 and below -->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"

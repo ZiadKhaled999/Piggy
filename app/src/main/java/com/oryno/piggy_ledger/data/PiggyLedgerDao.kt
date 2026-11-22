@@ -622,4 +622,23 @@ interface PiggyLedgerDao {
     @Query("UPDATE onboarding_answers SET isSynced = 1 WHERE id IN (:ids)")
     suspend fun markOnboardingAnswersSynced(ids: Set<String>)
 
+    // Activity Heatmap Queries
+    @Query("SELECT timestamp FROM account_transactions WHERE is_deleted = 0 AND timestamp >= :since")
+    suspend fun getAccountTransactionTimestampsSince(since: Long): List<Long>
+
+    @Query("SELECT timestamp FROM transactions WHERE is_deleted = 0 AND timestamp >= :since")
+    suspend fun getGoalTransactionTimestampsSince(since: Long): List<Long>
+
+    @Query("SELECT timestamp FROM loans WHERE is_deleted = 0 AND timestamp >= :since")
+    suspend fun getLoanTimestampsSince(since: Long): List<Long>
+
+    @Query("SELECT timestamp FROM loan_payments WHERE is_deleted = 0 AND timestamp >= :since")
+    suspend fun getLoanPaymentTimestampsSince(since: Long): List<Long>
+
+    @Query("SELECT date FROM journal_entries WHERE is_deleted = 0 AND date >= :since")
+    suspend fun getJournalEntryTimestampsSince(since: Long): List<Long>
+
+    @Query("SELECT dateStr FROM streak_dates WHERE is_deleted = 0")
+    suspend fun getActiveStreakDateStrings(): List<String>
+
 }

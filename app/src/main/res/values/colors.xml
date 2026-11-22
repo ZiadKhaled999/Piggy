@@ -29,4 +29,12 @@
     <color name="widget_text_muted">#64748B</color>
     <color name="widget_green">#15803D</color>
     <color name="widget_red">#B91C1C</color>
+
+    <!-- Black Heatmap Widget Palette (Pink activity gradient) -->
+    <color name="widget_heatmap_bg">#000000</color>
+    <color name="widget_heatmap_border">#141418</color>
+    <color name="widget_heatmap_text">#F4F4F5</color>
+    <color name="widget_heatmap_text_muted">#71717A</color>
+    <color name="widget_heatmap_empty">#1B1B1F</color>
+    <color name="widget_heatmap_accent">#F43F5E</color>
 </resources>

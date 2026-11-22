@@ -135,6 +135,7 @@ object TransactionIngestor {
                         reference = parsed.reference
                     ) ?: return@withContext
                     matchedId?.let { dao.deletePendingTransactionById(it) }
+                    com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
                     return@withContext
                 }
 
@@ -175,6 +176,7 @@ object TransactionIngestor {
             } catch (e: Exception) {
                 Log.e("TransactionIngestor", "Failed to show processed notification", e)
             }
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         } else {
             Log.d("TransactionIngestor", "No account match for $senderLabel → pending")
             dao.insertPendingTransaction(

@@ -26,6 +26,21 @@ class BootReceiver : BroadcastReceiver() {
             } catch (e: Exception) {
                 Log.e("BootReceiver", "Failed to schedule SyncWorker", e)
             }
+            try {
+                val awm = android.appwidget.AppWidgetManager.getInstance(context)
+                val ids = awm?.getAppWidgetIds(
+                    android.content.ComponentName(
+                        context,
+                        com.oryno.piggy_ledger.widget.HeatmapWidgetProvider::class.java
+                    )
+                )
+                if (ids != null && ids.isNotEmpty()) {
+                    com.oryno.piggy_ledger.widget.HeatmapWidgetWorker.schedulePeriodic(context)
+                    com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
+                }
+            } catch (e: Exception) {
+                Log.e("BootReceiver", "Failed to refresh HeatmapWidget", e)
+            }
         }
     }
 }

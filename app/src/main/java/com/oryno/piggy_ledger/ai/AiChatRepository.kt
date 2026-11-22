@@ -17,7 +17,14 @@ import com.oryno.piggy_ledger.data.AiConversation
 
 class AiChatRepository(private val dao: PiggyLedgerDao) {
 
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true; classDiscriminator = "type"; encodeDefaults = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        classDiscriminator = "type"
+        encodeDefaults = true
+        @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+        explicitNulls = false
+    }
     private val client = OkHttpClient.Builder()
         .connectTimeout(45, java.util.concurrent.TimeUnit.SECONDS)
         .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
@@ -144,29 +151,35 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
                 .groupBy { it.merchant.ifBlank { "Uncategorized/Other" } }
                 .mapValues { entry -> entry.value.sumOf { kotlin.math.abs(it.amount) } }
                 .entries.sortedByDescending { it.value }
-                .take(15)
+                .take(12)
                 .joinToString("\n") { "- ${it.key}: ${it.value} $primaryCurrency" }
 
             val topIncomeSources = allAccountTxs.filter { it.amount > 0 }
                 .groupBy { it.merchant.ifBlank { "General Income" } }
                 .mapValues { entry -> entry.value.sumOf { it.amount } }
                 .entries.sortedByDescending { it.value }
-                .take(15)
+                .take(10)
                 .joinToString("\n") { "- ${it.key}: ${it.value} $primaryCurrency" }
-                
-            val txSummary = if (allAccountTxs.isEmpty()) "No transactions logged in account history."
-                else allAccountTxs.joinToString("\n") { tx ->
-                    val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(tx.timestamp))
+
+            val recentTxs = allAccountTxs.take(40)
+            val txHeader = if (allAccountTxs.size > 40) {
+                "Showing ${recentTxs.size} most recent of ${allAccountTxs.size} total transactions:"
+            } else {
+                "All ${recentTxs.size} transactions (newest first):"
+            }
+            val txSummary = if (recentTxs.isEmpty()) "No transactions logged in account history."
+                else recentTxs.joinToString("\n") { tx ->
+                    val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US).format(java.util.Date(tx.timestamp))
                     val accountName = accountsMap[tx.account_id]?.name ?: "Account"
                     val typeLabel = if (tx.amount >= 0) "INCOME" else "EXPENSE"
                     "- $dateStr | $accountName | $typeLabel | ${tx.merchant.ifBlank { "General Transaction" }}: ${tx.amount} $primaryCurrency (${tx.source})"
                 }
                 
             val pendingSummary = if (pending.isEmpty()) "None."
-                else pending.joinToString("\n") { "- ${it.merchant}: ${it.amount} $primaryCurrency (${it.sender})" }
+                else pending.take(15).joinToString("\n") { "- ${it.merchant}: ${it.amount} $primaryCurrency (${it.sender})" }
                 
-            """
-            |USER FINANCIAL CONTEXT & COMPLETE HISTORICAL TRANSACTION LEDGER
+            val fullSnapshot = """
+            |USER FINANCIAL CONTEXT & LEDGER SNAPSHOT
             |
             |Primary Currency: $primaryCurrency
             |Total Historical Income: $totalIncome $primaryCurrency
@@ -189,7 +202,7 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
             |TOP INCOME SOURCES:
             |${topIncomeSources.ifBlank { "None." }}
             |
-            |COMPLETE TRANSACTION LEDGER (${allAccountTxs.size} transactions total, sorted newest first):
+            |RECENT TRANSACTIONS ($txHeader):
             |$txSummary
             |
             |PENDING SMS TRANSACTIONS:
@@ -198,10 +211,18 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
             |USER STREAK STATUS:
             |$streakInfo
             """.trimMargin()
+
+            if (fullSnapshot.length > 9_000) fullSnapshot.take(9_000) else fullSnapshot
         } catch (e: Exception) {
             "Knowledge Hub unavailable."
         }
     }
+
+    private data class AiEndpointTarget(
+        val url: String,
+        val model: String,
+        val bearerToken: String
+    )
 
     suspend fun getAiResponse(messages: List<ChatMessageRequest>): Result<SovereignAiResponse> = withContext(Dispatchers.IO) {
         val sanitizedMessages = messages.filter { it.content.isNotBlank() }
@@ -209,53 +230,77 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
             return@withContext Result.failure(Exception("Please enter a question."))
         }
 
-        val endpointUrl = "https://piggy-ai-gateway.albhyrytwamrwhy.workers.dev/"
+        val workerUrl = "https://piggy-ai-gateway.albhyrytwamrwhy.workers.dev/"
+        val targets = buildList {
+            add(AiEndpointTarget(workerUrl, "@cf/meta/llama-3.1-8b-instruct-fp8", "DUMMY_KEY_CF"))
+            add(AiEndpointTarget(workerUrl, "@cf/meta/llama-3.1-8b-instruct-fast", "DUMMY_KEY_CF"))
+            if (apiKey.isNotBlank() &&
+                !apiKey.contains("YOUR_GROQ_API_KEY", ignoreCase = true) &&
+                !apiKey.contains("placeholder", ignoreCase = true)
+            ) {
+                add(
+                    AiEndpointTarget(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        "llama-3.3-70b-versatile",
+                        apiKey
+                    )
+                )
+            }
+        }
+
         var lastException: Exception? = null
 
-        for (attempt in 1..2) {
+        for ((idx, target) in targets.withIndex()) {
             try {
                 val requestBody = GroqRequest(
-                    model = "@cf/meta/llama-3.1-8b-instruct-fp8",
+                    model = target.model,
                     messages = sanitizedMessages,
                     temperature = 0.6,
-                    maxCompletionTokens = 2048,
+                    maxTokens = 1024,
                     topP = 0.95,
-                    stream = false,
-                    reasoningEffort = null
+                    stream = false
                 )
 
                 val requestStr = json.encodeToString(requestBody)
 
                 val request = Request.Builder()
-                    .url(endpointUrl)
-                    .addHeader("Authorization", "Bearer DUMMY_KEY_CF")
+                    .url(target.url)
+                    .addHeader("Authorization", "Bearer ${target.bearerToken}")
+                    .addHeader("Content-Type", "application/json")
                     .post(requestStr.toRequestBody("application/json".toMediaType()))
                     .build()
 
-                val response = client.newCall(request).execute()
-                val responseBody = response.body?.string().orEmpty()
+                val (code, isSuccessful, responseBody) = client.newCall(request).execute().use { response ->
+                    Triple(response.code, response.isSuccessful, response.body?.string().orEmpty())
+                }
 
-                if (response.isSuccessful && responseBody.isNotBlank()) {
-                    val groqResponse = json.decodeFromString<GroqResponse>(responseBody)
-                    val rawContent = groqResponse.choices.firstOrNull()?.message?.content
-                        ?: return@withContext Result.failure(Exception("AI did not produce text content. Please try again."))
-                    
-                    val cleanedContent = AiSanitizer.sanitizeThinking(rawContent).ifBlank {
-                        "I've analyzed your financial ledger. How can I assist you with your finances today?"
-                    }
+                if (isSuccessful && responseBody.isNotBlank()) {
+                    val (rawContent, embeddedError) = extractAssistantContent(responseBody)
+                    if (rawContent != null) {
+                        val cleanedContent = AiSanitizer.sanitizeThinking(rawContent).ifBlank {
+                            "I've analyzed your financial ledger. How can I assist you with your finances today?"
+                        }
 
-                    val jsonStr = extractJson(cleanedContent)
-                    val parsed = if (jsonStr.isNotBlank() && jsonStr.contains("archetype_rationale")) {
-                        try {
-                            val decoded = json.decodeFromString<SovereignAiResponse>(jsonStr)
-                            val cleanRationale = AiSanitizer.sanitizeThinking(decoded.archetypeRationale).ifBlank {
-                                "I've analyzed your financial ledger. How can I assist you with your finances today?"
+                        val jsonStr = extractJson(cleanedContent)
+                        val parsed = if (jsonStr.isNotBlank() && jsonStr.contains("archetype_rationale")) {
+                            try {
+                                val decoded = json.decodeFromString<SovereignAiResponse>(jsonStr)
+                                val cleanRationale = AiSanitizer.sanitizeThinking(decoded.archetypeRationale).ifBlank {
+                                    "I've analyzed your financial ledger. How can I assist you with your finances today?"
+                                }
+                                decoded.copy(
+                                    archetypeRationale = cleanRationale,
+                                    thinkingProcess = null
+                                )
+                            } catch (e: Exception) {
+                                SovereignAiResponse(
+                                    archetypeRationale = cleanedContent,
+                                    currentArchetype = "",
+                                    uiBlocks = emptyList(),
+                                    thinkingProcess = null
+                                )
                             }
-                            decoded.copy(
-                                archetypeRationale = cleanRationale,
-                                thinkingProcess = null
-                            )
-                        } catch (e: Exception) {
+                        } else {
                             SovereignAiResponse(
                                 archetypeRationale = cleanedContent,
                                 currentArchetype = "",
@@ -263,42 +308,104 @@ class AiChatRepository(private val dao: PiggyLedgerDao) {
                                 thinkingProcess = null
                             )
                         }
+
+                        return@withContext Result.success(parsed)
                     } else {
-                        SovereignAiResponse(
-                            archetypeRationale = cleanedContent,
-                            currentArchetype = "",
-                            uiBlocks = emptyList(),
-                            thinkingProcess = null
-                        )
+                        android.util.Log.w("AiChat", "Attempt ${idx + 1} (${target.model}) returned empty/error body: $responseBody")
+                        lastException = Exception(embeddedError ?: "AI did not produce text content. Please try again.")
                     }
-                    
-                    return@withContext Result.success(parsed)
                 } else {
-                    android.util.Log.w("AiChat", "Worker attempt $attempt API Error ${response.code}: $responseBody")
-                    val message = when (response.code) {
+                    android.util.Log.w("AiChat", "Attempt ${idx + 1} (${target.model}) HTTP $code: $responseBody")
+                    val (_, embeddedError) = extractAssistantContent(responseBody)
+                    val message = when (code) {
                         429 -> "Piggy is receiving high demand right now. Please try again shortly."
                         in 500..599 -> "Service is temporarily busy. Please try again shortly."
-                        else -> "Service is temporarily unavailable. Please try again."
+                        else -> embeddedError ?: "Service is temporarily unavailable. Please try again."
                     }
                     lastException = Exception(message)
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: java.net.UnknownHostException) {
-                android.util.Log.e("AiChat", "DNS/Network issue on attempt $attempt: ${e.message}")
+                android.util.Log.e("AiChat", "DNS/Network issue on attempt ${idx + 1}: ${e.message}")
                 lastException = Exception("Internet connection appears to be offline.")
+                break
             } catch (e: java.net.SocketTimeoutException) {
-                android.util.Log.w("AiChat", "Timeout on attempt $attempt: ${e.message}")
+                android.util.Log.w("AiChat", "Timeout on attempt ${idx + 1}: ${e.message}")
                 lastException = Exception("Connection timed out. Please check your network and retry.")
             } catch (e: Exception) {
-                android.util.Log.e("AiChat", "Exception on attempt $attempt: ${e.message}", e)
+                android.util.Log.e("AiChat", "Exception on attempt ${idx + 1}: ${e.message}", e)
                 lastException = Exception("Service encountered a brief hiccup. Please try again.")
             }
-            
-            if (attempt < 2) {
-                kotlinx.coroutines.delay(600)
+
+            if (idx < targets.lastIndex) {
+                kotlinx.coroutines.delay(450)
             }
         }
         
         Result.failure(lastException ?: Exception("Service is temporarily busy. Please try again."))
+    }
+
+    private fun extractAssistantContent(responseBody: String): Pair<String?, String?> {
+        if (responseBody.isBlank()) return null to null
+        return try {
+            val element = json.parseToJsonElement(responseBody)
+            val obj = element as? kotlinx.serialization.json.JsonObject
+                ?: return null to null
+
+            // Check explicit error fields first
+            val errorObj = obj["error"] as? kotlinx.serialization.json.JsonObject
+            val errorMsg = (errorObj?.get("message") as? kotlinx.serialization.json.JsonPrimitive)?.content
+                ?: (obj["error"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+            if (!errorMsg.isNullOrBlank()) {
+                return null to errorMsg
+            }
+
+            val errorsArr = obj["errors"] as? kotlinx.serialization.json.JsonArray
+            val cfErrorMsg = (errorsArr?.firstOrNull() as? kotlinx.serialization.json.JsonObject)
+                ?.let { (it["message"] as? kotlinx.serialization.json.JsonPrimitive)?.content }
+            if (!cfErrorMsg.isNullOrBlank()) {
+                return null to cfErrorMsg
+            }
+
+            // 1. Standard OpenAI / Groq format: choices[0].message.content or choices[0].text
+            val choices = obj["choices"] as? kotlinx.serialization.json.JsonArray
+            val firstChoice = choices?.firstOrNull() as? kotlinx.serialization.json.JsonObject
+            if (firstChoice != null) {
+                val messageObj = firstChoice["message"] as? kotlinx.serialization.json.JsonObject
+                val messageContent = (messageObj?.get("content") as? kotlinx.serialization.json.JsonPrimitive)?.content
+                    ?: (firstChoice["text"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                if (!messageContent.isNullOrBlank()) {
+                    return messageContent to null
+                }
+            }
+
+            // 2. Cloudflare Workers AI envelope: { "result": { "response": "..." } }
+            val resultObj = obj["result"] as? kotlinx.serialization.json.JsonObject
+            val resultResponse = (resultObj?.get("response") as? kotlinx.serialization.json.JsonPrimitive)?.content
+                ?: (resultObj?.get("text") as? kotlinx.serialization.json.JsonPrimitive)?.content
+            if (!resultResponse.isNullOrBlank()) {
+                return resultResponse to null
+            }
+
+            // 3. Direct flat worker response: { "response": "..." } or { "content": "..." }
+            val directContent = (obj["response"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                ?: (obj["content"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                ?: (obj["text"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+            if (!directContent.isNullOrBlank()) {
+                return directContent to null
+            }
+
+            null to null
+        } catch (_: Exception) {
+            // If worker returned plain text instead of JSON envelope
+            val trimmed = responseBody.trim()
+            if (trimmed.isNotEmpty() && !trimmed.startsWith("<")) {
+                trimmed to null
+            } else {
+                null to null
+            }
+        }
     }
 
     fun getAllAccounts(): kotlinx.coroutines.flow.Flow<List<com.oryno.piggy_ledger.data.Account>> {

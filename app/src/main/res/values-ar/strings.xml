@@ -1704,4 +1704,10 @@
     <string name="profile_verify_email_desc">أدخل رمز التحقق المكون من 6 أرقام المرسل إلى %1$s</string>
     <string name="profile_verify_code_label">رمز التحقق</string>
     <string name="profile_verify_btn">تأكيد وتحديث</string>
+    <string name="widget_heatmap_name">خريطة النشاط</string>
+    <string name="widget_heatmap_title">النشاط</string>
+    <string name="widget_heatmap_description">خريطة نشاط داكنة بألوان بيجي ليدجر الوردية</string>
+    <string name="widget_heatmap_less">أقل</string>
+    <string name="widget_heatmap_more">أكثر</string>
+    <string name="widget_heatmap_content_desc">خريطة النشاط المالي اليومي</string>
 </resources>

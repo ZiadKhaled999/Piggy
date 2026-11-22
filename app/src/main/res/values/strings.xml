@@ -1748,4 +1748,10 @@
     <string name="profile_verify_email_desc">Enter the 6-digit verification code sent to %1$s</string>
     <string name="profile_verify_code_label">Verification code</string>
     <string name="profile_verify_btn">Verify &amp; Update</string>
+    <string name="widget_heatmap_name">Activity Heatmap</string>
+    <string name="widget_heatmap_title">Activity</string>
+    <string name="widget_heatmap_description">Black activity heatmap with Piggy Ledger pink intensity</string>
+    <string name="widget_heatmap_less">Less</string>
+    <string name="widget_heatmap_more">More</string>
+    <string name="widget_heatmap_content_desc">Daily financial activity heatmap</string>
 </resources>

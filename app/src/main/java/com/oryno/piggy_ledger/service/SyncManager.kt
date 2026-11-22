@@ -197,6 +197,9 @@ class SyncManager(private val context: Context) {
                 )
             }
         }
+        if (conflicts.isNotEmpty()) {
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
+        }
     }
 
     private suspend fun applyRemote(changes: List<SyncChange>, isFirstSync: Boolean) {
@@ -358,6 +361,9 @@ class SyncManager(private val context: Context) {
                     if (toInsert.isNotEmpty()) dao.insertAiChatMessages(toInsert)
                 }
             }
+        }
+        if (changes.isNotEmpty()) {
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         }
     }
 

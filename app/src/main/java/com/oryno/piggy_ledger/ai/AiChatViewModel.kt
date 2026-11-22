@@ -530,7 +530,7 @@ class AiChatViewModel(
                 apiMessages.add(ChatMessageRequest(role = "system", content = fullSystemPrompt))
                 
                 // Add previous history with cleaned text content (completely free of thinking blocks)
-                val recentHistory = currentHistory.takeLast(10)
+                val recentHistory = currentHistory.takeLast(6)
                 recentHistory.forEach { msg ->
                     val cleanedText = if (msg.role == "assistant") {
                         val rawAssistantText = try {
@@ -544,7 +544,8 @@ class AiChatViewModel(
                         msg.content
                     }
                     if (cleanedText.isNotBlank()) {
-                        apiMessages.add(ChatMessageRequest(role = msg.role, content = cleanedText))
+                        val cappedText = if (cleanedText.length > 1500) cleanedText.take(1500) else cleanedText
+                        apiMessages.add(ChatMessageRequest(role = msg.role, content = cappedText))
                     }
                 }
                 
@@ -583,6 +584,10 @@ class AiChatViewModel(
                             rawError.contains("demand", ignoreCase = true) ||
                             rawError.contains("rate limit", ignoreCase = true)
 
+                    val isServiceError = rawError.contains("unavailable", ignoreCase = true) ||
+                            rawError.contains("content", ignoreCase = true) ||
+                            rawError.contains("hiccup", ignoreCase = true)
+
                     val (headerTitle, cleanUserError, actionLabel) = when {
                         isQuotaOrBusy -> {
                             if (isArabic) {
@@ -595,6 +600,21 @@ class AiChatViewModel(
                                 Triple(
                                     "High Demand",
                                     "Piggy is currently experiencing high demand and needs a quick moment. Please tap Retry in a few seconds!",
+                                    "Retry"
+                                )
+                            }
+                        }
+                        isServiceError -> {
+                            if (isArabic) {
+                                Triple(
+                                    "الخدمة غير متاحة مؤقتاً",
+                                    "واجهت خدمة الذكاء الاصطناعي مشكلة مؤقتة. اضغط على إعادة المحاولة بعد لحظة.",
+                                    "إعادة المحاولة"
+                                )
+                            } else {
+                                Triple(
+                                    "Temporarily Unavailable",
+                                    "Piggy AI encountered a brief service issue. Please tap Retry to try again.",
                                     "Retry"
                                 )
                             }

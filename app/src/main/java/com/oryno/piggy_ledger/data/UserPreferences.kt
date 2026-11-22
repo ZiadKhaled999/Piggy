@@ -315,6 +315,9 @@ class UserPreferences(private val context: Context) {
 
     suspend fun saveAuthentication(authenticated: Boolean, email: String = "", name: String = "", photoUrl: String = "", phone: String = "", birthDate: String = "") {
         saveAuthenticatedSync(context, authenticated)
+        if (name.isNotBlank()) {
+            saveLegacyUserNameSync(name)
+        }
         context.dataStore.edit { prefs ->
             prefs[IS_AUTHENTICATED] = authenticated
             prefs[AUTH_USER_EMAIL] = email
@@ -324,9 +327,13 @@ class UserPreferences(private val context: Context) {
             prefs[AUTH_USER_BIRTH_DATE] = birthDate
         }
         syncPreferencesToDb()
+        com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
     }
 
     suspend fun saveAuthProfile(email: String = "", name: String = "", photoUrl: String = "", phone: String = "", birthDate: String = "") {
+        if (name.isNotBlank()) {
+            saveLegacyUserNameSync(name)
+        }
         context.dataStore.edit { prefs ->
             if (email.isNotBlank()) prefs[AUTH_USER_EMAIL] = email
             if (name.isNotBlank()) prefs[AUTH_USER_NAME] = name
@@ -335,6 +342,18 @@ class UserPreferences(private val context: Context) {
             prefs[AUTH_USER_BIRTH_DATE] = birthDate
         }
         syncPreferencesToDb()
+        com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+    }
+
+    private fun saveLegacyUserNameSync(name: String) {
+        try {
+            context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+                .edit()
+                .putString("auth_user_name", name.trim())
+                .apply()
+        } catch (e: Exception) {
+            Log.e("UserPreferences", "Failed to mirror auth_user_name to SharedPreferences", e)
+        }
     }
 
     suspend fun saveBiometricLockEnabled(enabled: Boolean) {
@@ -492,6 +511,12 @@ class UserPreferences(private val context: Context) {
             }
         }
         saveAuthenticatedSync(context, false)
+        try {
+            context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+                .edit()
+                .remove("auth_user_name")
+                .apply()
+        } catch (_: Exception) {}
     }
 
     suspend fun getInitialDestination(): com.oryno.piggy_ledger.ui.Screen {

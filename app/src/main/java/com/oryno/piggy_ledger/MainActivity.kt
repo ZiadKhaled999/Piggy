@@ -205,6 +205,11 @@ class MainActivity : AppCompatActivity() {
     } catch (e: Exception) {
         android.util.Log.e("MainActivity", "Goals widget update failed", e)
     }
+    try {
+        com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(this)
+    } catch (e: Exception) {
+        android.util.Log.e("MainActivity", "Heatmap widget update failed", e)
+    }
     
 
     val database = PiggyLedgerDatabase.getInstance(applicationContext)

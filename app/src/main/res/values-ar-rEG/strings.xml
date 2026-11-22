@@ -727,4 +727,10 @@
     <string name="onboarding_testimonial_2_quote">"سددت كل ديوني وأقساطي في شهرين.\nحياتي ارتاحت بجد!"</string>
     <string name="onboarding_testimonial_3_author">@Tina1974</string>
     <string name="onboarding_testimonial_3_quote">"وصلت لهدفي أخيراً\nمع بيجي ليدجر ومرتاح!"</string>
+    <string name="widget_heatmap_name">خريطة النشاط</string>
+    <string name="widget_heatmap_title">النشاط</string>
+    <string name="widget_heatmap_description">خريطة نشاط سودا بدرجات بينك بيجي ليدجر</string>
+    <string name="widget_heatmap_less">أقل</string>
+    <string name="widget_heatmap_more">أكتر</string>
+    <string name="widget_heatmap_content_desc">خريطة النشاط المالي اليومي</string>
 </resources>

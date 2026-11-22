@@ -168,6 +168,7 @@ fun LanguageSelectionScreen(
                              java.util.Locale.setDefault(java.util.Locale.forLanguageTag(lang))
                              com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
                              com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+                             com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
                          } catch (e: Exception) {
                             android.util.Log.e("LanguageSelectionScreen", "Error saving language selection", e)
                         }
@@ -209,6 +210,7 @@ fun LanguageSelectionScreen(
                              java.util.Locale.setDefault(java.util.Locale.forLanguageTag(lang))
                              com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
                             com.oryno.piggy_ledger.widget.GoalsWidgetProvider.triggerUpdate(context)
+                            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
                         } catch (e: Exception) {
                             android.util.Log.e("LanguageSelectionScreen", "Error saving language for existing account", e)
                         }

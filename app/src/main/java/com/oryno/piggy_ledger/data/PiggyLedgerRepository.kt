@@ -100,6 +100,7 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
         val userId = user?.id ?: "local_user"
         val updatedTransaction = if (transaction.userId.isBlank()) transaction.copy(userId = userId) else transaction
         dao.insertAccountTransaction(updatedTransaction)
+        com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         triggerSync()
     }
     suspend fun markLoanAsPaid(id: String) {
@@ -173,6 +174,7 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
             val mergedDates = currentDates.toMutableSet().apply { addAll(backup.streakDates) }
             StreakManager.setActionDates(context, mergedDates)
         }
+        com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         triggerSync()
     }
 

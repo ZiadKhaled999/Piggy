@@ -87,6 +87,7 @@ fun TransferMoneyScreen(
 
     LaunchedEffect(uiState.successMessage) {
         uiState.successMessage?.let {
+            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
             snackbarHostState.showSnackbar(it)
             viewModel.clearMessages()
         }

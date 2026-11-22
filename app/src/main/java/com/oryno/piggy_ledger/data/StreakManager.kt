@@ -34,6 +34,7 @@ object StreakManager {
         // Trigger update for both widgets
         com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
         com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+        com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
     }
 
     fun removeTodayAction(context: Context) {
@@ -47,6 +48,7 @@ object StreakManager {
         // Trigger update for both widgets
         com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
         com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+        com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
     }
 
     fun getStreakAndFrozenDates(context: Context): Pair<Int, Set<String>> {
@@ -184,6 +186,7 @@ object StreakManager {
         syncStreakToDb(context)
         com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
         com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+        com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
     }
 
     fun clear(context: Context) {
@@ -191,6 +194,7 @@ object StreakManager {
         prefs.edit().clear().apply()
         com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
         com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+        com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
     }
 
     fun syncFromCloud(context: Context, remoteDates: Set<String>) {
@@ -200,6 +204,7 @@ object StreakManager {
         prefs.edit().putStringSet(KEY_ACTION_DATES, merged).apply()
         com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
         com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+        com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
     }
 
     fun rebuildFromRoom(context: Context, activeDates: Set<String>) {
@@ -207,6 +212,7 @@ object StreakManager {
         prefs.edit().putStringSet(KEY_ACTION_DATES, activeDates).apply()
         com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
         com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
+        com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
         android.util.Log.d("StreakManager", "rebuildFromRoom: ${activeDates.size} dates written to prefs")
     }
 

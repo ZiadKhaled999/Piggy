@@ -121,14 +121,12 @@ data class ChatMessageRequest(
 
 @Serializable
 data class GroqRequest(
-    val model: String = "qwen/qwen3.6-27b",
+    val model: String = "@cf/meta/llama-3.1-8b-instruct-fp8",
     val messages: List<ChatMessageRequest>,
     val temperature: Double? = 0.6,
-    @SerialName("max_completion_tokens") val maxCompletionTokens: Int? = 2048,
+    @SerialName("max_tokens") val maxTokens: Int? = 1024,
     @SerialName("top_p") val topP: Double? = 0.95,
-    val stream: Boolean = false,
-    @SerialName("reasoning_effort") val reasoningEffort: String? = null,
-    val stop: String? = null
+    val stream: Boolean = false
 )
 
 @Serializable

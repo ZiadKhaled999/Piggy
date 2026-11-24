@@ -362,6 +362,9 @@ interface PiggyLedgerDao {
     @Query("UPDATE onboarding_answers SET is_deleted = 1, isSynced = 0, updatedAt = :updatedAt WHERE id = :id")
     suspend fun deleteOnboardingAnswerById(id: String, updatedAt: Long = System.currentTimeMillis())
 
+    @Query("UPDATE onboarding_answers SET userId = :userId, isSynced = 0 WHERE userId IS NULL OR userId = '' OR userId = 'local_user'")
+    suspend fun assignUserIdToUnownedOnboardingAnswers(userId: String)
+
     @androidx.room.Transaction
     suspend fun resolvePendingTransaction(pendingId: String, accountId: String) {
         val pending = getPendingTransactionById(pendingId) ?: return
@@ -372,7 +375,10 @@ interface PiggyLedgerDao {
             amount = absAmount,
             merchant = pending.merchant,
             applyInstaPayFee = getAccountById(accountId)?.insta_pay_fee == true,
-            isIncome = isIncome
+            isIncome = isIncome,
+            source = pending.source,
+            sourceKey = pending.sourceKey,
+            reference = pending.reference
         )
         deletePendingTransactionById(pendingId)
     }

@@ -9,6 +9,8 @@ import com.oryno.piggy_ledger.data.AccountType
 import com.oryno.piggy_ledger.data.PiggyLedgerDao
 import com.oryno.piggy_ledger.data.PiggyLedgerRepository
 import com.oryno.piggy_ledger.data.SubscriptionEntity
+import com.oryno.piggy_ledger.service.DeadlineAndReminderUtils
+import com.oryno.piggy_ledger.service.SubscriptionNotificationScheduler
 import com.oryno.piggy_ledger.ui.buildLogoDevUrl
 import com.oryno.piggy_ledger.widget.HeatmapWidgetProvider
 import com.oryno.piggy_ledger.widget.StreakWidgetProvider
@@ -135,14 +137,14 @@ class SubscriptionViewModel(
         }
         val yearlyTotal = monthlyTotal * 12.0
 
-        // Find nearest due active subscription (within next 3 days)
+        // Find nearest due or overdue active subscription (overdue or within next 3 days)
         val now = System.currentTimeMillis()
         val dueSoonPair = active
             .map { sub ->
-                val diffDays = TimeUnit.MILLISECONDS.toDays(sub.nextRenewalDate - now).toInt()
+                val diffDays = DeadlineAndReminderUtils.calendarDaysBetween(now, sub.nextRenewalDate)
                 Pair(sub, diffDays)
             }
-            .filter { it.second in 0..3 }
+            .filter { it.second <= 3 }
             .minByOrNull { it.second }
 
         SubscriptionUiState(
@@ -186,7 +188,12 @@ class SubscriptionViewModel(
         trialDays: Int = 0,
         reminderEnabled: Boolean = true,
         reminderLeadDays: Int = 1,
-        startDateMs: Long? = null
+        reminderLeadDaysList: List<Int>? = null,
+        trialReminderEnabled: Boolean = true,
+        trialLeadDaysList: List<Int> = listOf(1, 3, 7),
+        startDateMs: Long? = null,
+        endDateMs: Long? = null,
+        context: Context? = null
     ) {
         if (name.isBlank() || amount <= 0) return
 
@@ -195,11 +202,20 @@ class SubscriptionViewModel(
             val logoUrl = if (domain.isNotBlank()) buildLogoDevUrl(domain) else null
 
             val baseTime = startDateMs ?: System.currentTimeMillis()
-            val nextRenewal = if (hasFreeTrial && trialDays > 0) {
+            val trialEnd = if (hasFreeTrial && trialDays > 0) {
                 baseTime + (trialDays.toLong() * 24L * 60L * 60L * 1000L)
             } else {
-                calculateNextCycleTimestamp(baseTime, billingCycle)
+                0L
             }
+            val nextRenewal = when {
+                hasFreeTrial && trialDays > 0 -> trialEnd
+                endDateMs != null -> endDateMs
+                else -> calculateNextCycleTimestamp(baseTime, billingCycle)
+            }
+
+            val cleanLeads = (reminderLeadDaysList ?: listOf(reminderLeadDays)).distinct().sorted()
+            val effectiveReminderEnabled = reminderEnabled && cleanLeads.isNotEmpty()
+            val primaryLead = cleanLeads.firstOrNull() ?: reminderLeadDays
 
             val sub = SubscriptionEntity(
                 name = name.trim(),
@@ -215,16 +231,27 @@ class SubscriptionViewModel(
                 status = "ACTIVE",
                 hasFreeTrial = hasFreeTrial,
                 trialDays = trialDays,
-                trialEndsAt = if (hasFreeTrial && trialDays > 0) nextRenewal else 0L,
+                trialEndsAt = trialEnd,
                 totalPaidCount = if (hasFreeTrial) 0 else 1,
                 totalSpent = if (hasFreeTrial) 0.0 else amount,
-                reminderEnabled = reminderEnabled,
-                reminderLeadDays = reminderLeadDays,
-                createdAt = System.currentTimeMillis(),
+                reminderEnabled = effectiveReminderEnabled,
+                reminderLeadDays = primaryLead,
+                createdAt = baseTime,
                 updatedAt = System.currentTimeMillis()
             )
 
             repository.insertSubscription(sub)
+            context?.let { ctx ->
+                DeadlineAndReminderUtils.saveSubscriptionReminderConfig(
+                    context = ctx,
+                    subscriptionId = sub.id,
+                    renewalLeadDays = if (cleanLeads.isNotEmpty()) cleanLeads else listOf(primaryLead),
+                    trialReminderEnabled = trialReminderEnabled,
+                    trialLeadDays = trialLeadDaysList
+                )
+                SubscriptionNotificationScheduler.schedule(ctx, sub)
+                SubscriptionNotificationScheduler.checkAndNotifyIfDueNow(ctx, sub)
+            }
             PostHog.capture(
                 event = "subscription_added",
                 properties = mapOf("name" to name, "amount" to amount, "currency" to currency)
@@ -241,22 +268,84 @@ class SubscriptionViewModel(
         currency: String,
         billingCycle: String,
         accountId: String,
-        category: String
+        category: String,
+        hasFreeTrial: Boolean? = null,
+        trialDays: Int? = null,
+        reminderEnabled: Boolean? = null,
+        reminderLeadDaysList: List<Int>? = null,
+        trialReminderEnabled: Boolean? = null,
+        trialLeadDaysList: List<Int>? = null,
+        startDateMs: Long? = null,
+        endDateMs: Long? = null,
+        context: Context? = null
     ) {
         viewModelScope.launch {
             val existing = uiState.value.allSubscriptions.find { it.id == id } ?: return@launch
             val logoUrl = if (!domain.isNullOrBlank()) buildLogoDevUrl(domain) else existing.logoUrl
+
+            val effectiveHasTrial = hasFreeTrial ?: existing.hasFreeTrial
+            val effectiveTrialDays = trialDays ?: existing.trialDays
+            val baseTime = startDateMs ?: existing.createdAt
+            val effectiveTrialEndsAt = if (effectiveHasTrial && effectiveTrialDays > 0) {
+                baseTime + (effectiveTrialDays.toLong() * 24L * 60L * 60L * 1000L)
+            } else {
+                0L
+            }
+
+            val nextRenewal = when {
+                endDateMs != null -> endDateMs
+                effectiveHasTrial && effectiveTrialDays > 0 -> effectiveTrialEndsAt
+                startDateMs != null -> calculateNextCycleTimestamp(baseTime, billingCycle)
+                else -> existing.nextRenewalDate
+            }
+
+            val cleanLeads = reminderLeadDaysList?.distinct()?.sorted()
+            val effectiveReminderEnabled = when {
+                reminderEnabled != null && cleanLeads != null -> reminderEnabled && cleanLeads.isNotEmpty()
+                reminderEnabled != null -> reminderEnabled
+                else -> existing.reminderEnabled
+            }
+            val primaryLead = cleanLeads?.firstOrNull() ?: existing.reminderLeadDays
+
             val updated = existing.copy(
                 name = name.trim(),
                 logoUrl = logoUrl,
                 amount = amount,
                 currency = currency.uppercase(),
                 billingCycle = billingCycle.uppercase(),
+                nextRenewalDate = nextRenewal,
                 accountId = accountId,
                 category = category,
+                hasFreeTrial = effectiveHasTrial,
+                trialDays = effectiveTrialDays,
+                trialEndsAt = effectiveTrialEndsAt,
+                reminderEnabled = effectiveReminderEnabled,
+                reminderLeadDays = primaryLead,
+                createdAt = baseTime,
                 updatedAt = System.currentTimeMillis()
             )
             repository.updateSubscription(updated)
+
+            context?.let { ctx ->
+                if (cleanLeads != null || trialLeadDaysList != null || trialReminderEnabled != null) {
+                    DeadlineAndReminderUtils.saveSubscriptionReminderConfig(
+                        context = ctx,
+                        subscriptionId = updated.id,
+                        renewalLeadDays = cleanLeads?.takeIf { it.isNotEmpty() }
+                            ?: DeadlineAndReminderUtils.getSubscriptionRenewalLeadDays(ctx, updated),
+                        trialReminderEnabled = trialReminderEnabled
+                            ?: DeadlineAndReminderUtils.isSubscriptionTrialReminderEnabled(ctx, updated.id),
+                        trialLeadDays = trialLeadDaysList
+                            ?: DeadlineAndReminderUtils.getSubscriptionTrialLeadDays(ctx, updated.id)
+                    )
+                }
+                if (updated.reminderEnabled && updated.isActive && updated.status.equals("ACTIVE", ignoreCase = true)) {
+                    SubscriptionNotificationScheduler.schedule(ctx, updated)
+                    SubscriptionNotificationScheduler.checkAndNotifyIfDueNow(ctx, updated)
+                } else {
+                    SubscriptionNotificationScheduler.cancel(ctx, updated.id)
+                }
+            }
         }
     }
 
@@ -286,7 +375,7 @@ class SubscriptionViewModel(
      * 2. Deducts account.current_balance
      * 3. Advances subscription's nextRenewalDate by 1 cycle
      * 4. Increments totalPaidCount and totalSpent
-     * 5. Triggers widgets and sync
+     * 5. Reschedules reminders and triggers widgets and sync
      */
     fun payNow(
         subscription: SubscriptionEntity,
@@ -352,8 +441,12 @@ class SubscriptionViewModel(
             )
             repository.updateSubscription(updatedSub)
 
-            // 4. Update widgets and PostHog
+            // 4. Reschedule notification for next renewal cycle and update widgets
             context?.let { ctx ->
+                SubscriptionNotificationScheduler.cancel(ctx, updatedSub.id)
+                if (updatedSub.reminderEnabled && updatedSub.isActive && updatedSub.status.equals("ACTIVE", ignoreCase = true)) {
+                    SubscriptionNotificationScheduler.schedule(ctx, updatedSub)
+                }
                 SummaryWidgetProvider.triggerUpdate(ctx)
                 StreakWidgetProvider.triggerUpdate(ctx)
                 HeatmapWidgetProvider.triggerUpdate(ctx)
@@ -392,10 +485,18 @@ class SubscriptionViewModel(
                 updatedAt = System.currentTimeMillis()
             )
             repository.updateSubscription(updated)
+            DeadlineAndReminderUtils.saveSubscriptionReminderConfig(
+                context = context,
+                subscriptionId = updated.id,
+                renewalLeadDays = listOf(leadDays),
+                trialReminderEnabled = DeadlineAndReminderUtils.isSubscriptionTrialReminderEnabled(context, updated.id),
+                trialLeadDays = DeadlineAndReminderUtils.getSubscriptionTrialLeadDays(context, updated.id)
+            )
             if (enabled && updated.status.equals("ACTIVE", ignoreCase = true) && updated.isActive) {
-                com.oryno.piggy_ledger.service.SubscriptionNotificationScheduler.schedule(context, updated)
+                SubscriptionNotificationScheduler.schedule(context, updated)
+                SubscriptionNotificationScheduler.checkAndNotifyIfDueNow(context, updated)
             } else {
-                com.oryno.piggy_ledger.service.SubscriptionNotificationScheduler.cancel(context, updated.id)
+                SubscriptionNotificationScheduler.cancel(context, updated.id)
             }
         }
     }
@@ -408,7 +509,7 @@ class SubscriptionViewModel(
                 updatedAt = System.currentTimeMillis()
             )
             repository.updateSubscription(updated)
-            context?.let { com.oryno.piggy_ledger.service.SubscriptionNotificationScheduler.cancel(it, subscription.id) }
+            context?.let { SubscriptionNotificationScheduler.cancel(it, subscription.id) }
             PostHog.capture(
                 event = "subscription_paused",
                 properties = mapOf("name" to subscription.name)
@@ -431,7 +532,7 @@ class SubscriptionViewModel(
                 updatedAt = now
             )
             repository.updateSubscription(updated)
-            context?.let { com.oryno.piggy_ledger.service.SubscriptionNotificationScheduler.schedule(it, updated) }
+            context?.let { SubscriptionNotificationScheduler.schedule(it, updated) }
             PostHog.capture(
                 event = "subscription_resumed",
                 properties = mapOf("name" to subscription.name)
@@ -447,7 +548,7 @@ class SubscriptionViewModel(
                 updatedAt = System.currentTimeMillis()
             )
             repository.updateSubscription(updated)
-            context?.let { com.oryno.piggy_ledger.service.SubscriptionNotificationScheduler.cancel(it, subscription.id) }
+            context?.let { SubscriptionNotificationScheduler.cancel(it, subscription.id) }
             PostHog.capture(
                 event = "subscription_archived",
                 properties = mapOf("name" to subscription.name)
@@ -466,7 +567,7 @@ class SubscriptionViewModel(
                 updatedAt = now
             )
             repository.updateSubscription(updated)
-            context?.let { com.oryno.piggy_ledger.service.SubscriptionNotificationScheduler.schedule(it, updated) }
+            context?.let { SubscriptionNotificationScheduler.schedule(it, updated) }
             PostHog.capture(
                 event = "subscription_reactivated",
                 properties = mapOf("name" to subscription.name)
@@ -476,7 +577,10 @@ class SubscriptionViewModel(
 
     fun deleteSubscription(id: String, context: Context? = null) {
         viewModelScope.launch {
-            context?.let { com.oryno.piggy_ledger.service.SubscriptionNotificationScheduler.cancel(it, id) }
+            context?.let {
+                SubscriptionNotificationScheduler.cancel(it, id)
+                DeadlineAndReminderUtils.clearSubscriptionPrefs(it, id)
+            }
             repository.deleteSubscription(id)
         }
     }

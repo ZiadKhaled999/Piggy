@@ -1,7 +1,9 @@
 package com.oryno.piggy_ledger.ui
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,7 +42,9 @@ import com.oryno.piggy_ledger.data.AccountType
 import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class BottomSheetType {
     NONE,
@@ -126,39 +130,83 @@ fun EditAccountScreen(
     var confirmNameInput by remember { mutableStateOf("") }
 
 
-    val availableProviders = listOf(
-        ProviderInfo("Vodafone Cash", Color(0xFFE11D48), "#E11D48"),
-        ProviderInfo("Orange Cash", Color(0xFFEA580C), "#EA580C"),
-        ProviderInfo("e& Cash", Color(0xFF16A34A), "#16A34A"),
-        ProviderInfo("WE Pay", Color(0xFF7C3AED), "#7C3AED")
-    )
+    val packageAccountMap by viewModel.packageAccountMap.collectAsState()
+    val customIdentifiers by viewModel.customIdentifiers.collectAsState()
 
-    val availableBanks = listOf(
-        "Commercial International Bank (CIB)",
-        "National Bank of Egypt (NBE)",
-        "Banque Misr",
-        "QNB Alahli",
-        "Banque Du Caire",
-        "Arab African International Bank (AAIB)",
-        "HSBC Egypt",
-        "Alex Bank",
-        "Faisal Islamic Bank",
-        "Abu Dhabi Islamic Bank (ADIB)",
-        "Credit Agricole Egypt",
-        "Egyptian Gulf Bank (EG Bank)",
-        "SAIB Bank",
-        "Al Baraka Bank",
-        "Housing and Development Bank (HDB)",
-        "Attijariwafa Bank Egypt",
-        "Arab Bank",
-        "Abu Dhabi Commercial Bank (ADCB)",
-        "EBank (Export Development Bank of Egypt)",
-        "The United Bank of Egypt",
-        "Suez Canal Bank",
-        "Mashreq Bank",
-        "Emirates NBD Egypt",
-        "Citibank Egypt"
-    )
+    var linkedNotificationPackage by remember { mutableStateOf<String?>(null) }
+    var linkedNotificationAppLabel by remember { mutableStateOf<String?>(null) }
+    var isPackageInitialized by remember { mutableStateOf(false) }
+    var customKeywordsInput by remember { mutableStateOf("") }
+    var isKeywordsInitialized by remember { mutableStateOf(false) }
+    var installedApps by remember { mutableStateOf<List<InstalledAppInfo>>(emptyList()) }
+    var showAppPickerSheet by remember { mutableStateOf(false) }
+
+    BackHandler(onBack = onBack)
+
+    val availableProviders = remember {
+        val egyptWallets = listOf(
+            ProviderInfo("Vodafone Cash", Color(0xFFE11D48), "#E11D48"),
+            ProviderInfo("Orange Cash", Color(0xFFEA580C), "#EA580C"),
+            ProviderInfo("e& Cash", Color(0xFF16A34A), "#16A34A"),
+            ProviderInfo("WE Pay", Color(0xFF7C3AED), "#7C3AED"),
+            ProviderInfo("InstaPay", Color(0xFF701A75), "#701A75"),
+            ProviderInfo("Telda", Color(0xFF0F172A), "#0F172A"),
+            ProviderInfo("Nexta", Color(0xFF0D9488), "#0D9488"),
+            ProviderInfo("Klivvr", Color(0xFF2563EB), "#2563EB")
+        )
+        val catalogWallets = newProviderOptions()
+            .filter { it.category in setOf("E-Wallet", "Fintech") }
+            .map { opt ->
+                val parsedColor = try {
+                    Color(android.graphics.Color.parseColor(opt.defaultColorHex))
+                } catch (_: Exception) {
+                    Color(0xFF0D9488)
+                }
+                ProviderInfo(opt.name, parsedColor, opt.defaultColorHex)
+            }
+        (egyptWallets + catalogWallets).distinctBy { it.name.lowercase() }
+    }
+
+    val availableBanks = remember {
+        val localBanks = listOf(
+            "Commercial International Bank (CIB)",
+            "National Bank of Egypt (NBE)",
+            "Banque Misr",
+            "QNB Alahli",
+            "Banque Du Caire",
+            "Arab African International Bank (AAIB)",
+            "HSBC Egypt",
+            "Alex Bank",
+            "Faisal Islamic Bank",
+            "Abu Dhabi Islamic Bank (ADIB)",
+            "Credit Agricole Egypt",
+            "Egyptian Gulf Bank (EG Bank)",
+            "SAIB Bank",
+            "Al Baraka Bank",
+            "Housing and Development Bank (HDB)",
+            "Attijariwafa Bank Egypt",
+            "Arab Bank",
+            "Abu Dhabi Commercial Bank (ADCB)",
+            "EBank (Export Development Bank of Egypt)",
+            "The United Bank of Egypt",
+            "Suez Canal Bank",
+            "Mashreq Bank",
+            "Emirates NBD Egypt",
+            "Citibank Egypt",
+            "First Abu Dhabi Bank (FAB)",
+            "Al Ahli Bank of Kuwait (ABK)",
+            "National Bank of Kuwait (NBK)",
+            "Ahli United Bank (AUB)",
+            "Bank ABC Egypt",
+            "aiBank (Arab Investment Bank)",
+            "MIDBANK",
+            "Arab International Bank (AIB)"
+        )
+        val catalogBanks = newProviderOptions()
+            .filter { it.category in setOf("Bank", "Fintech", "Infrastructure") }
+            .map { it.name }
+        (localBanks + catalogBanks).distinct()
+    }
 
     val customColors = listOf(
         "#3B82F6" to "Blue",
@@ -193,6 +241,37 @@ fun EditAccountScreen(
             selectedColorHex = it.icon_color
             selectedIconName = it.icon_name
             accountLabel = it.label ?: ""
+        }
+    }
+
+    LaunchedEffect(packageAccountMap, accountId) {
+        if (!isPackageInitialized) {
+            val mappedPkg = packageAccountMap.entries.firstOrNull { accountId in it.value }?.key
+            if (mappedPkg != null || packageAccountMap.isNotEmpty()) {
+                linkedNotificationPackage = mappedPkg
+                isPackageInitialized = true
+            }
+        }
+    }
+
+    LaunchedEffect(customIdentifiers, account) {
+        if (!isKeywordsInitialized && account != null) {
+            val key = account.provider?.takeIf { it.isNotBlank() } ?: account.name
+            val existing = customIdentifiers[key] ?: customIdentifiers[account.name]
+            if (!existing.isNullOrEmpty()) {
+                customKeywordsInput = existing.joinToString(", ")
+                isKeywordsInitialized = true
+            }
+        }
+    }
+
+    LaunchedEffect(provider, name, linkedNotificationPackage) {
+        val loaded = withContext(Dispatchers.IO) {
+            loadInstalledApps(context, provider.ifBlank { name })
+        }
+        installedApps = loaded
+        linkedNotificationAppLabel = linkedNotificationPackage?.let { pkg ->
+            loaded.firstOrNull { it.packageName == pkg }?.label ?: pkg
         }
     }
 
@@ -243,6 +322,7 @@ fun EditAccountScreen(
                                         type = type,
                                         icon_color = selectedColorHex,
                                         icon_name = selectedIconName,
+                                        logo_url = if (provider.isNotBlank()) getOnlineProviderLogoUrl(provider) ?: account.logo_url else account.logo_url,
                                         currency = currency,
                                         starting_balance = initialBalance,
                                         current_balance = currentBalanceVal,
@@ -257,11 +337,25 @@ fun EditAccountScreen(
                                         label = accountLabel.takeIf { it.isNotBlank() }
                                     )
                                 )
+                                viewModel.setAccountNotificationPackage(
+                                    accountId = accountId,
+                                    packageName = if (type != AccountType.CASH) linkedNotificationPackage else null
+                                )
+                                val keywordKey = provider.takeIf { it.isNotBlank() } ?: name.trim()
+                                val parsedKeywords = customKeywordsInput
+                                    .split(',', ';', '\n')
+                                    .map { it.trim() }
+                                    .filter { it.isNotEmpty() }
+                                if (type != AccountType.CASH && keywordKey.isNotBlank()) {
+                                    viewModel.setCustomIdentifierKeywords(keywordKey, parsedKeywords)
+                                }
                                 com.oryno.piggy_ledger.ui.ToastUtil.show(context, context.getString(R.string.toast_account_updated), Toast.LENGTH_SHORT)
                                 onBack()
                             }
                         },
-                        modifier = Modifier.padding(end = 8.dp),
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .testTag("save_account_button"),
                         shape = RoundedCornerShape(20.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary, disabledContainerColor = PinkPrimary.copy(alpha = 0.5f)),
                         enabled = name.isNotBlank()
@@ -597,6 +691,55 @@ fun EditAccountScreen(
                             fontSize = 12.sp,
                             color = TextLight,
                             modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
+            }
+
+            // SECTION: Transaction Alerts (SMS & App Notifications)
+            if (type != AccountType.CASH) {
+                SectionCard(title = stringResource(R.string.sms_and_notification_automation_title)) {
+                    NotificationAutomationSection(
+                        providerOrName = provider.ifBlank { name },
+                        linkedPackage = linkedNotificationPackage,
+                        linkedAppLabel = linkedNotificationAppLabel,
+                        isAutoSuggested = false,
+                        customKeywords = customKeywordsInput,
+                        onCustomKeywordsChange = { customKeywordsInput = it },
+                        onOpenAppPicker = { showAppPickerSheet = true },
+                        onClearLinkedApp = {
+                            linkedNotificationPackage = null
+                            linkedNotificationAppLabel = null
+                        }
+                    )
+
+                    HorizontalDivider(color = Color(0xFFF1F5F9))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.add_instapay_fee_label),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = NavyDark
+                            )
+                            Text(
+                                text = stringResource(R.string.instapay_fee_desc_detail),
+                                fontSize = 11.sp,
+                                color = TextLight
+                            )
+                        }
+                        Switch(
+                            checked = instaPayFee,
+                            onCheckedChange = { instaPayFee = it },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = PinkPrimary
+                            )
                         )
                     }
                 }
@@ -948,5 +1091,17 @@ fun EditAccountScreen(
                 BottomSheetType.NONE -> {}
             }
         }
+    }
+
+    if (showAppPickerSheet) {
+        AppPickerBottomSheet(
+            apps = installedApps,
+            selectedPackage = linkedNotificationPackage,
+            onAppSelected = { picked ->
+                linkedNotificationPackage = picked?.packageName
+                linkedNotificationAppLabel = picked?.label
+            },
+            onDismiss = { showAppPickerSheet = false }
+        )
     }
 }

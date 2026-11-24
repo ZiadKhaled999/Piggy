@@ -426,7 +426,8 @@ fun MainContainer(
     onSignOutClick: () -> Unit = {}
 ) {
     val bottomNavController = rememberNavController()
-    val overdueLoans by viewModel.overdueLoans.collectAsState()
+    val overdueLoansWithRemaining by viewModel.overdueLoansWithRemaining.collectAsState()
+    val appCurrency by viewModel.appCurrency.collectAsState()
     val allAccounts by viewModel.allAccounts.collectAsState()
     var dismissedAlerts by remember { mutableStateOf(setOf<String>()) }
     var showAddTransactionSheet by remember { mutableStateOf(false) }
@@ -464,11 +465,27 @@ fun MainContainer(
                     }
                     onConsumeShortcut()
                 }
+                "loans" -> {
+                    bottomNavController.navigate(Screen.Loans) {
+                        popUpTo(bottomNavController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                    onConsumeShortcut()
+                }
+                "subscriptions" -> {
+                    appNavController.navigate(Screen.Subscriptions) {
+                        launchSingleTop = true
+                    }
+                    onConsumeShortcut()
+                }
             }
         }
     }
     
-    val activeOverdue = overdueLoans.filter { it.id !in dismissedAlerts }
+    val activeOverdue = overdueLoansWithRemaining.filter { it.first.id !in dismissedAlerts }
 
     var isDrawerOpen by remember { mutableStateOf(false) }
     val isRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
@@ -673,10 +690,11 @@ fun MainContainer(
                 .statusBarsPadding()
                 .padding(16.dp)
         ) {
-            activeOverdue.firstOrNull()?.let { loan ->
+            activeOverdue.firstOrNull()?.let { (loan, remainingAmount) ->
                 DeadlineInAppAlert(
                     loanName = loan.contactName,
-                    amount = loan.amount,
+                    amount = remainingAmount,
+                    currencySymbol = getCurrencySymbol(appCurrency),
                     onDismiss = { dismissedAlerts = dismissedAlerts + loan.id },
                     onAction = {
                         dismissedAlerts = dismissedAlerts + loan.id
@@ -709,6 +727,7 @@ fun MainContainer(
 fun DeadlineInAppAlert(
     loanName: String,
     amount: Double,
+    currencySymbol: String = "$",
     onDismiss: () -> Unit,
     onAction: () -> Unit
 ) {
@@ -757,7 +776,7 @@ fun DeadlineInAppAlert(
                     }
                 }
                 Text(
-                    text = stringResource(R.string.repayment_deadline_over, loanName, ""),
+                    text = stringResource(R.string.repayment_deadline_over, loanName, "$currencySymbol$formattedAmount"),
                     color = Color.White,
                     fontSize = 13.sp,
                     maxLines = 2

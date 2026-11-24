@@ -6,24 +6,32 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
-import androidx.work.*
+import androidx.work.Data
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 object NotificationScheduler {
 
+    val DEADLINE_ALARM_HOURS = listOf(9, 14, 20) // 9:00 AM, 2:00 PM, 8:00 PM
+    const val DEADLINE_PERIODIC_WORK_NAME = "deadline_reminder_periodic_6h"
+
     fun scheduleAll(context: Context) {
         // 1. Schedule via WorkManager (Background periodic backup)
-        scheduleWorkManager(context, NotificationWorker.TYPE_STREAK, 18)   // 6:00 PM for streak warning
-        scheduleWorkManager(context, NotificationWorker.TYPE_GOAL, 19)     // 7:00 PM for goal reminder
+        scheduleWorkManager(context, NotificationWorker.TYPE_STREAK, 18)     // 6:00 PM for streak warning
+        scheduleWorkManager(context, NotificationWorker.TYPE_GOAL, 19)       // 7:00 PM for goal reminder
         scheduleWorkManager(context, NotificationWorker.TYPE_MOTIVATION, 20) // 8:00 PM for motivation
-        scheduleWorkManager(context, NotificationWorker.TYPE_DEADLINE, 9)   // 9:00 AM for deadline reminders
+        scheduleDeadlineWorkManager(context)                                 // Every 6 hours backup for overdue loans
 
         // 2. Schedule via AlarmManager (Guaranteed execution even when app is closed/killed)
         scheduleAlarm(context, NotificationWorker.TYPE_STREAK, 18)
         scheduleAlarm(context, NotificationWorker.TYPE_GOAL, 19)
         scheduleAlarm(context, NotificationWorker.TYPE_MOTIVATION, 20)
-        scheduleAlarm(context, NotificationWorker.TYPE_DEADLINE, 9)
+        DEADLINE_ALARM_HOURS.forEach { hour ->
+            scheduleAlarm(context, NotificationWorker.TYPE_DEADLINE, hour)
+        }
     }
 
     private fun scheduleWorkManager(context: Context, type: String, targetHour: Int) {
@@ -31,36 +39,72 @@ object NotificationScheduler {
         // guard. A corrupt WorkManager DB (restored backup) must degrade to alarms
         // only, never crash the launch.
         try {
-        val currentDate = Calendar.getInstance()
-        val dueDate = Calendar.getInstance()
+            val currentDate = Calendar.getInstance()
+            val dueDate = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, targetHour)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+                if (before(currentDate)) {
+                    add(Calendar.HOUR_OF_DAY, 24)
+                }
+            }
 
-        dueDate.set(Calendar.HOUR_OF_DAY, targetHour)
-        dueDate.set(Calendar.MINUTE, 0)
-        dueDate.set(Calendar.SECOND, 0)
+            val timeDiff = (dueDate.timeInMillis - currentDate.timeInMillis).coerceAtLeast(0L)
 
-        if (dueDate.before(currentDate)) {
-            dueDate.add(Calendar.HOUR_OF_DAY, 24)
-        }
+            val data = Data.Builder()
+                .putString(NotificationWorker.KEY_NOTIF_TYPE, type)
+                .build()
 
-        val timeDiff = dueDate.timeInMillis - currentDate.timeInMillis
+            val dailyWorkRequest = PeriodicWorkRequestBuilder<NotificationWorker>(24, TimeUnit.HOURS)
+                .setInitialDelay(timeDiff, TimeUnit.MILLISECONDS)
+                .setInputData(data)
+                .addTag(type)
+                .build()
 
-        val data = Data.Builder()
-            .putString(NotificationWorker.KEY_NOTIF_TYPE, type)
-            .build()
-
-        val dailyWorkRequest = PeriodicWorkRequestBuilder<NotificationWorker>(24, TimeUnit.HOURS)
-            .setInitialDelay(timeDiff, TimeUnit.MILLISECONDS)
-            .setInputData(data)
-            .addTag(type)
-            .build()
-
-        WorkManager.getInstance(context.applicationContext).enqueueUniquePeriodicWork(
-            type,
-            ExistingPeriodicWorkPolicy.REPLACE, // Use KEEP so app relaunch doesn't reset delay
-            dailyWorkRequest
-        )
+            WorkManager.getInstance(context.applicationContext).enqueueUniquePeriodicWork(
+                type,
+                ExistingPeriodicWorkPolicy.KEEP,
+                dailyWorkRequest
+            )
         } catch (e: Exception) {
             Log.e("NotificationScheduler", "WorkManager schedule failed for $type, alarms still active", e)
+        }
+    }
+
+    private fun scheduleDeadlineWorkManager(context: Context) {
+        try {
+            val data = Data.Builder()
+                .putString(NotificationWorker.KEY_NOTIF_TYPE, NotificationWorker.TYPE_DEADLINE)
+                .build()
+
+            val periodicWorkRequest = PeriodicWorkRequestBuilder<NotificationWorker>(6, TimeUnit.HOURS)
+                .setInputData(data)
+                .addTag(NotificationWorker.TYPE_DEADLINE)
+                .build()
+
+            WorkManager.getInstance(context.applicationContext).enqueueUniquePeriodicWork(
+                DEADLINE_PERIODIC_WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                periodicWorkRequest
+            )
+        } catch (e: Exception) {
+            Log.e("NotificationScheduler", "WorkManager periodic schedule failed for deadline reminders", e)
+        }
+    }
+
+    fun alarmRequestCode(type: String, targetHour: Int): Int {
+        return when (type) {
+            NotificationWorker.TYPE_STREAK -> 2001
+            NotificationWorker.TYPE_GOAL -> 2002
+            NotificationWorker.TYPE_MOTIVATION -> 2003
+            NotificationWorker.TYPE_DEADLINE -> when (targetHour) {
+                9 -> 2004
+                14 -> 2005
+                20 -> 2006
+                else -> 2004 + targetHour
+            }
+            else -> 2000
         }
     }
 
@@ -73,13 +117,7 @@ object NotificationScheduler {
                 putExtra(NotificationAlarmReceiver.KEY_TARGET_HOUR, targetHour)
             }
 
-            val requestCode = when (type) {
-                NotificationWorker.TYPE_STREAK -> 2001
-                NotificationWorker.TYPE_GOAL -> 2002
-                NotificationWorker.TYPE_MOTIVATION -> 2003
-                NotificationWorker.TYPE_DEADLINE -> 2004
-                else -> 2000
-            }
+            val requestCode = alarmRequestCode(type, targetHour)
 
             val pendingIntent = PendingIntent.getBroadcast(
                 context,

@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -101,6 +102,53 @@ class PiggyLedgerViewModel(
         }
     }
 
+    private val notificationParserPrefs = com.oryno.piggy_ledger.data.NotificationParserPrefs(context.applicationContext)
+
+    val notificationParserEnabled: StateFlow<Boolean> = notificationParserPrefs.enabled.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), false
+    )
+
+    val watchedNotificationPackages: StateFlow<Set<String>> = notificationParserPrefs.watchedPackages.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet()
+    )
+
+    val packageAccountMap: StateFlow<Map<String, List<String>>> = notificationParserPrefs.packageAccountMap.stateIn(
+        viewModelScope, SharingStarted.Eagerly, emptyMap()
+    )
+
+    fun setNotificationParserEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            notificationParserPrefs.setEnabled(enabled)
+        }
+    }
+
+    fun toggleWatchedNotificationPackage(packageName: String, watched: Boolean) {
+        viewModelScope.launch {
+            if (watched) {
+                notificationParserPrefs.addPackage(packageName)
+            } else {
+                notificationParserPrefs.removePackage(packageName)
+            }
+        }
+    }
+
+    fun setAccountNotificationPackage(accountId: String, packageName: String?) {
+        viewModelScope.launch {
+            val hasAccess = isListenerAccessGranted(context)
+            notificationParserPrefs.setAccountNotificationPackage(
+                accountId = accountId,
+                packageName = packageName,
+                autoEnableIfAccessGranted = hasAccess && !packageName.isNullOrBlank()
+            )
+        }
+    }
+
+    fun setAccountsForPackage(packageName: String, accountIds: List<String>) {
+        viewModelScope.launch {
+            notificationParserPrefs.setAccountsForPackage(packageName, accountIds)
+        }
+    }
+
     val customIdentifiers: StateFlow<Map<String, List<String>>> = userPreferences.customIdentifiersJson.map { jsonStr ->
         try {
             json.decodeFromString<Map<String, List<String>>>(jsonStr)
@@ -108,6 +156,52 @@ class PiggyLedgerViewModel(
             emptyMap()
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    private suspend fun mergeCustomIdentifierKeywords(providerName: String, keywords: List<String>) {
+        if (providerName.isBlank() || keywords.isEmpty()) return
+        val currentJson = try {
+            userPreferences.customIdentifiersJson.first()
+        } catch (e: Exception) {
+            "{}"
+        }
+        val currentMap = try {
+            json.decodeFromString<Map<String, List<String>>>(currentJson).toMutableMap()
+        } catch (e: Exception) {
+            customIdentifiers.value.toMutableMap()
+        }
+        val existingKeywords = currentMap[providerName]?.toMutableList() ?: mutableListOf()
+        keywords.forEach { kw ->
+            val trimmed = kw.trim()
+            if (trimmed.isNotEmpty() && !existingKeywords.contains(trimmed)) {
+                existingKeywords.add(trimmed)
+            }
+        }
+        currentMap[providerName] = existingKeywords
+        userPreferences.saveCustomIdentifiersJson(json.encodeToString(currentMap))
+    }
+
+    fun setCustomIdentifierKeywords(providerName: String, keywords: List<String>) {
+        if (providerName.isBlank()) return
+        viewModelScope.launch {
+            val currentJson = try {
+                userPreferences.customIdentifiersJson.first()
+            } catch (e: Exception) {
+                "{}"
+            }
+            val currentMap = try {
+                json.decodeFromString<Map<String, List<String>>>(currentJson).toMutableMap()
+            } catch (e: Exception) {
+                customIdentifiers.value.toMutableMap()
+            }
+            val cleaned = keywords.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+            if (cleaned.isEmpty()) {
+                currentMap.remove(providerName)
+            } else {
+                currentMap[providerName] = cleaned
+            }
+            userPreferences.saveCustomIdentifiersJson(json.encodeToString(currentMap))
+        }
+    }
 
     fun addCustomIdentifierKeywords(providerName: String, keywords: List<String>, onComplete: () -> Unit) {
         viewModelScope.launch {
@@ -774,7 +868,11 @@ class PiggyLedgerViewModel(
         }
     }
 
-    fun addAccount(account: com.oryno.piggy_ledger.data.Account) {
+    fun addAccount(
+        account: com.oryno.piggy_ledger.data.Account,
+        linkedNotificationPackage: String? = null,
+        customKeywords: List<String> = emptyList()
+    ) {
         viewModelScope.launch {
             PostHog.capture(
                 event = "account_created",
@@ -783,25 +881,39 @@ class PiggyLedgerViewModel(
                     "account_type" to account.type.name,
                     "provider" to (account.provider ?: ""),
                     "currency" to account.currency,
-                    "initial_balance" to account.current_balance
+                    "initial_balance" to account.current_balance,
+                    "has_linked_notification_app" to !linkedNotificationPackage.isNullOrBlank()
                 )
             )
-            if (account.type == com.oryno.piggy_ledger.data.AccountType.BANK || 
+            if (!linkedNotificationPackage.isNullOrBlank()) {
+                val hasAccess = isListenerAccessGranted(context)
+                notificationParserPrefs.setAccountNotificationPackage(
+                    accountId = account.id,
+                    packageName = linkedNotificationPackage,
+                    autoEnableIfAccessGranted = hasAccess
+                )
+            }
+            if (customKeywords.isNotEmpty()) {
+                val keywordKey = account.provider?.takeIf { it.isNotBlank() } ?: account.name
+                mergeCustomIdentifierKeywords(keywordKey, customKeywords)
+            }
+
+            if (account.type == com.oryno.piggy_ledger.data.AccountType.BANK ||
                 account.type == com.oryno.piggy_ledger.data.AccountType.CARD ||
                 account.type == com.oryno.piggy_ledger.data.AccountType.WALLET) {
-                
+
                 val providerOrName = account.provider?.takeIf { it.isNotBlank() } ?: account.name
                 val domain = getDomainForBank(providerOrName)
                 val logoUrl = "https://www.google.com/s2/favicons?sz=128&domain=$domain"
                 val initialAccount = account.copy(logo_url = logoUrl)
                 repository.insertAccount(initialAccount)
                 val rowId = initialAccount.id
-                
+
                 recordStreakAction()
                 com.oryno.piggy_ledger.widget.SummaryWidgetProvider.triggerUpdate(context)
                 com.oryno.piggy_ledger.widget.StreakWidgetProvider.triggerUpdate(context)
                 com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
-                
+
                 // Fetch and save logo once online in background
                 viewModelScope.launch {
                     val localPath = downloadAndSaveLogo(context, domain)
@@ -840,6 +952,7 @@ class PiggyLedgerViewModel(
     fun deleteAccount(id: String) {
         viewModelScope.launch {
             repository.deleteAccount(id)
+            notificationParserPrefs.unlinkAccountFromAllPackages(id)
             if (_selectedAccountId.value == id) {
                 selectAccount(null)
             }
@@ -850,9 +963,19 @@ class PiggyLedgerViewModel(
         }
     }
 
-    val overdueLoans: StateFlow<List<Loan>> = loans.map { list ->
-        val now = System.currentTimeMillis()
-        list.filter { !it.isPaidOff && it.deadline != null && it.deadline < now }
+    val overdueLoansWithRemaining: StateFlow<List<Pair<Loan, Double>>> = combine(
+        loans,
+        repository.allLoanPayments
+    ) { list, payments ->
+        com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.filterOverdueLoansWithRemaining(
+            loans = list,
+            payments = payments,
+            nowMillis = System.currentTimeMillis()
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val overdueLoans: StateFlow<List<Loan>> = overdueLoansWithRemaining.map { list ->
+        list.map { it.first }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -867,18 +990,14 @@ class PiggyLedgerViewModel(
             delay(5000)
             while (true) {
                 try {
-                    val currentOverdue = overdueLoans.value
-                    currentOverdue.forEach {
-                        try {
-                            NotificationHelper(context).showDeadlineNotification(it.contactName, it.amount)
-                        } catch (e: Throwable) {
-                            android.util.Log.e("PiggyLedgerVM", "Failed to show deadline notification", e)
-                        }
-                    }
+                    com.oryno.piggy_ledger.service.LoanDeadlineNotifier.notifyOverdueLoans(
+                        context = context,
+                        minIntervalMs = java.util.concurrent.TimeUnit.HOURS.toMillis(4)
+                    )
                 } catch (e: Throwable) {
                     android.util.Log.e("PiggyLedgerVM", "Error in overdue notifications loop", e)
                 }
-                delay(60000 * 60) // Check every hour
+                delay(java.util.concurrent.TimeUnit.HOURS.toMillis(4))
             }
         }
     }
@@ -974,6 +1093,18 @@ class PiggyLedgerViewModel(
         }
     }
 
+    private fun localizedContext(): Context {
+        val savedLang = UserPreferences.getSavedAppLanguageSync(context)
+            ?.takeIf { it.isNotBlank() }
+            ?: androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                .takeIf { it.isNotBlank() }
+            ?: return context
+        val locale = java.util.Locale.forLanguageTag(savedLang)
+        val config = android.content.res.Configuration(context.resources.configuration)
+        config.setLocale(locale)
+        return context.createConfigurationContext(config)
+    }
+
     // FIX(onboarding-again): completion used to be fire-and-forget — the UI navigated
     // away immediately while the DataStore edit was still in flight. A process kill
     // or crash in that window lost the flag and the user saw onboarding again on
@@ -992,6 +1123,7 @@ class PiggyLedgerViewModel(
             userPreferences.saveOnboarding(true)
             userPreferences.savePersonalization(intent, intensity, savingMode)
 
+            val resContext = localizedContext()
             val intentLabels = listOf(
                 R.string.onboarding_personalize_intent_personal,
                 R.string.onboarding_personalize_intent_loans,
@@ -1003,24 +1135,21 @@ class PiggyLedgerViewModel(
                 R.string.onboarding_personalize_intensity_aggressive
             )
 
-            val answersMap = mutableMapOf(
-                "q1: ${context.getString(R.string.onboarding_personalize_intent_title)}" to context.getString(intentLabels.getOrElse(intent) { intentLabels[0] }),
-                "q2: ${context.getString(R.string.onboarding_personalize_intensity_title)}" to context.getString(intensityLabels.getOrElse(intensity) { intensityLabels[0] }),
-                "q3: Saving mode" to savingMode,
-                "completed_at" to System.currentTimeMillis().toString()
+            val answersMap = com.oryno.piggy_ledger.data.OnboardingAnswerFormatter.buildAnswersMap(
+                intentQuestion = resContext.getString(R.string.onboarding_personalize_intent_title),
+                intentAnswer = resContext.getString(intentLabels.getOrElse(intent) { intentLabels[0] }),
+                intensityQuestion = resContext.getString(R.string.onboarding_personalize_intensity_title),
+                intensityAnswer = resContext.getString(intensityLabels.getOrElse(intensity) { intensityLabels[0] }),
+                completedAtMillis = System.currentTimeMillis(),
+                relatesToLoans = relatesToLoans,
+                loansQuestion = resContext.getString(R.string.onboarding_relatable_statement_1),
+                relatesToAccounts = relatesToAccounts,
+                accountsQuestion = resContext.getString(R.string.onboarding_relatable_statement_2),
+                relatesToEmergency = relatesToEmergency,
+                emergencyQuestion = resContext.getString(R.string.onboarding_relatable_statement_3),
+                yesLabel = resContext.getString(R.string.yes_label),
+                noLabel = resContext.getString(R.string.no_label)
             )
-            relatesToLoans?.let {
-                answersMap["q4: ${context.getString(R.string.onboarding_relatable_statement_1)}"] =
-                    if (it) context.getString(R.string.yes_label) else context.getString(R.string.no_label)
-            }
-            relatesToAccounts?.let {
-                answersMap["q5: ${context.getString(R.string.onboarding_relatable_statement_2)}"] =
-                    if (it) context.getString(R.string.yes_label) else context.getString(R.string.no_label)
-            }
-            relatesToEmergency?.let {
-                answersMap["q6: ${context.getString(R.string.onboarding_relatable_statement_3)}"] =
-                    if (it) context.getString(R.string.yes_label) else context.getString(R.string.no_label)
-            }
 
             try {
                 repository.saveOnboardingAnswers(answersMap)
@@ -1048,9 +1177,15 @@ class PiggyLedgerViewModel(
         viewModelScope.launch {
             userPreferences.saveLanguageSelected(true)
             try {
-                val currentLang = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags()
-                repository.saveOnboardingAnswer("language", currentLang)
-                PostHog.capture("language_selection_completed", properties = mapOf("\$set" to mapOf("language" to currentLang)))
+                val langCode = UserPreferences.getSavedAppLanguageSync(context)
+                    ?.takeIf { it.isNotBlank() }
+                    ?: androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                        .takeIf { it.isNotBlank() }
+                    ?: java.util.Locale.getDefault().toLanguageTag()
+                userPreferences.saveAppLanguage(langCode)
+                val readableLanguage = com.oryno.piggy_ledger.data.OnboardingAnswerFormatter.formatLanguage(langCode)
+                repository.saveOnboardingAnswer("language", readableLanguage)
+                PostHog.capture("language_selection_completed", properties = mapOf("\$set" to mapOf("language" to langCode)))
             } catch (e: Exception) {
                 android.util.Log.e("PiggyLedgerVM", "language selection side-effects failed (flag already saved)", e)
             }
@@ -1163,6 +1298,17 @@ class PiggyLedgerViewModel(
                     note = note
                 )
             )
+            try {
+                val loan = loans.value.find { it.id == loanId }
+                if (loan != null) {
+                    val payments = repository.getPaymentsForLoan(loanId).first()
+                    val remaining = com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.computeRemainingLoanAmount(loan, payments)
+                    if (remaining <= 0.0001) {
+                        NotificationHelper(context).cancelDeadlineNotification(loanId)
+                        com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.clearLoanDeadlineNotified(context, loanId)
+                    }
+                }
+            } catch (_: Exception) { }
             PostHog.capture(
                 event = "loan_payment_added",
                 properties = mapOf<String, Any>("loan_id" to loanId, "amount" to amount, "note" to (note ?: ""))
@@ -1192,6 +1338,8 @@ class PiggyLedgerViewModel(
     fun markLoanAsPaid(id: String) {
         viewModelScope.launch {
             repository.markLoanAsPaid(id)
+            NotificationHelper(context).cancelDeadlineNotification(id)
+            com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.clearLoanDeadlineNotified(context, id)
             PostHog.capture(
                 event = "loan_paid",
                 properties = mapOf("loan_id" to id)
@@ -1207,6 +1355,8 @@ class PiggyLedgerViewModel(
     fun deleteLoan(id: String) {
         viewModelScope.launch {
             repository.deleteLoan(id)
+            NotificationHelper(context).cancelDeadlineNotification(id)
+            com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.clearLoanDeadlineNotified(context, id)
             PostHog.capture(
                 event = "loan_deleted",
                 properties = mapOf("loan_id" to id)

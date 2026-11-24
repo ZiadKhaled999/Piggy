@@ -162,7 +162,7 @@ fun LanguageSelectionScreen(
                              com.oryno.piggy_ledger.data.UserPreferences.saveLanguageSelectedSync(context, true)
                              com.oryno.piggy_ledger.data.UserPreferences(context).saveAppLanguageSync(lang)
                              val currentLocales = AppCompatDelegate.getApplicationLocales().toLanguageTags()
-                             if (!currentLocales.contains(lang)) {
+                             if (!currentLocales.equals(lang, ignoreCase = true)) {
                                  AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
                              }
                              java.util.Locale.setDefault(java.util.Locale.forLanguageTag(lang))
@@ -204,7 +204,7 @@ fun LanguageSelectionScreen(
                             com.oryno.piggy_ledger.data.UserPreferences.saveOnboardedSync(context, true)
                              com.oryno.piggy_ledger.data.UserPreferences(context).saveAppLanguageSync(lang)
                              val currentLocales = AppCompatDelegate.getApplicationLocales().toLanguageTags()
-                             if (!currentLocales.contains(lang)) {
+                             if (!currentLocales.equals(lang, ignoreCase = true)) {
                                  AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
                              }
                              java.util.Locale.setDefault(java.util.Locale.forLanguageTag(lang))

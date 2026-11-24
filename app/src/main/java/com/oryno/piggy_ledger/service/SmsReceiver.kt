@@ -111,24 +111,26 @@ class SmsReceiver : BroadcastReceiver() {
                     }
 
                     // Build comprehensive list of keywords to match sender against
-                    val allTrustedTokens = (defaultProviders + dynamicIdentifiers + customKeywordsList).flatMap { normalize(it) }.distinct()
+                    val allTrustedTokens = (
+                        defaultProviders +
+                        BankProviderRegistry.getAllKnownSmsTokens() +
+                        dynamicIdentifiers +
+                        customKeywordsList
+                    ).flatMap { normalize(it) }.distinct()
 
                     val cleanSender = sender.replace(" ", "").replace("-", "").replace("_", "")
 
                     val isTrusted = allTrustedTokens.any { token ->
-                        cleanSender.contains(token, ignoreCase = true) ||
-                        sender.contains(token, ignoreCase = true)
+                        token.length >= 2 && (
+                            cleanSender.contains(token, ignoreCase = true) ||
+                            sender.contains(token, ignoreCase = true)
+                        )
                     }
 
                     if (isTrusted) {
                         Log.d("SmsReceiver", "Sender $sender is verified as trusted. Processing SMS...")
                         SmsProcessor.process(context, sender, body)
-                    } else if (body.contains("EGP", ignoreCase = true) || body.contains("LE", ignoreCase = true) ||
-                        body.contains("جنيه") || body.contains("جم") || body.contains("تحويل") ||
-                        body.contains("خصم") || body.contains("سحب") || body.contains("ايداع") ||
-                        body.contains("إيداع") || body.contains("شراء") || body.contains("purchase", ignoreCase = true) ||
-                        body.contains("paid", ignoreCase = true) || body.contains("debited", ignoreCase = true) ||
-                        body.contains("credited", ignoreCase = true) || body.contains("transfer", ignoreCase = true)) {
+                    } else if (TransactionIngestor.hasTransactionIntent(body)) {
                         Log.d("SmsReceiver", "Sender $sender not in static whitelist, but contains financial keywords. Processing...")
                         SmsProcessor.process(context, sender, body)
                     } else {

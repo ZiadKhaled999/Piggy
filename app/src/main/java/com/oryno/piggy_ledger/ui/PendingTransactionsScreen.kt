@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -54,6 +55,7 @@ fun PendingTransactionsScreen(
 ) {
     val pendingTransactions by viewModel.allPendingTransactions.collectAsState()
     val accounts by viewModel.allAccounts.collectAsState()
+    val appCurrency by viewModel.appCurrency.collectAsState()
     val duplicateGroups = pendingTransactions.filter { it.needsReview && it.duplicateGroupId != null }.groupBy { it.duplicateGroupId!! }
     val singletons = pendingTransactions.filter { !(it.needsReview && it.duplicateGroupId != null) }
     
@@ -159,6 +161,7 @@ fun PendingTransactionsScreen(
                     items(singletons, key = { it.id }) { tx ->
                         PendingTransactionItem(
                             tx = tx,
+                            fallbackCurrency = appCurrency,
                             dateFormat = dateFormat,
                             onClick = {
                                 selectedTransaction = tx
@@ -168,7 +171,12 @@ fun PendingTransactionsScreen(
                     }
                     duplicateGroups.forEach { (_, group) ->
                         item(key = group.first().duplicateGroupId) {
-                            DuplicateGroupCard(group = group, dateFormat = dateFormat, viewModel = viewModel)
+                            DuplicateGroupCard(
+                                group = group,
+                                fallbackCurrency = appCurrency,
+                                dateFormat = dateFormat,
+                                viewModel = viewModel
+                            )
                         }
                     }
                 }
@@ -187,6 +195,7 @@ fun PendingTransactionsScreen(
                     ResolveTransactionBottomSheetContent(
                         transaction = selectedTransaction!!,
                         accounts = accounts,
+                        fallbackCurrency = appCurrency,
                         dateFormat = dateFormat,
                         onAccountSelected = { accountId ->
                             viewModel.resolvePendingTransaction(selectedTransaction!!.id, accountId)
@@ -209,9 +218,30 @@ fun PendingTransactionsScreen(
     }
 }
 
+internal fun inferCurrencyFromPendingBody(rawBody: String, fallbackCurrency: String): String {
+    val body = rawBody.uppercase()
+    return when {
+        Regex("""\bEGP\b|\bLE\b|L\.E\.|ج\.م|جنيه""").containsMatchIn(rawBody) -> "EGP"
+        Regex("""\bUSD\b|\$""").containsMatchIn(rawBody) -> "USD"
+        Regex("""\bEUR\b|€""").containsMatchIn(rawBody) -> "EUR"
+        Regex("""\bGBP\b|£""").containsMatchIn(rawBody) -> "GBP"
+        Regex("""\bSAR\b|ريال""").containsMatchIn(rawBody) -> "SAR"
+        Regex("""\bAED\b|درهم""").containsMatchIn(rawBody) -> "AED"
+        Regex("""\bKWD\b""").containsMatchIn(body) -> "KWD"
+        Regex("""\bQAR\b""").containsMatchIn(body) -> "QAR"
+        Regex("""\bNGN\b|₦""").containsMatchIn(rawBody) -> "NGN"
+        Regex("""\bINR\b|₹""").containsMatchIn(rawBody) -> "INR"
+        Regex("""\bTRY\b|₺""").containsMatchIn(rawBody) -> "TRY"
+        Regex("""\bCAD\b""").containsMatchIn(body) -> "CAD"
+        Regex("""\bAUD\b""").containsMatchIn(body) -> "AUD"
+        else -> fallbackCurrency.ifBlank { "EGP" }
+    }
+}
+
 @Composable
 fun DuplicateGroupCard(
     group: List<PendingTransaction>,
+    fallbackCurrency: String = "EGP",
     dateFormat: SimpleDateFormat,
     viewModel: PiggyLedgerViewModel
 ) {
@@ -227,11 +257,14 @@ fun DuplicateGroupCard(
             Text(stringResource(R.string.possible_duplicate_desc), fontSize = 12.sp, color = TextLight)
             Spacer(Modifier.height(8.dp))
             group.forEach { tx ->
+                val txCurrency = remember(tx.id, tx.raw_sms_body, fallbackCurrency) {
+                    inferCurrencyFromPendingBody(tx.raw_sms_body, fallbackCurrency)
+                }
                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(when (tx.source) { "AUTOMATIC_NOTIFICATION" -> stringResource(R.string.source_notification) else -> stringResource(R.string.source_sms) }, fontSize = 11.sp, color = NavyDark)
                     Spacer(Modifier.width(6.dp))
                     Text(tx.merchant, fontSize = 13.sp, color = NavyDark, modifier = Modifier.weight(1f))
-                    Text(String.format(Locale.US, "%s%.2f", if (tx.amount > 0) "+" else "-", Math.abs(tx.amount)), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(String.format(Locale.US, "%s%.2f %s", if (tx.amount > 0) "+" else "-", Math.abs(tx.amount), txCurrency), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -256,9 +289,13 @@ fun DuplicateGroupCard(
 @Composable
 fun PendingTransactionItem(
     tx: PendingTransaction,
+    fallbackCurrency: String = "EGP",
     dateFormat: SimpleDateFormat,
     onClick: () -> Unit
 ) {
+    val txCurrency = remember(tx.id, tx.raw_sms_body, fallbackCurrency) {
+        inferCurrencyFromPendingBody(tx.raw_sms_body, fallbackCurrency)
+    }
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
@@ -284,7 +321,7 @@ fun PendingTransactionItem(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.ReceiptLong,
+                    imageVector = if (tx.source == "AUTOMATIC_NOTIFICATION") Icons.Default.NotificationsActive else Icons.Default.ReceiptLong,
                     contentDescription = null,
                     tint = PinkPrimary,
                     modifier = Modifier.size(20.dp)
@@ -334,7 +371,7 @@ fun PendingTransactionItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = String.format(Locale.US, "%s%.2f EGP", if (tx.amount > 0) "+" else "-", Math.abs(tx.amount)),
+                    text = String.format(Locale.US, "%s%.2f %s", if (tx.amount > 0) "+" else "-", Math.abs(tx.amount), txCurrency),
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 14.sp,
                     color = if (tx.amount > 0) Color(0xFF10B981) else PinkPrimary,
@@ -356,12 +393,16 @@ fun PendingTransactionItem(
 fun ResolveTransactionBottomSheetContent(
     transaction: PendingTransaction,
     accounts: List<Account>,
+    fallbackCurrency: String = "EGP",
     dateFormat: SimpleDateFormat = remember { SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()) },
     onAccountSelected: (String) -> Unit,
     onDiscard: (() -> Unit)? = null,
     onClose: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val txCurrency = remember(transaction.id, transaction.raw_sms_body, fallbackCurrency) {
+        inferCurrencyFromPendingBody(transaction.raw_sms_body, fallbackCurrency)
+    }
 
     Column(
         modifier = Modifier
@@ -417,7 +458,7 @@ fun ResolveTransactionBottomSheetContent(
                         color = NavyDark
                     )
                     Text(
-                        text = String.format(Locale.US, "%s%.2f EGP", if (transaction.amount > 0) "+" else "-", Math.abs(transaction.amount)),
+                        text = String.format(Locale.US, "%s%.2f %s", if (transaction.amount > 0) "+" else "-", Math.abs(transaction.amount), txCurrency),
                         fontWeight = FontWeight.Black,
                         fontSize = 17.sp,
                         color = if (transaction.amount > 0) Color(0xFF10B981) else PinkPrimary

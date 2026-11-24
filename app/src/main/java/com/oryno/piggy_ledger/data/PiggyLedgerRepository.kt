@@ -197,39 +197,51 @@ class PiggyLedgerRepository(private val dao: PiggyLedgerDao, private val context
         // so duplicates accumulated locally and remotely; reuse the newest row's
         // id (upsert) and tombstone any older duplicates for the same key.
         val existing = dao.getOnboardingAnswersByKey(key)
-        val keepId = existing.firstOrNull()?.id ?: "${now}_$key"
+        val activeUserId = com.clerk.api.Clerk.userFlow.value?.id ?: existing.firstOrNull()?.userId
+        val keepId = existing.firstOrNull()?.id
+            ?: "${now}_${OnboardingAnswerFormatter.sanitizeIdSlug(key)}_${java.util.UUID.randomUUID().toString().take(6)}"
         val answer = OnboardingAnswer(
             id = keepId,
-            userId = existing.firstOrNull()?.userId,
+            userId = activeUserId,
             key = key,
             value = value,
+            createdAt = existing.firstOrNull()?.createdAt ?: now,
             updatedAt = now,
-            isSynced = false
+            isSynced = false,
+            is_deleted = false
         )
         dao.insertOnboardingAnswer(answer)
         for (dup in existing.drop(1)) {
-            try { dao.deleteOnboardingAnswerById(dup.id, now) } catch (_e: Exception) {}
+            if (!dup.is_deleted) {
+                try { dao.deleteOnboardingAnswerById(dup.id, now) } catch (_e: Exception) {}
+            }
         }
         triggerSync()
     }
 
     suspend fun saveOnboardingAnswers(answers: Map<String, String>) {
         val now = System.currentTimeMillis()
+        val clerkUserId = com.clerk.api.Clerk.userFlow.value?.id
         for ((k, v) in answers) {
             val existing = dao.getOnboardingAnswersByKey(k)
-            val keepId = existing.firstOrNull()?.id ?: "${now}_$k"
+            val keepId = existing.firstOrNull()?.id
+                ?: "${now}_${OnboardingAnswerFormatter.sanitizeIdSlug(k)}_${java.util.UUID.randomUUID().toString().take(6)}"
             dao.insertOnboardingAnswer(
                 OnboardingAnswer(
                     id = keepId,
-                    userId = existing.firstOrNull()?.userId,
+                    userId = clerkUserId ?: existing.firstOrNull()?.userId,
                     key = k,
                     value = v,
+                    createdAt = existing.firstOrNull()?.createdAt ?: now,
                     updatedAt = now,
-                    isSynced = false
+                    isSynced = false,
+                    is_deleted = false
                 )
             )
             for (dup in existing.drop(1)) {
-                try { dao.deleteOnboardingAnswerById(dup.id, now) } catch (_e: Exception) {}
+                if (!dup.is_deleted) {
+                    try { dao.deleteOnboardingAnswerById(dup.id, now) } catch (_e: Exception) {}
+                }
             }
         }
         triggerSync()

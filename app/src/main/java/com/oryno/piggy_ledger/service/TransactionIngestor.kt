@@ -28,75 +28,166 @@ object TransactionIngestor {
         notificationPackage: String? = null
     ) = withContext(Dispatchers.IO) {
         ingestMutex.withLock {
-        if (isPromotional(rawBody, senderLabel)) {
-            Log.d("TransactionIngestor", "Ignoring promotional content from $senderLabel")
-            return@withContext
-        }
-
-        val parsed = SmsParser.parse(rawBody)
-        val amount = parsed.amount
-        val merchant = parsed.merchant
-        val isIncome = parsed.isIncome
-        val actionType = parsed.actionType
-
-        Log.d(
-            "TransactionIngestor",
-            "Ingesting $source — Sender: $senderLabel, Merchant: $merchant, " +
-                "Amount: $amount, Income: $isIncome, Action: $actionType"
-        )
-
-        val dao = PiggyLedgerDatabase.getInstance(context).piggyLedgerDao()
-
-        if (amount == 0.0) {
-            dao.insertPendingTransaction(
-                PendingTransaction(
-                    amount = 0.0,
-                    merchant = merchant,
-                    raw_sms_body = rawBody,
-                    sender = senderLabel,
-                    source = source,
-                    notificationPackage = notificationPackage,
-                    sourceKey = sourceKey,
-                    reference = parsed.reference,
-                    needsReview = true
-                )
-            )
-            showUnparsedNotification(context, senderLabel)
-            return@withContext
-        }
-
-        val matchedAccount: Account? = BankProviderRegistry.resolveAccount(
-            context = context,
-            sender = senderLabel,
-            rawBody = rawBody,
-            actionType = actionType
-        )
-
-        val isInstaPay = senderLabel.contains("instapay", ignoreCase = true) ||
-            rawBody.contains("instapay", ignoreCase = true) ||
-            rawBody.contains("انستاباي")
-
-        val dedup = DuplicateDetector.evaluate(
-            context = context,
-            incoming = DuplicateDetector.IncomingRow(
-                amount = amount,
-                isIncome = isIncome,
-                merchant = merchant,
-                timestamp = System.currentTimeMillis(),
-                source = source,
-                sourceKey = sourceKey,
-                rawText = rawBody
-            )
-        )
-
-        when (dedup.action) {
-            DuplicateDetector.Action.DROP_EXACT -> {
-                Log.d("TransactionIngestor", "Dropped exact repost: $sourceKey")
+            if (isPromotional(rawBody, senderLabel)) {
+                Log.d("TransactionIngestor", "Ignoring promotional content from $senderLabel")
                 return@withContext
             }
 
-            DuplicateDetector.Action.INSERT_FLAGGED -> {
-                dao.insertPendingTransactionReturningId(
+            val parsed = SmsParser.parse(rawBody)
+            val amount = parsed.amount
+            val merchant = parsed.merchant
+            val isIncome = parsed.isIncome
+            val actionType = parsed.actionType
+
+            Log.d(
+                "TransactionIngestor",
+                "Ingesting $source — Sender: $senderLabel ($notificationPackage), Merchant: $merchant, " +
+                    "Amount: $amount, Income: $isIncome, Action: $actionType"
+            )
+
+            val dao = PiggyLedgerDatabase.getInstance(context).piggyLedgerDao()
+
+            if (amount == 0.0) {
+                // For app notifications, ignore non-transactional alerts (e.g. login/statement/update notices)
+                if (source == SOURCE_NOTIFICATION && !hasTransactionIntent(rawBody)) {
+                    Log.d("TransactionIngestor", "Ignoring non-transactional notification from $senderLabel")
+                    return@withContext
+                }
+                dao.insertPendingTransaction(
+                    PendingTransaction(
+                        amount = 0.0,
+                        merchant = merchant,
+                        raw_sms_body = rawBody,
+                        sender = senderLabel,
+                        source = source,
+                        notificationPackage = notificationPackage,
+                        sourceKey = sourceKey,
+                        reference = parsed.reference,
+                        needsReview = true
+                    )
+                )
+                showUnparsedNotification(context, senderLabel)
+                return@withContext
+            }
+
+            val matchedAccount: Account? = BankProviderRegistry.resolveAccount(
+                context = context,
+                sender = senderLabel,
+                rawBody = rawBody,
+                actionType = actionType,
+                notificationPackage = notificationPackage
+            )
+
+            val isInstaPay = senderLabel.contains("instapay", ignoreCase = true) ||
+                (notificationPackage?.contains("instapay", ignoreCase = true) == true) ||
+                rawBody.contains("instapay", ignoreCase = true) ||
+                rawBody.contains("انستاباي")
+
+            val dedup = DuplicateDetector.evaluate(
+                context = context,
+                incoming = DuplicateDetector.IncomingRow(
+                    amount = amount,
+                    isIncome = isIncome,
+                    merchant = merchant,
+                    timestamp = System.currentTimeMillis(),
+                    source = source,
+                    sourceKey = sourceKey,
+                    rawText = rawBody,
+                    reference = parsed.reference
+                )
+            )
+
+            when (dedup.action) {
+                DuplicateDetector.Action.DROP_EXACT -> {
+                    Log.d("TransactionIngestor", "Dropped exact repost: $sourceKey")
+                    return@withContext
+                }
+
+                DuplicateDetector.Action.INSERT_FLAGGED -> {
+                    dao.insertPendingTransactionReturningId(
+                        PendingTransaction(
+                            amount = if (isIncome) amount else -amount,
+                            merchant = merchant,
+                            raw_sms_body = rawBody,
+                            sender = senderLabel,
+                            source = source,
+                            notificationPackage = notificationPackage,
+                            sourceKey = sourceKey,
+                            reference = if (dedup.matchedTable == "account_transactions") dedup.matchedRowId else parsed.reference,
+                            needsReview = true,
+                            duplicateGroupId = dedup.groupId
+                        )
+                    )
+                    if (dedup.matchedTable == "pending_transactions") {
+                        dedup.matchedRowId?.let { existingId ->
+                            dao.flagPendingDuplicate(existingId, dedup.groupId)
+                        }
+                    }
+                    Log.d("TransactionIngestor", "Flagged duplicate group ${dedup.groupId}")
+                    return@withContext
+                }
+
+                DuplicateDetector.Action.MERGE -> {
+                    val matchedTable = dedup.matchedTable ?: ""
+                    val matchedId = dedup.matchedRowId
+
+                    if (matchedTable == "pending_transactions" && matchedAccount != null) {
+                        dao.processSmsTransaction(
+                            accountId = matchedAccount.id,
+                            amount = amount,
+                            merchant = merchant,
+                            applyInstaPayFee = matchedAccount.insta_pay_fee && isInstaPay,
+                            isIncome = isIncome,
+                            source = source,
+                            sourceKey = sourceKey,
+                            reference = parsed.reference
+                        ) ?: return@withContext
+                        matchedId?.let { dao.deletePendingTransactionById(it) }
+                        com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
+                        return@withContext
+                    }
+
+                    matchedId?.let {
+                        dao.enrichFromDuplicate(
+                            table = matchedTable,
+                            id = it,
+                            reference = parsed.reference,
+                            rawText = rawBody
+                        )
+                    }
+                    Log.d("TransactionIngestor", "Merged into existing row ${dedup.matchedRowId}")
+                    return@withContext
+                }
+
+                DuplicateDetector.Action.INSERT -> Unit
+            }
+
+            if (matchedAccount != null) {
+                dao.processSmsTransaction(
+                    accountId = matchedAccount.id,
+                    amount = amount,
+                    merchant = merchant,
+                    applyInstaPayFee = matchedAccount.insta_pay_fee && isInstaPay,
+                    isIncome = isIncome,
+                    source = source,
+                    sourceKey = sourceKey,
+                    reference = parsed.reference
+                )
+
+                try {
+                    NotificationHelper(context).showTransactionProcessedNotification(
+                        accountName = matchedAccount.name,
+                        currency = matchedAccount.currency.ifBlank { "EGP" },
+                        amount = amount,
+                        actionType = actionType
+                    )
+                } catch (e: Exception) {
+                    Log.e("TransactionIngestor", "Failed to show processed notification", e)
+                }
+                com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
+            } else {
+                Log.d("TransactionIngestor", "No account match for $senderLabel → pending")
+                dao.insertPendingTransaction(
                     PendingTransaction(
                         amount = if (isIncome) amount else -amount,
                         merchant = merchant,
@@ -105,99 +196,27 @@ object TransactionIngestor {
                         source = source,
                         notificationPackage = notificationPackage,
                         sourceKey = sourceKey,
-                        reference = if (dedup.matchedTable == "account_transactions") dedup.matchedRowId else parsed.reference,
-                        needsReview = true,
-                        duplicateGroupId = dedup.groupId
-                    )
-                )
-                if (dedup.matchedTable == "pending_transactions") {
-                    dedup.matchedRowId?.let { existingId ->
-                        dao.flagPendingDuplicate(existingId, dedup.groupId)
-                    }
-                }
-                Log.d("TransactionIngestor", "Flagged duplicate group ${dedup.groupId}")
-                return@withContext
-            }
-
-            DuplicateDetector.Action.MERGE -> {
-                val matchedTable = dedup.matchedTable ?: ""
-                val matchedId = dedup.matchedRowId
-
-                if (matchedTable == "pending_transactions" && matchedAccount != null) {
-                    val newAccountTxnId = dao.processSmsTransaction(
-                        accountId = matchedAccount.id,
-                        amount = amount,
-                        merchant = merchant,
-                        applyInstaPayFee = matchedAccount.insta_pay_fee && isInstaPay,
-                        isIncome = isIncome,
-                        source = source,
-                        sourceKey = sourceKey,
                         reference = parsed.reference
-                    ) ?: return@withContext
-                    matchedId?.let { dao.deletePendingTransactionById(it) }
-                    com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
-                    return@withContext
-                }
-
-                matchedId?.let {
-                    dao.enrichFromDuplicate(
-                        table = matchedTable,
-                        id = it,
-                        reference = parsed.reference,
-                        rawText = rawBody
                     )
-                }
-                Log.d("TransactionIngestor", "Merged into existing row ${dedup.matchedRowId}")
-                return@withContext
-            }
-
-            DuplicateDetector.Action.INSERT -> Unit
-        }
-
-        if (matchedAccount != null) {
-            dao.processSmsTransaction(
-                accountId = matchedAccount.id,
-                amount = amount,
-                merchant = merchant,
-                applyInstaPayFee = matchedAccount.insta_pay_fee && isInstaPay,
-                isIncome = isIncome,
-                source = source,
-                sourceKey = sourceKey,
-                reference = parsed.reference
-            )
-
-            try {
-                NotificationHelper(context).showTransactionProcessedNotification(
-                    accountName = matchedAccount.name,
-                    currency = matchedAccount.currency.ifBlank { "EGP" },
-                    amount = amount,
-                    actionType = actionType
                 )
-            } catch (e: Exception) {
-                Log.e("TransactionIngestor", "Failed to show processed notification", e)
             }
-            com.oryno.piggy_ledger.widget.HeatmapWidgetProvider.triggerUpdate(context)
-        } else {
-            Log.d("TransactionIngestor", "No account match for $senderLabel → pending")
-            dao.insertPendingTransaction(
-                PendingTransaction(
-                    amount = if (isIncome) amount else -amount,
-                    merchant = merchant,
-                    raw_sms_body = rawBody,
-                    sender = senderLabel,
-                    source = source,
-                    notificationPackage = notificationPackage,
-                    sourceKey = sourceKey,
-                    reference = parsed.reference
-                )
-            )
         }
-
-        }
-
     }
 
-    private fun isPromotional(body: String, sender: String): Boolean {
+    internal fun hasTransactionIntent(body: String): Boolean {
+        val lower = SmsParser.convertArabicDigitsAndSymbols(body).lowercase()
+        val intentKeywords = listOf(
+            "egp", "usd", "eur", "gbp", "sar", "aed", "kwd", "qar", "ngn", "inr",
+            "$", "€", "£", "₹", "₦", "₺", "جنيه", "جم", "ج.م", "ريال", "درهم",
+            "paid", "spent", "charged", "purchase", "debited", "credited", "withdrawn",
+            "transfer", "sent", "received", "refund", "payment", "transaction", "deposit",
+            "تم خصم", "حركة خصم", "تم تحويل", "قمت بتحويل", "استقبلت", "استلام",
+            "تم سحب", "شراء", "إيداع", "ايداع", "دفع", "سداد"
+        )
+        return intentKeywords.any { lower.contains(it) }
+    }
+
+    internal fun isPromotional(body: String, sender: String): Boolean {
         val cleanSender = sender.lowercase()
         val cleanBody = body.lowercase()
 
@@ -221,8 +240,10 @@ object TransactionIngestor {
 
         val financialIndicators = listOf(
             "تم خصم", "حركة خصم", "تم تحويل", "قمت بتحويل", "استقبلت",
-            "تم سحب", "شراء بمبلغ", "debited", "credited", "purchase with",
-            "transfer of", "withdrawn"
+            "تم سحب", "شراء بمبلغ", "تم دفع", "تم الدفع", "تم استلام",
+            "debited", "credited", "purchase with", "purchase of",
+            "transfer of", "withdrawn", "you spent", "you paid", "charged",
+            "you received", "you sent", "payment of"
         )
 
         val hasFinancialIndicator = financialIndicators.any { cleanBody.contains(it) }

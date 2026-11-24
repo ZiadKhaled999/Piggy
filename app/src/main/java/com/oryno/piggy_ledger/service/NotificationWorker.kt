@@ -67,12 +67,10 @@ class NotificationWorker(
                 }
             }
             TYPE_DEADLINE -> {
-                val db = PiggyLedgerDatabase.getInstance(context)
-                val now = System.currentTimeMillis()
-                val overdue = db.piggyLedgerDao().getAllLoansSync().filter { !it.is_deleted && !it.isPaidOff && it.deadline != null && it.deadline < now }
-                overdue.forEach { loan ->
-                    try { notificationHelper.showDeadlineNotification(loan.contactName, loan.amount) } catch (e: Exception) { }
-                }
+                LoanDeadlineNotifier.notifyOverdueLoans(
+                    context = context,
+                    minIntervalMs = java.util.concurrent.TimeUnit.HOURS.toMillis(4)
+                )
             }
             TYPE_MOTIVATION -> {
                 val randomQuote = NotificationHelper.getRandomMotivationQuote(context)

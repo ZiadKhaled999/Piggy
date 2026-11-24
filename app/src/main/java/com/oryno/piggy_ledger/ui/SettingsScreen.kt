@@ -497,7 +497,7 @@ fun DetailSettingsView(
     }
 
     if (mode == SettingsMode.NOTIFICATION_PARSING) {
-        NotificationParserSettingsView(onBack = onBack)
+        NotificationParserSettingsView(viewModel = viewModel, onBack = onBack)
         return
     }
 

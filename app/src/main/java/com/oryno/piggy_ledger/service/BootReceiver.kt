@@ -15,6 +15,7 @@ class BootReceiver : BroadcastReceiver() {
             Log.d("BootReceiver", "Boot completed or app updated. Rescheduling notifications...")
             NotificationScheduler.scheduleAll(context)
             SubscriptionNotificationScheduler.rescheduleAll(context)
+            SubscriptionNotificationScheduler.schedulePeriodicWorker(context)
             
             // FIX(sync): Also schedule cloud sync on boot so offline changes
             // get synced after device restart, even if periodic work was

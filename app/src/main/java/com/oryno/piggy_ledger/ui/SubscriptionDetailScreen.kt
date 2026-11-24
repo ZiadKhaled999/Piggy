@@ -95,7 +95,7 @@ fun SubscriptionDetailScreen(
 
     val formatter = remember { SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()) }
     val now = System.currentTimeMillis()
-    val diffDays = TimeUnit.MILLISECONDS.toDays(subscription.nextRenewalDate - now).toInt()
+    val diffDays = com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.calendarDaysBetween(now, subscription.nextRenewalDate)
 
     val isPaused = subscription.status.equals("PAUSED", ignoreCase = true) || !subscription.isActive
     val isArchived = subscription.status.equals("ARCHIVED", ignoreCase = true)
@@ -373,6 +373,138 @@ fun SubscriptionDetailScreen(
                                 isLast = true,
                                 showTodayMarker = isApproachingRenewal
                             )
+                        }
+                    }
+                }
+            }
+
+            // Reminders
+            item {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = stringResource(R.string.sub_reminders_section),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NavyDark,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.sub_renewal_reminder),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = NavyDark
+                                )
+                                Switch(
+                                    checked = isReminderEnabled,
+                                    onCheckedChange = { enabled ->
+                                        if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                                        ) {
+                                            notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        }
+                                        isReminderEnabled = enabled
+                                        onUpdateReminder(enabled, selectedLeadDays, isDailyRepeat)
+                                        Toast.makeText(context, context.getString(R.string.sub_reminder_saved), Toast.LENGTH_SHORT).show()
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = PinkPrimary
+                                    )
+                                )
+                            }
+
+                            if (isReminderEnabled) {
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                Text(
+                                    text = stringResource(R.string.sub_remind_lead_title),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = TextLight,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+
+                                val leadOptions = listOf(
+                                    0 to stringResource(R.string.sub_due_today),
+                                    1 to stringResource(R.string.sub_remind_1_day),
+                                    2 to stringResource(R.string.sub_remind_2_days),
+                                    3 to stringResource(R.string.sub_remind_3_days),
+                                    7 to stringResource(R.string.sub_remind_1_week)
+                                )
+                                androidx.compose.foundation.lazy.LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(leadOptions.size) { index ->
+                                        val (daysVal, label) = leadOptions[index]
+                                        val isSelected = selectedLeadDays == daysVal
+                                        Surface(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(50))
+                                                .clickable {
+                                                    selectedLeadDays = daysVal
+                                                    onUpdateReminder(isReminderEnabled, daysVal, isDailyRepeat)
+                                                    Toast.makeText(context, context.getString(R.string.sub_reminder_saved), Toast.LENGTH_SHORT).show()
+                                                },
+                                            shape = RoundedCornerShape(50),
+                                            color = if (isSelected) PinkPrimary else Color(0xFFF1F5F9)
+                                        ) {
+                                            Text(
+                                                text = label,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (isSelected) Color.White else NavyDark,
+                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                        Text(
+                                            text = stringResource(R.string.sub_daily_alerts),
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = NavyDark
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.sub_daily_alerts_desc),
+                                            fontSize = 12.sp,
+                                            color = TextLight
+                                        )
+                                    }
+                                    Switch(
+                                        checked = isDailyRepeat,
+                                        onCheckedChange = { daily ->
+                                            isDailyRepeat = daily
+                                            onUpdateReminder(isReminderEnabled, selectedLeadDays, daily)
+                                            Toast.makeText(context, context.getString(R.string.sub_reminder_saved), Toast.LENGTH_SHORT).show()
+                                        },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = Color.White,
+                                            checkedTrackColor = PinkPrimary
+                                        )
+                                    )
+                                }
+                            }
                         }
                     }
                 }

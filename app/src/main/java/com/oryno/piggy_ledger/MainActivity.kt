@@ -129,6 +129,7 @@ class MainActivity : AppCompatActivity() {
       if (isGranted) {
           try {
               com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
+              com.oryno.piggy_ledger.service.SubscriptionNotificationScheduler.rescheduleAll(this)
           } catch (e: Exception) {
               android.util.Log.e("MainActivity", "NotificationScheduler failed after permission grant", e)
           }
@@ -173,6 +174,7 @@ class MainActivity : AppCompatActivity() {
     // Schedule background notifications (best-effort: must never crash the launch)
     try {
         com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
+        com.oryno.piggy_ledger.service.SubscriptionNotificationScheduler.rescheduleAll(this)
     } catch (e: Exception) {
         android.util.Log.e("MainActivity", "NotificationScheduler failed, continuing launch", e)
     }

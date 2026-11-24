@@ -42,6 +42,7 @@ class SyncManager(private val context: Context) {
                 val userId = user.id
 
                 try {
+                    dao.assignUserIdToUnownedOnboardingAnswers(userId)
                     val startCheckpoint = checkpointStore.get(userId)
                     val isFirstSync = startCheckpoint == 0L
 

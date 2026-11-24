@@ -49,12 +49,18 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    private fun getMainActivityPendingIntent(): PendingIntent {
+    private fun getMainActivityPendingIntent(
+        shortcutAction: String? = null,
+        requestCode: Int = 0
+    ): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            if (!shortcutAction.isNullOrBlank()) {
+                putExtra("shortcut_action", shortcutAction)
+            }
         }
         return PendingIntent.getActivity(
-            context, 0, intent,
+            context, requestCode, intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
     }
@@ -67,7 +73,12 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    fun showDeadlineNotification(contactName: String, amount: Double, currencySymbol: String = "$") {
+    fun showDeadlineNotification(
+        contactName: String,
+        amount: Double,
+        currencySymbol: String = "$",
+        notificationId: Int = contactName.hashCode()
+    ) {
         try {
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
             val title = try {
@@ -95,15 +106,22 @@ class NotificationHelper(private val context: Context) {
                 .setStyle(NotificationCompat.BigTextStyle().bigText(message))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setColor(androidx.core.content.ContextCompat.getColor(context, R.color.pink_primary))
-                .setContentIntent(getMainActivityPendingIntent())
+                .setContentIntent(getMainActivityPendingIntent("loans", notificationId))
                 .setAutoCancel(true)
                 .setCategory(NotificationCompat.CATEGORY_REMINDER)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
-            notificationManager.notify(contactName.hashCode(), builder.build())
+            notificationManager.notify(notificationId, builder.build())
         } catch (e: Throwable) {
             android.util.Log.e("NotificationHelper", "Failed to show deadline notification", e)
         }
+    }
+
+    fun cancelDeadlineNotification(loanId: String) {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+            notificationManager.cancel(loanId.hashCode())
+        } catch (_: Throwable) { }
     }
 
     fun showStreakWarningNotification(daysMissed: Int = com.oryno.piggy_ledger.data.StreakManager.getConsecutiveMissedDays(context)) {
@@ -240,26 +258,60 @@ class NotificationHelper(private val context: Context) {
         notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
     }
 
-    fun showSubscriptionDueNotification(serviceName: String, amountStr: String, dueRelativeText: String) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val title = "$serviceName is due $dueRelativeText"
-        val message = "Upcoming payment of $amountStr is due. Tap to view and pay."
-        val logoBitmap = getAppLogoBitmap()
+    fun showSubscriptionDueNotification(
+        subscriptionId: String,
+        serviceName: String,
+        amountStr: String,
+        daysUntilDue: Int,
+        isTrial: Boolean = false
+    ) {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+            val locCtx = localizedContext
+            val dueRelativeText = when {
+                daysUntilDue < 0 -> locCtx.getString(R.string.sub_notif_due_overdue_days, -daysUntilDue)
+                daysUntilDue == 0 -> locCtx.getString(R.string.sub_due_today)
+                daysUntilDue == 1 -> locCtx.getString(R.string.sub_due_tomorrow)
+                else -> locCtx.getString(R.string.sub_due_in_days, daysUntilDue)
+            }
+            val title = if (isTrial) {
+                locCtx.getString(R.string.sub_notif_trial_title, serviceName, dueRelativeText)
+            } else {
+                locCtx.getString(R.string.sub_notif_due_title, serviceName, dueRelativeText)
+            }
+            val message = if (isTrial) {
+                locCtx.getString(R.string.sub_notif_trial_body, serviceName, amountStr, dueRelativeText)
+            } else {
+                locCtx.getString(R.string.sub_notif_due_body, amountStr, dueRelativeText)
+            }
+            val logoBitmap = getAppLogoBitmap()
+            val notifId = NOTIF_ID_SUBSCRIPTION + (subscriptionId.hashCode() and 0x7FFF)
 
-        val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
-            .setSmallIcon(R.drawable.img_app_logo)
-            .apply { if (logoBitmap != null) setLargeIcon(logoBitmap) }
-            .setContentTitle(title)
-            .setContentText(message)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setColor(androidx.core.content.ContextCompat.getColor(context, R.color.pink_primary))
-            .setContentIntent(getMainActivityPendingIntent())
-            .setAutoCancel(true)
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
+                .setSmallIcon(R.drawable.img_app_logo)
+                .apply { if (logoBitmap != null) setLargeIcon(logoBitmap) }
+                .setContentTitle(title)
+                .setContentText(message)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setColor(androidx.core.content.ContextCompat.getColor(context, R.color.pink_primary))
+                .setContentIntent(getMainActivityPendingIntent("subscriptions", notifId))
+                .setAutoCancel(true)
+                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
-        notificationManager.notify(NOTIF_ID_SUBSCRIPTION, builder.build())
+            notificationManager.notify(notifId, builder.build())
+        } catch (e: Throwable) {
+            android.util.Log.e("NotificationHelper", "Failed to show subscription due notification", e)
+        }
+    }
+
+    fun cancelSubscriptionNotification(subscriptionId: String) {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+            val notifId = NOTIF_ID_SUBSCRIPTION + (subscriptionId.hashCode() and 0x7FFF)
+            notificationManager.cancel(notifId)
+        } catch (_: Exception) { }
     }
 
     companion object {

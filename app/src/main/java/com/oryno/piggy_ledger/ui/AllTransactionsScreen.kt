@@ -913,7 +913,11 @@ fun AllTransactionsScreen(
 
                     DetailRow(
                         label = "Logged Via",
-                        value = if (tx.source == "AUTOMATIC_SMS") "Parsed SMS Notification" else "Manual Entry"
+                        value = when (tx.source) {
+                            "AUTOMATIC_SMS" -> stringResource(R.string.source_logged_sms)
+                            "AUTOMATIC_NOTIFICATION" -> stringResource(R.string.source_logged_app_notification)
+                            else -> stringResource(R.string.source_logged_manual)
+                        }
                     )
                 }
 

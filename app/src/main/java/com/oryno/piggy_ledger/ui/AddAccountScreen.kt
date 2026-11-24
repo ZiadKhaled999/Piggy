@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +46,8 @@ import com.oryno.piggy_ledger.ui.theme.NavyDark
 import com.oryno.piggy_ledger.ui.theme.PinkPrimary
 import com.oryno.piggy_ledger.ui.theme.TextLight
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class ProviderOption(
     val name: String,
@@ -91,7 +94,38 @@ fun AddAccountScreen(
     var selectedIconName by remember { mutableStateOf("AccountBalance") }
     var userCustomizedColor by remember { mutableStateOf(false) }
 
+    // Automation: Linked App Notifications & Custom Keywords
+    var linkedNotificationPackage by remember { mutableStateOf<String?>(null) }
+    var linkedNotificationAppLabel by remember { mutableStateOf<String?>(null) }
+    var userManuallyPickedApp by remember { mutableStateOf(false) }
+    var isAutoSuggestedApp by remember { mutableStateOf(false) }
+    var customKeywordsInput by remember { mutableStateOf("") }
+    var installedApps by remember { mutableStateOf<List<InstalledAppInfo>>(emptyList()) }
+    var showAppPickerSheet by remember { mutableStateOf(false) }
+
     val accounts by viewModel.allAccounts.collectAsState()
+
+    LaunchedEffect(type, provider, name, currentStep) {
+        if (type == AccountType.CASH) {
+            linkedNotificationPackage = null
+            linkedNotificationAppLabel = null
+            isAutoSuggestedApp = false
+        } else if (currentStep == 4 || provider.isNotBlank()) {
+            val loaded = withContext(Dispatchers.IO) {
+                loadInstalledApps(context, provider.ifBlank { name })
+            }
+            installedApps = loaded
+            if (!userManuallyPickedApp) {
+                val bestMatch = loaded.firstOrNull { it.matchScore >= 75 }
+                linkedNotificationPackage = bestMatch?.packageName
+                linkedNotificationAppLabel = bestMatch?.label
+                isAutoSuggestedApp = bestMatch != null
+            } else if (linkedNotificationPackage != null) {
+                linkedNotificationAppLabel = loaded.firstOrNull { it.packageName == linkedNotificationPackage }?.label
+                    ?: linkedNotificationAppLabel
+            }
+        }
+    }
 
     // Handle back stack navigation
     BackHandler {
@@ -187,6 +221,10 @@ fun AddAccountScreen(
                             type = selected
                             provider = ""
                             logoUrl = null
+                            userManuallyPickedApp = false
+                            linkedNotificationPackage = null
+                            linkedNotificationAppLabel = null
+                            isAutoSuggestedApp = false
                             if (!userCustomizedColor) {
                                 selectedColorHex = when (selected) {
                                     AccountType.BANK -> "#1E3A8A"
@@ -223,6 +261,7 @@ fun AddAccountScreen(
                             provider = provName
                             logoUrl = provLogoUrl
                             name = provName
+                            userManuallyPickedApp = false
                             if (!userCustomizedColor) {
                                 selectedColorHex = provColor
                             }
@@ -233,6 +272,7 @@ fun AddAccountScreen(
                                 provider = customName
                                 logoUrl = buildLogoDevUrl(customName)
                                 name = customName
+                                userManuallyPickedApp = false
                             }
                             currentStep = 2
                         }
@@ -290,6 +330,18 @@ fun AddAccountScreen(
                         onInstaPayFeeChange = { instaPayFee = it },
                         excludeFromAll = excludeFromAll,
                         onExcludeFromAllChange = { excludeFromAll = it },
+                        linkedNotificationPackage = linkedNotificationPackage,
+                        linkedNotificationAppLabel = linkedNotificationAppLabel,
+                        isAutoSuggestedApp = isAutoSuggestedApp,
+                        customKeywordsInput = customKeywordsInput,
+                        onCustomKeywordsChange = { customKeywordsInput = it },
+                        onOpenAppPicker = { showAppPickerSheet = true },
+                        onClearLinkedApp = {
+                            userManuallyPickedApp = true
+                            linkedNotificationPackage = null
+                            linkedNotificationAppLabel = null
+                            isAutoSuggestedApp = false
+                        },
                         onCreateAccount = {
                             try {
                                 com.posthog.PostHog.capture(
@@ -311,9 +363,13 @@ fun AddAccountScreen(
                                 }
 
                                 val finalLogoUrl = logoUrl ?: getOnlineProviderLogoUrl(provider)
+                                val parsedKeywords = customKeywordsInput
+                                    .split(',', ';', '\n')
+                                    .map { it.trim() }
+                                    .filter { it.isNotEmpty() }
 
                                 viewModel.addAccount(
-                                    Account(
+                                    account = Account(
                                         name = name.trim(),
                                         type = type,
                                         icon_color = selectedColorHex,
@@ -330,7 +386,9 @@ fun AddAccountScreen(
                                         provider = provider.takeIf { it.isNotBlank() },
                                         insta_pay_fee = instaPayFee,
                                         label = accountLabel.takeIf { it.isNotBlank() }
-                                    )
+                                    ),
+                                    linkedNotificationPackage = if (type != AccountType.CASH) linkedNotificationPackage else null,
+                                    customKeywords = parsedKeywords
                                 )
                                 com.oryno.piggy_ledger.ui.ToastUtil.show(
                                     context,
@@ -350,6 +408,20 @@ fun AddAccountScreen(
                 }
             }
         }
+    }
+
+    if (showAppPickerSheet) {
+        AppPickerBottomSheet(
+            apps = installedApps,
+            selectedPackage = linkedNotificationPackage,
+            onAppSelected = { picked ->
+                userManuallyPickedApp = true
+                linkedNotificationPackage = picked?.packageName
+                linkedNotificationAppLabel = picked?.label
+                isAutoSuggestedApp = false
+            },
+            onDismiss = { showAppPickerSheet = false }
+        )
     }
 }
 
@@ -1337,6 +1409,13 @@ fun Slide4AutomationAndReview(
     onInstaPayFeeChange: (Boolean) -> Unit,
     excludeFromAll: Boolean,
     onExcludeFromAllChange: (Boolean) -> Unit,
+    linkedNotificationPackage: String?,
+    linkedNotificationAppLabel: String?,
+    isAutoSuggestedApp: Boolean,
+    customKeywordsInput: String,
+    onCustomKeywordsChange: (String) -> Unit,
+    onOpenAppPicker: () -> Unit,
+    onClearLinkedApp: () -> Unit,
     onCreateAccount: () -> Unit
 ) {
     val currencySym = getCurrencySymbol(currency)
@@ -1356,10 +1435,11 @@ fun Slide4AutomationAndReview(
             letterSpacing = 1.2.sp
         )
         Text(
-            text = "Review your card and configure automated SMS linking",
+            text = stringResource(R.string.automation_review_subtitle),
             fontSize = 13.sp,
             color = TextLight,
-            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+            textAlign = TextAlign.Center
         )
 
         // FINAL CARD PREVIEW (Credit Card / Bank Card Aesthetic)
@@ -1464,7 +1544,7 @@ fun Slide4AutomationAndReview(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // SMS Linking Card
+        // SMS & App Notification Automation Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -1476,7 +1556,7 @@ fun Slide4AutomationAndReview(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Text(
-                    text = "SMS Automation & Identifier",
+                    text = stringResource(R.string.sms_and_notification_automation_title),
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     color = NavyDark
@@ -1488,7 +1568,9 @@ fun Slide4AutomationAndReview(
                         onValueChange = onCardNumbersChange,
                         placeholder = { Text(stringResource(R.string.card_digits_hint)) },
                         leadingIcon = { Icon(Icons.Default.CreditCard, contentDescription = null, tint = TextLight) },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("card_digits_input"),
                         shape = RoundedCornerShape(12.dp)
                     )
                 }
@@ -1499,9 +1581,26 @@ fun Slide4AutomationAndReview(
                         onValueChange = onBankAccountNoChange,
                         placeholder = { Text(stringResource(R.string.account_number_hint)) },
                         leadingIcon = { Icon(Icons.Default.AccountBalance, contentDescription = null, tint = TextLight) },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("bank_account_no_input"),
                         shape = RoundedCornerShape(12.dp)
                     )
+                }
+
+                if (accountType != AccountType.CASH) {
+                    NotificationAutomationSection(
+                        providerOrName = provider.ifBlank { name },
+                        linkedPackage = linkedNotificationPackage,
+                        linkedAppLabel = linkedNotificationAppLabel,
+                        isAutoSuggested = isAutoSuggestedApp,
+                        customKeywords = customKeywordsInput,
+                        onCustomKeywordsChange = onCustomKeywordsChange,
+                        onOpenAppPicker = onOpenAppPicker,
+                        onClearLinkedApp = onClearLinkedApp
+                    )
+
+                    HorizontalDivider(color = Color(0xFFF1F5F9))
                 }
 
                 // InstaPay Fee Toggle
@@ -1556,7 +1655,8 @@ fun Slide4AutomationAndReview(
             enabled = name.isNotBlank(),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(56.dp)
+                .testTag("create_account_button"),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary)
         ) {

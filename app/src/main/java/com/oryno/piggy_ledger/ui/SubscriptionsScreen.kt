@@ -166,7 +166,7 @@ fun SubscriptionsScreen(
                 selectedCatalogItem = null
                 editingSub = null
             },
-            onSaveSubscription = { name, domain, amount, currency, cycle, accountId, category, hasTrial, trialDays ->
+            onSaveSubscription = { name, domain, amount, currency, cycle, accountId, category, hasTrial, trialDays, startDateMs, endDateMs, reminderEnabled, renewalLeadDaysList, trialReminderEnabled, trialLeadDaysList ->
                 if (editingSub != null) {
                     viewModel.updateSubscription(
                         id = editingSub!!.id,
@@ -176,7 +176,16 @@ fun SubscriptionsScreen(
                         currency = currency,
                         billingCycle = cycle,
                         accountId = accountId,
-                        category = category
+                        category = category,
+                        hasFreeTrial = hasTrial,
+                        trialDays = trialDays,
+                        reminderEnabled = reminderEnabled,
+                        reminderLeadDaysList = renewalLeadDaysList,
+                        trialReminderEnabled = trialReminderEnabled,
+                        trialLeadDaysList = trialLeadDaysList,
+                        startDateMs = startDateMs,
+                        endDateMs = endDateMs,
+                        context = context
                     )
                 } else {
                     viewModel.addSubscription(
@@ -188,7 +197,14 @@ fun SubscriptionsScreen(
                         accountId = accountId,
                         category = category,
                         hasFreeTrial = hasTrial,
-                        trialDays = trialDays
+                        trialDays = trialDays,
+                        reminderEnabled = reminderEnabled,
+                        reminderLeadDaysList = renewalLeadDaysList,
+                        trialReminderEnabled = trialReminderEnabled,
+                        trialLeadDaysList = trialLeadDaysList,
+                        startDateMs = startDateMs,
+                        endDateMs = endDateMs,
+                        context = context
                     )
                 }
                 isAddScreenOpen = false
@@ -353,19 +369,19 @@ fun SubscriptionsScreen(
             tab = uiState.selectedTab,
             onDismiss = { subForOptions = null },
             onPause = {
-                viewModel.pauseSubscription(subForOptions!!)
+                viewModel.pauseSubscription(subForOptions!!, context)
                 subForOptions = null
             },
             onResume = {
-                viewModel.resumeSubscription(subForOptions!!)
+                viewModel.resumeSubscription(subForOptions!!, context)
                 subForOptions = null
             },
             onArchive = {
-                viewModel.archiveSubscription(subForOptions!!)
+                viewModel.archiveSubscription(subForOptions!!, context)
                 subForOptions = null
             },
             onReactivate = {
-                viewModel.reactivateSubscription(subForOptions!!)
+                viewModel.reactivateSubscription(subForOptions!!, context)
                 subForOptions = null
             },
             onEdit = {
@@ -375,7 +391,7 @@ fun SubscriptionsScreen(
                 isAddScreenOpen = true
             },
             onDelete = {
-                viewModel.deleteSubscription(subForOptions!!.id)
+                viewModel.deleteSubscription(subForOptions!!.id, context)
                 subForOptions = null
             }
         )
@@ -739,9 +755,10 @@ private fun SubscriptionsUpcomingView(
                         Spacer(modifier = Modifier.height(14.dp))
                         val dueSub = uiState.dueSoonSubscription!!
                         val dueDays = uiState.dueSoonDays
-                        val dueTimeText = when (dueDays) {
-                            0 -> stringResource(R.string.sub_due_today)
-                            1 -> stringResource(R.string.sub_due_tomorrow)
+                        val dueTimeText = when {
+                            dueDays < 0 -> stringResource(R.string.sub_overdue)
+                            dueDays == 0 -> stringResource(R.string.sub_due_today)
+                            dueDays == 1 -> stringResource(R.string.sub_due_tomorrow)
                             else -> stringResource(R.string.sub_due_in_days, dueDays)
                         }
                         Surface(
@@ -1597,7 +1614,7 @@ private fun SubscriptionCardItem(
     val renewalStr = formatter.format(Date(subscription.nextRenewalDate))
 
     val now = System.currentTimeMillis()
-    val diffDays = TimeUnit.MILLISECONDS.toDays(subscription.nextRenewalDate - now).toInt()
+    val diffDays = com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.calendarDaysBetween(now, subscription.nextRenewalDate)
 
     Surface(
         modifier = Modifier
@@ -1650,7 +1667,8 @@ private fun SubscriptionCardItem(
                         }
                     } else {
                         val (badgeText, badgeColor, badgeBg) = when {
-                            diffDays <= 0 -> Triple(stringResource(R.string.sub_due_today), Color(0xFFDC2626), Color(0xFFFEF2F2))
+                            diffDays < 0 -> Triple(stringResource(R.string.sub_overdue), Color(0xFFDC2626), Color(0xFFFEF2F2))
+                            diffDays == 0 -> Triple(stringResource(R.string.sub_due_today), Color(0xFFDC2626), Color(0xFFFEF2F2))
                             diffDays == 1 -> Triple(stringResource(R.string.sub_due_tomorrow), Color(0xFFD97706), Color(0xFFFFFBEB))
                             diffDays in 2..5 -> Triple(stringResource(R.string.sub_due_in_days, diffDays), Color(0xFF2563EB), Color(0xFFEFF6FF))
                             else -> Triple(renewalStr, TextLight, Color(0xFFF1F5F9))
@@ -2156,7 +2174,13 @@ private fun AddSubscriptionSlideScreen(
         accountId: String,
         category: String,
         hasTrial: Boolean,
-        trialDays: Int
+        trialDays: Int,
+        startDateMs: Long,
+        endDateMs: Long?,
+        reminderEnabled: Boolean,
+        renewalLeadDaysList: List<Int>,
+        trialReminderEnabled: Boolean,
+        trialLeadDaysList: List<Int>
     ) -> Unit
 ) {
     val context = LocalContext.current
@@ -2185,11 +2209,24 @@ private fun AddSubscriptionSlideScreen(
     var customProviderName by remember { mutableStateOf(name) }
     var customProviderDomain by remember { mutableStateOf(domain) }
 
+    fun computeDefaultEndDate(baseMs: Long, cycle: String): Long {
+        return java.util.Calendar.getInstance().apply {
+            timeInMillis = baseMs
+            when (cycle.uppercase()) {
+                "YEARLY" -> add(java.util.Calendar.YEAR, 1)
+                "WEEKLY" -> add(java.util.Calendar.DAY_OF_YEAR, 7)
+                "QUARTERLY" -> add(java.util.Calendar.MONTH, 3)
+                else -> add(java.util.Calendar.MONTH, 1)
+            }
+        }.timeInMillis
+    }
+
     // Start date & End date
-    var startDateMs by remember { mutableStateOf(System.currentTimeMillis()) }
+    var startDateMs by remember { mutableStateOf(existingSub?.createdAt ?: System.currentTimeMillis()) }
+    var hasEditedEndDate by remember { mutableStateOf(existingSub != null) }
     var endDateMs by remember {
         mutableStateOf<Long?>(
-            java.util.Calendar.getInstance().apply { add(java.util.Calendar.MONTH, 1) }.timeInMillis
+            existingSub?.nextRenewalDate ?: computeDefaultEndDate(startDateMs, billingCycle)
         )
     }
 
@@ -2199,16 +2236,74 @@ private fun AddSubscriptionSlideScreen(
     var trialPeriod by remember { mutableStateOf("1 Week") }
     var trialDays by remember { mutableStateOf(if (existingSub?.trialDays ?: 0 > 0) existingSub!!.trialDays else 7) }
 
-    // Reminders state
-    var renewalReminderEnabled by remember { mutableStateOf(true) }
-    var firstReminder by remember { mutableStateOf("1 day before") }
-    var secondReminder by remember { mutableStateOf("None") }
-    var thirdReminder by remember { mutableStateOf("None") }
+    // Reminders state (pre-populated from existingSub + saved multi-lead preferences)
+    val initialRenewalLeads = remember(existingSub) {
+        if (existingSub != null) {
+            com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.getSubscriptionRenewalLeadDays(context, existingSub)
+        } else {
+            listOf(1)
+        }
+    }
+    var renewalReminderEnabled by remember { mutableStateOf(existingSub?.reminderEnabled ?: true) }
+    var firstReminder by remember {
+        mutableStateOf(
+            initialRenewalLeads.getOrNull(0)?.let {
+                com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.daysToReminderOption(it)
+            } ?: "1 day before"
+        )
+    }
+    var secondReminder by remember {
+        mutableStateOf(
+            initialRenewalLeads.getOrNull(1)?.let {
+                com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.daysToReminderOption(it)
+            } ?: "None"
+        )
+    }
+    var thirdReminder by remember {
+        mutableStateOf(
+            initialRenewalLeads.getOrNull(2)?.let {
+                com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.daysToReminderOption(it)
+            } ?: "None"
+        )
+    }
 
-    var trialReminderEnabled by remember { mutableStateOf(true) }
-    var trialFirstReminder by remember { mutableStateOf("1 week before") }
-    var trialSecondReminder by remember { mutableStateOf("3 days before") }
-    var trialThirdReminder by remember { mutableStateOf("1 day before") }
+    val initialTrialLeads = remember(existingSub) {
+        if (existingSub != null) {
+            com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.getSubscriptionTrialLeadDays(context, existingSub.id)
+        } else {
+            listOf(7, 3, 1)
+        }
+    }
+    var trialReminderEnabled by remember {
+        mutableStateOf(
+            if (existingSub != null) {
+                com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.isSubscriptionTrialReminderEnabled(context, existingSub.id)
+            } else {
+                true
+            }
+        )
+    }
+    var trialFirstReminder by remember {
+        mutableStateOf(
+            initialTrialLeads.getOrNull(0)?.let {
+                com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.daysToReminderOption(it)
+            } ?: "1 week before"
+        )
+    }
+    var trialSecondReminder by remember {
+        mutableStateOf(
+            initialTrialLeads.getOrNull(1)?.let {
+                com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.daysToReminderOption(it)
+            } ?: "3 days before"
+        )
+    }
+    var trialThirdReminder by remember {
+        mutableStateOf(
+            initialTrialLeads.getOrNull(2)?.let {
+                com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.daysToReminderOption(it)
+            } ?: "1 day before"
+        )
+    }
 
     // Modal Sheet states
     var searchQuery by remember { mutableStateOf("") }
@@ -2317,6 +2412,12 @@ private fun AddSubscriptionSlideScreen(
                             IconButton(
                                 onClick = {
                                     if (name.isNotBlank() && parsedAmount > 0) {
+                                        val renewalLeads = listOf(firstReminder, secondReminder, thirdReminder)
+                                            .mapNotNull { com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.parseReminderOptionToDays(it) }
+                                            .distinct()
+                                        val trialLeads = listOf(trialFirstReminder, trialSecondReminder, trialThirdReminder)
+                                            .mapNotNull { com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.parseReminderOptionToDays(it) }
+                                            .distinct()
                                         onSaveSubscription(
                                             name,
                                             domain,
@@ -2326,7 +2427,13 @@ private fun AddSubscriptionSlideScreen(
                                             selectedAccountId,
                                             selectedCategory,
                                             hasFreeTrial,
-                                            trialDays
+                                            trialDays,
+                                            startDateMs,
+                                            endDateMs,
+                                            renewalReminderEnabled,
+                                            renewalLeads,
+                                            trialReminderEnabled,
+                                            trialLeads
                                         )
                                     } else {
                                         Toast.makeText(context, "Please enter a valid service name and price", Toast.LENGTH_SHORT).show()
@@ -2848,6 +2955,9 @@ private fun AddSubscriptionSlideScreen(
                                                             { _, year, month, dayOfMonth ->
                                                                 cal.set(year, month, dayOfMonth)
                                                                 startDateMs = cal.timeInMillis
+                                                                if (!hasEditedEndDate) {
+                                                                    endDateMs = computeDefaultEndDate(startDateMs, billingCycle)
+                                                                }
                                                             },
                                                             cal.get(java.util.Calendar.YEAR),
                                                             cal.get(java.util.Calendar.MONTH),
@@ -2887,7 +2997,10 @@ private fun AddSubscriptionSlideScreen(
                                                     fontSize = 13.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     modifier = Modifier
-                                                        .clickable { endDateMs = null }
+                                                        .clickable {
+                                                            endDateMs = null
+                                                            hasEditedEndDate = true
+                                                        }
                                                         .padding(horizontal = 12.dp, vertical = 4.dp)
                                                 )
                                             }
@@ -2904,6 +3017,7 @@ private fun AddSubscriptionSlideScreen(
                                                             { _, year, month, dayOfMonth ->
                                                                 cal.set(year, month, dayOfMonth)
                                                                 endDateMs = cal.timeInMillis
+                                                                hasEditedEndDate = true
                                                             },
                                                             cal.get(java.util.Calendar.YEAR),
                                                             cal.get(java.util.Calendar.MONTH),
@@ -3522,6 +3636,9 @@ private fun AddSubscriptionSlideScreen(
                             },
                             onClick = {
                                 billingCycle = code
+                                if (!hasEditedEndDate) {
+                                    endDateMs = computeDefaultEndDate(startDateMs, code)
+                                }
                                 showCyclePicker = false
                             }
                         )
@@ -3593,7 +3710,7 @@ private fun AddSubscriptionSlideScreen(
                             else -> false
                         }
                         BottomSheetOptionCard(
-                            title = opt,
+                            title = mapReminderToDisplay(opt),
                             isSelected = isSelected,
                             leadingContent = {
                                 Icon(Icons.Default.Notifications, contentDescription = null, tint = if (isSelected) PinkPrimary else TextLight, modifier = Modifier.size(20.dp))

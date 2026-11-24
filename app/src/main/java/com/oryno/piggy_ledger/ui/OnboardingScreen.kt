@@ -1205,10 +1205,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                             Button(
                                 onClick = {
                                     when (pageIndex) {
-                                        8 -> {
-                                            relatesToLoans = true
-                                            selectedIntent = 1
-                                        }
+                                        8 -> relatesToLoans = true
                                         9 -> relatesToAccounts = true
                                         10 -> relatesToEmergency = true
                                     }

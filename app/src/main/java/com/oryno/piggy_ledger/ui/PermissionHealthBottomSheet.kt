@@ -120,6 +120,7 @@ fun PermissionHealthChecker() {
 
     var hasSms by remember { mutableStateOf(PermissionUtils.hasSmsPermission(context)) }
     var hasNotification by remember { mutableStateOf(PermissionUtils.hasNotificationPermission(context)) }
+    var hasNotificationAccess by remember { mutableStateOf(isListenerAccessGranted(context)) }
     var hasContacts by remember { mutableStateOf(PermissionUtils.hasContactsPermission(context)) }
     var hasMic by remember { mutableStateOf(PermissionUtils.hasMicrophonePermission(context)) }
 
@@ -133,6 +134,7 @@ fun PermissionHealthChecker() {
             if (event == Lifecycle.Event.ON_RESUME) {
                 hasSms = PermissionUtils.hasSmsPermission(context)
                 hasNotification = PermissionUtils.hasNotificationPermission(context)
+                hasNotificationAccess = isListenerAccessGranted(context)
                 hasContacts = PermissionUtils.hasContactsPermission(context)
                 hasMic = PermissionUtils.hasMicrophonePermission(context)
             }
@@ -150,11 +152,13 @@ fun PermissionHealthChecker() {
         PermissionHealthBottomSheet(
             hasSms = hasSms,
             hasNotification = hasNotification,
+            hasNotificationAccess = hasNotificationAccess,
             hasContacts = hasContacts,
             hasMic = hasMic,
             onRefreshPermissions = {
                 hasSms = PermissionUtils.hasSmsPermission(context)
                 hasNotification = PermissionUtils.hasNotificationPermission(context)
+                hasNotificationAccess = isListenerAccessGranted(context)
                 hasContacts = PermissionUtils.hasContactsPermission(context)
                 hasMic = PermissionUtils.hasMicrophonePermission(context)
             },
@@ -170,6 +174,7 @@ fun PermissionHealthChecker() {
 fun PermissionHealthBottomSheet(
     hasSms: Boolean,
     hasNotification: Boolean,
+    hasNotificationAccess: Boolean = false,
     hasContacts: Boolean,
     hasMic: Boolean,
     onRefreshPermissions: () -> Unit,
@@ -336,6 +341,20 @@ fun PermissionHealthBottomSheet(
                         } else {
                             PermissionUtils.openNotificationSettings(context)
                         }
+                    }
+                )
+
+                HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+
+                // 2b. App Notification Access (Optional)
+                PermissionToggleRow(
+                    icon = Icons.Default.NotificationsActive,
+                    title = stringResource(R.string.permissions_notif_listener_title),
+                    subtitle = stringResource(R.string.permissions_notif_listener_desc),
+                    isChecked = hasNotificationAccess,
+                    isRequired = false,
+                    onToggle = {
+                        openNotificationAccessSettings(context)
                     }
                 )
 

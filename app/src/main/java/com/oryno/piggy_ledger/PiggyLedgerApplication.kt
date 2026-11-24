@@ -108,6 +108,7 @@ class PiggyLedgerApplication : Application() {
         try {
             com.oryno.piggy_ledger.ui.NotificationHelper(this)
             com.oryno.piggy_ledger.service.NotificationScheduler.scheduleAll(this)
+            com.oryno.piggy_ledger.service.SubscriptionNotificationScheduler.rescheduleAll(this)
         } catch (e: Exception) {
             Log.e("PiggyLedgerApp", "Failed to initialize NotificationScheduler", e)
         }

@@ -56,7 +56,15 @@ fun NotificationsScreen(
     var filterType by remember { mutableStateOf("All") } // "All", "Unread", "Read"
 
     LaunchedEffect(Unit) {
-        notifications = NotificationRemoteManager.getSavedNotifications(context, isPremium)
+        val (userEmail, userId) = NotificationRemoteManager.resolveCurrentUserIdentity(context)
+        val region = NotificationRemoteManager.resolveDeviceCountryCode(context)
+        notifications = NotificationRemoteManager.getSavedNotifications(
+            context = context,
+            isPremium = isPremium,
+            region = region,
+            userEmail = userEmail,
+            userId = userId
+        )
         readIds = NotificationRemoteManager.getReadIds(context)
         dismissedIds = NotificationRemoteManager.getDismissedIds(context)
         

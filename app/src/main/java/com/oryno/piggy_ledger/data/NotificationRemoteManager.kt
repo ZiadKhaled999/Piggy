@@ -14,6 +14,7 @@ import androidx.core.app.NotificationManagerCompat
 import com.oryno.piggy_ledger.MainActivity
 import com.oryno.piggy_ledger.R
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -97,7 +98,20 @@ object NotificationRemoteManager {
     private const val CHANNEL_ID = "piggy_custom_notifications"
     private const val CHANNEL_NAME = "Piggy Announcements"
 
-    suspend fun fetchAndShowNotifications(context: Context, isPremium: Boolean, region: String = "", userEmail: String = ""): Boolean = withContext(Dispatchers.IO) {
+    suspend fun fetchAndShowNotifications(
+        context: Context,
+        isPremium: Boolean,
+        region: String = "",
+        userEmail: String = "",
+        userId: String = ""
+    ): Boolean = withContext(Dispatchers.IO) {
+        val resolvedRegion = region.ifBlank { resolveDeviceCountryCode(context) }
+        val (resolvedEmail, resolvedUserId) = if (userEmail.isBlank() && userId.isBlank()) {
+            resolveCurrentUserIdentity(context)
+        } else {
+            userEmail to userId
+        }
+
         val urlsToTry = listOf(
             DEFAULT_REMOTE_URL,
             FALLBACK_GITHUB_RAW_URL
@@ -115,7 +129,14 @@ object NotificationRemoteManager {
                         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         prefs.edit().putString(KEY_NOTIFICATIONS_JSON, jsonBody).apply()
                         val config = jsonFormatter.decodeFromString<NotificationConfigResponse>(jsonBody)
-                        processNotifications(context, config.notifications, isPremium, region, userEmail)
+                        processNotifications(
+                            context = context,
+                            notifications = config.notifications,
+                            isPremium = isPremium,
+                            region = resolvedRegion,
+                            userEmail = resolvedEmail,
+                            userId = resolvedUserId
+                        )
                         return@withContext true
                     }
                 } else {
@@ -128,41 +149,26 @@ object NotificationRemoteManager {
         return@withContext false
     }
 
-    fun getSavedNotifications(context: Context, isPremium: Boolean, region: String = "", userEmail: String = ""): List<NotificationItem> {
+    fun getSavedNotifications(
+        context: Context,
+        isPremium: Boolean,
+        region: String = "",
+        userEmail: String = "",
+        userId: String = ""
+    ): List<NotificationItem> {
+        val resolvedRegion = region.ifBlank { resolveDeviceCountryCode(context) }
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val jsonString = prefs.getString(KEY_NOTIFICATIONS_JSON, null) ?: return emptyList()
         try {
             val config = jsonFormatter.decodeFromString<NotificationConfigResponse>(jsonString)
             return config.notifications.filter { item ->
-                if (item.status != "active") return@filter false
-                
-                // Check expiry
-                if (!item.expiresAt.isNullOrBlank()) {
-                    try {
-                        val format = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-                        val expiryDate = format.parse(item.expiresAt)
-                        if (expiryDate != null && Date().after(expiryDate)) {
-                            return@filter false
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Date parse error for ${item.id}", e)
-                    }
-                }
-                
-                // Target audience check
-                val target = item.targetAudience.lowercase()
-                if (target == "pro" && !isPremium) return@filter false
-                if (target == "free" && isPremium) return@filter false
-
-                // Region check
-                val tr = item.targetRegion.trim()
-                if (tr.isNotBlank() && tr.lowercase() != "all" && !tr.equals(region, ignoreCase = true)) return@filter false
-
-                // Specific user check
-                val tu = item.targetUser.trim()
-                if (tu.isNotBlank() && !tu.equals(userEmail, ignoreCase = true)) return@filter false
-
-                true
+                matchesNotificationTarget(
+                    item = item,
+                    isPremium = isPremium,
+                    region = resolvedRegion,
+                    userEmail = userEmail,
+                    userId = userId
+                )
             }.reversed() // Show newest first (assuming array order is chronological, or reverse it)
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing saved notifications", e)
@@ -170,39 +176,163 @@ object NotificationRemoteManager {
         return emptyList()
     }
 
-    private fun processNotifications(context: Context, notifications: List<NotificationItem>, isPremium: Boolean, region: String = "", userEmail: String = "") {
+    internal fun matchesNotificationTarget(
+        item: NotificationItem,
+        isPremium: Boolean,
+        region: String,
+        userEmail: String,
+        userId: String = "",
+        now: Date = Date()
+    ): Boolean {
+        if (!item.status.equals("active", ignoreCase = true)) return false
+
+        // Check expiry
+        if (!item.expiresAt.isNullOrBlank()) {
+            try {
+                val format = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                val expiryDate = format.parse(item.expiresAt)
+                if (expiryDate != null && now.after(expiryDate)) {
+                    return false
+                }
+            } catch (e: Exception) {
+                try {
+                    Log.e(TAG, "Date parse error for ${item.id}", e)
+                } catch (_: Throwable) {}
+            }
+        }
+
+        // Target audience check
+        val target = item.targetAudience.lowercase(Locale.ROOT)
+        if (target == "pro" && !isPremium) return false
+        if (target == "free" && isPremium) return false
+
+        // Region check (supports single or comma-separated ISO codes, or "all"/blank)
+        if (!matchesRegion(item.targetRegion, region)) return false
+
+        // Specific user check (supports email or Clerk user ID, single or comma-separated)
+        if (!matchesUser(item.targetUser, userEmail, userId)) return false
+
+        return true
+    }
+
+    internal fun matchesRegion(targetRegion: String, deviceRegion: String): Boolean {
+        val raw = targetRegion.trim()
+        if (raw.isBlank() || raw.equals("all", ignoreCase = true)) return true
+
+        val targets = raw.split(',', ';', ' ')
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+
+        if (targets.isEmpty() || targets.any { it.equals("all", ignoreCase = true) }) {
+            return true
+        }
+
+        val normalizedDevice = deviceRegion.trim().uppercase(Locale.ROOT)
+        if (normalizedDevice.isBlank()) return false
+
+        val deviceCountryName = try {
+            Locale("", normalizedDevice).getDisplayCountry(Locale.ENGLISH)
+        } catch (_: Exception) {
+            ""
+        }
+
+        return targets.any { token ->
+            token.equals(normalizedDevice, ignoreCase = true) ||
+                (deviceCountryName.isNotBlank() && token.equals(deviceCountryName, ignoreCase = true))
+        }
+    }
+
+    internal fun matchesUser(targetUser: String, userEmail: String, userId: String): Boolean {
+        val raw = targetUser.trim()
+        if (raw.isBlank() || raw.equals("all", ignoreCase = true)) return true
+
+        val targets = raw.split(',', ';')
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+
+        if (targets.isEmpty()) return true
+
+        val cleanEmail = userEmail.trim()
+        val cleanId = userId.trim()
+
+        return targets.any { token ->
+            (cleanEmail.isNotBlank() && token.equals(cleanEmail, ignoreCase = true)) ||
+                (cleanId.isNotBlank() && token.equals(cleanId, ignoreCase = true))
+        }
+    }
+
+    fun resolveDeviceCountryCode(context: Context): String {
+        try {
+            val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as? android.telephony.TelephonyManager
+            val networkCountry = tm?.networkCountryIso?.trim().orEmpty()
+            if (networkCountry.length == 2 && networkCountry.all { it.isLetter() }) {
+                return networkCountry.uppercase(Locale.ROOT)
+            }
+            val simCountry = tm?.simCountryIso?.trim().orEmpty()
+            if (simCountry.length == 2 && simCountry.all { it.isLetter() }) {
+                return simCountry.uppercase(Locale.ROOT)
+            }
+        } catch (_: Exception) {}
+
+        try {
+            val sysLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                android.content.res.Resources.getSystem().configuration.locales[0]
+            } else {
+                @Suppress("DEPRECATION")
+                android.content.res.Resources.getSystem().configuration.locale
+            }
+            val sysCountry = sysLocale?.country?.trim().orEmpty()
+            if (sysCountry.length == 2 && sysCountry.all { it.isLetter() }) {
+                return sysCountry.uppercase(Locale.ROOT)
+            }
+        } catch (_: Exception) {}
+
+        return Locale.getDefault().country.trim().uppercase(Locale.ROOT)
+    }
+
+    suspend fun resolveCurrentUserIdentity(context: Context): Pair<String, String> {
+        val clerkUser = try {
+            com.clerk.api.Clerk.userFlow.value ?: com.clerk.api.Clerk.user
+        } catch (_: Exception) {
+            null
+        }
+        val clerkId = clerkUser?.id?.trim().orEmpty()
+        val clerkEmail = try {
+            clerkUser?.primaryEmailAddress?.emailAddress
+                ?: clerkUser?.emailAddresses?.firstOrNull()?.emailAddress
+                ?: ""
+        } catch (_: Exception) {
+            ""
+        }.trim()
+
+        if (clerkEmail.isNotBlank()) {
+            return clerkEmail to clerkId
+        }
+
+        val storedEmail = try {
+            UserPreferences(context).authUserEmail.firstOrNull().orEmpty().trim()
+        } catch (_: Exception) {
+            ""
+        }
+        return storedEmail to clerkId
+    }
+
+    private fun processNotifications(
+        context: Context,
+        notifications: List<NotificationItem>,
+        isPremium: Boolean,
+        region: String = "",
+        userEmail: String = "",
+        userId: String = ""
+    ) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val seenIds = prefs.getStringSet(KEY_SEEN_IDS, emptySet())?.toMutableSet() ?: mutableSetOf()
         
         var hasNew = false
         
         for (item in notifications) {
-            if (item.status != "active") continue
             if (seenIds.contains(item.id)) continue
-            
-            // Check expiry
-            if (!item.expiresAt.isNullOrBlank()) {
-                try {
-                    val format = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-                    val expiryDate = format.parse(item.expiresAt)
-                    if (expiryDate != null && Date().after(expiryDate)) {
-                        continue
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Date parse error for ${item.id}", e)
-                }
-            }
-            
-            // Target audience check
-            val target = item.targetAudience.lowercase()
-            if (target == "pro" && !isPremium) continue
-            if (target == "free" && isPremium) continue
-
-            val tr = item.targetRegion.trim()
-            if (tr.isNotBlank() && tr.lowercase() != "all" && !tr.equals(region, ignoreCase = true)) continue
-
-            val tu = item.targetUser.trim()
-            if (tu.isNotBlank() && !tu.equals(userEmail, ignoreCase = true)) continue
+            if (!matchesNotificationTarget(item, isPremium, region, userEmail, userId)) continue
 
             // Show it
             showNotification(context, item)

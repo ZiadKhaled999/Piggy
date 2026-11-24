@@ -656,6 +656,148 @@
             to { opacity: 0; transform: translateY(-10px); }
         }
         .toast.hiding { animation: fadeOut 0.3s var(--ease) forwards; }
+
+        /* Multi-Select Global Country Picker */
+        .region-picker {
+            position: relative;
+        }
+        .region-picker-trigger {
+            min-height: 2.5rem;
+            padding: 0.375rem 2rem 0.375rem 0.625rem;
+            border-radius: var(--radius-md);
+            border: 1.5px solid var(--color-surface-200);
+            background: var(--color-surface-50);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.35rem;
+            cursor: pointer;
+            position: relative;
+            transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+        }
+        .region-picker-trigger:hover {
+            border-color: var(--color-surface-300);
+            background: var(--color-surface-0);
+        }
+        .region-picker.is-open .region-picker-trigger {
+            border-color: var(--color-brand-400);
+            background: var(--color-surface-0);
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+        }
+        .region-picker-arrow {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-surface-400);
+            font-size: var(--text-xs);
+            pointer-events: none;
+            transition: transform 0.2s var(--ease);
+        }
+        .region-picker.is-open .region-picker-arrow {
+            transform: translateY(-50%) rotate(180deg);
+        }
+        .region-placeholder {
+            font-size: var(--text-sm);
+            color: var(--color-surface-600);
+            font-weight: 500;
+        }
+        .region-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: var(--radius-full);
+            background: var(--color-brand-50);
+            border: 1px solid var(--color-brand-200);
+            color: var(--color-brand-700);
+            font-size: var(--text-xs);
+            font-weight: 600;
+        }
+        .region-chip button {
+            background: none;
+            border: none;
+            color: var(--color-brand-600);
+            cursor: pointer;
+            font-size: 0.7rem;
+            line-height: 1;
+            padding: 0 2px;
+        }
+        .region-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            z-index: 80;
+            background: var(--color-surface-0);
+            border: 1px solid var(--color-surface-200);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+        .region-picker.is-open .region-dropdown {
+            display: block;
+        }
+        .region-dropdown-header {
+            padding: var(--space-2);
+            border-bottom: 1px solid var(--color-surface-100);
+            background: var(--color-surface-50);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+        .region-dropdown-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: var(--text-xs);
+            color: var(--color-surface-500);
+            padding: 0 2px;
+        }
+        .region-dropdown-actions button {
+            background: none;
+            border: none;
+            color: var(--color-brand-600);
+            font-weight: 600;
+            font-size: var(--text-xs);
+            cursor: pointer;
+        }
+        .region-list {
+            max-height: 220px;
+            overflow-y: auto;
+            padding: 0.25rem;
+        }
+        .region-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.6rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: var(--text-sm);
+            color: var(--color-surface-800);
+            transition: background 0.12s var(--ease);
+        }
+        .region-option:hover {
+            background: var(--color-surface-100);
+        }
+        .region-option.is-selected {
+            background: var(--color-brand-50);
+            font-weight: 600;
+        }
+        .region-option input[type="checkbox"] {
+            accent-color: var(--color-brand-500);
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+        }
+        .region-option-code {
+            margin-left: auto;
+            font-size: var(--text-xs);
+            color: var(--color-surface-400);
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -881,12 +1023,31 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Target Region (Optional)</label>
-                        <input type="text" id="nRegion" class="form-control" placeholder="e.g. EG, US or all" />
+                        <label>Target Countries / Region (Optional)</label>
+                        <input type="hidden" id="nRegion" value="" />
+                        <div class="region-picker" id="regionPicker">
+                            <div class="region-picker-trigger" id="regionPickerTrigger" onclick="app.toggleRegionMenu(event)">
+                                <span class="region-placeholder" id="regionPlaceholder">🌍 All Countries (Global)</span>
+                                <div id="regionSelectedChips" style="display: contents;"></div>
+                                <i class="fa-solid fa-chevron-down region-picker-arrow"></i>
+                            </div>
+                            <div class="region-dropdown" id="regionDropdown" onclick="event.stopPropagation()">
+                                <div class="region-dropdown-header">
+                                    <input type="text" id="regionSearchInput" class="form-control" placeholder="Search country name or code (e.g. Egypt, EG, US)..." oninput="app.filterRegions(this.value)" />
+                                    <div class="region-dropdown-actions">
+                                        <span id="regionSelectedCount">All Countries (Global)</span>
+                                        <button type="button" onclick="app.clearRegions()">Reset to All Countries</button>
+                                    </div>
+                                </div>
+                                <div class="region-list" id="regionList"></div>
+                            </div>
+                        </div>
+                        <span style="font-size: var(--text-xs); color: var(--color-surface-400);">Select one, two, or multiple countries, or leave empty for everyone worldwide.</span>
                     </div>
                     <div class="form-group">
                         <label>Specific User (Optional)</label>
-                        <input type="text" id="nUser" class="form-control" placeholder="user email" />
+                        <input type="text" id="nUser" class="form-control" placeholder="Email or Clerk User ID (e.g. user@mail.com or user_2...)" />
+                        <span style="font-size: var(--text-xs); color: var(--color-surface-400);">Matches user email or Clerk User ID. Separate multiple values with commas.</span>
                     </div>
                 </div>
                 <div class="form-group">
@@ -1068,12 +1229,15 @@
                 sort: 'name_asc',
                 editingId: null,
                 chartInstances: {},
-                pendingImageUpload: null
+                pendingImageUpload: null,
+                selectedRegions: [],
+                regionFilterQuery: ''
             },
 
             init() {
                 this.updateConnectionStatus();
                 this.renderDaysCheckboxes();
+                this.initRegionPicker();
                 if (this.state.ghConfig.token && this.state.ghConfig.owner && this.state.ghConfig.repo) {
                     this.fetchConfig();
                 } else {
@@ -1680,25 +1844,29 @@
                     const statusClass = n.status === 'active' ? 'badge-active' : 'badge-frozen';
                     const targetBadge = n.target_audience === 'pro' ? '<span style="color:var(--color-warning);"><i class="fa-solid fa-crown"></i> Pro</span>' :
                                       n.target_audience === 'free' ? 'Free Users' : 'All Users';
-                    
+                    const regionDisplay = this.formatRegionDisplay(n.target_region);
+                    const userDisplay = (n.target_user || '').trim() ? this.escapeHtml(n.target_user.trim()) : '';
+
                     return `
                         <div class="mascot-card" style="min-height: auto;">
                             <div class="mascot-card-body">
                                 <div>
-                                    <span class="mascot-card-badge ${statusClass}" style="position:relative; top:0; left:0; display:inline-block; margin-bottom:8px;">${n.status}</span>
-                                    <h3 class="mascot-card-title">${n.title}</h3>
-                                    <p style="font-size: var(--text-sm); color: var(--color-surface-600); margin-top: 4px;">${n.body}</p>
+                                    <span class="mascot-card-badge ${statusClass}" style="position:relative; top:0; left:0; display:inline-block; margin-bottom:8px;">${this.escapeHtml(n.status)}</span>
+                                    <h3 class="mascot-card-title">${this.escapeHtml(n.title)}</h3>
+                                    <p style="font-size: var(--text-sm); color: var(--color-surface-600); margin-top: 4px;">${this.escapeHtml(n.body)}</p>
                                 </div>
                                 <div class="mascot-card-meta" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--color-surface-100);">
                                     <span><strong>Target:</strong> ${targetBadge}</span>
-                                    <span><strong>Expires:</strong> ${n.expires_at || 'Never'}</span>
-                                    <span style="font-size: 10px; color: var(--color-surface-300);">ID: ${n.id}</span>
+                                    <span><strong>Countries:</strong> ${this.escapeHtml(regionDisplay)}</span>
+                                    ${userDisplay ? `<span><strong>User:</strong> ${userDisplay}</span>` : ''}
+                                    <span><strong>Expires:</strong> ${this.escapeHtml(n.expires_at || 'Never')}</span>
+                                    <span style="font-size: 10px; color: var(--color-surface-300);">ID: ${this.escapeHtml(n.id)}</span>
                                 </div>
                                 <div class="mascot-card-actions">
-                                    <button class="btn btn-sm btn-ghost" onclick="app.editNotification('${n.id}')">
+                                    <button class="btn btn-sm btn-ghost" onclick="app.editNotification('${this.escapeHtml(n.id)}')">
                                         <i class="fa-solid fa-pen"></i> Edit
                                     </button>
-                                    <button class="btn btn-sm btn-ghost" style="color: var(--color-danger);" onclick="app.deleteNotification('${n.id}')">
+                                    <button class="btn btn-sm btn-ghost" style="color: var(--color-danger);" onclick="app.deleteNotification('${this.escapeHtml(n.id)}')">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
                                 </div>
@@ -1714,10 +1882,11 @@
                 document.getElementById('nTitle').value = '';
                 document.getElementById('nBody').value = '';
                 document.getElementById('nTarget').value = 'all';
-                document.getElementById('nRegion').value = '';
+                this.setSelectedRegions('');
                 document.getElementById('nUser').value = '';
                 document.getElementById('nStatus').value = 'active';
                 document.getElementById('nExpires').value = '';
+                this.closeRegionMenu();
                 document.getElementById('notifModal').classList.add('is-open');
             },
 
@@ -1730,11 +1899,12 @@
                 document.getElementById('nTitle').value = notif.title;
                 document.getElementById('nBody').value = notif.body;
                 document.getElementById('nTarget').value = notif.target_audience || 'all';
-                document.getElementById('nRegion').value = notif.target_region || '';
+                this.setSelectedRegions(notif.target_region || '');
                 document.getElementById('nUser').value = notif.target_user || '';
                 document.getElementById('nStatus').value = notif.status || 'active';
                 document.getElementById('nExpires').value = notif.expires_at || '';
-                
+                this.closeRegionMenu();
+
                 document.getElementById('notifModal').classList.add('is-open');
             },
 
@@ -1772,6 +1942,204 @@
                 this.closeModals();
                 this.renderNotifGrid();
                 this.toast('Notification saved locally. Remember to Publish!', 'success');
+            },
+
+            escapeHtml(str) {
+                return String(str ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            },
+
+            getCountryFlag(code) {
+                if (!code || code.length !== 2) return '🏳️';
+                return String.fromCodePoint(...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0)));
+            },
+
+            getGlobalCountries() {
+                if (this._globalCountriesCache) return this._globalCountriesCache;
+                const codes = [
+                    'AF','AX','AL','DZ','AS','AD','AO','AI','AQ','AG','AR','AM','AW','AU','AT','AZ',
+                    'BS','BH','BD','BB','BY','BE','BZ','BJ','BM','BT','BO','BQ','BA','BW','BV','BR',
+                    'IO','BN','BG','BF','BI','CV','KH','CM','CA','KY','CF','TD','CL','CN','CX','CC',
+                    'CO','KM','CG','CD','CK','CR','CI','HR','CU','CW','CY','CZ','DK','DJ','DM','DO',
+                    'EC','EG','SV','GQ','ER','EE','SZ','ET','FK','FO','FJ','FI','FR','GF','PF','TF',
+                    'GA','GM','GE','DE','GH','GI','GR','GL','GD','GP','GU','GT','GG','GN','GW','GY',
+                    'HT','HM','VA','HN','HK','HU','IS','IN','ID','IR','IQ','IE','IM','IL','IT','JM',
+                    'JP','JE','JO','KZ','KE','KI','KP','KR','KW','KG','LA','LV','LB','LS','LR','LY',
+                    'LI','LT','LU','MO','MG','MW','MY','MV','ML','MT','MH','MQ','MR','MU','YT','MX',
+                    'FM','MD','MC','MN','ME','MS','MA','MZ','MM','NA','NR','NP','NL','NC','NZ','NI',
+                    'NE','NG','NU','NF','MK','MP','NO','OM','PK','PW','PS','PA','PG','PY','PE','PH',
+                    'PN','PL','PT','PR','QA','RE','RO','RU','RW','BL','SH','KN','LC','MF','PM','VC',
+                    'WS','SM','ST','SA','SN','RS','SC','SL','SG','SX','SK','SI','SB','SO','ZA','GS',
+                    'SS','ES','LK','SD','SR','SJ','SE','CH','SY','TW','TJ','TZ','TH','TL','TG','TK',
+                    'TO','TT','TN','TR','TM','TC','TV','UG','UA','AE','GB','US','UM','UY','UZ','VU',
+                    'VE','VN','VG','VI','WF','EH','YE','ZM','ZW'
+                ];
+                let displayNames = null;
+                try {
+                    displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
+                } catch (_) {}
+
+                const fallbackNames = {
+                    EG: 'Egypt', SA: 'Saudi Arabia', AE: 'United Arab Emirates', US: 'United States',
+                    GB: 'United Kingdom', KW: 'Kuwait', QA: 'Qatar', BH: 'Bahrain', OM: 'Oman',
+                    JO: 'Jordan', LB: 'Lebanon', IQ: 'Iraq', MA: 'Morocco', TN: 'Tunisia', DZ: 'Algeria',
+                    DE: 'Germany', FR: 'France', IT: 'Italy', ES: 'Spain', CA: 'Canada', AU: 'Australia',
+                    IN: 'India', TR: 'Turkey', PS: 'Palestine'
+                };
+
+                this._globalCountriesCache = codes.map(code => {
+                    let name = fallbackNames[code] || code;
+                    if (displayNames) {
+                        try { name = displayNames.of(code) || name; } catch (_) {}
+                    }
+                    return { code, name, flag: this.getCountryFlag(code) };
+                }).sort((a, b) => a.name.localeCompare(b.name));
+
+                return this._globalCountriesCache;
+            },
+
+            initRegionPicker() {
+                document.addEventListener('click', (e) => {
+                    const picker = document.getElementById('regionPicker');
+                    if (picker && !picker.contains(e.target)) {
+                        this.closeRegionMenu();
+                    }
+                });
+                this.renderRegionPicker();
+            },
+
+            toggleRegionMenu(event) {
+                if (event) event.stopPropagation();
+                const picker = document.getElementById('regionPicker');
+                if (!picker) return;
+                const willOpen = !picker.classList.contains('is-open');
+                picker.classList.toggle('is-open', willOpen);
+                if (willOpen) {
+                    const search = document.getElementById('regionSearchInput');
+                    if (search) {
+                        search.value = '';
+                        this.state.regionFilterQuery = '';
+                        this.renderRegionList();
+                        setTimeout(() => search.focus(), 50);
+                    }
+                }
+            },
+
+            closeRegionMenu() {
+                const picker = document.getElementById('regionPicker');
+                if (picker) picker.classList.remove('is-open');
+            },
+
+            filterRegions(query) {
+                this.state.regionFilterQuery = (query || '').trim().toLowerCase();
+                this.renderRegionList();
+            },
+
+            toggleCountrySelection(code) {
+                const upper = code.toUpperCase();
+                const idx = this.state.selectedRegions.indexOf(upper);
+                if (idx >= 0) {
+                    this.state.selectedRegions.splice(idx, 1);
+                } else {
+                    this.state.selectedRegions.push(upper);
+                }
+                this.renderRegionPicker();
+            },
+
+            clearRegions() {
+                this.state.selectedRegions = [];
+                this.renderRegionPicker();
+            },
+
+            setSelectedRegions(rawRegion) {
+                const raw = (rawRegion || '').trim();
+                if (!raw || raw.toLowerCase() === 'all') {
+                    this.state.selectedRegions = [];
+                } else {
+                    const countries = this.getGlobalCountries();
+                    const tokens = raw.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean);
+                    const matched = [];
+                    tokens.forEach(tok => {
+                        if (tok.toLowerCase() === 'all') return;
+                        const byCode = countries.find(c => c.code.toLowerCase() === tok.toLowerCase());
+                        const byName = !byCode ? countries.find(c => c.name.toLowerCase() === tok.toLowerCase()) : null;
+                        const found = byCode || byName;
+                        if (found && !matched.includes(found.code)) {
+                            matched.push(found.code);
+                        }
+                    });
+                    this.state.selectedRegions = matched;
+                }
+                this.renderRegionPicker();
+            },
+
+            renderRegionPicker() {
+                const hiddenInput = document.getElementById('nRegion');
+                const chipsEl = document.getElementById('regionSelectedChips');
+                const placeholderEl = document.getElementById('regionPlaceholder');
+                const countEl = document.getElementById('regionSelectedCount');
+                if (!hiddenInput || !chipsEl || !placeholderEl) return;
+
+                const selected = this.state.selectedRegions || [];
+                hiddenInput.value = selected.join(', ');
+
+                const countries = this.getGlobalCountries();
+                if (selected.length === 0) {
+                    placeholderEl.style.display = 'inline';
+                    chipsEl.innerHTML = '';
+                    if (countEl) countEl.textContent = 'All Countries (Global)';
+                } else {
+                    placeholderEl.style.display = 'none';
+                    chipsEl.innerHTML = selected.map(code => {
+                        const item = countries.find(c => c.code === code) || { code, name: code, flag: this.getCountryFlag(code) };
+                        return `<span class="region-chip">${item.flag} ${this.escapeHtml(item.name)} (${item.code}) <button type="button" onclick="event.stopPropagation(); app.toggleCountrySelection('${item.code}')" title="Remove">&times;</button></span>`;
+                    }).join('');
+                    if (countEl) countEl.textContent = `${selected.length} ${selected.length === 1 ? 'country' : 'countries'} selected`;
+                }
+                this.renderRegionList();
+            },
+
+            renderRegionList() {
+                const listEl = document.getElementById('regionList');
+                if (!listEl) return;
+                const countries = this.getGlobalCountries();
+                const q = this.state.regionFilterQuery || '';
+                const selected = this.state.selectedRegions || [];
+
+                const filtered = q
+                    ? countries.filter(c => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q))
+                    : countries;
+
+                if (filtered.length === 0) {
+                    listEl.innerHTML = `<div style="padding: 12px; text-align: center; font-size: var(--text-xs); color: var(--color-surface-400);">No matching countries</div>`;
+                    return;
+                }
+
+                listEl.innerHTML = filtered.map(c => {
+                    const isSelected = selected.includes(c.code);
+                    return `
+                        <div class="region-option ${isSelected ? 'is-selected' : ''}" onclick="app.toggleCountrySelection('${c.code}')">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); app.toggleCountrySelection('${c.code}')" />
+                            <span>${c.flag}</span>
+                            <span>${this.escapeHtml(c.name)}</span>
+                            <span class="region-option-code">${c.code}</span>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            formatRegionDisplay(rawRegion) {
+                const raw = (rawRegion || '').trim();
+                if (!raw || raw.toLowerCase() === 'all') return 'All Countries (Global)';
+                const countries = this.getGlobalCountries();
+                return raw.split(/[,;]+/).map(t => t.trim()).filter(Boolean).map(code => {
+                    const c = countries.find(x => x.code.toLowerCase() === code.toLowerCase());
+                    return c ? `${c.flag} ${c.name} (${c.code})` : code;
+                }).join(', ');
             },
 
             deleteNotification(id) {

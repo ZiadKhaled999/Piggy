@@ -4,144 +4,124 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_widget_card"
-    android:orientation="vertical"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
     android:paddingStart="10dp"
     android:paddingEnd="10dp"
-    android:paddingTop="8dp"
+    android:paddingTop="6dp"
     android:paddingBottom="6dp">
 
-    <!-- Header -->
-    <TextView
-        android:id="@+id/tv_header_payoffs_loans"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/payoffs_loans"
-        android:textColor="@color/widget_text_dark"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:fontFamily="sans-serif-black"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="4dp" />
-
-    <!-- Main Row: The 3 metrics -->
+    <!-- Column 1: Owed to Me -->
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:orientation="vertical"
+        android:gravity="center">
 
-        <!-- Column 1: Owed to Me -->
-        <LinearLayout
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/tv_label_owed_to_me"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
+            android:text="@string/widget_owed_to_me"
+            android:textColor="@color/widget_text_dark"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-black" />
 
-            <TextView
-                android:id="@+id/tv_label_owed_to_me"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/widget_owed_to_me"
-                android:textColor="@color/widget_text_dark"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-black" />
-
-            <TextView
-                android:id="@+id/tv_owed_to_me"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0"
-                android:textColor="@color/widget_green"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:maxLines="1"
-                android:layout_marginTop="2dp" />
-        </LinearLayout>
-
-        <!-- Divider 1 -->
-        <FrameLayout
-            android:layout_width="1dp"
-            android:layout_height="28dp"
-            android:background="@color/widget_border_light"
-            android:layout_gravity="center_vertical" />
-
-        <!-- Column 2: I Owe -->
-        <LinearLayout
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/tv_owed_to_me"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
-
-            <TextView
-                android:id="@+id/tv_label_i_owe"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/widget_i_owe"
-                android:textColor="@color/widget_text_dark"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-black" />
-
-            <TextView
-                android:id="@+id/tv_i_owe"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0"
-                android:textColor="@color/widget_red"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:maxLines="1"
-                android:layout_marginTop="2dp" />
-        </LinearLayout>
-
-        <!-- Divider 2 -->
-        <FrameLayout
-            android:layout_width="1dp"
-            android:layout_height="28dp"
-            android:background="@color/widget_border_light"
-            android:layout_gravity="center_vertical" />
-
-        <!-- Column 3: Net Ledger (pill highlight) -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1.15"
-            android:background="@drawable/bg_widget_pill"
-            android:orientation="vertical"
+            android:text="0"
+            android:textColor="@color/widget_green"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:maxLines="1"
             android:gravity="center"
-            android:paddingTop="5dp"
-            android:paddingBottom="5dp"
-            android:paddingStart="6dp"
-            android:paddingEnd="6dp"
-            android:layout_marginStart="6dp">
-
-            <TextView
-                android:id="@+id/tv_net_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/widget_net_ledger"
-                android:textColor="@color/widget_text_dark"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-black" />
-
-            <TextView
-                android:id="@+id/tv_net_ledger"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0"
-                android:textColor="@color/widget_text_dark"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:maxLines="1"
-                android:layout_marginTop="2dp" />
-        </LinearLayout>
-
+            android:layout_marginTop="2dp" />
     </LinearLayout>
 
+    <!-- Divider 1 -->
+    <FrameLayout
+        android:layout_width="1dp"
+        android:layout_height="28dp"
+        android:background="@color/widget_border_light"
+        android:layout_gravity="center_vertical" />
+
+    <!-- Column 2: I Owe -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/tv_label_i_owe"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_i_owe"
+            android:textColor="@color/widget_text_dark"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-black" />
+
+        <TextView
+            android:id="@+id/tv_i_owe"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="@color/widget_red"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:gravity="center"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <!-- Divider 2 -->
+    <FrameLayout
+        android:layout_width="1dp"
+        android:layout_height="28dp"
+        android:background="@color/widget_border_light"
+        android:layout_gravity="center_vertical" />
+
+    <!-- Column 3: Net Ledger (pill highlight) -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1.15"
+        android:background="@drawable/bg_widget_pill"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:layout_marginStart="6dp">
+
+        <TextView
+            android:id="@+id/tv_net_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_net_ledger"
+            android:textColor="@color/widget_text_dark"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-black" />
+
+        <TextView
+            android:id="@+id/tv_net_ledger"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="@color/widget_text_dark"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:gravity="center"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
 
 </LinearLayout>

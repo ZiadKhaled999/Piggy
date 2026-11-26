@@ -56,4 +56,8 @@ object WidgetUtils {
             "$formatted $currencySymbol"
         }
     }
+
+    fun formatWidgetNumber(amount: Double): String {
+        return String.format(Locale.US, "%,.0f", amount)
+    }
 }

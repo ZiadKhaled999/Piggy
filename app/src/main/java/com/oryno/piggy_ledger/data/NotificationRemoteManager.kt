@@ -360,8 +360,7 @@ object NotificationRemoteManager {
         )
         
         val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        val iconRes = context.resources.getIdentifier("ic_notification", "drawable", context.packageName).takeIf { it != 0 } 
-            ?: R.mipmap.ic_launcher
+        val iconRes = R.drawable.ic_notification
             
         val largeIcon = android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.img_app_logo)
 

@@ -12,10 +12,4 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
-
-    <style name="Theme.MyApplication.Cropper" parent="Theme.AppCompat.DayNight.DarkActionBar">
-        <item name="colorPrimary">#F65096</item>
-        <item name="colorPrimaryDark">#C63A72</item>
-        <item name="colorAccent">#F65096</item>
-    </style>
 </resources>

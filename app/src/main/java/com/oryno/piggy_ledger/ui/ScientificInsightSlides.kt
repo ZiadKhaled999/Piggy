@@ -68,7 +68,10 @@ fun PwcInsightSlide(
         modifier = modifier
             .fillMaxSize()
             .background(EditorialCreamBg)
-            .padding(vertical = if (isSmallScreen) 10.dp else 16.dp),
+            .padding(
+                top = if (isSmallScreen) 10.dp else 16.dp,
+                bottom = if (isSmallScreen) 14.dp else 22.dp
+            ),
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -228,14 +231,14 @@ fun PwcInsightSlide(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = if (isSmallScreen) 6.dp else 12.dp)
+                .padding(horizontal = 24.dp, vertical = if (isSmallScreen) 2.dp else 4.dp)
         ) {
             Text(
                 text = sourceText,
                 fontSize = if (isSmallScreen) 12.sp else 13.5.sp,
                 fontWeight = FontWeight.Medium,
                 color = TextLight,
-                modifier = Modifier.padding(bottom = 14.dp)
+                modifier = Modifier.padding(bottom = 12.dp)
             )
 
             Button(
@@ -281,7 +284,10 @@ fun GallupInsightSlide(
         modifier = modifier
             .fillMaxSize()
             .background(EditorialCreamBg)
-            .padding(vertical = if (isSmallScreen) 10.dp else 16.dp),
+            .padding(
+                top = if (isSmallScreen) 10.dp else 16.dp,
+                bottom = if (isSmallScreen) 14.dp else 22.dp
+            ),
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -441,14 +447,14 @@ fun GallupInsightSlide(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = if (isSmallScreen) 6.dp else 12.dp)
+                .padding(horizontal = 24.dp, vertical = if (isSmallScreen) 2.dp else 4.dp)
         ) {
             Text(
                 text = sourceText,
                 fontSize = if (isSmallScreen) 12.sp else 13.5.sp,
                 fontWeight = FontWeight.Medium,
                 color = TextLight,
-                modifier = Modifier.padding(bottom = 14.dp)
+                modifier = Modifier.padding(bottom = 12.dp)
             )
 
             Button(

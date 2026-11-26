@@ -1,59 +1,62 @@
-# ProGuard rules for Piggy Ledger
--keepattributes *Annotation*, Signature, InnerClasses, EnclosingMethod
+# ProGuard / R8 rules for Piggy Ledger
+-keepattributes SourceFile,LineNumberTable,*Annotation*,Signature,InnerClasses,EnclosingMethod
+-renamesourcefileattribute SourceFile
 
-# Kotlinx Serialization
--keepattributes *Annotation*, InnerClasses
+# Kotlinx Serialization (used by data sync, AI models, RemoteConfig, MarketRates, Navigation routes)
 -dontnote kotlinx.serialization.SerializationKt
--keepclassmembers class * {
-    *** Companion;
+-keepattributes RuntimeVisibleAnnotations,AnnotationDefault
+-if @kotlinx.serialization.Serializable class **
+-keepclassmembers class <1> {
+    static <1>$Companion Companion;
 }
--keepclasseswithmembers class * {
+-if @kotlinx.serialization.Serializable class ** {
+    static **$* *;
+}
+-keepclassmembers class <2>$<3> {
     kotlinx.serialization.KSerializer serializer(...);
 }
--keep class com.oryno.piggy_ledger.data.** { *; }
--keep class com.oryno.piggy_ledger.ai.** { *; }
+-if @kotlinx.serialization.Serializable class ** {
+    public static ** INSTANCE;
+}
+-keepclassmembers class <1> {
+    public static <1> INSTANCE;
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-if @kotlinx.serialization.Serializable class **
+-keep,allowobfuscation class <1>$$serializer {
+    static <1>$$serializer INSTANCE;
+}
+-if @kotlinx.serialization.Serializable enum **
+-keepclassmembers enum <1> {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
 
-# RevenueCat
--keep class com.revenuecat.purchases.** { *; }
+# Preserve Navigation Compose type-safe route class names
+-keepnames class com.oryno.piggy_ledger.ui.Screen**
 
-# OkHttp & Ktor
+# Room & WorkManager safety (supplements AAR consumer rules)
+-keep class * extends androidx.room.RoomDatabase {
+    void <init>();
+}
+-keepnames class * extends androidx.work.ListenableWorker
+-keepclassmembers public class * extends androidx.work.ListenableWorker {
+    public <init>(android.content.Context, androidx.work.WorkerParameters);
+}
+
+# Coroutines service providers
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+
+# Suppress warnings for optional JVM/server APIs in Ktor, OkHttp, Play Services, Firebase, Clerk, Biometric
 -dontwarn java.lang.management.**
+-dontwarn java.lang.ClassValue
+-dontwarn org.slf4j.**
 -dontwarn io.ktor.**
 -dontwarn okhttp3.**
 -dontwarn okio.**
--keep class okhttp3.** { *; }
--keep interface okhttp3.** { *; }
--keep class io.ktor.** { *; }
-
-# Clerk
--dontwarn com.clerk.**
--keep class com.clerk.** { *; }
-
-# CanHub Cropper
--dontwarn com.canhub.cropper.**
--keep class com.canhub.cropper.** { *; }
-
-# Google Play Services & Firebase
 -dontwarn com.google.android.gms.**
 -dontwarn com.google.firebase.**
--dontwarn com.google.android.gms.internal.recaptchabase.**
-
-# AndroidX & Biometric
--keep class androidx.biometric.** { *; }
+-dontwarn com.clerk.**
 -dontwarn androidx.biometric.**
-
-# Coroutines
--keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
--keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
--keep class kotlinx.coroutines.** { *; }
-
-# WorkManager
--keep class androidx.work.** { *; }
 -dontwarn androidx.work.**
-
-# Services
--keep class com.oryno.piggy_ledger.service.** { *; }
-
-# R8 Optimization Speed Tuning
--optimizationpasses 1
-

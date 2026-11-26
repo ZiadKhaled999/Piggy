@@ -68,10 +68,10 @@ class HeatmapWidgetProvider : AppWidgetProvider() {
 
     companion object {
         private const val TAG = "HeatmapWidgetProvider"
-        private const val DEFAULT_WIDTH_DP = 260f
-        private const val DEFAULT_HEIGHT_DP = 120f
-        private const val HORIZONTAL_PADDING_DP = 28f
-        private const val VERTICAL_PADDING_DP = 28f
+        private const val DEFAULT_WIDTH_DP = 320f
+        private const val DEFAULT_HEIGHT_DP = 140f
+        private const val HORIZONTAL_PADDING_DP = 32f
+        private const val VERTICAL_PADDING_DP = 20f
 
         suspend fun updateAllWidgetsNow(context: Context) {
             val appWidgetManager = AppWidgetManager.getInstance(context) ?: return
@@ -106,6 +106,8 @@ class HeatmapWidgetProvider : AppWidgetProvider() {
                 }
 
                 val views = if (sizes != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val perBitmapMaxBytes = (700_000L / sizes.size.coerceAtLeast(1))
+                        .coerceIn(120_000L, 350_000L)
                     RemoteViews(
                         sizes.associateWith { size ->
                             buildRemoteViews(
@@ -115,7 +117,8 @@ class HeatmapWidgetProvider : AppWidgetProvider() {
                                 density = density,
                                 widgetWidthDp = size.width,
                                 widgetHeightDp = size.height,
-                                contentDesc = contentDesc
+                                contentDesc = contentDesc,
+                                maxBitmapBytes = perBitmapMaxBytes
                             )
                         }
                     )
@@ -162,7 +165,8 @@ class HeatmapWidgetProvider : AppWidgetProvider() {
             density: Float,
             widgetWidthDp: Float,
             widgetHeightDp: Float,
-            contentDesc: String
+            contentDesc: String,
+            maxBitmapBytes: Long = 350_000L
         ): RemoteViews {
             val contentWidthDp = (widgetWidthDp - HORIZONTAL_PADDING_DP).coerceAtLeast(32f)
             val contentHeightDp = (widgetHeightDp - VERTICAL_PADDING_DP).coerceAtLeast(36f)
@@ -173,7 +177,8 @@ class HeatmapWidgetProvider : AppWidgetProvider() {
                 density = density,
                 days = days,
                 widthPx = widthPx,
-                heightPx = heightPx
+                heightPx = heightPx,
+                maxBitmapBytes = maxBitmapBytes
             )
 
             return RemoteViews(context.packageName, R.layout.widget_heatmap).apply {

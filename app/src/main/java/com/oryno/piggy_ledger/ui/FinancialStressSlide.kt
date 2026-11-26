@@ -68,7 +68,10 @@ fun FinancialStressSlide(
         modifier = modifier
             .fillMaxSize()
             .background(editorialCreamBg)
-            .padding(vertical = if (isSmallScreen) 10.dp else 16.dp),
+            .padding(
+                top = if (isSmallScreen) 10.dp else 16.dp,
+                bottom = if (isSmallScreen) 14.dp else 22.dp
+            ),
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -181,7 +184,7 @@ fun FinancialStressSlide(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = if (isSmallScreen) 4.dp else 8.dp)
+                .padding(horizontal = 24.dp, vertical = if (isSmallScreen) 2.dp else 4.dp)
         ) {
             Button(
                 onClick = onContinue,

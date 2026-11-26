@@ -151,6 +151,26 @@ android {
     abortOnError = false
     checkReleaseBuilds = false
   }
+  androidResources {
+    localeFilters += listOf("en", "ar", "ar-rEG")
+  }
+  bundle {
+    language { enableSplit = true }
+    density { enableSplit = true }
+    abi { enableSplit = true }
+  }
+  packaging {
+    resources {
+      excludes += setOf(
+        "DebugProbesKt.bin",
+        "kotlin-tooling-metadata.json",
+        "META-INF/LICENSE*",
+        "META-INF/NOTICE*",
+        "META-INF/AL2.0",
+        "META-INF/LGPL2.1"
+      )
+    }
+  }
 }
 
 kotlin {
@@ -175,9 +195,9 @@ googleServices {
 // Some unused dependencies are commented out below instead of being removed.
 // This makes it easy to add them back in the future if needed.
 dependencies {
-    implementation("com.vanniktech:android-image-cropper:4.6.0")
+  // implementation("com.vanniktech:android-image-cropper:4.6.0")
   implementation(libs.revenuecat.purchases)
-  implementation(libs.revenuecat.purchases.ui)
+  // implementation(libs.revenuecat.purchases.ui)
   implementation(platform(libs.androidx.compose.bom))
   implementation(platform(libs.firebase.bom))
   // implementation(libs.accompanist.permissions)
@@ -201,7 +221,8 @@ dependencies {
   implementation(libs.androidx.fragment.ktx)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)
-  implementation(libs.clerk.android.ui)
+  // implementation(libs.clerk.android.ui)
+  implementation(libs.clerk.android.api)
   implementation(libs.lottie.compose)
   implementation(libs.markdown.renderer.m3)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -220,19 +241,19 @@ dependencies {
   implementation(libs.vico.core)
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.coil.compose)
-  implementation(libs.converter.moshi)
-  implementation(libs.firebase.ai)
-  implementation(libs.firebase.appcheck.recaptcha)
+  // implementation(libs.converter.moshi)
+  // implementation(libs.firebase.ai)
+  // implementation(libs.firebase.appcheck.recaptcha)
   implementation(libs.firebase.analytics)
   implementation(libs.firebase.crashlytics)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.logging.interceptor)
-  implementation(libs.moshi.kotlin)
+  // implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)
   implementation(libs.posthog.android)
   // implementation(libs.play.services.location)
-  implementation(libs.retrofit)
+  // implementation(libs.retrofit)
   implementation(libs.androidx.credentials)
   implementation(libs.androidx.credentials.play.services.auth)
   implementation(libs.googleid)
@@ -255,7 +276,7 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
   "ksp"(libs.androidx.room.compiler)
-  "ksp"(libs.moshi.kotlin.codegen)
+  // "ksp"(libs.moshi.kotlin.codegen)
 }
 
 // Ensure Crashlytics upload and symbol tasks depend on processReleaseGoogleServices

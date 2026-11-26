@@ -68,4 +68,51 @@ class HeatmapRendererTest {
         assertTrue(hsv1[1] < hsv2[1] && hsv2[1] < hsv3[1] && hsv3[1] < hsv4[1])
         assertTrue(hsv1[2] < hsv2[2] && hsv2[2] < hsv3[2] && hsv3[2] < hsv4[2])
     }
+
+    @Test
+    fun computeGeometry_standard4x2MatchesUncluttered15x7Proportions() {
+        val density = 3f
+        // Standard 4x2 phone widget sizes after 16dp horizontal / 10dp vertical padding
+        val sizesDp = listOf(
+            228 to 100, // 260x120
+            288 to 120, // 320x140
+            308 to 110, // 340x130
+            328 to 100  // 360x120
+        )
+        for ((wDp, hDp) in sizesDp) {
+            val geo = HeatmapRenderer.computeGeometry(
+                widthPx = (wDp * density).toInt(),
+                heightPx = (hDp * density).toInt(),
+                density = density
+            )
+            assertEquals("Expected 7 rows for ${wDp}x${hDp}", 7, geo.rows)
+            assertEquals("Expected 15 columns for ${wDp}x${hDp}", 15, geo.columns)
+            val cellDp = geo.cell / density
+            assertTrue("Expected bold cell >= 11.5dp for ${wDp}x${hDp}, got $cellDp", cellDp >= 11.5f)
+            assertEquals(geo.cell * 0.28f, geo.gap, 0.01f)
+        }
+    }
+
+    @Test
+    fun computeGeometry_shortWideWidgetNeverCluttersWithTinyCells() {
+        val density = 3f
+        // Short wide strip (320dp x 66dp content): stays at 15 columns instead of packing 25-30+ tiny tiles
+        val shortWideGeo = HeatmapRenderer.computeGeometry(
+            widthPx = (320 * density).toInt(),
+            heightPx = (66 * density).toInt(),
+            density = density
+        )
+        assertEquals(7, shortWideGeo.rows)
+        assertEquals(15, shortWideGeo.columns)
+
+        // Ultra-wide tablet size expands smoothly while keeping cells spacious
+        val tabletGeo = HeatmapRenderer.computeGeometry(
+            widthPx = (600 * density).toInt(),
+            heightPx = (220 * density).toInt(),
+            density = density
+        )
+        assertEquals(7, tabletGeo.rows)
+        assertTrue(tabletGeo.columns in 16..20)
+        assertTrue((tabletGeo.cell / density) >= 18f)
+    }
 }

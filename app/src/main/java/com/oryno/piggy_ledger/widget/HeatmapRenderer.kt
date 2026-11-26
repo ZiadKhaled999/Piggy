@@ -13,6 +13,13 @@ object HeatmapRenderer {
     const val EMPTY_TILE: Int = 0xFF1B1B1F.toInt()
     const val ACCENT_PINK: Int = 0xFFF43F5E.toInt()
     private const val MAX_BITMAP_BYTES: Long = 350_000L
+    private const val ROWS: Int = 7
+    private const val REFERENCE_COLUMNS: Int = 15
+    private const val GAP_RATIO: Float = 0.28f
+    private const val MIN_CELL_DP: Float = 11.2f
+    private const val WIDE_MIN_CELL_DP: Float = 17.5f
+    private const val MAX_CELL_TARGET_DP: Float = 24f
+    private const val MAX_COLUMNS: Int = 20
 
     data class Geometry(
         val columns: Int,
@@ -23,25 +30,38 @@ object HeatmapRenderer {
 
     fun computeGeometry(widthPx: Int, heightPx: Int, density: Float): Geometry {
         val safeDensity = density.coerceAtLeast(0.5f)
-        val gapDp = 3f
-        val gap = gapDp * safeDensity
-        val rows = 7 // GitHub-style: one row per weekday
+        val safeWidthPx = widthPx.coerceAtLeast(16).toFloat()
+        val safeHeightPx = heightPx.coerceAtLeast(16).toFloat()
 
-        // Drive cell size from available height so boxes fill the card height cleanly
-        // while horizontal resizing adds or removes week columns smoothly.
-        val cellFromHeight = ((heightPx - gap * (rows - 1)) / rows)
-            .coerceAtLeast(6f * safeDensity)
+        val widthDp = safeWidthPx / safeDensity
+        val heightDp = safeHeightPx / safeDensity
 
-        val columns = ((widthPx + gap) / (cellFromHeight + gap))
+        // Enforce a minimum reference pitch so shorter widgets don't cram tiny pixels horizontally,
+        // and keep 15x7 proportions across standard 4x2 phone widget sizes (260dp-360dp wide).
+        val rowUnits = ROWS + (ROWS - 1) * GAP_RATIO
+        val maxCellFromHeightDp = (heightDp / rowUnits).coerceAtMost(MAX_CELL_TARGET_DP)
+        val basePitchCellDp = maxOf(maxCellFromHeightDp, MIN_CELL_DP)
+        val rawColumns = ((widthDp / basePitchCellDp + GAP_RATIO) / (1f + GAP_RATIO))
             .toInt()
             .coerceAtLeast(1)
 
-        val cell = minOf(
-            (widthPx - gap * (columns - 1)) / columns,
-            (heightPx - gap * (rows - 1)) / rows
-        ).coerceAtLeast(1f)
+        // Only expand past 15 columns when the widget is genuinely wide enough (e.g. tablets)
+        // to sustain spacious tiles without looking cluttered.
+        val columns = if (rawColumns <= REFERENCE_COLUMNS) {
+            rawColumns
+        } else {
+            val widePitchCellDp = maxOf(basePitchCellDp, WIDE_MIN_CELL_DP)
+            ((widthDp / widePitchCellDp + GAP_RATIO) / (1f + GAP_RATIO))
+                .toInt()
+                .coerceIn(REFERENCE_COLUMNS, MAX_COLUMNS)
+        }
 
-        return Geometry(columns = columns, rows = rows, cell = cell, gap = gap)
+        val cellByWidth = safeWidthPx / (columns + (columns - 1) * GAP_RATIO)
+        val cellByHeight = safeHeightPx / rowUnits
+        val cell = minOf(cellByWidth, cellByHeight).coerceAtLeast(1f)
+        val gap = cell * GAP_RATIO
+
+        return Geometry(columns = columns, rows = ROWS, cell = cell, gap = gap)
     }
 
     fun levelFor(count: Int, allCounts: List<Int>): Int {
@@ -117,15 +137,17 @@ object HeatmapRenderer {
         widthPx: Int,
         heightPx: Int,
         accent: Int = ACCENT_PINK,
-        emptyTile: Int = EMPTY_TILE
+        emptyTile: Int = EMPTY_TILE,
+        maxBitmapBytes: Long = MAX_BITMAP_BYTES
     ): Bitmap {
         val safeWidth = widthPx.coerceAtLeast(16)
         val safeHeight = heightPx.coerceAtLeast(16)
+        val safeMaxBytes = maxBitmapBytes.coerceAtLeast(64_000L)
 
         // Keep bitmap under Binder/RemoteViews IPC limit while preserving aspect ratio & square cells
         val requestedBytes = safeWidth.toLong() * safeHeight.toLong() * 4L
-        val scale = if (requestedBytes > MAX_BITMAP_BYTES) {
-            sqrt(MAX_BITMAP_BYTES.toDouble() / requestedBytes.toDouble()).toFloat()
+        val scale = if (requestedBytes > safeMaxBytes) {
+            sqrt(safeMaxBytes.toDouble() / requestedBytes.toDouble()).toFloat()
         } else {
             1f
         }
@@ -142,7 +164,7 @@ object HeatmapRenderer {
         val bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        val corner = geo.cell * 0.25f
+        val corner = geo.cell * 0.22f
 
         val gridWidth = geo.columns * geo.cell + (geo.columns - 1) * geo.gap
         val gridHeight = geo.rows * geo.cell + (geo.rows - 1) * geo.gap

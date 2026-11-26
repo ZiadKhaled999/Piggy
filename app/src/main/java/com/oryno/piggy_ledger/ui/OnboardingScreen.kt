@@ -344,7 +344,7 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
             .navigationBarsPadding()
             .padding(
                 horizontal = if (currentPage in 8..10 || currentPage == 14) 4.dp else if (currentPage in listOf(7, 11, 13)) 0.dp else horizontalPadding,
-                vertical = if (currentPage in 8..10 || currentPage in listOf(7, 11, 13)) 6.dp else (if (isSmallScreen) 12.dp else 16.dp)
+                vertical = if (currentPage in 8..10 || currentPage in listOf(7, 11, 13)) 0.dp else (if (isSmallScreen) 12.dp else 16.dp)
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -1031,7 +1031,12 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                            .padding(
+                                start = 12.dp,
+                                end = 12.dp,
+                                top = 6.dp,
+                                bottom = if (isSmallScreen) 14.dp else 20.dp
+                            ),
                         verticalArrangement = Arrangement.SpaceBetween,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -1881,31 +1886,32 @@ fun OnboardingScreen(onComplete: (Int, Int, String, Boolean?, Boolean?, Boolean?
         }
         
         // Lower Content: Indicators & Buttons
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = if (isSmallScreen) 68.dp else 84.dp)
-                .padding(bottom = if (isSmallScreen) 12.dp else 24.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            // Back Button (Optional/Visible when not on first page)
-            if (currentPage > 0 && currentPage !in 8..10 && currentPage !in listOf(7, 11, 13) && (currentPage != 14 || isPlanFinished)) {
-                TextButton(
-                    onClick = { currentPage-- },
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .testTag("onboarding_back_button"),
-                    colors = ButtonDefaults.textButtonColors(contentColor = TextLight)
-                ) {
-                    Text(
-                        text = stringResource(R.string.back_btn),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = if (isSmallScreen) 13.5.sp else 15.sp
-                    )
+        val showBottomControls = currentPage !in 8..10 && currentPage !in listOf(7, 11, 13) && (currentPage != 14 || isPlanFinished)
+        if (showBottomControls) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = if (isSmallScreen) 68.dp else 84.dp)
+                    .padding(bottom = if (isSmallScreen) 12.dp else 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                // Back Button (Optional/Visible when not on first page)
+                if (currentPage > 0) {
+                    TextButton(
+                        onClick = { currentPage-- },
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .testTag("onboarding_back_button"),
+                        colors = ButtonDefaults.textButtonColors(contentColor = TextLight)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.back_btn),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = if (isSmallScreen) 13.5.sp else 15.sp
+                        )
+                    }
                 }
-            }
 
-            if (currentPage !in 8..10 && currentPage !in listOf(7, 11, 13) && (currentPage != 14 || isPlanFinished)) {
                 // Custom Progress Button - always responsive
                 ProgressNextButton(
                     currentPage = currentPage,

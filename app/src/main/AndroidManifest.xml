@@ -183,10 +183,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <activity
-            android:name="com.canhub.cropper.CropImageActivity"
-            android:theme="@style/Theme.MyApplication.Cropper"
-            android:exported="true" />
         <service
             android:name=".service.BankNotificationListenerService"
             android:exported="true"

@@ -1591,13 +1591,8 @@ fun Slide4AutomationAndReview(
                 if (accountType != AccountType.CASH) {
                     NotificationAutomationSection(
                         providerOrName = provider.ifBlank { name },
-                        linkedPackage = linkedNotificationPackage,
-                        linkedAppLabel = linkedNotificationAppLabel,
-                        isAutoSuggested = isAutoSuggestedApp,
                         customKeywords = customKeywordsInput,
-                        onCustomKeywordsChange = onCustomKeywordsChange,
-                        onOpenAppPicker = onOpenAppPicker,
-                        onClearLinkedApp = onClearLinkedApp
+                        onCustomKeywordsChange = onCustomKeywordsChange
                     )
 
                     HorizontalDivider(color = Color(0xFFF1F5F9))

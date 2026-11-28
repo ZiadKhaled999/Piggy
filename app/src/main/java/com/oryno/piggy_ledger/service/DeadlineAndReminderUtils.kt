@@ -10,6 +10,8 @@ import com.oryno.piggy_ledger.data.UserPreferences
 import com.oryno.piggy_ledger.ui.NotificationHelper
 import com.oryno.piggy_ledger.ui.getCurrencySymbol
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -197,11 +199,12 @@ object DeadlineAndReminderUtils {
 object LoanDeadlineNotifier {
 
     private const val TAG = "LoanDeadlineNotifier"
+    private val notifyMutex = Mutex()
 
     suspend fun notifyOverdueLoans(
         context: Context,
         minIntervalMs: Long
-    ) {
+    ) = notifyMutex.withLock {
         try {
             if (UserPreferences.getSavedAppLanguageSync(context).isNullOrBlank()) {
                 try {
@@ -229,24 +232,56 @@ object LoanDeadlineNotifier {
             // Cancel notifications for loans that were deleted, paid off, or fully settled via logs
             val overduePairs = DeadlineAndReminderUtils.filterOverdueLoansWithRemaining(allLoans, allPayments, now)
             val overdueIds = overduePairs.map { it.first.id }.toSet()
+            val overdueContactKeys = overduePairs
+                .map { it.first.contactName.trim().lowercase(Locale.getDefault()) }
+                .toSet()
+
             allLoans.filter { it.id !in overdueIds }.forEach { settledOrInactive ->
-                notificationHelper.cancelDeadlineNotification(settledOrInactive.id)
+                val contactKey = settledOrInactive.contactName.trim().lowercase(Locale.getDefault())
+                notificationHelper.cancelDeadlineNotification(
+                    loanId = settledOrInactive.id,
+                    legacyContactName = settledOrInactive.contactName,
+                    cancelLegacyContactId = contactKey !in overdueContactKeys
+                )
                 if (settledOrInactive.is_deleted || settledOrInactive.isPaidOff) {
                     DeadlineAndReminderUtils.clearLoanDeadlineNotified(context, settledOrInactive.id)
                 }
             }
 
-            overduePairs.forEach { (loan, remainingAmount) ->
-                if (DeadlineAndReminderUtils.shouldSendLoanDeadlineNotification(context, loan.id, now, minIntervalMs)) {
+            val validNotifIds = overduePairs.map { it.first.id.hashCode() }.toMutableSet()
+
+            overduePairs.forEach { (loan, _) ->
+                // Re-verify live DB state immediately before posting so concurrent deletes/settlements never notify
+                val freshLoan = dao.getLoanById(loan.id)
+                if (freshLoan == null || freshLoan.is_deleted || freshLoan.isPaidOff || freshLoan.deadline == null || freshLoan.deadline >= System.currentTimeMillis()) {
+                    validNotifIds.remove(loan.id.hashCode())
+                    notificationHelper.cancelDeadlineNotification(loan.id)
+                    DeadlineAndReminderUtils.clearLoanDeadlineNotified(context, loan.id)
+                    return@forEach
+                }
+
+                val freshPayments = dao.getAllLoanPaymentsSync()
+                val freshRemaining = DeadlineAndReminderUtils.computeRemainingLoanAmount(freshLoan, freshPayments)
+                if (freshRemaining <= 0.0001) {
+                    validNotifIds.remove(loan.id.hashCode())
+                    notificationHelper.cancelDeadlineNotification(loan.id)
+                    return@forEach
+                }
+
+                val currentNow = System.currentTimeMillis()
+                if (DeadlineAndReminderUtils.shouldSendLoanDeadlineNotification(context, freshLoan.id, currentNow, minIntervalMs)) {
                     notificationHelper.showDeadlineNotification(
-                        contactName = loan.contactName,
-                        amount = remainingAmount,
+                        contactName = freshLoan.contactName,
+                        amount = freshRemaining,
                         currencySymbol = currencySymbol,
-                        notificationId = loan.id.hashCode()
+                        notificationId = freshLoan.id.hashCode()
                     )
-                    DeadlineAndReminderUtils.markLoanDeadlineNotified(context, loan.id, now)
+                    DeadlineAndReminderUtils.markLoanDeadlineNotified(context, freshLoan.id, currentNow)
                 }
             }
+
+            // Reconcile any orphaned notifications still sitting in the deadline channel
+            notificationHelper.cancelOrphanedDeadlineNotifications(validNotifIds)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to evaluate or notify overdue loans", e)
         }

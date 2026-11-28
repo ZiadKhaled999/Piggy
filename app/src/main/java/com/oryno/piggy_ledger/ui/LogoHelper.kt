@@ -423,27 +423,22 @@ fun BrandLogo(
     }
 
     Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(10.dp)),
+        modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
         if (config.drawableRes != null) {
             Image(
                 painter = painterResource(id = config.drawableRes),
                 contentDescription = provider ?: "Logo",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(3.dp),
-                contentScale = ContentScale.Fit
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
         } else if (!onlineUrl.isNullOrEmpty()) {
             coil.compose.SubcomposeAsyncImage(
                 model = onlineUrl,
                 contentDescription = provider ?: "Logo",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(3.dp),
-                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
                 loading = {
                     MonogramBadge(config = config, bg = bg)
                 },
@@ -452,10 +447,8 @@ fun BrandLogo(
                         Image(
                             painter = painterResource(id = config.drawableRes),
                             contentDescription = provider ?: "Logo",
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(3.dp),
-                            contentScale = ContentScale.Fit
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
                         )
                     } else {
                         MonogramBadge(config = config, bg = bg)
@@ -466,10 +459,8 @@ fun BrandLogo(
             Image(
                 painter = painterResource(id = config.drawableRes),
                 contentDescription = provider ?: "Logo",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(3.dp),
-                contentScale = ContentScale.Fit
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
         } else {
             MonogramBadge(config = config, bg = bg)

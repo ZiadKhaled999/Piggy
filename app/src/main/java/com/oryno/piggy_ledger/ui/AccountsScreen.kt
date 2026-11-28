@@ -328,8 +328,7 @@ fun AccountsScreen(
                                     .clip(CircleShape)
                                     .background(Color.White)
                                     .border(1.dp, Color(0xFFE2E8F0), CircleShape)
-                                    .clickable { showAccountSwitcher = true }
-                                    .padding(4.dp),
+                                    .clickable { showAccountSwitcher = true },
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (selectedAccount != null) {
@@ -1051,7 +1050,7 @@ fun AccountsScreen(
                                 accountType = account.type,
                                 iconColorHex = account.icon_color,
                                 logoUrl = account.logo_url,
-                                modifier = Modifier.size(40.dp)
+                                modifier = Modifier.size(40.dp).clip(CircleShape)
                             )
 
                             Spacer(modifier = Modifier.width(16.dp))

@@ -163,9 +163,19 @@ class SyncManager(private val context: Context) {
                 "accounts" -> dao.insertAccounts(
                     list.map { json.decodeFromJsonElement(Account.serializer(), it.data).copy(isSynced = true) }
                 )
-                "loans" -> dao.insertLoans(
-                    list.map { json.decodeFromJsonElement(Loan.serializer(), it.data).copy(isSynced = true) }
-                )
+                "loans" -> {
+                    val localById = dao.getAllLoansSync().associateBy { it.id }
+                    val resolved = list.mapNotNull { change ->
+                        val remote = json.decodeFromJsonElement(Loan.serializer(), change.data)
+                        val local = localById[remote.id]
+                        if (local != null && local.is_deleted && !remote.is_deleted && local.updatedAt >= remote.updatedAt) {
+                            null
+                        } else {
+                            remote.copy(isSynced = true)
+                        }
+                    }
+                    if (resolved.isNotEmpty()) dao.insertLoans(resolved)
+                }
                 "assets" -> dao.insertAssets(
                     list.map { json.decodeFromJsonElement(AssetEntity.serializer(), it.data).copy(isSynced = true) }
                 )
@@ -181,9 +191,19 @@ class SyncManager(private val context: Context) {
                 "transactions" -> dao.insertTransactions(
                     list.map { json.decodeFromJsonElement(Transaction.serializer(), it.data).copy(isSynced = true) }
                 )
-                "loan_payments" -> dao.insertLoanPayments(
-                    list.map { json.decodeFromJsonElement(LoanPayment.serializer(), it.data).copy(isSynced = true) }
-                )
+                "loan_payments" -> {
+                    val localById = dao.getAllLoanPaymentsSync().associateBy { it.id }
+                    val resolved = list.mapNotNull { change ->
+                        val remote = json.decodeFromJsonElement(LoanPayment.serializer(), change.data)
+                        val local = localById[remote.id]
+                        if (local != null && local.is_deleted && !remote.is_deleted && local.updatedAt >= remote.updatedAt) {
+                            null
+                        } else {
+                            remote.copy(isSynced = true)
+                        }
+                    }
+                    if (resolved.isNotEmpty()) dao.insertLoanPayments(resolved)
+                }
                 "account_transactions" -> dao.insertAccountTransactions(
                     list.map { json.decodeFromJsonElement(AccountTransaction.serializer(), it.data).copy(isSynced = true) }
                 )

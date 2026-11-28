@@ -117,10 +117,34 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    fun cancelDeadlineNotification(loanId: String) {
+    fun cancelDeadlineNotification(
+        loanId: String,
+        legacyContactName: String? = null,
+        cancelLegacyContactId: Boolean = false
+    ) {
         try {
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
             notificationManager.cancel(loanId.hashCode())
+            if (cancelLegacyContactId && !legacyContactName.isNullOrBlank()) {
+                notificationManager.cancel(legacyContactName.hashCode())
+            }
+        } catch (_: Throwable) { }
+    }
+
+    fun cancelOrphanedDeadlineNotifications(activeNotificationIds: Set<Int>) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+            notificationManager.activeNotifications
+                ?.filter { sbn ->
+                    val channelId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        sbn.notification.channelId
+                    } else null
+                    channelId == CHANNEL_DEADLINE_ID && sbn.id !in activeNotificationIds
+                }
+                ?.forEach { stale ->
+                    notificationManager.cancel(stale.tag, stale.id)
+                }
         } catch (_: Throwable) { }
     }
 

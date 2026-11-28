@@ -92,6 +92,11 @@ import kotlin.math.roundToInt
 fun AddLoanBottomSheet(
     viewModel: PiggyLedgerViewModel,
     appCurrency: String,
+    initialContactName: String = "",
+    initialPhone: String = "",
+    initialEmail: String = "",
+    initialPhotoUri: String? = null,
+    initialSocial: String? = null,
     onConfirm: (
         isLent: Boolean,
         amount: Double,
@@ -113,11 +118,11 @@ fun AddLoanBottomSheet(
     // Form State
     var isLent by remember { mutableStateOf(true) }
     var amountStr by remember { mutableStateOf("") }
-    var contactName by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("") }
-    var emailAddress by remember { mutableStateOf("") }
-    var contactPhotoUri by remember { mutableStateOf<String?>(null) }
-    var socialDetails by remember { mutableStateOf("") }
+    var contactName by remember(initialContactName) { mutableStateOf(initialContactName) }
+    var phoneNumber by remember(initialPhone) { mutableStateOf(initialPhone) }
+    var emailAddress by remember(initialEmail) { mutableStateOf(initialEmail) }
+    var contactPhotoUri by remember(initialPhotoUri) { mutableStateOf(initialPhotoUri) }
+    var socialDetails by remember(initialSocial) { mutableStateOf(initialSocial.orEmpty()) }
     var note by remember { mutableStateOf("") }
     var deadlineDate by remember { mutableStateOf<Long?>(null) }
     var selectedAccountId by remember { mutableStateOf<String?>(null) }
@@ -139,7 +144,7 @@ fun AddLoanBottomSheet(
             onConfirm(
                 isLent,
                 amount,
-                contactName,
+                contactName.trim(),
                 phoneNumber.ifBlank { null },
                 emailAddress.ifBlank { null },
                 contactPhotoUri,
@@ -228,7 +233,7 @@ fun AddLoanBottomSheet(
                 onConfirm(
                     isLent,
                     amount,
-                    contactName,
+                    contactName.trim(),
                     phoneNumber.ifBlank { null },
                     emailAddress.ifBlank { null },
                     contactPhotoUri,
@@ -266,7 +271,7 @@ fun AddLoanBottomSheet(
                             onConfirm(
                                 isLent,
                                 amount,
-                                contactName,
+                                contactName.trim(),
                                 phoneNumber.ifBlank { null },
                                 emailAddress.ifBlank { null },
                                 contactPhotoUri,

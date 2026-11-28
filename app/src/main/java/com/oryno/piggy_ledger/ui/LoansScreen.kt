@@ -1,17 +1,12 @@
 
 package com.oryno.piggy_ledger.ui
-import com.oryno.piggy_ledger.ui.getCurrencySymbol
-import androidx.compose.ui.res.painterResource
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import java.util.Locale
 import androidx.compose.material.icons.filled.AttachMoney
-
 import androidx.compose.material.icons.filled.ReceiptLong
-
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-
-import androidx.compose.material.icons.filled.ReceiptLong
-
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 
 import android.widget.Toast
@@ -95,6 +90,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 
 import androidx.compose.ui.graphics.Color
 
@@ -138,6 +137,37 @@ import java.util.UUID
 
 import android.net.Uri
 
+internal data class ContactLoanGroup(
+    val key: String,
+    val displayName: String,
+    val loans: List<Loan>
+)
+
+internal fun normalizeLoanContactKey(contactName: String): String {
+    return contactName.trim().lowercase(Locale.getDefault())
+}
+
+internal fun groupLoansByContact(loans: List<Loan>): List<ContactLoanGroup> {
+    val grouped = linkedMapOf<String, MutableList<Loan>>()
+    loans.forEach { loan ->
+        val normalized = normalizeLoanContactKey(loan.contactName)
+        val key = if (normalized.isNotEmpty()) normalized else "_blank_${loan.id}"
+        grouped.getOrPut(key) { mutableListOf() }.add(loan)
+    }
+    return grouped.entries.map { (key, contactLoans) ->
+        val displayName = contactLoans
+            .firstOrNull { it.contactName.isNotBlank() }
+            ?.contactName
+            ?.trim()
+            .orEmpty()
+        ContactLoanGroup(
+            key = key,
+            displayName = displayName,
+            loans = contactLoans
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoansScreen(
@@ -149,7 +179,7 @@ fun LoansScreen(
     val allLoanPayments by viewModel.allLoanPayments.collectAsState()
     val isPrivacyMode by viewModel.isPrivacyModeEnabled.collectAsState()
     val appCurrency by viewModel.appCurrency.collectAsState()
-    
+
     val paymentsByLoanId = remember(allLoanPayments) { allLoanPayments.groupBy { it.loanId } }
     fun getRemainingAmount(loan: Loan): Double {
         val paid = paymentsByLoanId[loan.id]?.sumOf { it.amount } ?: 0.0
@@ -157,11 +187,14 @@ fun LoansScreen(
     }
 
     var showAddDialog by remember { mutableStateOf(false) }
-    val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedLoan by remember { mutableStateOf<Loan?>(null) }
     var showTimeline by remember { mutableStateOf(false) }
     val detailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    var selectedContactKey by remember { mutableStateOf<String?>(null) }
+    var contactSearchQuery by remember { mutableStateOf("") }
+    var contactSelectedTab by remember { mutableStateOf(0) }
 
     val owedToMe = loans.filter { !it.isPaidOff && it.type == LoanType.LENT }.sumOf { getRemainingAmount(it) }
     val iOwe = loans.filter { !it.isPaidOff && it.type == LoanType.BORROWED }.sumOf { getRemainingAmount(it) }
@@ -178,448 +211,455 @@ fun LoansScreen(
                 else -> true
             }
         }.filter { loan ->
-            searchQuery.isBlank() || loan.contactName.contains(searchQuery, ignoreCase = true) || loan.note.contains(searchQuery, ignoreCase = true)
+            searchQuery.isBlank() ||
+                loan.contactName.contains(searchQuery, ignoreCase = true) ||
+                loan.note.contains(searchQuery, ignoreCase = true)
         }
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = 100.dp)
-    ) {
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(Color.White, androidx.compose.foundation.shape.CircleShape)
-                            .border(1.dp, Color(0xFFE2E8F0), androidx.compose.foundation.shape.CircleShape)
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_icon), tint = NavyDark, modifier = Modifier.size(20.dp))
-                    }
+    val groupedContactLoans = remember(filteredLoans) {
+        groupLoansByContact(filteredLoans)
+    }
+
+    val allContactLoans = remember(loans, selectedContactKey) {
+        val key = selectedContactKey ?: return@remember emptyList()
+        loans.filter { normalizeLoanContactKey(it.contactName) == key }
+    }
+
+    LaunchedEffect(selectedContactKey, allContactLoans) {
+        if (selectedContactKey != null && allContactLoans.isEmpty()) {
+            selectedContactKey = null
+        }
+    }
+
+    val activeContactDisplayName = remember(allContactLoans) {
+        allContactLoans.firstOrNull { it.contactName.isNotBlank() }?.contactName?.trim().orEmpty()
+    }
+
+    if (selectedContactKey != null) {
+        BackHandler(enabled = true) {
+            selectedContactKey = null
+        }
+
+        val contactOwedToMe = allContactLoans
+            .filter { !it.isPaidOff && it.type == LoanType.LENT }
+            .sumOf { getRemainingAmount(it) }
+        val contactIOwe = allContactLoans
+            .filter { !it.isPaidOff && it.type == LoanType.BORROWED }
+            .sumOf { getRemainingAmount(it) }
+        val contactNetLedger = contactOwedToMe - contactIOwe
+
+        val contactFilteredLoans = remember(allContactLoans, contactSelectedTab, contactSearchQuery) {
+            allContactLoans.filter { loan ->
+                when (contactSelectedTab) {
+                    0 -> !loan.isPaidOff
+                    1 -> loan.isPaidOff
+                    else -> true
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.loans_payoffs_title), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark)
-                        Text(stringResource(R.string.keep_tabs_subtitle), fontSize = 14.sp, color = TextLight, fontWeight = FontWeight.Medium)
-                    }
-                    IconButton(
-                        onClick = { viewModel.togglePrivacyMode(screenContext) },
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(Color.White, androidx.compose.foundation.shape.CircleShape)
-                            .border(1.dp, Color(0xFFE2E8F0), androidx.compose.foundation.shape.CircleShape)
-                    ) {
-                        Icon(
-                            painter = if (isPrivacyMode) painterResource(id = R.drawable.ic_eye_closed) else painterResource(id = R.drawable.ic_eye_open),
-                            contentDescription = "Toggle Privacy",
-                            tint = NavyDark,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                BoxWithConstraints(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    val isNarrow = maxWidth < 340.dp
-                    
-                    if (isNarrow) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Card(
-                                    modifier = Modifier.weight(1f),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    shape = RoundedCornerShape(16.dp),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                                ) {
-                                     Column(modifier = Modifier.padding(10.dp)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(painter = painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = PinkAccent, modifier = Modifier.size(10.dp))
-                                            Spacer(modifier = Modifier.width(3.dp))
-                                            Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", owedToMe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    }
-                                }
-                                
-                                Card(
-                                    modifier = Modifier.weight(1f),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    shape = RoundedCornerShape(16.dp),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                                ) {
-                                    Column(modifier = Modifier.padding(10.dp)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(painter = painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = BlackAccent, modifier = Modifier.size(10.dp))
-                                            Spacer(modifier = Modifier.width(3.dp))
-                                            Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", iOwe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    }
-                                }
-                            }
-                            
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                shape = RoundedCornerShape(16.dp),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                                border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(stringResource(R.string.net_ledger), fontSize = 9.sp, fontWeight = FontWeight.Black, color = TextLight)
-                                    Text(
-                                        text = if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else (if (netLedger >= 0) "+${getCurrencySymbol(appCurrency)}${String.format("%.0f", netLedger)}" else "-${getCurrencySymbol(appCurrency)}${String.format("%.0f", -netLedger)}"), 
-                                        fontSize = 15.sp, 
-                                        fontWeight = FontWeight.Bold, 
-                                        color = if (netLedger >= 0) PinkAccent else BlackAccent,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-                    } else {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            color = Color(0xFFF1F5F9),
-                            shape = RoundedCornerShape(28.dp),
-                            border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Card(
-                                    modifier = Modifier.weight(1f),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    shape = RoundedCornerShape(24.dp),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                                ) {
-                                    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(painter = painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = PinkAccent, modifier = Modifier.size(10.dp))
-                                            Spacer(modifier = Modifier.width(3.dp))
-                                            Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        }
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", owedToMe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    }
-                                }
-                                
-                                Card(
-                                    modifier = Modifier.weight(1f),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    shape = RoundedCornerShape(24.dp),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                                ) {
-                                    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(painter = painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = BlackAccent, modifier = Modifier.size(10.dp))
-                                            Spacer(modifier = Modifier.width(3.dp))
-                                            Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        }
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        Text(if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else "${getCurrencySymbol(appCurrency)}${String.format("%.0f", iOwe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    }
-                                }
-                                
-                                Card(
-                                    modifier = Modifier.weight(1f),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    shape = RoundedCornerShape(24.dp),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
-                                ) {
-                                    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
-                                        Text(stringResource(R.string.net_ledger), fontSize = 8.sp, fontWeight = FontWeight.Black, color = TextLight, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        Text(
-                                            text = if (isPrivacyMode) "${getCurrencySymbol(appCurrency)}••••••" else (if (netLedger >= 0) "+${getCurrencySymbol(appCurrency)}${String.format("%.0f", netLedger)}" else "-${getCurrencySymbol(appCurrency)}${String.format("%.0f", -netLedger)}"), 
-                                            fontSize = 16.sp, 
-                                            fontWeight = FontWeight.Bold, 
-                                            color = if (netLedger >= 0) PinkAccent else BlackAccent,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        placeholder = { Text(stringResource(R.string.search_person_notes), color = TextLight, fontSize = 14.sp, fontWeight = FontWeight.Medium) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextLight, modifier = Modifier.size(20.dp)) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = Color(0xFFF8FAFC),
-                            focusedContainerColor = Color(0xFFF8FAFC),
-                            unfocusedBorderColor = Color.Transparent,
-                            focusedBorderColor = Color(0xFFE2E8F0)
-                        ),
-                        singleLine = true
-                    )
-                    
-                    Button(
-                        onClick = { 
-                            if (viewModel.canAddLoan(loans.size)) {
-                                showAddDialog = true 
-                            } else {
-                                com.oryno.piggy_ledger.ui.ToastUtil.show(screenContext, screenContext.getString(R.string.toast_upgrade_pro_loans), Toast.LENGTH_SHORT)
-                            }
-                        },
-                        modifier = Modifier.height(52.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
-                        shape = RoundedCornerShape(16.dp),
-                        contentPadding = PaddingValues(horizontal = 20.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(stringResource(R.string.add_record), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .background(Color(0xFFF1F5F9), RoundedCornerShape(16.dp))
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TabButton(text = stringResource(R.string.active_tab), isSelected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
-                    TabButton(text = stringResource(R.string.paid_off_tab), isSelected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
-                    TabButton(text = stringResource(R.string.show_all_tab), isSelected = selectedTab == 2, onClick = { selectedTab = 2 }, modifier = Modifier.weight(1f))
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
+            }.filter { loan ->
+                contactSearchQuery.isBlank() ||
+                    loan.note.contains(contactSearchQuery, ignoreCase = true) ||
+                    loan.contactName.contains(contactSearchQuery, ignoreCase = true)
             }
         }
-        
-        if (filteredLoans.isEmpty()) {
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding(),
+            contentPadding = PaddingValues(bottom = 100.dp)
+        ) {
             item {
-                Surface(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp)
-                        .padding(bottom = 24.dp),
-                    color = Color(0xFFF8FAFC),
-                    shape = RoundedCornerShape(32.dp),
-                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
                 ) {
-                    Column(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 48.dp, horizontal = 32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                            .padding(top = 16.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
+                        IconButton(
+                            onClick = { selectedContactKey = null },
                             modifier = Modifier
-                                .size(80.dp)
-                                .background(Color(0xFFF8FAFC), androidx.compose.foundation.shape.CircleShape),
-                            contentAlignment = Alignment.Center
+                                .size(48.dp)
+                                .testTag("contact_detail_back_button")
+                                .background(Color.White, CircleShape)
+                                .border(1.dp, Color(0xFFE2E8F0), CircleShape)
                         ) {
-                            Icon(Icons.Default.HelpOutline, contentDescription = null, tint = TextLight.copy(alpha = 0.3f), modifier = Modifier.size(40.dp))
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back_icon),
+                                tint = NavyDark,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(stringResource(R.string.no_records_found), fontWeight = FontWeight.ExtraBold, color = Color(0xFF334155), fontSize = 18.sp)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(stringResource(R.string.log_lent_borrowed_desc), color = TextLight, textAlign = TextAlign.Center, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 16.dp))
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = activeContactDisplayName,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = NavyDark,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = stringResource(R.string.contact_payoffs_subtitle, allContactLoans.size),
+                                fontSize = 14.sp,
+                                color = TextLight,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        IconButton(
+                            onClick = { viewModel.togglePrivacyMode(screenContext) },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .testTag("contact_privacy_toggle_button")
+                                .background(Color.White, CircleShape)
+                                .border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                        ) {
+                            Icon(
+                                painter = if (isPrivacyMode) painterResource(id = R.drawable.ic_eye_closed) else painterResource(id = R.drawable.ic_eye_open),
+                                contentDescription = "Toggle Privacy",
+                                tint = NavyDark,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    LoanSummaryCardsSection(
+                        owedToMe = contactOwedToMe,
+                        iOwe = contactIOwe,
+                        netLedger = contactNetLedger,
+                        appCurrency = appCurrency,
+                        isPrivacyMode = isPrivacyMode
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = contactSearchQuery,
+                            onValueChange = { contactSearchQuery = it },
+                            placeholder = {
+                                Text(
+                                    stringResource(R.string.search_notes_placeholder),
+                                    color = TextLight,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Search, contentDescription = null, tint = TextLight, modifier = Modifier.size(20.dp))
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp)
+                                .testTag("contact_search_input"),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = Color(0xFFF8FAFC),
+                                focusedContainerColor = Color(0xFFF8FAFC),
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = Color(0xFFE2E8F0)
+                            ),
+                            singleLine = true
+                        )
+
+                        Button(
+                            onClick = {
+                                if (viewModel.canAddLoan(loans.size)) {
+                                    showAddDialog = true
+                                } else {
+                                    ToastUtil.show(screenContext, screenContext.getString(R.string.toast_upgrade_pro_loans), Toast.LENGTH_SHORT)
+                                }
+                            },
+                            modifier = Modifier
+                                .height(52.dp)
+                                .testTag("contact_add_record_button"),
+                            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(horizontal = 20.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(stringResource(R.string.add_record), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .background(Color(0xFFF1F5F9), RoundedCornerShape(16.dp))
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TabButton(
+                            text = stringResource(R.string.active_tab),
+                            isSelected = contactSelectedTab == 0,
+                            onClick = { contactSelectedTab = 0 },
+                            modifier = Modifier.weight(1f)
+                        )
+                        TabButton(
+                            text = stringResource(R.string.paid_off_tab),
+                            isSelected = contactSelectedTab == 1,
+                            onClick = { contactSelectedTab = 1 },
+                            modifier = Modifier.weight(1f)
+                        )
+                        TabButton(
+                            text = stringResource(R.string.show_all_tab),
+                            isSelected = contactSelectedTab == 2,
+                            onClick = { contactSelectedTab = 2 },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+
+            if (contactFilteredLoans.isEmpty()) {
+                item {
+                    LoansEmptyStateCard()
+                }
+            } else {
+                items(contactFilteredLoans, key = { it.id }) { loan ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 6.dp)
+                    ) {
+                        LoanRecordCard(
+                            loan = loan,
+                            titleText = loan.note.ifBlank { loan.contactName },
+                            remainingAmount = getRemainingAmount(loan),
+                            appCurrency = appCurrency,
+                            isPrivacyMode = isPrivacyMode,
+                            testTag = "contact_loan_card_${loan.id}",
+                            onClick = { selectedLoan = loan }
+                        )
                     }
                 }
             }
-        } else {
-            items(filteredLoans, key = { it.id }) { loan ->
-                Box(
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding(),
+            contentPadding = PaddingValues(bottom = 100.dp)
+        ) {
+            item {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 6.dp)
+                        .padding(horizontal = 24.dp)
                 ) {
-                    val isPaidOff = loan.isPaidOff
-                    val containerColor = if (isPaidOff) Color(0xFFF1F5F9) else PinkPrimary.copy(alpha = 0.03f)
-                    val borderColor = if (isPaidOff) Color(0xFFCBD5E1) else PinkPrimary.copy(alpha = 0.15f)
-                    
-                    Card(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { selectedLoan = loan },
-                        colors = CardDefaults.cardColors(containerColor = containerColor),
-                        shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.5.dp, borderColor)
+                            .padding(top = 16.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
+                        IconButton(
+                            onClick = onBack,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .size(48.dp)
+                                .testTag("loans_back_button")
+                                .background(Color.White, CircleShape)
+                                .border(1.dp, Color(0xFFE2E8F0), CircleShape)
                         ) {
-                            val iconTint = if (isPaidOff) Color(0xFF94A3B8) else (if (loan.type == LoanType.LENT) PinkAccent else BlackAccent)
-                            val bgTint = if (isPaidOff) Color(0xFFE2E8F0) else (if (loan.type == LoanType.LENT) PinkAccent.copy(alpha = 0.1f) else BlackAccent.copy(alpha = 0.1f))
-                            val icon = painterResource(id = R.drawable.ic_nav_loans)
-                            val prefix = if (loan.type == LoanType.LENT) "+" else "-"
-                            val text = if (loan.type == LoanType.LENT) stringResource(R.string.owed_to_me) else stringResource(R.string.i_owe)
-                            val textColor = if (isPaidOff) Color(0xFF94A3B8) else (if (loan.type == LoanType.LENT) PinkAccent else BlackAccent)
-                            
-                            // Left side section (occupies flexible space)
-                            Row(
-                                modifier = Modifier.weight(1f),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .background(bgTint, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_icon), tint = NavyDark, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.loans_payoffs_title), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = NavyDark)
+                            Text(stringResource(R.string.keep_tabs_subtitle), fontSize = 14.sp, color = TextLight, fontWeight = FontWeight.Medium)
+                        }
+                        IconButton(
+                            onClick = { viewModel.togglePrivacyMode(screenContext) },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .testTag("loans_privacy_toggle_button")
+                                .background(Color.White, CircleShape)
+                                .border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                        ) {
+                            Icon(
+                                painter = if (isPrivacyMode) painterResource(id = R.drawable.ic_eye_closed) else painterResource(id = R.drawable.ic_eye_open),
+                                contentDescription = "Toggle Privacy",
+                                tint = NavyDark,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    LoanSummaryCardsSection(
+                        owedToMe = owedToMe,
+                        iOwe = iOwe,
+                        netLedger = netLedger,
+                        appCurrency = appCurrency,
+                        isPrivacyMode = isPrivacyMode
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text(stringResource(R.string.search_person_notes), color = TextLight, fontSize = 14.sp, fontWeight = FontWeight.Medium) },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextLight, modifier = Modifier.size(20.dp)) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp)
+                                .testTag("loans_search_input"),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = Color(0xFFF8FAFC),
+                                focusedContainerColor = Color(0xFFF8FAFC),
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = Color(0xFFE2E8F0)
+                            ),
+                            singleLine = true
+                        )
+
+                        Button(
+                            onClick = {
+                                if (viewModel.canAddLoan(loans.size)) {
+                                    showAddDialog = true
+                                } else {
+                                    ToastUtil.show(screenContext, screenContext.getString(R.string.toast_upgrade_pro_loans), Toast.LENGTH_SHORT)
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = loan.contactName, 
-                                        fontWeight = FontWeight.Bold, 
-                                        color = if (isPaidOff) Color(0xFF64748B) else NavyDark, 
-                                        fontSize = 15.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        textDecoration = if (isPaidOff) TextDecoration.LineThrough else null
-                                    )
-                                    val formattedDate = remember(loan.deadline) {
-                                        if (loan.deadline != null) {
-                                            try {
-                                                val sdf = java.text.SimpleDateFormat("MMM dd", java.util.Locale.getDefault())
-                                                sdf.format(java.util.Date(loan.deadline))
-                                            } catch (e: Exception) {
-                                                ""
-                                            }
-                                        } else ""
-                                    }
-                                    val dateText = if (formattedDate.isNotBlank()) {
-                                        stringResource(R.string.due_date, formattedDate)
-                                    } else {
-                                        stringResource(R.string.open_ended)
-                                    }
-                                    Text(
-                                        text = dateText, 
-                                        color = TextLight, 
-                                        fontSize = 11.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
+                            },
+                            modifier = Modifier
+                                .height(52.dp)
+                                .testTag("loans_add_record_button"),
+                            colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(horizontal = 20.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(stringResource(R.string.add_record), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .background(Color(0xFFF1F5F9), RoundedCornerShape(16.dp))
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TabButton(text = stringResource(R.string.active_tab), isSelected = selectedTab == 0, onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f))
+                        TabButton(text = stringResource(R.string.paid_off_tab), isSelected = selectedTab == 1, onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f))
+                        TabButton(text = stringResource(R.string.show_all_tab), isSelected = selectedTab == 2, onClick = { selectedTab = 2 }, modifier = Modifier.weight(1f))
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+
+            if (groupedContactLoans.isEmpty()) {
+                item {
+                    LoansEmptyStateCard()
+                }
+            } else {
+                items(
+                    items = groupedContactLoans,
+                    key = { group ->
+                        if (group.loans.size == 1) group.loans.first().id else "contact_${group.key}"
+                    }
+                ) { group ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 6.dp)
+                    ) {
+                        if (group.loans.size == 1) {
+                            val loan = group.loans.first()
+                            LoanRecordCard(
+                                loan = loan,
+                                titleText = loan.contactName,
+                                remainingAmount = getRemainingAmount(loan),
+                                appCurrency = appCurrency,
+                                isPrivacyMode = isPrivacyMode,
+                                testTag = "loan_card_${loan.id}",
+                                onClick = { selectedLoan = loan }
+                            )
+                        } else {
+                            ContactGroupedLoanCard(
+                                group = group,
+                                onClick = {
+                                    contactSearchQuery = ""
+                                    contactSelectedTab = selectedTab
+                                    selectedContactKey = group.key
                                 }
-                            }
-                            
-                            Spacer(modifier = Modifier.width(8.dp))
-                            
-                            // Right side section (Amount & Details badge, fits compactly)
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                Column(horizontalAlignment = Alignment.End) {
-                                    val currentAmt = if (isPaidOff) loan.amount else getRemainingAmount(loan)
-                                    Text(
-                                        text = if (isPrivacyMode) "$prefix ${getCurrencySymbol(appCurrency)}••••••" else "$prefix ${getCurrencySymbol(appCurrency)}${String.format("%.2f", currentAmt)}", 
-                                        color = if (isPaidOff) Color(0xFF64748B) else textColor, 
-                                        fontWeight = FontWeight.Bold, 
-                                        fontSize = 15.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Clip,
-                                        textDecoration = if (isPaidOff) TextDecoration.LineThrough else null
-                                    )
-                                    Text(
-                                        text = text, 
-                                        color = textColor, 
-                                        fontSize = 9.sp, 
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Clip
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Surface(
-                                    color = Color.White,
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, if (isPaidOff) Color(0xFFCBD5E1) else PinkPrimary.copy(alpha = 0.15f))
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.details_badge), 
-                                        fontSize = 9.sp, 
-                                        fontWeight = FontWeight.Black, 
-                                        color = if (isPaidOff) Color(0xFF94A3B8) else PinkPrimary, 
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Clip,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-                            }
+                            )
                         }
                     }
                 }
             }
         }
     }
-    
+
     if (showAddDialog) {
+        val prefillName = if (selectedContactKey != null) activeContactDisplayName else ""
+        val prefillPhone = if (selectedContactKey != null) {
+            allContactLoans.firstNotNullOfOrNull { it.phone?.takeIf { p -> p.isNotBlank() } }.orEmpty()
+        } else ""
+        val prefillEmail = if (selectedContactKey != null) {
+            allContactLoans.firstNotNullOfOrNull { it.email?.takeIf { e -> e.isNotBlank() } }.orEmpty()
+        } else ""
+        val prefillPhoto = if (selectedContactKey != null) {
+            allContactLoans.firstNotNullOfOrNull { it.photoUri?.takeIf { u -> u.isNotBlank() } }
+        } else null
+        val prefillSocial = if (selectedContactKey != null) {
+            allContactLoans.firstNotNullOfOrNull { it.social?.takeIf { s -> s.isNotBlank() } }
+        } else null
+
         AddLoanBottomSheet(
             viewModel = viewModel,
             appCurrency = appCurrency,
+            initialContactName = prefillName,
+            initialPhone = prefillPhone,
+            initialEmail = prefillEmail,
+            initialPhotoUri = prefillPhoto,
+            initialSocial = prefillSocial,
             onConfirm = { isLent, amount, contactName, phone, email, photoUri, social, note, deadline, accountId ->
                 viewModel.addLoan(
                     Loan(
@@ -981,26 +1021,63 @@ fun LoansScreen(
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = typeColor.copy(alpha = 0.08f)),
-                        shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(2.dp, typeColor.copy(alpha = 0.3f))
-                    ) {
-                        Column(modifier = Modifier.padding(20.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Info, contentDescription = null, tint = typeColor, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.flashback_recall_note), fontSize = 11.sp, fontWeight = FontWeight.Black, color = typeColor, letterSpacing = 1.sp)
+                    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+                    val quoteBorderColor = Color(0xFF94A3B8)
+                    val quoteBgColor = Color(0xFFF8FAFC)
+                    val quoteShape = RoundedCornerShape(
+                        topStart = if (isRtl) 14.dp else 4.dp,
+                        bottomStart = if (isRtl) 14.dp else 4.dp,
+                        topEnd = if (isRtl) 4.dp else 14.dp,
+                        bottomEnd = if (isRtl) 4.dp else 14.dp
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(quoteShape)
+                            .background(quoteBgColor)
+                            .drawBehind {
+                                val strokeWidth = 4.dp.toPx()
+                                val x = if (isRtl) size.width - strokeWidth / 2f else strokeWidth / 2f
+                                drawLine(
+                                    color = quoteBorderColor,
+                                    start = Offset(x, 0f),
+                                    end = Offset(x, size.height),
+                                    strokeWidth = strokeWidth
+                                )
                             }
-                            Spacer(modifier = Modifier.height(14.dp))
+                            .padding(
+                                start = if (isRtl) 16.dp else 20.dp,
+                                end = if (isRtl) 20.dp else 16.dp,
+                                top = 16.dp,
+                                bottom = 16.dp
+                            )
+                    ) {
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    stringResource(R.string.flashback_recall_note),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF64748B),
+                                    letterSpacing = 1.sp
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
                             Text(
                                 text = "\"${selectedLoan!!.note}\"",
-                                fontSize = 16.sp,
+                                fontSize = 15.sp,
                                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.SemiBold,
                                 color = NavyDark,
-                                lineHeight = 24.sp
+                                lineHeight = 22.sp
                             )
                         }
                     }
@@ -1085,7 +1162,7 @@ fun LoansScreen(
                                 Button(
                                     onClick = {
                                         viewModel.deleteLoan(selectedLoan!!.id)
-                                        com.oryno.piggy_ledger.ui.ToastUtil.show(screenContext, screenContext.getString(R.string.toast_loan_deleted), Toast.LENGTH_SHORT)
+                                        ToastUtil.show(screenContext, screenContext.getString(R.string.toast_loan_deleted), Toast.LENGTH_SHORT)
                                         selectedLoan = null
                                         showDeleteConfirm = false
                                     },
@@ -1109,6 +1186,429 @@ fun LoansScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoanSummaryCardsSection(
+    owedToMe: Double,
+    iOwe: Double,
+    netLedger: Double,
+    appCurrency: String,
+    isPrivacyMode: Boolean
+) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val isNarrow = maxWidth < 340.dp
+        val currencySymbol = getCurrencySymbol(appCurrency)
+
+        if (isNarrow) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(painter = painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = PinkAccent, modifier = Modifier.size(10.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format("%.0f", owedToMe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(painter = painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = BlackAccent, modifier = Modifier.size(10.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format("%.0f", iOwe)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(stringResource(R.string.net_ledger), fontSize = 9.sp, fontWeight = FontWeight.Black, color = TextLight)
+                        Text(
+                            text = if (isPrivacyMode) "$currencySymbol••••••" else (if (netLedger >= 0) "+$currencySymbol${String.format("%.0f", netLedger)}" else "-$currencySymbol${String.format("%.0f", -netLedger)}"),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (netLedger >= 0) PinkAccent else BlackAccent,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        } else {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFFF1F5F9),
+                shape = RoundedCornerShape(28.dp),
+                border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(24.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(painter = painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = PinkAccent, modifier = Modifier.size(10.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(stringResource(R.string.owed_to_me), fontSize = 8.sp, fontWeight = FontWeight.Black, color = PinkAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format("%.0f", owedToMe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(24.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(painter = painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = BlackAccent, modifier = Modifier.size(10.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(stringResource(R.string.i_owe), fontSize = 8.sp, fontWeight = FontWeight.Black, color = BlackAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(if (isPrivacyMode) "$currencySymbol••••••" else "$currencySymbol${String.format("%.0f", iOwe)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(24.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
+                            Text(stringResource(R.string.net_ledger), fontSize = 8.sp, fontWeight = FontWeight.Black, color = TextLight, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = if (isPrivacyMode) "$currencySymbol••••••" else (if (netLedger >= 0) "+$currencySymbol${String.format("%.0f", netLedger)}" else "-$currencySymbol${String.format("%.0f", -netLedger)}"),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (netLedger >= 0) PinkAccent else BlackAccent,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoansEmptyStateCard() {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 24.dp),
+        color = Color(0xFFF8FAFC),
+        shape = RoundedCornerShape(32.dp),
+        border = BorderStroke(1.5.dp, Color(0xFFCBD5E1))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 48.dp, horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(Color(0xFFF8FAFC), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.HelpOutline, contentDescription = null, tint = TextLight.copy(alpha = 0.3f), modifier = Modifier.size(40.dp))
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(stringResource(R.string.no_records_found), fontWeight = FontWeight.ExtraBold, color = Color(0xFF334155), fontSize = 18.sp)
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(stringResource(R.string.log_lent_borrowed_desc), color = TextLight, textAlign = TextAlign.Center, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 16.dp))
+        }
+    }
+}
+
+@Composable
+private fun LoanRecordCard(
+    loan: Loan,
+    titleText: String,
+    remainingAmount: Double,
+    appCurrency: String,
+    isPrivacyMode: Boolean,
+    testTag: String,
+    onClick: () -> Unit
+) {
+    val isPaidOff = loan.isPaidOff
+    val containerColor = if (isPaidOff) Color(0xFFF1F5F9) else PinkPrimary.copy(alpha = 0.03f)
+    val borderColor = if (isPaidOff) Color(0xFFCBD5E1) else PinkPrimary.copy(alpha = 0.15f)
+    val iconTint = if (isPaidOff) Color(0xFF94A3B8) else (if (loan.type == LoanType.LENT) PinkAccent else BlackAccent)
+    val bgTint = if (isPaidOff) Color(0xFFE2E8F0) else (if (loan.type == LoanType.LENT) PinkAccent.copy(alpha = 0.1f) else BlackAccent.copy(alpha = 0.1f))
+    val icon = painterResource(id = R.drawable.ic_nav_loans)
+    val prefix = if (loan.type == LoanType.LENT) "+" else "-"
+    val typeLabel = if (loan.type == LoanType.LENT) stringResource(R.string.owed_to_me) else stringResource(R.string.i_owe)
+    val textColor = if (isPaidOff) Color(0xFF94A3B8) else (if (loan.type == LoanType.LENT) PinkAccent else BlackAccent)
+    val currencySymbol = getCurrencySymbol(appCurrency)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(testTag)
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.5.dp, borderColor)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(bgTint, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = titleText,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isPaidOff) Color(0xFF64748B) else NavyDark,
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textDecoration = if (isPaidOff) TextDecoration.LineThrough else null
+                    )
+                    val formattedDate = remember(loan.deadline) {
+                        if (loan.deadline != null) {
+                            try {
+                                val sdf = java.text.SimpleDateFormat("MMM dd", Locale.getDefault())
+                                sdf.format(java.util.Date(loan.deadline))
+                            } catch (e: Exception) {
+                                ""
+                            }
+                        } else ""
+                    }
+                    val dateText = if (formattedDate.isNotBlank()) {
+                        stringResource(R.string.due_date, formattedDate)
+                    } else {
+                        stringResource(R.string.open_ended)
+                    }
+                    Text(
+                        text = dateText,
+                        color = TextLight,
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
+            ) {
+                Column(horizontalAlignment = Alignment.End) {
+                    val currentAmt = if (isPaidOff) loan.amount else remainingAmount
+                    Text(
+                        text = if (isPrivacyMode) "$prefix $currencySymbol••••••" else "$prefix $currencySymbol${String.format("%.2f", currentAmt)}",
+                        color = if (isPaidOff) Color(0xFF64748B) else textColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Clip,
+                        textDecoration = if (isPaidOff) TextDecoration.LineThrough else null
+                    )
+                    Text(
+                        text = typeLabel,
+                        color = textColor,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Clip
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Surface(
+                    color = Color.White,
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, if (isPaidOff) Color(0xFFCBD5E1) else PinkPrimary.copy(alpha = 0.15f))
+                ) {
+                    Text(
+                        text = stringResource(R.string.details_badge),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black,
+                        color = if (isPaidOff) Color(0xFF94A3B8) else PinkPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Clip,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContactGroupedLoanCard(
+    group: ContactLoanGroup,
+    onClick: () -> Unit
+) {
+    val allPaidOff = group.loans.all { it.isPaidOff }
+    val containerColor = if (allPaidOff) Color(0xFFF1F5F9) else PinkPrimary.copy(alpha = 0.03f)
+    val borderColor = if (allPaidOff) Color(0xFFCBD5E1) else PinkPrimary.copy(alpha = 0.15f)
+    val iconTint = if (allPaidOff) Color(0xFF94A3B8) else PinkPrimary
+    val bgTint = if (allPaidOff) Color(0xFFE2E8F0) else PinkPrimary.copy(alpha = 0.1f)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("contact_group_card_${group.key}")
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.5.dp, borderColor)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(bgTint, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(painterResource(id = R.drawable.ic_nav_loans), contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = group.displayName,
+                        fontWeight = FontWeight.Bold,
+                        color = if (allPaidOff) Color(0xFF64748B) else NavyDark,
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textDecoration = if (allPaidOff) TextDecoration.LineThrough else null
+                    )
+                    val nearestDeadline = remember(group.loans) {
+                        group.loans.filter { !it.isPaidOff }.mapNotNull { it.deadline }.minOrNull()
+                    }
+                    val formattedDate = remember(nearestDeadline) {
+                        if (nearestDeadline != null) {
+                            try {
+                                val sdf = java.text.SimpleDateFormat("MMM dd", Locale.getDefault())
+                                sdf.format(java.util.Date(nearestDeadline))
+                            } catch (e: Exception) {
+                                ""
+                            }
+                        } else ""
+                    }
+                    val logsCountText = stringResource(R.string.contact_logs_count, group.loans.size)
+                    val subtitleText = if (formattedDate.isNotBlank()) {
+                        "$logsCountText • ${stringResource(R.string.due_date, formattedDate)}"
+                    } else {
+                        logsCountText
+                    }
+                    Text(
+                        text = subtitleText,
+                        color = TextLight,
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Surface(
+                color = Color.White,
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, if (allPaidOff) Color(0xFFCBD5E1) else PinkPrimary.copy(alpha = 0.15f))
+            ) {
+                Text(
+                    text = stringResource(R.string.details_badge),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black,
+                    color = if (allPaidOff) Color(0xFF94A3B8) else PinkPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
             }
         }
     }

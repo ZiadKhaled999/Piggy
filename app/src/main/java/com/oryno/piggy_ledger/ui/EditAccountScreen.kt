@@ -701,16 +701,8 @@ fun EditAccountScreen(
                 SectionCard(title = stringResource(R.string.sms_and_notification_automation_title)) {
                     NotificationAutomationSection(
                         providerOrName = provider.ifBlank { name },
-                        linkedPackage = linkedNotificationPackage,
-                        linkedAppLabel = linkedNotificationAppLabel,
-                        isAutoSuggested = false,
                         customKeywords = customKeywordsInput,
-                        onCustomKeywordsChange = { customKeywordsInput = it },
-                        onOpenAppPicker = { showAppPickerSheet = true },
-                        onClearLinkedApp = {
-                            linkedNotificationPackage = null
-                            linkedNotificationAppLabel = null
-                        }
+                        onCustomKeywordsChange = { customKeywordsInput = it }
                     )
 
                     HorizontalDivider(color = Color(0xFFF1F5F9))

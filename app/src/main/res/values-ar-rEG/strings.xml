@@ -790,4 +790,9 @@
     <string name="source_logged_manual">إدخال يدوي</string>
     <string name="permissions_notif_listener_title">قراءة إشعارات التطبيقات</string>
     <string name="permissions_notif_listener_desc">اختياري: قراءة إشعارات تطبيقات البنوك والمحافظ</string>
+    <string name="contact_logs_count">%1$d تسجيلات</string>
+    <string name="contact_logs_badge">%1$d سجلات</string>
+    <string name="all_settled_label">خالص</string>
+    <string name="contact_payoffs_subtitle">السلف والديون • %1$d تسجيلات</string>
+    <string name="search_notes_placeholder">دور في الملاحظات…</string>
 </resources>

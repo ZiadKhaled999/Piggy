@@ -1767,4 +1767,9 @@
     <string name="source_logged_manual">إدخال يدوي</string>
     <string name="permissions_notif_listener_title">الوصول لإشعارات التطبيقات</string>
     <string name="permissions_notif_listener_desc">اختياري: قراءة إشعارات تطبيقات البنوك والمحافظ</string>
+    <string name="contact_logs_count">%1$d سجلات</string>
+    <string name="contact_logs_badge">%1$d سجلات</string>
+    <string name="all_settled_label">تمت التسوية</string>
+    <string name="contact_payoffs_subtitle">القروض والتسديدات • %1$d سجلات</string>
+    <string name="search_notes_placeholder">ابحث في الملاحظات…</string>
 </resources>

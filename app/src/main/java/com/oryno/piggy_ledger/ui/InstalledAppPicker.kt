@@ -193,13 +193,8 @@ fun AppPackageIcon(
 @Composable
 fun NotificationAutomationSection(
     providerOrName: String,
-    linkedPackage: String?,
-    linkedAppLabel: String?,
-    isAutoSuggested: Boolean,
     customKeywords: String,
-    onCustomKeywordsChange: (String) -> Unit,
-    onOpenAppPicker: () -> Unit,
-    onClearLinkedApp: () -> Unit
+    onCustomKeywordsChange: (String) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -216,186 +211,67 @@ fun NotificationAutomationSection(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // App Notification Linking Card
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 56.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .clickable(onClick = onOpenAppPicker)
-                .testTag("choose_service_app_button"),
-            shape = RoundedCornerShape(14.dp),
-            color = Color(0xFFF8FAFC),
-            border = BorderStroke(
-                width = 1.dp,
-                color = if (linkedPackage != null) PinkPrimary.copy(alpha = 0.5f) else Color(0xFFE2E8F0)
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
+        // Minimalist efficient Notification Access Banner if not granted
+        if (!hasListenerAccess) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFF8FAFC),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
-                if (linkedPackage != null) {
-                    AppPackageIcon(
-                        packageName = linkedPackage,
-                        contentDescription = linkedAppLabel ?: linkedPackage,
-                        modifier = Modifier.size(40.dp)
-                    )
-                } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
                             .background(PinkPrimary.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.NotificationsActive,
+                            imageVector = Icons.Default.NotificationsNone,
                             contentDescription = null,
                             tint = PinkPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = if (linkedPackage != null) {
-                                linkedAppLabel ?: linkedPackage
-                            } else {
-                                stringResource(R.string.link_service_app_title)
-                            },
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = NavyDark,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        if (linkedPackage != null && isAutoSuggested) {
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFFDCFCE7)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.auto_detected_badge),
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF15803D),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = linkedPackage ?: stringResource(R.string.link_service_app_desc),
-                        fontSize = 11.5.sp,
-                        color = TextLight,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                if (linkedPackage != null) {
-                    IconButton(
-                        onClick = onClearLinkedApp,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .testTag("clear_linked_app_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = stringResource(R.string.unlink_service_app),
-                            tint = Color(0xFF64748B),
                             modifier = Modifier.size(18.dp)
                         )
                     }
-                } else {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = Color(0xFF94A3B8)
-                    )
-                }
-            }
-        }
-
-        // Listener Permission Banner if an app is linked or user wants notifications
-        if (!hasListenerAccess) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                color = Color(0xFFFFF7ED),
-                border = BorderStroke(1.dp, Color(0xFFFED7AA))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.NotificationsNone,
-                        contentDescription = null,
-                        tint = Color(0xFFEA580C),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.notification_access_banner_title),
-                            fontSize = 12.5.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF9A3412)
+                            color = NavyDark
                         )
                         Text(
                             text = stringResource(R.string.notification_access_banner_desc),
                             fontSize = 11.sp,
-                            color = Color(0xFFC2410C),
-                            lineHeight = 15.sp
+                            color = TextLight,
+                            lineHeight = 14.sp
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(
+                    Button(
                         onClick = { openNotificationAccessSettings(context) },
                         modifier = Modifier
-                            .heightIn(min = 48.dp)
-                            .testTag("grant_notification_access_button")
+                            .heightIn(min = 36.dp)
+                            .testTag("grant_notification_access_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PinkPrimary),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(
                             text = stringResource(R.string.grant_notification_access),
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            color = PinkPrimary
+                            fontSize = 11.sp,
+                            color = Color.White
                         )
                     }
                 }
-            }
-        } else if (linkedPackage != null) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = Color(0xFF16A34A),
-                    modifier = Modifier.size(15.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = stringResource(R.string.notification_access_active_note),
-                    fontSize = 11.5.sp,
-                    color = Color(0xFF15803D),
-                    fontWeight = FontWeight.Medium
-                )
             }
         }
 
@@ -418,7 +294,8 @@ fun NotificationAutomationSection(
                     Icon(
                         imageVector = Icons.Default.Tag,
                         contentDescription = null,
-                        tint = TextLight
+                        tint = TextLight,
+                        modifier = Modifier.size(18.dp)
                     )
                 },
                 singleLine = true,
@@ -426,12 +303,7 @@ fun NotificationAutomationSection(
                     .fillMaxWidth()
                     .testTag("custom_keywords_input"),
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PinkPrimary,
-                    unfocusedBorderColor = Color(0xFFE2E8F0),
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
-                )
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp)
             )
             Text(
                 text = stringResource(R.string.custom_alert_keywords_desc),
@@ -441,6 +313,8 @@ fun NotificationAutomationSection(
         }
     }
 }
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

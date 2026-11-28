@@ -27,13 +27,16 @@ class SubscriptionReminderWorker(
             }
 
             val db = PiggyLedgerDatabase.getInstance(context)
-            val subs = db.piggyLedgerDao().getAllSubscriptionsSync()
+            val subs = db.piggyLedgerDao().getAllSubscriptionsSyncFull()
             val now = System.currentTimeMillis()
             val notificationHelper = NotificationHelper(context)
 
             subs.forEach { sub ->
-                if (!sub.isActive || !sub.status.equals("ACTIVE", ignoreCase = true) || !sub.reminderEnabled) {
-                    notificationHelper.cancelSubscriptionNotification(sub.id)
+                if (sub.is_deleted || !sub.isActive || !sub.status.equals("ACTIVE", ignoreCase = true) || !sub.reminderEnabled) {
+                    SubscriptionNotificationScheduler.cancel(context, sub.id)
+                    if (sub.is_deleted) {
+                        DeadlineAndReminderUtils.clearSubscriptionPrefs(context, sub.id)
+                    }
                     return@forEach
                 }
 

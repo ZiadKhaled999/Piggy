@@ -1304,7 +1304,14 @@ class PiggyLedgerViewModel(
                     val payments = repository.getPaymentsForLoan(loanId).first()
                     val remaining = com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.computeRemainingLoanAmount(loan, payments)
                     if (remaining <= 0.0001) {
-                        NotificationHelper(context).cancelDeadlineNotification(loanId)
+                        val hasOtherOverdueSameContact = overdueLoans.value.any {
+                            it.id != loanId && it.contactName.trim().equals(loan.contactName.trim(), ignoreCase = true)
+                        }
+                        NotificationHelper(context).cancelDeadlineNotification(
+                            loanId = loanId,
+                            legacyContactName = loan.contactName,
+                            cancelLegacyContactId = !hasOtherOverdueSameContact
+                        )
                         com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.clearLoanDeadlineNotified(context, loanId)
                     }
                 }
@@ -1336,9 +1343,23 @@ class PiggyLedgerViewModel(
     }
 
     fun markLoanAsPaid(id: String) {
+        val targetLoan = loans.value.find { it.id == id }
+        val hasOtherOverdueSameContact = targetLoan != null && overdueLoans.value.any {
+            it.id != id && it.contactName.trim().equals(targetLoan.contactName.trim(), ignoreCase = true)
+        }
+        NotificationHelper(context).cancelDeadlineNotification(
+            loanId = id,
+            legacyContactName = targetLoan?.contactName,
+            cancelLegacyContactId = !hasOtherOverdueSameContact
+        )
+        com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.clearLoanDeadlineNotified(context, id)
         viewModelScope.launch {
             repository.markLoanAsPaid(id)
-            NotificationHelper(context).cancelDeadlineNotification(id)
+            NotificationHelper(context).cancelDeadlineNotification(
+                loanId = id,
+                legacyContactName = targetLoan?.contactName,
+                cancelLegacyContactId = !hasOtherOverdueSameContact
+            )
             com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.clearLoanDeadlineNotified(context, id)
             PostHog.capture(
                 event = "loan_paid",
@@ -1353,9 +1374,23 @@ class PiggyLedgerViewModel(
     }
     
     fun deleteLoan(id: String) {
+        val targetLoan = loans.value.find { it.id == id }
+        val hasOtherOverdueSameContact = targetLoan != null && overdueLoans.value.any {
+            it.id != id && it.contactName.trim().equals(targetLoan.contactName.trim(), ignoreCase = true)
+        }
+        NotificationHelper(context).cancelDeadlineNotification(
+            loanId = id,
+            legacyContactName = targetLoan?.contactName,
+            cancelLegacyContactId = !hasOtherOverdueSameContact
+        )
+        com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.clearLoanDeadlineNotified(context, id)
         viewModelScope.launch {
             repository.deleteLoan(id)
-            NotificationHelper(context).cancelDeadlineNotification(id)
+            NotificationHelper(context).cancelDeadlineNotification(
+                loanId = id,
+                legacyContactName = targetLoan?.contactName,
+                cancelLegacyContactId = !hasOtherOverdueSameContact
+            )
             com.oryno.piggy_ledger.service.DeadlineAndReminderUtils.clearLoanDeadlineNotified(context, id)
             PostHog.capture(
                 event = "loan_deleted",

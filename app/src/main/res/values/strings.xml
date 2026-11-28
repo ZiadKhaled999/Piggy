@@ -1794,4 +1794,9 @@
     <string name="source_logged_manual">Manual Entry</string>
     <string name="permissions_notif_listener_title">App Notification Access</string>
     <string name="permissions_notif_listener_desc">Optional: read push alerts from banking and wallet apps</string>
+    <string name="contact_logs_count">%1$d logs</string>
+    <string name="contact_logs_badge">%1$d LOGS</string>
+    <string name="all_settled_label">SETTLED</string>
+    <string name="contact_payoffs_subtitle">Loans &amp; Payoffs • %1$d logs</string>
+    <string name="search_notes_placeholder">Search notes…</string>
 </resources>

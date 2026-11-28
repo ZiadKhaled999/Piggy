@@ -356,7 +356,7 @@ object SubscriptionNotificationScheduler {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val db = PiggyLedgerDatabase.getInstance(context)
-                val subs = db.piggyLedgerDao().getAllSubscriptionsSync()
+                val subs = db.piggyLedgerDao().getAllSubscriptionsSyncFull()
                 subs.forEach { sub ->
                     if (!sub.is_deleted &&
                         sub.status.equals("ACTIVE", ignoreCase = true) &&
@@ -366,6 +366,9 @@ object SubscriptionNotificationScheduler {
                         schedule(context, sub)
                     } else {
                         cancel(context, sub.id)
+                        if (sub.is_deleted) {
+                            DeadlineAndReminderUtils.clearSubscriptionPrefs(context, sub.id)
+                        }
                     }
                 }
             } catch (e: Exception) {
